@@ -1,0 +1,67 @@
+[
+    {
+        "data": {
+            "modules": [
+                {
+                    "data": {
+                        "qinfos": []
+                    },
+                    "inst": "datagen",
+                    "plugin": "DataGenerator"
+                }
+            ],
+            "queues": []
+        },
+        "id": "init",
+        "waitms": 1000
+    },
+    {
+        "data": {
+            "modules": [
+                {
+                    "data": {
+                        "data_store_parameters": {
+                            "directory_path": ".",
+                            "filename_prefix": "demo_run20201104",
+                            "mode": "one-fragment-per-file",
+                            "name": "data_store",
+                            "type": "HDF5DataStore"
+                        },
+                        "geo_location_count": 10,
+                        "io_size": 1048576,
+                        "sleep_msec_while_running": 1000
+                    },
+                    "match": "datagen"
+                }
+            ]
+        },
+        "id": "conf",
+        "waitms": 1000
+    },
+    {
+        "data": {
+            "modules": [
+                {
+                    "data": {
+                        "run": 42
+                    },
+                    "match": ""
+                }
+            ]
+        },
+        "id": "start",
+        "waitms": 1000
+    },
+    {
+        "data": {
+            "modules": [
+                {
+                    "data": {},
+                    "match": ""
+                }
+            ]
+        },
+        "id": "stop",
+        "waitms": 1000
+    }
+]

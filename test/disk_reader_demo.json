@@ -1,0 +1,24 @@
+{
+  "queues": {
+  },
+  "modules": {
+    "disk_reader": {
+      "user_module_type": "SimpleDiskReader",
+      "sleep_msec_while_running": 1000,
+      "event_id": 1,
+      "detector_id": "FELIX",
+      "geolocation_id": 101,
+
+      "data_store_parameters": {
+      "data_store_module": "HDF5DataReader",
+      "directory_path": "./",
+      "filename": "demo",
+      "mode": "all-per-file"
+      }
+    }
+  },
+  "commands": {
+    "start": [ "disk_reader" ],
+    "stop": [ "disk_reader" ]
+  }
+}

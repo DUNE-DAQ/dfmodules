@@ -1,0 +1,72 @@
+[
+    {
+        "data": {
+            "modules": [
+                {
+                    "data": {
+                        "qinfos": []
+                    },
+                    "inst": "dataxfer",
+                    "plugin": "DataTransferModule"
+                }
+            ],
+            "queues": []
+        },
+        "id": "init",
+        "waitms": 1000
+    },
+    {
+        "data": {
+            "modules": [
+                {
+                    "data": {
+                        "input_data_store_parameters": {
+                            "directory_path": ".",
+                            "filename_prefix": "demo_run20201104",
+                            "mode": "one-fragment-per-file",
+                            "name": "input_store",
+                            "type": "HDF5DataStore"
+                        },
+                        "output_data_store_parameters": {
+                            "directory_path": ".",
+                            "filename_prefix": "demo_run20201104",
+                            "mode": "one-event-per-file",
+                            "name": "output_store",
+                            "type": "HDF5DataStore"
+                        },
+                        "sleep_msec_while_running": 1000
+                    },
+                    "match": "dataxfer"
+                }
+            ]
+        },
+        "id": "conf",
+        "waitms": 1000
+    },
+    {
+        "data": {
+            "modules": [
+                {
+                    "data": {
+                        "run": 42
+                    },
+                    "match": ""
+                }
+            ]
+        },
+        "id": "start",
+        "waitms": 1000
+    },
+    {
+        "data": {
+            "modules": [
+                {
+                    "data": {},
+                    "match": ""
+                }
+            ]
+        },
+        "id": "stop",
+        "waitms": 1000
+    }
+]
