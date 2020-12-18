@@ -22,7 +22,7 @@
 #include <string>
 #include <vector>
 
-using namespace dunedaq::ddpdemo;
+using namespace dunedaq::dfmodules;
 
 std::vector<std::string>
 deleteFilesMatchingPattern(const std::string& path, const std::string& pattern)

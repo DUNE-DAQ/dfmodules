@@ -9,7 +9,7 @@
  * received with this code.
  */
 
-#include "ddpdemo/StorageKey.hpp"
+#include "dfmodules/StorageKey.hpp"
 
 #define BOOST_TEST_MODULE StorageKey_test // NOLINT
 
@@ -22,7 +22,7 @@ namespace {
 constexpr int eventID = 111;
 const std::string detectorID("LARTPC");
 constexpr int geoLocation = 333;
-dunedaq::ddpdemo::StorageKey stk(eventID, detectorID, geoLocation); ///< StorageKey instance for the test
+dunedaq::dfmodules::StorageKey stk(eventID, detectorID, geoLocation); ///< StorageKey instance for the test
 
 } // namespace ""
 
@@ -43,7 +43,7 @@ BOOST_AUTO_TEST_CASE(sanity_checks)
   BOOST_CHECK_EQUAL(m_geoLocation, geoLocation);
 }
 
-using namespace dunedaq::ddpdemo;
+using namespace dunedaq::dfmodules;
 
 BOOST_AUTO_TEST_CASE(check_placeholder_values)
 {

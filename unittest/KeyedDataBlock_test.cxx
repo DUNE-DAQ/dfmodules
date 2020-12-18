@@ -7,7 +7,7 @@
  * received with this code.
  */
 
-#include "ddpdemo/KeyedDataBlock.hpp"
+#include "dfmodules/KeyedDataBlock.hpp"
 
 #include "ers/ers.h"
 
@@ -17,7 +17,7 @@
 
 #include <memory>
 
-using namespace dunedaq::ddpdemo;
+using namespace dunedaq::dfmodules;
 
 BOOST_AUTO_TEST_SUITE(KeyedDataBlock_test)
 

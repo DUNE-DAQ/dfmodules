@@ -9,7 +9,7 @@
  * received with this code.
  */
 
-#include "ddpdemo/StorageKey.hpp"
+#include "dfmodules/StorageKey.hpp"
 
 #include <ers/ers.h>
 
@@ -17,7 +17,7 @@
 #include <string>
 
 namespace dunedaq {
-namespace ddpdemo {
+namespace dfmodules {
 
 const int StorageKey::INVALID_EVENTID = std::numeric_limits<int>::max();
 const int StorageKey::INVALID_GEOLOCATION = std::numeric_limits<int>::max();
@@ -40,5 +40,5 @@ StorageKey::getGeoLocation() const
   return m_key.m_geoLocation;
 }
 
-} // namespace ddpdemo
+} // namespace dfmodules
 } // namespace dunedaq

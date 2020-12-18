@@ -18,7 +18,7 @@
 #include <string>
 #include <vector>
 
-using namespace dunedaq::ddpdemo;
+using namespace dunedaq::dfmodules;
 
 BOOST_AUTO_TEST_SUITE(HDF5KeyTranslator_test)
 
