@@ -24,10 +24,10 @@
 /**
  * @brief Name used by TRACE TLOG calls from this source file
  */
-#define TRACE_NAME "DataWriter" // NOLINT
-#define TLVL_ENTER_EXIT_METHODS 10  // NOLINT
-#define TLVL_CONFIG 12              // NOLINT
-#define TLVL_WORK_STEPS 15          // NOLINT
+#define TRACE_NAME "DataWriter"    // NOLINT
+#define TLVL_ENTER_EXIT_METHODS 10 // NOLINT
+#define TLVL_CONFIG 12             // NOLINT
+#define TLVL_WORK_STEPS 15         // NOLINT
 
 namespace dunedaq {
 namespace dfmodules {
@@ -111,8 +111,7 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
   }
 
   std::ostringstream oss_summ;
-  oss_summ << ": Exiting the do_work() method, received  trigger record messages for " << receivedCount
-           << " triggers.";
+  oss_summ << ": Exiting the do_work() method, received  trigger record messages for " << receivedCount << " triggers.";
   ers::info(ProgressUpdate(ERS_HERE, get_name(), oss_summ.str()));
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_work() method";
 }

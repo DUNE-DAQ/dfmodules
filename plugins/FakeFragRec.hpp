@@ -10,8 +10,8 @@
 #define DFMODULES_SRC_FAKEFRAGREC_HPP_
 
 #include "dataformats/Fragment.hpp"
-#include "dfmessages/TriggerDecision.hpp"
 #include "dataformats/TriggerRecord.hpp"
+#include "dfmessages/TriggerDecision.hpp"
 
 #include "appfwk/DAQModule.hpp"
 #include "appfwk/DAQSink.hpp"

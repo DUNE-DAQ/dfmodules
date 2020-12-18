@@ -110,7 +110,7 @@ FakeDataProd::do_work(std::atomic<bool>& running_flag)
     // TODO PAR 2020-12-17: dataformats::Fragment has to be
     // constructed with some payload data, so I'm putting a single int
     // in it for now
-    int dummy_int=3;
+    int dummy_int = 3;
     std::unique_ptr<dataformats::Fragment> dataFragPtr(new dataformats::Fragment(&dummy_int, sizeof(dummy_int)));
     dataFragPtr->set_trigger_number(dataReq.trigger_number);
     bool wasSentSuccessfully = false;
