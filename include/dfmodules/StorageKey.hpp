@@ -1,5 +1,5 @@
-#ifndef DDPDEMO_INCLUDE_DDPDEMO_STORAGEKEY_HPP_
-#define DDPDEMO_INCLUDE_DDPDEMO_STORAGEKEY_HPP_
+#ifndef DFMODULES_INCLUDE_DFMODULES_STORAGEKEY_HPP_
+#define DFMODULES_INCLUDE_DFMODULES_STORAGEKEY_HPP_
 /**
  * @file StorageKey.hpp
  *
@@ -14,7 +14,7 @@
 #include <string>
 
 namespace dunedaq {
-namespace ddpdemo {
+namespace dfmodules {
 /**
  * @brief The StorageKey class defines the container class that will give us a way
  * to group all of the parameters that identify a given block of data
@@ -56,7 +56,7 @@ private:
   Key m_key;
 };
 
-} // namespace ddpdemo
+} // namespace dfmodules
 } // namespace dunedaq
 
-#endif // DDPDEMO_INCLUDE_DDPDEMO_STORAGEKEY_HPP_
+#endif // DFMODULES_INCLUDE_DFMODULES_STORAGEKEY_HPP_

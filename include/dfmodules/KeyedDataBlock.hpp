@@ -6,16 +6,16 @@
  * received with this code.
  */
 
-#ifndef DDPDEMO_INCLUDE_DDPDEMO_KEYEDDATABLOCK_HPP_
-#define DDPDEMO_INCLUDE_DDPDEMO_KEYEDDATABLOCK_HPP_
+#ifndef DFMODULES_INCLUDE_DFMODULES_KEYEDDATABLOCK_HPP_
+#define DFMODULES_INCLUDE_DFMODULES_KEYEDDATABLOCK_HPP_
 
-#include "ddpdemo/StorageKey.hpp"
+#include "dfmodules/StorageKey.hpp"
 
 #include <cstdint>
 #include <memory>
 
 namespace dunedaq {
-namespace ddpdemo {
+namespace dfmodules {
 
 /**
  * @brief comment
@@ -45,7 +45,7 @@ public:
   size_t getDataSizeBytes() const { return data_size; }
 };
 
-} // namespace ddpdemo
+} // namespace dfmodules
 } // namespace dunedaq
 
-#endif // DDPDEMO_INCLUDE_DDPDEMO_KEYEDDATABLOCK_HPP_
+#endif // DFMODULES_INCLUDE_DFMODULES_KEYEDDATABLOCK_HPP_

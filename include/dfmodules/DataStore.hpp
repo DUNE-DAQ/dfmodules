@@ -12,10 +12,10 @@
 // 09-Sep-2020, KAB: the initial version of this class was based on the
 // Queue interface from the appfwk repo.
 
-#ifndef DDPDEMO_INCLUDE_DDPDEMO_DATASTORE_HPP_
-#define DDPDEMO_INCLUDE_DDPDEMO_DATASTORE_HPP_
+#ifndef DFMODULES_INCLUDE_DFMODULES_DATASTORE_HPP_
+#define DFMODULES_INCLUDE_DFMODULES_DATASTORE_HPP_
 
-#include "ddpdemo/KeyedDataBlock.hpp"
+#include "dfmodules/KeyedDataBlock.hpp"
 
 #include <appfwk/NamedObject.hpp>
 
@@ -44,8 +44,8 @@
  */
 #define DEFINE_DUNE_DATA_STORE(klass)                                   \
   EXTERN_C_FUNC_DECLARE_START						\
-  std::unique_ptr<dunedaq::ddpdemo::DataStore> make( const nlohmann::json & conf ) \
-    { return std::unique_ptr<dunedaq::ddpdemo::DataStore>( new klass(conf) ); } \
+  std::unique_ptr<dunedaq::dfmodules::DataStore> make( const nlohmann::json & conf ) \
+    { return std::unique_ptr<dunedaq::dfmodules::DataStore>( new klass(conf) ); } \
   }
 
 namespace dunedaq {
@@ -53,14 +53,14 @@ namespace dunedaq {
   /**
    * @brief A ERS Issue for DataStore creation failure
    */
-  ERS_DECLARE_ISSUE( ddpdemo,                                                           ///< Namespace
+  ERS_DECLARE_ISSUE( dfmodules,                                                           ///< Namespace
 		     DataStoreCreationFailed,                                           ///< Type of the Issue
 		     "Failed to create DataStore " << plugin_name << " with configuration " << conf, ///< Log Message from the issue
 		     ((std::string)plugin_name)((nlohmann::json)conf)                        ///< Message parameters
 		     )
 
 
-namespace ddpdemo {
+namespace dfmodules {
 
 
 
@@ -144,9 +144,9 @@ private:
   
 
   
-} // namespace ddpdemo
+} // namespace dfmodules
 } // namespace dunedaq
 
 
 
-#endif // DDPDEMO_INCLUDE_DDPDEMO_DATASTORE_HPP_
+#endif // DFMODULES_INCLUDE_DFMODULES_DATASTORE_HPP_
