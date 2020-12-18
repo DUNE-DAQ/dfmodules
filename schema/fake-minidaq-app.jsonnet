@@ -3,9 +3,16 @@ local cmd = import "appfwk-cmd-make.jsonnet";
 
 local NUMBER_OF_FAKE_DATA_PRODUCERS = 3;
 
-local ftde = {
+local ftde_ns = {
     generate_config_params(sleepms=1000) :: {
         sleep_msec_while_running: sleepms
+    },
+};
+
+local datawriter_ns = {
+    generate_config_params(dirpath=".", opmode="all-per-file") :: {
+        directory_path: dirpath,
+        mode: opmode
     },
 };
 
@@ -45,7 +52,7 @@ local qspec_list = [
                   [cmd.qinfo("data_fragment_"+idx+"_input_queue", qdict["data_fragments_"+idx].inst, "input")
                    for idx in std.range(1, NUMBER_OF_FAKE_DATA_PRODUCERS)
                   ]),
-              cmd.mspec("fdw", "FakeDataWriter", [
+              cmd.mspec("datawriter", "DataWriter", [
                   cmd.qinfo("trigger_record_input_queue", qdict.trigger_records.inst, "input")])] +
               [cmd.mspec("fdp"+idx, "FakeDataProd", [
                    cmd.qinfo("data_request_input_queue", qdict["data_requests_"+idx].inst, "input"),
@@ -54,7 +61,8 @@ local qspec_list = [
               ])
               { waitms: 1000 },
 
-    cmd.conf([cmd.mcmd("ftde", ftde.generate_config_params(1000))]) { waitms: 1000 },
+    cmd.conf([cmd.mcmd("ftde", ftde_ns.generate_config_params(1000)),
+              cmd.mcmd("datawriter", datawriter_ns.generate_config_params(".","all-per-file"))]) { waitms: 1000 },
 
     cmd.start(42) { waitms: 1000 },
 

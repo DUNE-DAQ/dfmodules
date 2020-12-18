@@ -20,8 +20,8 @@ daq_add_plugin( HDF5DataStore      duneDataStore LINK_LIBRARIES HighFive appfwk:
 daq_add_plugin( DataGenerator      duneDAQModule SCHEMA LINK_LIBRARIES dfmodules )
 daq_add_plugin( DataTransferModule duneDAQModule SCHEMA LINK_LIBRARIES dfmodules stdc++fs )
 
+daq_add_plugin( DataWriter         duneDAQModule SCHEMA LINK_LIBRARIES dfmodules )
 daq_add_plugin( FakeDataProd       duneDAQModule LINK_LIBRARIES dfmodules )
-daq_add_plugin( FakeDataWriter     duneDAQModule LINK_LIBRARIES dfmodules )
 daq_add_plugin( FakeFragRec        duneDAQModule LINK_LIBRARIES dfmodules )
 daq_add_plugin( FakeReqGen         duneDAQModule LINK_LIBRARIES dfmodules )
 daq_add_plugin( FakeTrigDecEmu     duneDAQModule SCHEMA LINK_LIBRARIES dfmodules )

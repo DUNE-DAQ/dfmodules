@@ -101,8 +101,8 @@
                             }
                         ]
                     },
-                    "inst": "fdw",
-                    "plugin": "FakeDataWriter"
+                    "inst": "datawriter",
+                    "plugin": "DataWriter"
                 },
                 {
                     "data": {
@@ -223,6 +223,13 @@
                         "sleep_msec_while_running": 1000
                     },
                     "match": "ftde"
+                },
+                {
+                    "data": {
+                        "directory_path": ".",
+                        "mode": "all-per-file"
+                    },
+                    "match": "datawriter"
                 }
             ]
         },

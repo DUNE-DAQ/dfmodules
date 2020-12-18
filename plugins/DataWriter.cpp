@@ -1,16 +1,16 @@
 /**
- * @file FakeDataWriter.cpp FakeDataWriter class implementation
+ * @file DataWriter.cpp DataWriter class implementation
  *
  * This is part of the DUNE DAQ Software Suite, copyright 2020.
  * Licensing/copyright details are in the COPYING file that you should have
  * received with this code.
  */
 
-#include "FakeDataWriter.hpp"
+#include "DataWriter.hpp"
 #include "CommonIssues.hpp"
 
 #include "appfwk/DAQModuleHelper.hpp"
-//#include "dfmodules/fakedatawriter/Nljs.hpp"
+#include "dfmodules/datawriter/Nljs.hpp"
 
 #include "TRACE/trace.h"
 #include "ers/ers.h"
@@ -24,26 +24,27 @@
 /**
  * @brief Name used by TRACE TLOG calls from this source file
  */
-#define TRACE_NAME "FakeDataWriter" // NOLINT
+#define TRACE_NAME "DataWriter" // NOLINT
 #define TLVL_ENTER_EXIT_METHODS 10  // NOLINT
+#define TLVL_CONFIG 12              // NOLINT
 #define TLVL_WORK_STEPS 15          // NOLINT
 
 namespace dunedaq {
 namespace dfmodules {
 
-FakeDataWriter::FakeDataWriter(const std::string& name)
+DataWriter::DataWriter(const std::string& name)
   : dunedaq::appfwk::DAQModule(name)
-  , thread_(std::bind(&FakeDataWriter::do_work, this, std::placeholders::_1))
+  , thread_(std::bind(&DataWriter::do_work, this, std::placeholders::_1))
   , queueTimeout_(100)
   , triggerRecordInputQueue_(nullptr)
 {
-  register_command("conf", &FakeDataWriter::do_conf);
-  register_command("start", &FakeDataWriter::do_start);
-  register_command("stop", &FakeDataWriter::do_stop);
+  register_command("conf", &DataWriter::do_conf);
+  register_command("start", &DataWriter::do_start);
+  register_command("stop", &DataWriter::do_stop);
 }
 
 void
-FakeDataWriter::init(const data_t& init_data)
+DataWriter::init(const data_t& init_data)
 {
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
   auto qi = appfwk::qindex(init_data, { "trigger_record_input_queue" });
@@ -56,18 +57,18 @@ FakeDataWriter::init(const data_t& init_data)
 }
 
 void
-FakeDataWriter::do_conf(const data_t& /*payload*/)
+DataWriter::do_conf(const data_t& payload)
 {
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
 
-  // fakedatawriter::Conf tmpConfig = payload.get<fakedatawriter::Conf>();
-  // sleepMsecWhileRunning_ = tmpConfig.sleep_msec_while_running;
+  datawriter::ConfParams tmpConfig = payload.get<datawriter::ConfParams>();
+  TLOG(TLVL_CONFIG) << get_name() << ": operational mode = " << tmpConfig.mode;
 
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
 }
 
 void
-FakeDataWriter::do_start(const data_t& /*args*/)
+DataWriter::do_start(const data_t& /*args*/)
 {
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_start() method";
   thread_.start_working_thread();
@@ -76,7 +77,7 @@ FakeDataWriter::do_start(const data_t& /*args*/)
 }
 
 void
-FakeDataWriter::do_stop(const data_t& /*args*/)
+DataWriter::do_stop(const data_t& /*args*/)
 {
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_stop() method";
   thread_.stop_working_thread();
@@ -85,7 +86,7 @@ FakeDataWriter::do_stop(const data_t& /*args*/)
 }
 
 void
-FakeDataWriter::do_work(std::atomic<bool>& running_flag)
+DataWriter::do_work(std::atomic<bool>& running_flag)
 {
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() method";
   int32_t receivedCount = 0;
@@ -110,7 +111,7 @@ FakeDataWriter::do_work(std::atomic<bool>& running_flag)
   }
 
   std::ostringstream oss_summ;
-  oss_summ << ": Exiting the do_work() method, received Fake trigger record messages for " << receivedCount
+  oss_summ << ": Exiting the do_work() method, received  trigger record messages for " << receivedCount
            << " triggers.";
   ers::info(ProgressUpdate(ERS_HERE, get_name(), oss_summ.str()));
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_work() method";
@@ -119,4 +120,4 @@ FakeDataWriter::do_work(std::atomic<bool>& running_flag)
 } // namespace dfmodules
 } // namespace dunedaq
 
-DEFINE_DUNE_DAQ_MODULE(dunedaq::dfmodules::FakeDataWriter)
+DEFINE_DUNE_DAQ_MODULE(dunedaq::dfmodules::DataWriter)

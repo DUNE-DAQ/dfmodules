@@ -1,13 +1,13 @@
 /**
- * @file FakeDataWriter.hpp
+ * @file DataWriter.hpp
  *
  * This is part of the DUNE DAQ Software Suite, copyright 2020.
  * Licensing/copyright details are in the COPYING file that you should have
  * received with this code.
  */
 
-#ifndef DFMODULES_SRC_FAKEDATAWRITER_HPP_
-#define DFMODULES_SRC_FAKEDATAWRITER_HPP_
+#ifndef DFMODULES_SRC_DATAWRITER_HPP_
+#define DFMODULES_SRC_DATAWRITER_HPP_
 
 #include "dataformats/TriggerRecord.hpp"
 
@@ -23,21 +23,21 @@ namespace dunedaq {
 namespace dfmodules {
 
 /**
- * @brief FakeDataWriter is simply an example
+ * @brief DataWriter is a shell for what we might write for the MiniDAQApp.
  */
-class FakeDataWriter : public dunedaq::appfwk::DAQModule
+class DataWriter : public dunedaq::appfwk::DAQModule
 {
 public:
   /**
-   * @brief FakeDataWriter Constructor
-   * @param name Instance name for this FakeDataWriter instance
+   * @brief DataWriter Constructor
+   * @param name Instance name for this DataWriter instance
    */
-  explicit FakeDataWriter(const std::string& name);
+  explicit DataWriter(const std::string& name);
 
-  FakeDataWriter(const FakeDataWriter&) = delete;            ///< FakeDataWriter is not copy-constructible
-  FakeDataWriter& operator=(const FakeDataWriter&) = delete; ///< FakeDataWriter is not copy-assignable
-  FakeDataWriter(FakeDataWriter&&) = delete;                 ///< FakeDataWriter is not move-constructible
-  FakeDataWriter& operator=(FakeDataWriter&&) = delete;      ///< FakeDataWriter is not move-assignable
+  DataWriter(const DataWriter&) = delete;            ///< DataWriter is not copy-constructible
+  DataWriter& operator=(const DataWriter&) = delete; ///< DataWriter is not copy-assignable
+  DataWriter(DataWriter&&) = delete;                 ///< DataWriter is not move-constructible
+  DataWriter& operator=(DataWriter&&) = delete;      ///< DataWriter is not move-assignable
 
   void init(const data_t&) override;
 
@@ -62,4 +62,4 @@ private:
 } // namespace dfmodules
 } // namespace dunedaq
 
-#endif // DFMODULES_SRC_FAKEDATAWRITER_HPP_
+#endif // DFMODULES_SRC_DATAWRITER_HPP_
