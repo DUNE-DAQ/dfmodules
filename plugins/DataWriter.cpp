@@ -89,14 +89,14 @@ void
 DataWriter::do_work(std::atomic<bool>& running_flag)
 {
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() method";
-  int32_t receivedCount = 0;
+  int32_t received_count = 0;
 
   while (running_flag.load()) {
     std::unique_ptr<dataformats::TriggerRecord> trigRecPtr;
 
     try {
       triggerRecordInputQueue_->pop(trigRecPtr, queueTimeout_);
-      ++receivedCount;
+      ++received_count;
       TLOG(TLVL_WORK_STEPS) << get_name() << ": Popped the TriggerRecord for trigger number "
                             << trigRecPtr->get_trigger_number() << " off the input queue";
     } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
@@ -105,13 +105,20 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
       continue;
     }
 
+    if ((received_count % 3) == 0) {
+      std::ostringstream oss_summ;
+      oss_summ << ": Processing trigger number " << trigRecPtr->get_trigger_number() << ", this is one of "
+               << received_count << " trigger records received so far.";
+      ers::info(ProgressUpdate(ERS_HERE, get_name(), oss_summ.str()));
+    }
+
     // TLOG(TLVL_WORK_STEPS) << get_name() << ": Start of sleep while waiting for run Stop";
     // std::this_thread::sleep_for(std::chrono::milliseconds(sleepMsecWhileRunning_));
     // TLOG(TLVL_WORK_STEPS) << get_name() << ": End of sleep while waiting for run Stop";
   }
 
   std::ostringstream oss_summ;
-  oss_summ << ": Exiting the do_work() method, received  trigger record messages for " << receivedCount << " triggers.";
+  oss_summ << ": Exiting the do_work() method, received trigger record messages for " << received_count << " triggers.";
   ers::info(ProgressUpdate(ERS_HERE, get_name(), oss_summ.str()));
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_work() method";
 }
