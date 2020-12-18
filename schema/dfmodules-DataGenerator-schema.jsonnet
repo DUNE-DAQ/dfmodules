@@ -1,5 +1,5 @@
 local moo = import "moo.jsonnet";
-local ns = "dunedaq.ddpdemo.datatransfermodule";
+local ns = "dunedaq.dfmodules.datagenerator";
 local s = moo.oschema.schema(ns);
 
 local types = {
@@ -33,14 +33,24 @@ local types = {
                 doc="The operation mode that the DataStore should use when organizing the data into files"),
     ], doc="DataStore configuration"),
 
+    ## we need to add type and name for the data store
+
     conf: s.record("Conf", [
+        s.field("geo_location_count", self.count, 4,
+                doc="Number of geographic subdivisions within the detector"),
+        s.field("io_size", self.size, 1048576,
+                doc="Size of data buffer to generate (in bytes)"),
         s.field("sleep_msec_while_running", self.count, 1000,
                 doc="Millisecs to sleep between generating data"),
-        s.field("input_data_store_parameters", self.store,
-                doc="Parameters that configure the DataStore instance from which data is read"),
-        s.field("output_data_store_parameters", self.store,
-                doc="Parameters that configure the DataStore instance into which data is written"),
-    ], doc="DataTransferModule configuration"),
+#        s.field("directory_path", self.dirpath, ".",
+#                doc="Path of directory where files are located"),
+#        s.field("filename_prefix", self.fnprefix, "demo_run20201104",
+#                doc="Filename prefix for the files on disk"),
+#        s.field("mode", self.opmode, "one-fragment-per-file",
+#                doc="The operation mode that the DataStore should use when organizing the data into files"),
+        s.field("data_store_parameters", self.store,
+                doc="Parameters that configure the DataStore instance"),
+    ], doc="DataGenerator configuration"),
 
 };
 

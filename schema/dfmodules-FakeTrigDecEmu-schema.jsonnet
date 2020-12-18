@@ -1,5 +1,5 @@
 local moo = import "moo.jsonnet";
-local ns = "dunedaq.ddpdemo.faketrigdecemu";
+local ns = "dunedaq.dfmodules.faketrigdecemu";
 local s = moo.oschema.schema(ns);
 
 local types = {

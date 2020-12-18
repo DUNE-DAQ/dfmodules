@@ -1,8 +1,8 @@
-// Example commands for a ddpdemo job.
+// Example commands for a dfmodules job.
 //
 local moo = import "moo.jsonnet";
 local cmd = import "appfwk-cmd-make.jsonnet";
-local datacombiner = import "ddpdemo-DataCombiner-make.jsonnet";
+local datacombiner = import "dfmodules-DataCombiner-make.jsonnet";
 
 [
     cmd.init([], [cmd.mspec("dataxfer", "DataTransferModule")]) { waitms: 1000 },
