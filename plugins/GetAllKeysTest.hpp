@@ -9,10 +9,10 @@
  * received with this code.
  */
 
-#ifndef DDPDEMO_SRC_GETALLKEYSTEST_HPP_
-#define DDPDEMO_SRC_GETALLKEYSTEST_HPP_
+#ifndef DFMODULES_SRC_GETALLKEYSTEST_HPP_
+#define DFMODULES_SRC_GETALLKEYSTEST_HPP_
 
-#include "ddpdemo/DataStore.hpp"
+#include "dfmodules/DataStore.hpp"
 
 #include <appfwk/DAQModule.hpp>
 #include <appfwk/ThreadHelper.hpp>
@@ -23,7 +23,7 @@
 #include <vector>
 
 namespace dunedaq {
-namespace ddpdemo {
+namespace dfmodules {
 
 /**
  * @brief GetAllKeysTest creates fake events writes
@@ -65,9 +65,9 @@ private:
   // Workers
   std::unique_ptr<DataStore> dataStore_;
 };
-} // namespace ddpdemo
+} // namespace dfmodules
 
-ERS_DECLARE_ISSUE_BASE(ddpdemo,
+ERS_DECLARE_ISSUE_BASE(dfmodules,
                        ProgressUpdate,
                        appfwk::GeneralDAQModuleIssue,
                        message,
@@ -76,4 +76,4 @@ ERS_DECLARE_ISSUE_BASE(ddpdemo,
 
 } // namespace dunedaq
 
-#endif // DDPDEMO_SRC_GETALLKEYSTEST_HPP_
+#endif // DFMODULES_SRC_GETALLKEYSTEST_HPP_

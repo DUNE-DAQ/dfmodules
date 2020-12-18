@@ -9,8 +9,8 @@
  * received with this code.
  */
 
-#ifndef DDPDEMO_SRC_COMMONISSUES_HPP_
-#define DDPDEMO_SRC_COMMONISSUES_HPP_
+#ifndef DFMODULES_SRC_COMMONISSUES_HPP_
+#define DFMODULES_SRC_COMMONISSUES_HPP_
 
 #include "appfwk/DAQModule.hpp"
 #include "ers/Issue.h"
@@ -19,14 +19,14 @@
 
 namespace dunedaq {
 
-ERS_DECLARE_ISSUE_BASE(ddpdemo,
+ERS_DECLARE_ISSUE_BASE(dfmodules,
                        ProgressUpdate,
                        appfwk::GeneralDAQModuleIssue,
                        message,
                        ((std::string)name),
                        ((std::string)message))
 
-ERS_DECLARE_ISSUE_BASE(ddpdemo,
+ERS_DECLARE_ISSUE_BASE(dfmodules,
                        InvalidQueueFatalError,
                        appfwk::GeneralDAQModuleIssue,
                        "The " << queueType << " queue was not successfully created.",
@@ -35,4 +35,4 @@ ERS_DECLARE_ISSUE_BASE(ddpdemo,
 
 } // namespace dunedaq
 
-#endif // DDPDEMO_SRC_COMMONISSUES_HPP_
+#endif // DFMODULES_SRC_COMMONISSUES_HPP_

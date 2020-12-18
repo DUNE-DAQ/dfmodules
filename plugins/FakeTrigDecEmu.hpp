@@ -6,8 +6,8 @@
  * received with this code.
  */
 
-#ifndef DDPDEMO_SRC_FAKETRIGDECEMU_HPP_
-#define DDPDEMO_SRC_FAKETRIGDECEMU_HPP_
+#ifndef DFMODULES_SRC_FAKETRIGDECEMU_HPP_
+#define DFMODULES_SRC_FAKETRIGDECEMU_HPP_
 
 #include "dfmessages/TriggerDecision.hpp"
 #include "dfmessages/TriggerInhibit.hpp"
@@ -22,7 +22,7 @@
 #include <vector>
 
 namespace dunedaq {
-namespace ddpdemo {
+namespace dfmodules {
 
 /**
  * @brief FakeTrigDecEmu is simply an example
@@ -63,7 +63,7 @@ private:
   using triginhsource_t = dunedaq::appfwk::DAQSource<dfmessages::TriggerInhibit>;
   std::unique_ptr<triginhsource_t> triggerInhibitInputQueue_;
 };
-} // namespace ddpdemo
+} // namespace dfmodules
 } // namespace dunedaq
 
-#endif // DDPDEMO_SRC_FAKETRIGDECEMU_HPP_
+#endif // DFMODULES_SRC_FAKETRIGDECEMU_HPP_

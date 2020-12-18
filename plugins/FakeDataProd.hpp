@@ -6,8 +6,8 @@
  * received with this code.
  */
 
-#ifndef DDPDEMO_SRC_FAKEDATAPROD_HPP_
-#define DDPDEMO_SRC_FAKEDATAPROD_HPP_
+#ifndef DFMODULES_SRC_FAKEDATAPROD_HPP_
+#define DFMODULES_SRC_FAKEDATAPROD_HPP_
 
 #include "dataformats/Fragment.hpp"
 #include "dfmessages/DataRequest.hpp"
@@ -22,7 +22,7 @@
 #include <vector>
 
 namespace dunedaq {
-namespace ddpdemo {
+namespace dfmodules {
 
 /**
  * @brief FakeDataProd is simply an example
@@ -63,7 +63,7 @@ private:
   using datafragsink_t = dunedaq::appfwk::DAQSink<std::unique_ptr<dataformats::Fragment>>;
   std::unique_ptr<datafragsink_t> dataFragmentOutputQueue_;
 };
-} // namespace ddpdemo
+} // namespace dfmodules
 } // namespace dunedaq
 
-#endif // DDPDEMO_SRC_FAKEDATAPROD_HPP_
+#endif // DFMODULES_SRC_FAKEDATAPROD_HPP_

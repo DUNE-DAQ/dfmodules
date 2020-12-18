@@ -1,5 +1,5 @@
-#ifndef DDPDEMO_SRC_HDF5DATASTORE_HPP_
-#define DDPDEMO_SRC_HDF5DATASTORE_HPP_
+#ifndef DFMODULES_SRC_HDF5DATASTORE_HPP_
+#define DFMODULES_SRC_HDF5DATASTORE_HPP_
 
 /**
  * @file HDF5DataStore.hpp
@@ -12,7 +12,7 @@
  * received with this code.
  */
 
-#include "ddpdemo/DataStore.hpp"
+#include "dfmodules/DataStore.hpp"
 #include "HDF5FileUtils.hpp"
 #include "HDF5KeyTranslator.hpp"
 
@@ -30,7 +30,7 @@
 
 namespace dunedaq {
 
-ERS_DECLARE_ISSUE_BASE(ddpdemo,
+ERS_DECLARE_ISSUE_BASE(dfmodules,
                        InvalidOperationMode,
                        appfwk::GeneralDAQModuleIssue,
                        "Selected opearation mode \"" << selected_operation
@@ -38,7 +38,7 @@ ERS_DECLARE_ISSUE_BASE(ddpdemo,
                        ((std::string)name),
                        ((std::string)selected_operation))
 
-ERS_DECLARE_ISSUE_BASE(ddpdemo,
+ERS_DECLARE_ISSUE_BASE(dfmodules,
                        InvalidHDF5Group,
                        appfwk::GeneralDAQModuleIssue,
                        "The HDF5 Group associated with name \"" << groupName << "\" is invalid. (file = " << filename
@@ -46,7 +46,7 @@ ERS_DECLARE_ISSUE_BASE(ddpdemo,
                        ((std::string)name),
                        ((std::string)groupName)((std::string)filename))
 
-ERS_DECLARE_ISSUE_BASE(ddpdemo,
+ERS_DECLARE_ISSUE_BASE(dfmodules,
                        InvalidHDF5Dataset,
                        appfwk::GeneralDAQModuleIssue,
                        "The HDF5 Dataset associated with name \"" << dataSet << "\" is invalid. (file = " << filename
@@ -54,7 +54,7 @@ ERS_DECLARE_ISSUE_BASE(ddpdemo,
                        ((std::string)name),
                        ((std::string)dataSet)((std::string)filename))
 
-namespace ddpdemo {
+namespace dfmodules {
 
 /**
  * @brief HDF5DataStore creates an HDF5 instance
@@ -285,10 +285,10 @@ private:
   }
 };
 
-} // namespace ddpdemo
+} // namespace dfmodules
 } // namespace dunedaq
 
-#endif // DDPDEMO_SRC_HDF5DATASTORE_HPP_
+#endif // DFMODULES_SRC_HDF5DATASTORE_HPP_
 
 // Local Variables:
 // c-basic-offset: 2

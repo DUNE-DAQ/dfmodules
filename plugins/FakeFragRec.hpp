@@ -6,8 +6,8 @@
  * received with this code.
  */
 
-#ifndef DDPDEMO_SRC_FAKEFRAGREC_HPP_
-#define DDPDEMO_SRC_FAKEFRAGREC_HPP_
+#ifndef DFMODULES_SRC_FAKEFRAGREC_HPP_
+#define DFMODULES_SRC_FAKEFRAGREC_HPP_
 
 #include "dataformats/Fragment.hpp"
 #include "dfmessages/TriggerDecision.hpp"
@@ -23,7 +23,7 @@
 #include <vector>
 
 namespace dunedaq {
-namespace ddpdemo {
+namespace dfmodules {
 
 /**
  * @brief FakeFragRec is simply an example
@@ -66,7 +66,7 @@ private:
   using trigrecsink_t = dunedaq::appfwk::DAQSink<std::unique_ptr<dataformats::TriggerRecord>>;
   std::unique_ptr<trigrecsink_t> triggerRecordOutputQueue_;
 };
-} // namespace ddpdemo
+} // namespace dfmodules
 } // namespace dunedaq
 
-#endif // DDPDEMO_SRC_FAKEFRAGREC_HPP_
+#endif // DFMODULES_SRC_FAKEFRAGREC_HPP_

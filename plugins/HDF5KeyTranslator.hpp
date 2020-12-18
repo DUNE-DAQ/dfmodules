@@ -1,5 +1,5 @@
-#ifndef DDPDEMO_SRC_HDF5KEYTRANSLATOR_HPP_
-#define DDPDEMO_SRC_HDF5KEYTRANSLATOR_HPP_
+#ifndef DFMODULES_SRC_HDF5KEYTRANSLATOR_HPP_
+#define DFMODULES_SRC_HDF5KEYTRANSLATOR_HPP_
 /**
  * @file HDF5KeyTranslator.hpp
  *
@@ -11,7 +11,7 @@
  * received with this code.
  */
 
-#include "ddpdemo/StorageKey.hpp"
+#include "dfmodules/StorageKey.hpp"
 
 #include <boost/algorithm/string.hpp>
 
@@ -21,7 +21,7 @@
 #include <vector>
 
 namespace dunedaq {
-namespace ddpdemo {
+namespace dfmodules {
 
 class HDF5KeyTranslator
 {
@@ -123,7 +123,7 @@ private:
   static const int CURRENT_VERSION = 1;
 };
 
-} // namespace ddpdemo
+} // namespace dfmodules
 } // namespace dunedaq
 
-#endif // DDPDEMO_SRC_HDF5KEYTRANSLATOR_HPP_
+#endif // DFMODULES_SRC_HDF5KEYTRANSLATOR_HPP_

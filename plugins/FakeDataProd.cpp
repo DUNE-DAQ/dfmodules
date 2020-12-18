@@ -10,7 +10,7 @@
 #include "CommonIssues.hpp"
 
 #include "appfwk/DAQModuleHelper.hpp"
-//#include "ddpdemo/fakedataprod/Nljs.hpp"
+//#include "dfmodules/fakedataprod/Nljs.hpp"
 
 #include "TRACE/trace.h"
 #include "ers/ers.h"
@@ -29,7 +29,7 @@
 #define TLVL_WORK_STEPS 15         // NOLINT
 
 namespace dunedaq {
-namespace ddpdemo {
+namespace dfmodules {
 
 FakeDataProd::FakeDataProd(const std::string& name)
   : dunedaq::appfwk::DAQModule(name)
@@ -143,7 +143,7 @@ FakeDataProd::do_work(std::atomic<bool>& running_flag)
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_work() method";
 }
 
-} // namespace ddpdemo
+} // namespace dfmodules
 } // namespace dunedaq
 
-DEFINE_DUNE_DAQ_MODULE(dunedaq::ddpdemo::FakeDataProd)
+DEFINE_DUNE_DAQ_MODULE(dunedaq::dfmodules::FakeDataProd)

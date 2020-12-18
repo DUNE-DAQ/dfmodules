@@ -1,4 +1,4 @@
 #include "TrashCanDataStore.hpp"
 
-DEFINE_DUNE_DATA_STORE(dunedaq::ddpdemo::TrashCanDataStore)
+DEFINE_DUNE_DATA_STORE(dunedaq::dfmodules::TrashCanDataStore)
 

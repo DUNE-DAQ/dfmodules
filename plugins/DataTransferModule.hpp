@@ -9,10 +9,10 @@
  * received with this code.
  */
 
-#ifndef DDPDEMO_SRC_DATATRANSFERMODULE_HPP_
-#define DDPDEMO_SRC_DATATRANSFERMODULE_HPP_
+#ifndef DFMODULES_SRC_DATATRANSFERMODULE_HPP_
+#define DFMODULES_SRC_DATATRANSFERMODULE_HPP_
 
-#include "ddpdemo/DataStore.hpp"
+#include "dfmodules/DataStore.hpp"
 
 #include <appfwk/DAQModule.hpp>
 #include <appfwk/ThreadHelper.hpp>
@@ -23,7 +23,7 @@
 #include <vector>
 
 namespace dunedaq {
-namespace ddpdemo {
+namespace dfmodules {
 
 /**
  * @brief DataTransferModule transfers data from one DataStore to another.
@@ -65,16 +65,16 @@ private:
   std::unique_ptr<DataStore> inputDataStore_;
   std::unique_ptr<DataStore> outputDataStore_;
 };
-} // namespace ddpdemo
+} // namespace dfmodules
 
-ERS_DECLARE_ISSUE_BASE(ddpdemo,
+ERS_DECLARE_ISSUE_BASE(dfmodules,
                        ProgressUpdate,
                        appfwk::GeneralDAQModuleIssue,
                        message,
                        ((std::string)name),
                        ((std::string)message))
 
-ERS_DECLARE_ISSUE_BASE(ddpdemo,
+ERS_DECLARE_ISSUE_BASE(dfmodules,
                        InvalidDataStoreError,
                        appfwk::GeneralDAQModuleIssue,
                        "A valid dataStore instance is not available for "
@@ -86,4 +86,4 @@ ERS_DECLARE_ISSUE_BASE(ddpdemo,
 
 } // namespace dunedaq
 
-#endif // DDPDEMO_SRC_DATATRANSFERMODULE_HPP_
+#endif // DFMODULES_SRC_DATATRANSFERMODULE_HPP_

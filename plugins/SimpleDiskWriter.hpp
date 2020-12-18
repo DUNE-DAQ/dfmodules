@@ -9,10 +9,10 @@
  * received with this code.
  */
 
-#ifndef DDPDEMO_SRC_SIMPLEDISKWRITER_HPP_
-#define DDPDEMO_SRC_SIMPLEDISKWRITER_HPP_
+#ifndef DFMODULES_SRC_SIMPLEDISKWRITER_HPP_
+#define DFMODULES_SRC_SIMPLEDISKWRITER_HPP_
 
-#include "ddpdemo/DataStore.hpp"
+#include "dfmodules/DataStore.hpp"
 
 #include <appfwk/DAQModule.hpp>
 #include <appfwk/ThreadHelper.hpp>
@@ -23,7 +23,7 @@
 #include <vector>
 
 namespace dunedaq {
-namespace ddpdemo {
+namespace dfmodules {
 
 /**
  * @brief SimpleDiskWriter creates fake events writes
@@ -70,16 +70,16 @@ private:
   // Workers
   std::unique_ptr<DataStore> dataWriter_;
 };
-} // namespace ddpdemo
+} // namespace dfmodules
 
-ERS_DECLARE_ISSUE_BASE(ddpdemo,
+ERS_DECLARE_ISSUE_BASE(dfmodules,
                        ProgressUpdate,
                        appfwk::GeneralDAQModuleIssue,
                        message,
                        ((std::string)name),
                        ((std::string)message))
 
-ERS_DECLARE_ISSUE_BASE(ddpdemo,
+ERS_DECLARE_ISSUE_BASE(dfmodules,
                        InvalidDataWriterError,
                        appfwk::GeneralDAQModuleIssue,
                        "A valid dataWriter instance is not available so it will not be possible to write data. A "
@@ -89,4 +89,4 @@ ERS_DECLARE_ISSUE_BASE(ddpdemo,
 
 } // namespace dunedaq
 
-#endif // DDPDEMO_SRC_SIMPLEDISKWRITER_HPP_
+#endif // DFMODULES_SRC_SIMPLEDISKWRITER_HPP_

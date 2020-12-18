@@ -7,8 +7,8 @@
  */
 
 #include "SimpleDiskReader.hpp"
-#include "ddpdemo/DataStore.hpp"
-#include "ddpdemo/KeyedDataBlock.hpp"
+#include "dfmodules/DataStore.hpp"
+#include "dfmodules/KeyedDataBlock.hpp"
 
 #include <TRACE/trace.h>
 #include <ers/ers.h>
@@ -27,7 +27,7 @@
 #define TLVL_WORK_STEPS 15            // NOLINT
 
 namespace dunedaq {
-namespace ddpdemo {
+namespace dfmodules {
 
 SimpleDiskReader::SimpleDiskReader(const std::string& name)
   : dunedaq::appfwk::DAQModule(name)
@@ -144,7 +144,7 @@ SimpleDiskReader::do_work(std::atomic<bool>& running_flag)
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_work() method";
 }
 
-} // namespace ddpdemo
+} // namespace dfmodules
 } // namespace dunedaq
 
-DEFINE_DUNE_DAQ_MODULE(dunedaq::ddpdemo::SimpleDiskReader)
+DEFINE_DUNE_DAQ_MODULE(dunedaq::dfmodules::SimpleDiskReader)

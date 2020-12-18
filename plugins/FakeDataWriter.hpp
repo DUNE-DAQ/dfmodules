@@ -6,8 +6,8 @@
  * received with this code.
  */
 
-#ifndef DDPDEMO_SRC_FAKEDATAWRITER_HPP_
-#define DDPDEMO_SRC_FAKEDATAWRITER_HPP_
+#ifndef DFMODULES_SRC_FAKEDATAWRITER_HPP_
+#define DFMODULES_SRC_FAKEDATAWRITER_HPP_
 
 #include "dataformats/TriggerRecord.hpp"
 
@@ -20,7 +20,7 @@
 #include <vector>
 
 namespace dunedaq {
-namespace ddpdemo {
+namespace dfmodules {
 
 /**
  * @brief FakeDataWriter is simply an example
@@ -59,7 +59,7 @@ private:
   using trigrecsource_t = dunedaq::appfwk::DAQSource<std::unique_ptr<dataformats::TriggerRecord>>;
   std::unique_ptr<trigrecsource_t> triggerRecordInputQueue_;
 };
-} // namespace ddpdemo
+} // namespace dfmodules
 } // namespace dunedaq
 
-#endif // DDPDEMO_SRC_FAKEDATAWRITER_HPP_
+#endif // DFMODULES_SRC_FAKEDATAWRITER_HPP_

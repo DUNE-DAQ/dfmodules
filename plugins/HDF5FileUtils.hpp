@@ -1,5 +1,5 @@
-#ifndef DDPDEMO_SRC_HDF5FILEUTILS_HPP_
-#define DDPDEMO_SRC_HDF5FILEUTILS_HPP_
+#ifndef DFMODULES_SRC_HDF5FILEUTILS_HPP_
+#define DFMODULES_SRC_HDF5FILEUTILS_HPP_
 /**
  * @file HDF5FileUtils.hpp
  *
@@ -19,13 +19,13 @@
 #include <string>
 #include <vector>
 
-//#include "ddpdemo/StorageKey.hpp"
+//#include "dfmodules/StorageKey.hpp"
 //#include <boost/algorithm/string.hpp>
 //#include <iomanip>
 //#include <sstream>
 
 namespace dunedaq {
-namespace ddpdemo {
+namespace dfmodules {
 
 namespace HDF5FileUtils {
 
@@ -96,7 +96,7 @@ getFilesMatchingPattern(const std::string& directoryPath, const std::string& fil
 
 } // namespace HDF5FileUtils
 
-} // namespace ddpdemo
+} // namespace dfmodules
 } // namespace dunedaq
 
-#endif // DDPDEMO_SRC_HDF5FILEUTILS_HPP_
+#endif // DFMODULES_SRC_HDF5FILEUTILS_HPP_

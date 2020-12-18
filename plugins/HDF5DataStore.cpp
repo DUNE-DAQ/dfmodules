@@ -1,3 +1,3 @@
 #include "HDF5DataStore.hpp"
 
-DEFINE_DUNE_DATA_STORE(dunedaq::ddpdemo::HDF5DataStore)
+DEFINE_DUNE_DATA_STORE(dunedaq::dfmodules::HDF5DataStore)

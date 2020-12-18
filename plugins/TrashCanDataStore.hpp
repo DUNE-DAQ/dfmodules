@@ -1,5 +1,5 @@
-#ifndef DDPDEMO_SRC_TRASHCANDATASTORE_HPP_
-#define DDPDEMO_SRC_TRASHCANDATASTORE_HPP_
+#ifndef DFMODULES_SRC_TRASHCANDATASTORE_HPP_
+#define DFMODULES_SRC_TRASHCANDATASTORE_HPP_
 
 /**
  * @file TrashCanDataStore.hpp
@@ -13,7 +13,7 @@
  * received with this code.
  */
 
-#include "ddpdemo/DataStore.hpp"
+#include "dfmodules/DataStore.hpp"
 
 #include <ers/Issue.h>
 #include <TRACE/trace.h>
@@ -24,7 +24,7 @@
 #include <sstream>
 
 namespace dunedaq {
-namespace ddpdemo {
+namespace dfmodules {
 
 class TrashCanDataStore : public DataStore
 {
@@ -70,10 +70,10 @@ private:
   TrashCanDataStore& operator=(TrashCanDataStore&&) = delete;
 };
 
-} // namespace ddpdemo
+} // namespace dfmodules
 } // namespace dunedaq
 
-#endif // DDPDEMO_SRC_TRASHCANDATASTORE_HPP_
+#endif // DFMODULES_SRC_TRASHCANDATASTORE_HPP_
 
 // Local Variables:
 // c-basic-offset: 2
