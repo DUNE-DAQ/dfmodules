@@ -64,11 +64,11 @@ public:
 
     // first, we take care of the trigger number
     std::ostringstream triggerNumberString;
-    triggerNumberString << std::setw(TRIGGERNUMBER_DIGITS) << std::setfill('0') << key.getEventID();
+    triggerNumberString << std::setw(TRIGGERNUMBER_DIGITS) << std::setfill('0') << key.getTriggerNumber();
     elementList.push_back(triggerNumberString.str());
 
     // Add detector type
-    //elementList.push_back(key.getDetectorType);
+    elementList.push_back(key.getDetectorType());
 
     // next, we translate the APA number location
     std::ostringstream apaNumberString;

@@ -55,6 +55,7 @@ deleteFilesMatchingPattern(const std::string& path, const std::string& pattern)
 
 BOOST_AUTO_TEST_SUITE(HDF5Write_test)
 
+/*
 BOOST_AUTO_TEST_CASE(WriteFragmentFiles)
 {
   std::string filePath(std::filesystem::temp_directory_path());
@@ -141,21 +142,28 @@ BOOST_AUTO_TEST_CASE(WriteEventFiles)
   fileList = deleteFilesMatchingPattern(filePath, deletePattern);
   BOOST_REQUIRE_EQUAL(fileList.size(), EVENT_COUNT);
 }
+*/
 
 BOOST_AUTO_TEST_CASE(WriteOneFile)
 {
   std::string filePath(std::filesystem::temp_directory_path());
   std::string filePrefix = "demo" + std::to_string(getpid());
-  const int EVENT_COUNT = 7;
-  const int GEOLOC_COUNT = 4;
-  const int DUMMYDATA_SIZE = 100;
 
+  const int DUMMYDATA_SIZE = 7;  
+  const int RUN_NUMBER = 52;
+  const int TRIGGER_COUNT = 10;
+  const std::string DETECTOR = "FELIX";
+  const int APA_COUNT = 5;
+  const int LINK_COUNT = 10;
+ 
   // delete any pre-existing files so that we start with a clean slate
   std::string deletePattern = filePrefix + ".*.hdf5";
   deleteFilesMatchingPattern(filePath, deletePattern);
 
+  std::cout << "Current path is " << std::filesystem::current_path() << '\n';
+
   // create the DataStore
-    nlohmann::json conf ;
+  nlohmann::json conf ;
   conf["name"] = "tempWriter" ;
   conf["filename_prefix"] = filePrefix ; 
   conf["directory_path"] = filePath ; 
@@ -164,15 +172,17 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
 
   // write several events, each with several fragments
   char dummyData[DUMMYDATA_SIZE];
-  for (int eventID = 1; eventID <= EVENT_COUNT; ++eventID) {
-    for (int geoLoc = 0; geoLoc < GEOLOC_COUNT; ++geoLoc) {
-      StorageKey key(eventID, StorageKey::INVALID_DETECTORID, geoLoc);
-      KeyedDataBlock dataBlock(key);
-      dataBlock.unowned_data_start = static_cast<void*>(&dummyData[0]);
-      dataBlock.data_size = DUMMYDATA_SIZE;
-      dsPtr->write(dataBlock);
-    }
-  }
+  for (int triggerNumber = 1; triggerNumber <= TRIGGER_COUNT; ++triggerNumber) {
+    for (int apaNumber = 1; apaNumber <= APA_COUNT; ++apaNumber) {
+      for (int linkNumber = 1; linkNumber <= LINK_COUNT; ++linkNumber) {
+        StorageKey key(RUN_NUMBER, triggerNumber, DETECTOR, apaNumber, linkNumber);
+        KeyedDataBlock dataBlock(key);
+        dataBlock.unowned_data_start = static_cast<void*>(&dummyData[0]);
+        dataBlock.data_size = DUMMYDATA_SIZE;
+        dsPtr->write(dataBlock);
+      } //link number
+    } // apa number
+  } // trigger number
   dsPtr.reset(); // explicit destruction
 
   // check that the expected number of files was created
@@ -181,8 +191,8 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
   BOOST_REQUIRE_EQUAL(fileList.size(), 1);
 
   // clean up the files that were created
-  fileList = deleteFilesMatchingPattern(filePath, deletePattern);
-  BOOST_REQUIRE_EQUAL(fileList.size(), 1);
+  //fileList = deleteFilesMatchingPattern(filePath, deletePattern);
+  //BOOST_REQUIRE_EQUAL(fileList.size(), 1);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

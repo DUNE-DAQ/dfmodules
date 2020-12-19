@@ -67,9 +67,9 @@ public:
   int getLinkNumber() const;
 
   //AAA: TODO delete
-  int getEventID() const;
-  std::string getDetectorID() const;
-  int getGeoLocation() const;
+  //int getEventID() const;
+  //std::string getDetectorID() const;
+  //int getGeoLocation() const;
 
 
 
