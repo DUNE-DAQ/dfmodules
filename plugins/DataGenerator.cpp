@@ -116,7 +116,7 @@ DataGenerator::do_work(std::atomic<bool>& running_flag)
   while (running_flag.load()) {
     for (size_t geoID = 0; geoID < nGeoLoc_; ++geoID) {
       // AAA: Component ID is fixed, to be changed later
-      StorageKey dataKey(eventID, "FELIX", geoID);
+      StorageKey dataKey(eventID, eventID, "FELIX", geoID, geoID);
       KeyedDataBlock dataBlock(dataKey);
       dataBlock.data_size = io_size_;
 

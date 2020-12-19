@@ -203,7 +203,7 @@ public:
       TLOG(TLVL_DEBUG) << get_name() << ": Path list has element count: " << pathList.size();
 
       for (auto& path : pathList) {
-        StorageKey thisKey(0, "", 0);
+        StorageKey thisKey(0, 0, "", 0, 0);
         thisKey = HDF5KeyTranslator::getKeyFromString(path);
         keyList.push_back(thisKey);
       }
