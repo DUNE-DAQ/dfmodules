@@ -115,10 +115,12 @@ FakeFragRec::do_work(std::atomic<bool>& running_flag)
     try {
       triggerDecisionInputQueue_->pop(trigDecision, queueTimeout_);
       ++receivedTriggerCount;
+      TLOG(TLVL_WORK_STEPS) << get_name() << ": Popped the TriggerDecision for trigger number "
+                            << trigDecision.trigger_number << " off the input queue";
     } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
       // it is perfectly reasonable that there might be no data in the queue
       // some fraction of the times that we check, so we just continue on and try again
-      // continue;
+      continue;
     }
 
     // 19-Dec-2020, KAB: implemented a simple-minded approach to the Fragments.
