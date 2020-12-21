@@ -25,6 +25,8 @@ daq_add_plugin( FakeDataProd       duneDAQModule LINK_LIBRARIES dfmodules )
 daq_add_plugin( FakeFragRec        duneDAQModule LINK_LIBRARIES dfmodules )
 daq_add_plugin( FakeReqGen         duneDAQModule LINK_LIBRARIES dfmodules )
 daq_add_plugin( FakeTrigDecEmu     duneDAQModule SCHEMA LINK_LIBRARIES dfmodules )
+daq_add_plugin( TriggerReceiver    duneDAQModule LINK_LIBRARIES dfmodules dfmessages )
+
 
 ##############################################################################
 daq_add_unit_test( StorageKey_test          LINK_LIBRARIES dfmodules )
