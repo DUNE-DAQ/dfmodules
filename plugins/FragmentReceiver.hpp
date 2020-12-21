@@ -11,6 +11,8 @@
 
 #include "dataformats/Fragment.hpp"
 #include "dfmessages/DataRequest.hpp"
+#include "dfmessages/Types.hpp"
+
 
 #include "appfwk/DAQModule.hpp"
 #include "appfwk/DAQSink.hpp"
@@ -23,6 +25,10 @@
 
 namespace dunedaq {
 namespace dfmodules {
+
+
+  
+
 
 /**
  * @brief FragmentReceiver is the Module that collects Fragment from the Upstream DAQ Modules, it checks 
@@ -60,11 +66,43 @@ private:
   std::chrono::milliseconds queueTimeout_;
   
 
-  // Queue(s)
-  // using datareqsource_t = dunedaq::appfwk::DAQSource<dfmessages::DataRequest>;
-  // std::unique_ptr<datareqsource_t> dataRequestInputQueue_;
-  // using datafragsink_t = dunedaq::appfwk::DAQSink<std::unique_ptr<dataformats::Fragment>>;
-  // std::unique_ptr<datafragsink_t> dataFragmentOutputQueue_;
+  // Input Queues
+  using trigger_decision_source_t = dunedaq::appfwk::DAQSource<dfmessages::TriggerDecision> ;
+  using fragment_source_t = dunedaq::appfwk::DAQSource<dataformats::Fragment> ;
+
+  std::vector<fragment_source_t> frag_queues_ ;
+  
+  std::string trigger_decision_source_name_ ;
+  std::vector<std::string> fragment_source_names_ ; 
+  
+
+  // Output queues
+  using trigger_record_sink_t = appfwk::DAQSink<dataformats::Fragment> ;
+  
+  std::string trigger_record_sink_name_ ;
+
+  // bookeeping
+  struct TriggerId {
+    
+    TriggerId( const dfmessages::TriggerDecision & td ) : trigger_number(td.trigger_number), 
+							  run_number(td.run_number) { ; } 
+    TriggerId( const dfmessages::Fragment & f ) : trigger_number(f.get_trigger_number()), 
+						  run_number(f.get_run_number()) { ; } 
+
+
+    trigger_number_t trigger_number;
+    run_number_t run_number;
+
+    bool operator < ( const TriggerId & other ) noexecpt { 
+      return  trigger_number != other.trigger_number ? 
+	trigger_number < other.trigger_number : 
+	run_number < other.run_number ; 
+    }
+  };
+
+  std::map<TriggerId, std::vector<dataformats::Fragment>> fragments_ ; // shall we store by pointer? 
+  std::map<TriggerId, dfmessages::TriggerDecision> trigger_decisions_ ;
+
 };
 } // namespace dfmodules
 } // namespace dunedaq
