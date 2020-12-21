@@ -115,41 +115,52 @@ FakeFragRec::do_work(std::atomic<bool>& running_flag)
     try {
       triggerDecisionInputQueue_->pop(trigDecision, queueTimeout_);
       ++receivedTriggerCount;
-
-      std::unique_ptr<dataformats::TriggerRecord> trigRecPtr(new dataformats::TriggerRecord());
-      trigRecPtr->set_trigger_number(trigDecision.trigger_number);
-      bool wasSentSuccessfully = false;
-      while (!wasSentSuccessfully && running_flag.load()) {
-        TLOG(TLVL_WORK_STEPS) << get_name() << ": Pushing the Trigger Record for trigger number "
-                              << trigRecPtr->get_trigger_number() << " onto the output queue";
-        try {
-          triggerRecordOutputQueue_->push(std::move(trigRecPtr), queueTimeout_);
-          wasSentSuccessfully = true;
-        } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
-          std::ostringstream oss_warn;
-          oss_warn << "push to output queue \"" << triggerRecordOutputQueue_->get_name() << "\"";
-          ers::warning(dunedaq::appfwk::QueueTimeoutExpired(
-            ERS_HERE,
-            get_name(),
-            oss_warn.str(),
-            std::chrono::duration_cast<std::chrono::milliseconds>(queueTimeout_).count()));
-        }
-      }
     } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
       // it is perfectly reasonable that there might be no data in the queue
       // some fraction of the times that we check, so we just continue on and try again
       // continue;
     }
 
+    // 19-Dec-2020, KAB: implemented a simple-minded approach to the Fragments.
+    // We'll say that once we receive a TriggerDecision message, we'll wait for one
+    // fragment from each of the Fragment Producers, and add those Fragments to the
+    // a TriggerRecord that we create.  This is certainly too simple-minded for any
+    // real implementation, but this is just a Fake...
+
+    std::vector<dataformats::Fragment*> frag_ptr_vector;
     for (auto& dataFragQueue : dataFragmentInputQueues_) {
-      std::unique_ptr<dataformats::Fragment> dataFragPtr;
+      bool got_fragment = false;
+      while (!got_fragment) {
+        try {
+          std::unique_ptr<dataformats::Fragment> dataFragPtr;
+          dataFragQueue->pop(dataFragPtr, queueTimeout_);
+          got_fragment = true;
+          ++receivedFragmentCount;
+          frag_ptr_vector.emplace_back(dataFragPtr.release());
+        } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
+          // simply try again (forever); this is clearly a bad idea...
+        }
+      }
+    }
+
+    std::unique_ptr<dataformats::TriggerRecord> trigRecPtr(new dataformats::TriggerRecord());
+    trigRecPtr->set_trigger_number(trigDecision.trigger_number);
+    trigRecPtr->set_fragments(frag_ptr_vector);
+    bool wasSentSuccessfully = false;
+    while (!wasSentSuccessfully && running_flag.load()) {
+      TLOG(TLVL_WORK_STEPS) << get_name() << ": Pushing the Trigger Record for trigger number "
+                            << trigRecPtr->get_trigger_number() << " onto the output queue";
       try {
-        dataFragQueue->pop(dataFragPtr, queueTimeout_);
-        ++receivedFragmentCount;
+        triggerRecordOutputQueue_->push(std::move(trigRecPtr), queueTimeout_);
+        wasSentSuccessfully = true;
       } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
-        // it is perfectly reasonable that there might be no data in the queue
-        // some fraction of the times that we check, so we just continue on and try again
-        // continue;
+        std::ostringstream oss_warn;
+        oss_warn << "push to output queue \"" << triggerRecordOutputQueue_->get_name() << "\"";
+        ers::warning(dunedaq::appfwk::QueueTimeoutExpired(
+          ERS_HERE,
+          get_name(),
+          oss_warn.str(),
+          std::chrono::duration_cast<std::chrono::milliseconds>(queueTimeout_).count()));
       }
     }
 

@@ -8,9 +8,10 @@
 
 #include "DataWriter.hpp"
 #include "CommonIssues.hpp"
+#include "dfmodules/datawriter/Nljs.hpp"
 
 #include "appfwk/DAQModuleHelper.hpp"
-#include "dfmodules/datawriter/Nljs.hpp"
+#include "dataformats/Fragment.hpp"
 
 #include "TRACE/trace.h"
 #include "ers/ers.h"
@@ -24,10 +25,11 @@
 /**
  * @brief Name used by TRACE TLOG calls from this source file
  */
-#define TRACE_NAME "DataWriter"    // NOLINT
-#define TLVL_ENTER_EXIT_METHODS 10 // NOLINT
-#define TLVL_CONFIG 12             // NOLINT
-#define TLVL_WORK_STEPS 15         // NOLINT
+#define TRACE_NAME "DataWriter"      // NOLINT
+#define TLVL_ENTER_EXIT_METHODS 10   // NOLINT
+#define TLVL_CONFIG 12               // NOLINT
+#define TLVL_WORK_STEPS 15           // NOLINT
+#define TLVL_FRAGMENT_HEADER_DUMP 27 // NOLINT
 
 namespace dunedaq {
 namespace dfmodules {
@@ -105,11 +107,28 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
       continue;
     }
 
+    std::vector<dataformats::Fragment*> frag_vec = trigRecPtr->get_fragments();
+    for (const auto& frag_ptr : frag_vec) {
+      TLOG(TLVL_FRAGMENT_HEADER_DUMP) << get_name() << ": Memory contents for the Fragment from link "
+                                      << frag_ptr->get_link_ID().link_number;
+      const uint32_t* mem_ptr = static_cast<const uint32_t*>(frag_ptr->get_storage_location());
+      for (int idx = 0; idx < 4; ++idx) {
+        std::ostringstream oss_hexdump;
+        oss_hexdump << "32-bit offset " << std::setw(2) << (idx * 5) << ":" << std::hex;
+        for (int jdx = 0; jdx < 5; ++jdx) {
+          oss_hexdump << " 0x" << std::setw(8) << std::setfill('0') << *mem_ptr;
+          ++mem_ptr;
+        }
+        oss_hexdump << std::dec;
+        TLOG(TLVL_FRAGMENT_HEADER_DUMP) << get_name() << ": " << oss_hexdump.str();
+      }
+    }
+
     if ((received_count % 3) == 0) {
-      std::ostringstream oss_summ;
-      oss_summ << ": Processing trigger number " << trigRecPtr->get_trigger_number() << ", this is one of "
+      std::ostringstream oss_prog;
+      oss_prog << ": Processing trigger number " << trigRecPtr->get_trigger_number() << ", this is one of "
                << received_count << " trigger records received so far.";
-      ers::info(ProgressUpdate(ERS_HERE, get_name(), oss_summ.str()));
+      ers::info(ProgressUpdate(ERS_HERE, get_name(), oss_prog.str()));
     }
 
     // TLOG(TLVL_WORK_STEPS) << get_name() << ": Start of sleep while waiting for run Stop";

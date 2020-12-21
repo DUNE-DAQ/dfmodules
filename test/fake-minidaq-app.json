@@ -230,6 +230,24 @@
                         "mode": "all-per-file"
                     },
                     "match": "datawriter"
+                },
+                {
+                    "data": {
+                        "temporarily_hacked_link_number": 1
+                    },
+                    "match": "fdp1"
+                },
+                {
+                    "data": {
+                        "temporarily_hacked_link_number": 2
+                    },
+                    "match": "fdp2"
+                },
+                {
+                    "data": {
+                        "temporarily_hacked_link_number": 3
+                    },
+                    "match": "fdp3"
                 }
             ]
         },

@@ -10,7 +10,7 @@
 #include "CommonIssues.hpp"
 
 #include "appfwk/DAQModuleHelper.hpp"
-//#include "dfmodules/fakedataprod/Nljs.hpp"
+#include "dfmodules/fakedataprod/Nljs.hpp"
 
 #include "TRACE/trace.h"
 #include "ers/ers.h"
@@ -26,6 +26,7 @@
  */
 #define TRACE_NAME "FakeDataProd"  // NOLINT
 #define TLVL_ENTER_EXIT_METHODS 10 // NOLINT
+#define TLVL_CONFIG 12             // NOLINT
 #define TLVL_WORK_STEPS 15         // NOLINT
 
 namespace dunedaq {
@@ -35,6 +36,8 @@ FakeDataProd::FakeDataProd(const std::string& name)
   : dunedaq::appfwk::DAQModule(name)
   , thread_(std::bind(&FakeDataProd::do_work, this, std::placeholders::_1))
   , queueTimeout_(100)
+  , run_number_(0)
+  , fake_link_number_(0)
   , dataRequestInputQueue_(nullptr)
   , dataFragmentOutputQueue_(nullptr)
 {
@@ -62,22 +65,24 @@ FakeDataProd::init(const data_t& init_data)
 }
 
 void
-FakeDataProd::do_conf(const data_t& /*payload*/)
+FakeDataProd::do_conf(const data_t& payload)
 {
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
 
-  // fakedataprod::Conf tmpConfig = payload.get<fakedataprod::Conf>();
-  // sleepMsecWhileRunning_ = tmpConfig.sleep_msec_while_running;
+  fakedataprod::ConfParams tmpConfig = payload.get<fakedataprod::ConfParams>();
+  fake_link_number_ = tmpConfig.temporarily_hacked_link_number;
+  TLOG(TLVL_CONFIG) << get_name() << ": configured for link number " << fake_link_number_;
 
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
 }
 
 void
-FakeDataProd::do_start(const data_t& /*args*/)
+FakeDataProd::do_start(const data_t& payload)
 {
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_start() method";
+  run_number_ = payload.value<dunedaq::dataformats::run_number_t>("run", 0);
   thread_.start_working_thread();
-  ERS_LOG(get_name() << " successfully started");
+  ERS_LOG(get_name() << " successfully started for run number " << run_number_);
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
 }
 
@@ -113,6 +118,12 @@ FakeDataProd::do_work(std::atomic<bool>& running_flag)
     int dummy_int = 3;
     std::unique_ptr<dataformats::Fragment> dataFragPtr(new dataformats::Fragment(&dummy_int, sizeof(dummy_int)));
     dataFragPtr->set_trigger_number(dataReq.trigger_number);
+    dataFragPtr->set_run_number(run_number_);
+    dunedaq::dataformats::GeoID geo_location;
+    geo_location.APA_number = 1;
+    geo_location.link_number = fake_link_number_;
+    dataFragPtr->set_link_ID(geo_location);
+
     bool wasSentSuccessfully = false;
     while (!wasSentSuccessfully && running_flag.load()) {
       TLOG(TLVL_WORK_STEPS) << get_name() << ": Pushing the Data Fragment for trigger number "

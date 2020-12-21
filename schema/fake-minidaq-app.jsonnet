@@ -9,6 +9,12 @@ local ftde_ns = {
     },
 };
 
+local fdp_ns = {
+    generate_config_params(linkno=1) :: {
+        temporarily_hacked_link_number: linkno
+    },
+};
+
 local datawriter_ns = {
     generate_config_params(dirpath=".", opmode="all-per-file") :: {
         directory_path: dirpath,
@@ -62,7 +68,10 @@ local qspec_list = [
               { waitms: 1000 },
 
     cmd.conf([cmd.mcmd("ftde", ftde_ns.generate_config_params(1000)),
-              cmd.mcmd("datawriter", datawriter_ns.generate_config_params(".","all-per-file"))]) { waitms: 1000 },
+              cmd.mcmd("datawriter", datawriter_ns.generate_config_params(".","all-per-file"))] +
+              [cmd.mcmd("fdp"+idx, fdp_ns.generate_config_params(idx))
+               for idx in std.range(1, NUMBER_OF_FAKE_DATA_PRODUCERS)
+              ]) { waitms: 1000 },
 
     cmd.start(42) { waitms: 1000 },
 

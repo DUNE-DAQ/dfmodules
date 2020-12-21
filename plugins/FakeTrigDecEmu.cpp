@@ -94,7 +94,7 @@ void
 FakeTrigDecEmu::do_work(std::atomic<bool>& running_flag)
 {
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() method";
-  int32_t triggerCount = 0;
+  int32_t triggerCount = 1;
 
   while (running_flag.load()) {
     ++triggerCount;
