@@ -113,16 +113,24 @@ FakeDataProd::do_work(std::atomic<bool>& running_flag)
     }
 
     // TODO PAR 2020-12-17: dataformats::Fragment has to be
-    // constructed with some payload data, so I'm putting a single int
+    // constructed with some payload data, so I'm putting a few ints
     // in it for now
-    int dummy_int = 3;
-    std::unique_ptr<dataformats::Fragment> dataFragPtr(new dataformats::Fragment(&dummy_int, sizeof(dummy_int)));
+    int dummy_ints[3];
+    dummy_ints[0] = 3;
+    dummy_ints[1] = 4;
+    dummy_ints[2] = 5;
+    std::unique_ptr<dataformats::Fragment> dataFragPtr(new dataformats::Fragment(&dummy_ints[0], sizeof(dummy_ints)));
     dataFragPtr->set_trigger_number(dataReq.trigger_number);
     dataFragPtr->set_run_number(run_number_);
     dunedaq::dataformats::GeoID geo_location;
     geo_location.APA_number = 1;
     geo_location.link_number = fake_link_number_;
     dataFragPtr->set_link_ID(geo_location);
+    dataFragPtr->set_error_bits(0);
+    dataFragPtr->set_type(0x123);  // placeholder
+    dataFragPtr->set_trigger_timestamp(0x123456789abcdef0);  // placeholder
+    dataFragPtr->set_window_offset(0x123456789abcdef0);  // placeholder
+    dataFragPtr->set_window_width(0x123456789abcdef0);  // placeholder
 
     bool wasSentSuccessfully = false;
     while (!wasSentSuccessfully && running_flag.load()) {
