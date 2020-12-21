@@ -130,7 +130,7 @@ FakeFragRec::do_work(std::atomic<bool>& running_flag)
     std::vector<dataformats::Fragment*> frag_ptr_vector;
     for (auto& dataFragQueue : dataFragmentInputQueues_) {
       bool got_fragment = false;
-      while (!got_fragment) {
+      while (!got_fragment && running_flag.load()) {
         try {
           std::unique_ptr<dataformats::Fragment> dataFragPtr;
           dataFragQueue->pop(dataFragPtr, queueTimeout_);
