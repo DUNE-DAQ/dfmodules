@@ -87,4 +87,3 @@ ERS_DECLARE_ISSUE_BASE(dfmodules,
 } // namespace dunedaq
 
 #endif // DFMODULES_SRC_DATATRANSFERMODULE_HPP_
-

@@ -125,4 +125,3 @@ DataTransferModule::do_work(std::atomic<bool>& running_flag)
 } // namespace dunedaq
 
 DEFINE_DUNE_DAQ_MODULE(dunedaq::dfmodules::DataTransferModule)
-
