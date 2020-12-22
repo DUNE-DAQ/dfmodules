@@ -147,7 +147,20 @@ FakeFragRec::do_work(std::atomic<bool>& running_flag)
 
     std::unique_ptr<dataformats::TriggerRecord> trigRecPtr(new dataformats::TriggerRecord());
     trigRecPtr->set_trigger_number(trigDecision.trigger_number);
+    trigRecPtr->set_run_number(trigDecision.run_number);
+    trigRecPtr->set_trigger_timestamp(trigDecision.trigger_timestamp);
     trigRecPtr->set_fragments(frag_ptr_vector);
+
+    // hack: only use the request window from one of the components
+    // also, these should be offset and width in TriggerRecord, I think
+    auto first_map_element = trigDecision.components.begin();
+    if (first_map_element != trigDecision.components.end()) {
+      dataformats::ComponentRequest comp_req = first_map_element->second;
+      trigRecPtr->set_trigger_record_start_time(trigDecision.trigger_timestamp + comp_req.window_offset);
+      trigRecPtr->set_trigger_record_end_time(trigDecision.trigger_timestamp + comp_req.window_offset +
+                                              comp_req.window_width);
+    }
+
     bool wasSentSuccessfully = false;
     while (!wasSentSuccessfully && running_flag.load()) {
       TLOG(TLVL_WORK_STEPS) << get_name() << ": Pushing the Trigger Record for trigger number "

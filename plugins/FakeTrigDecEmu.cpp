@@ -94,12 +94,13 @@ void
 FakeTrigDecEmu::do_work(std::atomic<bool>& running_flag)
 {
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() method";
-  int32_t triggerCount = 1;
+  int32_t triggerCount = 0;
 
   while (running_flag.load()) {
     ++triggerCount;
     dfmessages::TriggerDecision trigDecision;
     trigDecision.trigger_number = triggerCount;
+    trigDecision.trigger_timestamp = 0x123456789abcdef0; // placeholder
 
     bool wasSentSuccessfully = false;
     while (!wasSentSuccessfully && running_flag.load()) {

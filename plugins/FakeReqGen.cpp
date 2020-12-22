@@ -149,6 +149,20 @@ FakeReqGen::do_work(std::atomic<bool>& running_flag)
     for (auto& dataReqQueue : dataRequestOutputQueues_) {
       dfmessages::DataRequest dataReq;
       dataReq.trigger_number = trigDecision.trigger_number;
+      dataReq.run_number = trigDecision.run_number;
+      dataReq.trigger_timestamp = trigDecision.trigger_timestamp;
+
+      // hack: only use the request window from one of the components
+      auto first_map_element = trigDecision.components.begin();
+      if (first_map_element != trigDecision.components.end()) {
+        dataformats::ComponentRequest comp_req = first_map_element->second;
+        dataReq.window_offset = comp_req.window_offset;
+        dataReq.window_width = comp_req.window_width;
+      } else {
+        dataReq.window_offset = 0x123456789abcdef0; // placeholder
+        dataReq.window_width = 0x123456789abcdef0;  // placeholder
+      }
+
       wasSentSuccessfully = false;
       while (!wasSentSuccessfully && running_flag.load()) {
         TLOG(TLVL_WORK_STEPS) << get_name() << ": Pushing the DataRequest for trigger number " << dataReq.trigger_number

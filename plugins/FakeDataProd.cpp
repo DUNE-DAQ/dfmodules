@@ -127,10 +127,10 @@ FakeDataProd::do_work(std::atomic<bool>& running_flag)
     geo_location.link_number = fake_link_number_;
     dataFragPtr->set_link_ID(geo_location);
     dataFragPtr->set_error_bits(0);
-    dataFragPtr->set_type(0x123);  // placeholder
-    dataFragPtr->set_trigger_timestamp(0x123456789abcdef0);  // placeholder
-    dataFragPtr->set_window_offset(0x123456789abcdef0);  // placeholder
-    dataFragPtr->set_window_width(0x123456789abcdef0);  // placeholder
+    dataFragPtr->set_type(0x123); // placeholder
+    dataFragPtr->set_trigger_timestamp(dataReq.trigger_timestamp);
+    dataFragPtr->set_window_offset(dataReq.window_offset);
+    dataFragPtr->set_window_width(dataReq.window_width);
 
     bool wasSentSuccessfully = false;
     while (!wasSentSuccessfully && running_flag.load()) {
