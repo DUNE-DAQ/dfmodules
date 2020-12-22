@@ -9,11 +9,12 @@
 #ifndef DFMODULES_SRC_DATAWRITER_HPP_
 #define DFMODULES_SRC_DATAWRITER_HPP_
 
-#include "dataformats/TriggerRecord.hpp"
+#include "dfmodules/DataStore.hpp"
 
 #include "appfwk/DAQModule.hpp"
 #include "appfwk/DAQSource.hpp"
 #include "appfwk/ThreadHelper.hpp"
+#include "dataformats/TriggerRecord.hpp"
 
 #include <memory>
 #include <string>
@@ -58,8 +59,20 @@ private:
   // Queue(s)
   using trigrecsource_t = dunedaq::appfwk::DAQSource<std::unique_ptr<dataformats::TriggerRecord>>;
   std::unique_ptr<trigrecsource_t> triggerRecordInputQueue_;
+
+  // Workers
+  std::unique_ptr<DataStore> data_writer_;
 };
 } // namespace dfmodules
+
+ERS_DECLARE_ISSUE_BASE(dfmodules,
+                       InvalidDataWriterError,
+                       appfwk::GeneralDAQModuleIssue,
+                       "A valid dataWriter instance is not available so it will not be possible to write data. A "
+                       "likely cause for this is a skipped or missed Configure transition.",
+                       ((std::string)name),
+                       ERS_EMPTY)
+
 } // namespace dunedaq
 
 #endif // DFMODULES_SRC_DATAWRITER_HPP_
