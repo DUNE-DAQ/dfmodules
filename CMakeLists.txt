@@ -11,7 +11,7 @@ find_package(HighFive REQUIRED)
 find_package(dfmessages REQUIRED)
 
 ##############################################################################
-daq_add_library( StorageKey.cpp 
+daq_add_library( StorageKey.cpp TriggerDecisionForwarder TriggerInhibitAgent
                  LINK_LIBRARIES 
                  ers::ers HighFive appfwk::appfwk stdc++fs dfmessages::dfmessages )
 

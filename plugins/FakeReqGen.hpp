@@ -9,14 +9,14 @@
 #ifndef DFMODULES_SRC_FAKEREQGEN_HPP_
 #define DFMODULES_SRC_FAKEREQGEN_HPP_
 
-#include "dfmessages/DataRequest.hpp"
-#include "dfmessages/TriggerDecision.hpp"
-#include "dfmessages/TriggerInhibit.hpp"
+#include "dfmodules/TriggerDecisionForwarder.hpp"
 
 #include "appfwk/DAQModule.hpp"
 #include "appfwk/DAQSink.hpp"
 #include "appfwk/DAQSource.hpp"
 #include "appfwk/ThreadHelper.hpp"
+#include "dfmessages/DataRequest.hpp"
+#include "dfmessages/TriggerDecision.hpp"
 
 #include <memory>
 #include <string>
@@ -65,8 +65,9 @@ private:
   std::unique_ptr<trigdecsink_t> triggerDecisionOutputQueue_;
   using datareqsink_t = dunedaq::appfwk::DAQSink<dfmessages::DataRequest>;
   std::vector<std::unique_ptr<datareqsink_t>> dataRequestOutputQueues_;
-  using triginhsink_t = dunedaq::appfwk::DAQSink<dfmessages::TriggerInhibit>;
-  std::unique_ptr<triginhsink_t> triggerInhibitOutputQueue_;
+
+  // Worker(s)
+  std::unique_ptr<TriggerDecisionForwarder> trigger_decision_forwarder_;
 };
 } // namespace dfmodules
 } // namespace dunedaq

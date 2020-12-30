@@ -7,7 +7,7 @@
  */
 
 #include "FakeDataProd.hpp"
-#include "CommonIssues.hpp"
+#include "dfmodules/CommonIssues.hpp"
 
 #include "appfwk/DAQModuleHelper.hpp"
 #include "dfmodules/fakedataprod/Nljs.hpp"
@@ -131,6 +131,8 @@ FakeDataProd::do_work(std::atomic<bool>& running_flag)
     dataFragPtr->set_trigger_timestamp(dataReq.trigger_timestamp);
     dataFragPtr->set_window_offset(dataReq.window_offset);
     dataFragPtr->set_window_width(dataReq.window_width);
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(550));
 
     bool wasSentSuccessfully = false;
     while (!wasSentSuccessfully && running_flag.load()) {

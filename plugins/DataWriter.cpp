@@ -7,11 +7,13 @@
  */
 
 #include "DataWriter.hpp"
-#include "CommonIssues.hpp"
+#include "dfmodules/CommonIssues.hpp"
 #include "dfmodules/datawriter/Nljs.hpp"
 
 #include "appfwk/DAQModuleHelper.hpp"
 #include "dataformats/Fragment.hpp"
+#include "dfmessages/TriggerDecision.hpp"
+#include "dfmessages/TriggerInhibit.hpp"
 
 #include "TRACE/trace.h"
 #include "ers/ers.h"
@@ -49,12 +51,31 @@ void
 DataWriter::init(const data_t& init_data)
 {
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
-  auto qi = appfwk::qindex(init_data, { "trigger_record_input_queue" });
+  auto qi = appfwk::qindex(
+    init_data, { "trigger_record_input_queue", "trigger_decision_for_inhibit", "trigger_inhibit_output_queue" });
   try {
     triggerRecordInputQueue_.reset(new trigrecsource_t(qi["trigger_record_input_queue"].inst));
   } catch (const ers::Issue& excpt) {
     throw InvalidQueueFatalError(ERS_HERE, get_name(), "trigger_record_input_queue", excpt);
   }
+
+  using trigdecsource_t = dunedaq::appfwk::DAQSource<dfmessages::TriggerDecision>;
+  std::unique_ptr<trigdecsource_t> trig_dec_queue_for_inh;
+  try {
+    trig_dec_queue_for_inh.reset(new trigdecsource_t(qi["trigger_decision_for_inhibit"].inst));
+  } catch (const ers::Issue& excpt) {
+    throw InvalidQueueFatalError(ERS_HERE, get_name(), "trigger_decision_for_inhibit", excpt);
+  }
+  using triginhsink_t = dunedaq::appfwk::DAQSink<dfmessages::TriggerInhibit>;
+  std::unique_ptr<triginhsink_t> trig_inh_output_queue;
+  try {
+    trig_inh_output_queue.reset(new triginhsink_t(qi["trigger_inhibit_output_queue"].inst));
+  } catch (const ers::Issue& excpt) {
+    throw InvalidQueueFatalError(ERS_HERE, get_name(), "trigger_inhibit_output_queue", excpt);
+  }
+  trigger_inhibit_agent_.reset(
+    new TriggerInhibitAgent(get_name(), std::move(trig_dec_queue_for_inh), std::move(trig_inh_output_queue)));
+
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
 
@@ -73,6 +94,7 @@ void
 DataWriter::do_start(const data_t& /*args*/)
 {
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_start() method";
+  trigger_inhibit_agent_->start_checking();
   thread_.start_working_thread();
   ERS_LOG(get_name() << " successfully started");
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
@@ -82,6 +104,7 @@ void
 DataWriter::do_stop(const data_t& /*args*/)
 {
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_stop() method";
+  trigger_inhibit_agent_->stop_checking();
   thread_.stop_working_thread();
   ERS_LOG(get_name() << " successfully stopped");
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_stop() method";
@@ -96,6 +119,7 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
   while (running_flag.load()) {
     std::unique_ptr<dataformats::TriggerRecord> trigRecPtr;
 
+    // receive the next TriggerRecord
     try {
       triggerRecordInputQueue_->pop(trigRecPtr, queueTimeout_);
       ++received_count;
@@ -107,6 +131,7 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
       continue;
     }
 
+    // if we received a TriggerRecord, print out some debug information, if requested
     std::vector<dataformats::Fragment*> frag_vec = trigRecPtr->get_fragments();
     for (const auto& frag_ptr : frag_vec) {
       TLOG(TLVL_FRAGMENT_HEADER_DUMP) << get_name() << ": Memory contents for the Fragment from link "
@@ -124,6 +149,7 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
       }
     }
 
+    // progress updates
     if ((received_count % 3) == 0) {
       std::ostringstream oss_prog;
       oss_prog << ": Processing trigger number " << trigRecPtr->get_trigger_number() << ", this is one of "
@@ -131,9 +157,9 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
       ers::info(ProgressUpdate(ERS_HERE, get_name(), oss_prog.str()));
     }
 
-    // TLOG(TLVL_WORK_STEPS) << get_name() << ": Start of sleep while waiting for run Stop";
-    // std::this_thread::sleep_for(std::chrono::milliseconds(sleepMsecWhileRunning_));
-    // TLOG(TLVL_WORK_STEPS) << get_name() << ": End of sleep while waiting for run Stop";
+    // tell the TriggerInhibitAgent the trigger_number of this TriggerRecord so that
+    // it can check whether an Inhibit needs to be asserted or cleared.
+    trigger_inhibit_agent_->set_latest_trigger_number(trigRecPtr->get_trigger_number());
   }
 
   std::ostringstream oss_summ;

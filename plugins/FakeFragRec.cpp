@@ -7,7 +7,7 @@
  */
 
 #include "FakeFragRec.hpp"
-#include "CommonIssues.hpp"
+#include "dfmodules/CommonIssues.hpp"
 
 #include "appfwk/DAQModuleHelper.hpp"
 #include "appfwk/cmd/Nljs.hpp"

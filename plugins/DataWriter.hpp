@@ -9,11 +9,12 @@
 #ifndef DFMODULES_SRC_DATAWRITER_HPP_
 #define DFMODULES_SRC_DATAWRITER_HPP_
 
-#include "dataformats/TriggerRecord.hpp"
+#include "dfmodules/TriggerInhibitAgent.hpp"
 
 #include "appfwk/DAQModule.hpp"
 #include "appfwk/DAQSource.hpp"
 #include "appfwk/ThreadHelper.hpp"
+#include "dataformats/TriggerRecord.hpp"
 
 #include <memory>
 #include <string>
@@ -58,6 +59,9 @@ private:
   // Queue(s)
   using trigrecsource_t = dunedaq::appfwk::DAQSource<std::unique_ptr<dataformats::TriggerRecord>>;
   std::unique_ptr<trigrecsource_t> triggerRecordInputQueue_;
+
+  // Worker(s)
+  std::unique_ptr<TriggerInhibitAgent> trigger_inhibit_agent_;
 };
 } // namespace dfmodules
 } // namespace dunedaq

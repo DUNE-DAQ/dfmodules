@@ -7,7 +7,7 @@
  */
 
 #include "FakeTrigDecEmu.hpp"
-#include "CommonIssues.hpp"
+#include "dfmodules/CommonIssues.hpp"
 
 #include "appfwk/DAQModuleHelper.hpp"
 #include "dfmodules/faketrigdecemu/Nljs.hpp"
@@ -95,8 +95,10 @@ FakeTrigDecEmu::do_work(std::atomic<bool>& running_flag)
 {
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() method";
   int32_t triggerCount = 0;
+  int32_t inhibit_message_count = 0;
 
   while (running_flag.load()) {
+    auto start_time = std::chrono::steady_clock::now();
     ++triggerCount;
     dfmessages::TriggerDecision trigDecision;
     trigDecision.trigger_number = triggerCount;
@@ -120,16 +122,36 @@ FakeTrigDecEmu::do_work(std::atomic<bool>& running_flag)
       }
     }
 
-    // TO-DO: add something here for receiving Inhbit messages
+    // receive any/all Inhibit messages that are waiting
+    // (This really needs to be done in a separate thread, but we'll trust the
+    // official TriggerDecisionEmulator to take care of things like that.)
+    bool got_inh_msg = true;
+    while (got_inh_msg) {
+      try {
+        dfmessages::TriggerInhibit trig_inhibit_msg;
+        triggerInhibitInputQueue_->pop(trig_inhibit_msg, (queueTimeout_ / 10));
+        ++inhibit_message_count;
+        got_inh_msg = true;
+        TLOG(TLVL_WORK_STEPS) << get_name() << ": Popped a TriggerInhibit message with busy state set to \""
+                              << trig_inhibit_msg.busy << "\" off the inhibit input queue";
 
-    TLOG(TLVL_WORK_STEPS) << get_name() << ": Start of sleep while waiting for run Stop";
-    std::this_thread::sleep_for(std::chrono::milliseconds(sleepMsecWhileRunning_));
-    TLOG(TLVL_WORK_STEPS) << get_name() << ": End of sleep while waiting for run Stop";
+        // for now, we just throw these on the floor...
+      } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
+        // it is perfectly reasonable that there might be no data in the queue
+        // some fraction of the times that we check, so we just continue
+        got_inh_msg = false;
+      }
+    }
+
+    auto time_to_wait = (start_time + std::chrono::milliseconds(sleepMsecWhileRunning_)) - std::chrono::steady_clock::now();
+    TLOG(TLVL_WORK_STEPS) << get_name() << ": Start of sleep between fake triggers";
+    std::this_thread::sleep_for(time_to_wait);
+    TLOG(TLVL_WORK_STEPS) << get_name() << ": End of sleep between fake triggers";
   }
 
   std::ostringstream oss_summ;
-  oss_summ << ": Exiting the do_work() method, generated Fake trigger decision messages for " << triggerCount
-           << " triggers.";
+  oss_summ << ": Exiting the do_work() method, generated " << triggerCount << " Fake TriggerDecision messages "
+           << "and received " << inhibit_message_count << " TriggerInhbit messages of all types (both Busy and Free).";
   ers::info(ProgressUpdate(ERS_HERE, get_name(), oss_summ.str()));
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_work() method";
 }
