@@ -9,6 +9,7 @@
 #ifndef DFMODULES_SRC_DATAWRITER_HPP_
 #define DFMODULES_SRC_DATAWRITER_HPP_
 
+#include "dfmodules/DataStore.hpp"
 #include "dfmodules/TriggerInhibitAgent.hpp"
 
 #include "appfwk/DAQModule.hpp"
@@ -61,9 +62,19 @@ private:
   std::unique_ptr<trigrecsource_t> triggerRecordInputQueue_;
 
   // Worker(s)
+  std::unique_ptr<DataStore> data_writer_;
   std::unique_ptr<TriggerInhibitAgent> trigger_inhibit_agent_;
 };
 } // namespace dfmodules
+
+ERS_DECLARE_ISSUE_BASE(dfmodules,
+                       InvalidDataWriterError,
+                       appfwk::GeneralDAQModuleIssue,
+                       "A valid dataWriter instance is not available so it will not be possible to write data. A "
+                       "likely cause for this is a skipped or missed Configure transition.",
+                       ((std::string)name),
+                       ERS_EMPTY)
+
 } // namespace dunedaq
 
 #endif // DFMODULES_SRC_DATAWRITER_HPP_

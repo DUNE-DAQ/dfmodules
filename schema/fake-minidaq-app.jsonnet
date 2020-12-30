@@ -15,13 +15,6 @@ local fdp_ns = {
     },
 };
 
-local datawriter_ns = {
-    generate_config_params(dirpath=".", opmode="all-per-file") :: {
-        directory_path: dirpath,
-        mode: opmode
-    },
-};
-
 local qdict = {
     trigdec_from_ds: cmd.qspec("trigger_decision_from_data_selection", "FollySPSCQueue", 20),
     internal_trigdec_copy: cmd.qspec("trigger_decision_copy_for_bookkeeping", "FollySPSCQueue", 20),
@@ -71,7 +64,16 @@ local qspec_list = [
               { waitms: 1000 },
 
     cmd.conf([cmd.mcmd("ftde", ftde_ns.generate_config_params(1000)),
-              cmd.mcmd("datawriter", datawriter_ns.generate_config_params(".","all-per-file"))] +
+              cmd.mcmd("datawriter",
+                {
+                  "data_store_parameters": {
+                    "name" : "data_store",
+                    "type" : "HDF5DataStore",
+                    "directory_path": ".",
+                    "filename_prefix": "fake_minidaq",
+                    "mode": "all-per-file",
+                  }
+                })] +
               [cmd.mcmd("fdp"+idx, fdp_ns.generate_config_params(idx))
                for idx in std.range(1, NUMBER_OF_FAKE_DATA_PRODUCERS)
               ]) { waitms: 1000 },

@@ -9,6 +9,8 @@
 #include "DataWriter.hpp"
 #include "dfmodules/CommonIssues.hpp"
 #include "dfmodules/datawriter/Nljs.hpp"
+#include "dfmodules/KeyedDataBlock.hpp"
+#include "dfmodules/StorageKey.hpp"
 
 #include "appfwk/DAQModuleHelper.hpp"
 #include "dataformats/Fragment.hpp"
@@ -87,6 +89,9 @@ DataWriter::do_conf(const data_t& payload)
   datawriter::ConfParams tmpConfig = payload.get<datawriter::ConfParams>();
   TLOG(TLVL_CONFIG) << get_name() << ": operational mode = " << tmpConfig.mode;
 
+  // create the DataStore instance here
+  data_writer_ = makeDataStore( payload["data_store_parameters"] ) ; 
+
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
 }
 
@@ -115,6 +120,11 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
 {
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() method";
   int32_t received_count = 0;
+
+  // ensure that we have a valid dataWriter instance
+  if (data_writer_.get() == nullptr) {
+    throw InvalidDataWriterError(ERS_HERE, get_name());
+  }
 
   while (running_flag.load()) {
     std::unique_ptr<dataformats::TriggerRecord> trigRecPtr;
@@ -147,6 +157,15 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
         oss_hexdump << std::dec;
         TLOG(TLVL_FRAGMENT_HEADER_DUMP) << get_name() << ": " << oss_hexdump.str();
       }
+
+      // write each Fragment to the DataStore
+      // //StorageKey fragment_skey(trigRecPtr->get_run_number(), trigRecPtr->get_trigger_number, "FELIX",
+      StorageKey fragment_skey(frag_ptr->get_run_number(), frag_ptr->get_trigger_number(), "FELIX",
+                               frag_ptr->get_link_ID().APA_number, frag_ptr->get_link_ID().link_number);
+      KeyedDataBlock data_block(fragment_skey);
+      data_block.unowned_data_start = frag_ptr->get_storage_location();
+      data_block.data_size = frag_ptr->get_size();
+      data_writer_->write(data_block);
     }
 
     // progress updates

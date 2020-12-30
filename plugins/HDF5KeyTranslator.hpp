@@ -29,8 +29,9 @@ class HDF5KeyTranslator
 public:
   inline static const std::string PATH_SEPARATOR = "/";
 
-  static const int EVENT_ID_DIGITS = 4;
-  static const int GEO_LOCATION_DIGITS = 3;
+  static const int TRIGGERNUMBER_DIGITS = 6;
+  static const int APANUMBER_DIGITS = 3;
+  static const int LINKNUMBER_DIGITS = 2;
 
   /**
    * @brief Translates the specified StorageKey into an HDF5 'path',
@@ -61,15 +62,24 @@ public:
   {
     std::vector<std::string> elementList;
 
-    // first, we take care of the event ID
-    std::ostringstream evIdString;
-    evIdString << std::setw(EVENT_ID_DIGITS) << std::setfill('0') << key.getEventID();
-    elementList.push_back(evIdString.str());
+    // first, we take care of the trigger number
+    std::ostringstream triggerNumberString;
+    triggerNumberString << std::setw(TRIGGERNUMBER_DIGITS) << std::setfill('0') << key.getTriggerNumber();
+    elementList.push_back(triggerNumberString.str());
 
-    // next, we translate the geographic location
-    std::ostringstream geoLocString;
-    geoLocString << std::setw(GEO_LOCATION_DIGITS) << std::setfill('0') << key.getGeoLocation();
-    elementList.push_back(geoLocString.str());
+    // Add detector type
+    elementList.push_back(key.getDetectorType());
+
+    // next, we translate the APA number location
+    std::ostringstream apaNumberString;
+    apaNumberString << std::setw(APANUMBER_DIGITS) << std::setfill('0') << key.getApaNumber();
+    elementList.push_back(apaNumberString.str());
+
+    // Finally, add link number 
+    std::ostringstream linkNumberString;
+    linkNumberString << std::setw(LINKNUMBER_DIGITS) << std::setfill('0') << key.getLinkNumber();
+    elementList.push_back(linkNumberString.str());
+
 
     return elementList;
   }
@@ -98,23 +108,43 @@ public:
                                    int translationVersion = CURRENT_VERSION)
   {
     if (translationVersion == 1) {
-      int eventId = StorageKey::INVALID_EVENTID;
-      std::string detectorId = StorageKey::INVALID_DETECTORID;
-      int geoLocation = StorageKey::INVALID_GEOLOCATION;
+      int run_number = StorageKey::INVALID_RUNNUMBER;
+      int trigger_number = StorageKey::INVALID_TRIGGERNUMBER;
+      std::string detector_type = StorageKey::INVALID_DETECTORTYPE;
+      int apa_number = StorageKey::INVALID_APANUMBER;
+      int link_number = StorageKey::INVALID_LINKNUMBER;
 
       if (pathElements.size() >= 1) {
-        std::stringstream evId(pathElements[0]);
-        evId >> eventId;
+        std::stringstream runNumber(pathElements[0]);
+        runNumber >> run_number;
       }
       if (pathElements.size() >= 2) {
-        std::stringstream geoLoc(pathElements[1]);
-        geoLoc >> geoLocation;
+        std::stringstream trigNumber(pathElements[1]);
+        trigNumber >> trigger_number;
       }
 
-      return StorageKey(eventId, detectorId, geoLocation);
+      if (pathElements.size() >= 3) {
+        std::stringstream detectorType(pathElements[2]);
+        detectorType >> detector_type;
+      }
+
+      if (pathElements.size() >= 4) {
+        std::stringstream apaNumber(pathElements[3]);
+        apaNumber >> apa_number;
+      }
+
+      if (pathElements.size() >= 5) {
+        std::stringstream linkNumber(pathElements[4]);
+        linkNumber >> link_number;
+      }
+
+
+      return StorageKey(run_number, trigger_number, detector_type, apa_number, link_number);
+
+
 
     } else {
-      StorageKey emptyKey(StorageKey::INVALID_EVENTID, StorageKey::INVALID_DETECTORID, StorageKey::INVALID_GEOLOCATION);
+      StorageKey emptyKey(StorageKey::INVALID_RUNNUMBER, StorageKey::INVALID_TRIGGERNUMBER, StorageKey::INVALID_DETECTORTYPE, StorageKey::INVALID_APANUMBER, StorageKey::INVALID_LINKNUMBER);
       return emptyKey;
     }
   }

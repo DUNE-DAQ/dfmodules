@@ -241,8 +241,13 @@
                 },
                 {
                     "data": {
-                        "directory_path": ".",
-                        "mode": "all-per-file"
+                        "data_store_parameters": {
+                            "directory_path": ".",
+                            "filename_prefix": "fake_minidaq",
+                            "mode": "all-per-file",
+                            "name": "data_store",
+                            "type": "HDF5DataStore"
+                        }
                     },
                     "match": "datawriter"
                 },
