@@ -132,7 +132,8 @@ FakeDataProd::do_work(std::atomic<bool>& running_flag)
     dataFragPtr->set_window_offset(dataReq.window_offset);
     dataFragPtr->set_window_width(dataReq.window_width);
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(550));
+    // to-do?  add config parameter for artificial delay?
+    // std::this_thread::sleep_for(std::chrono::milliseconds(550));
 
     bool wasSentSuccessfully = false;
     while (!wasSentSuccessfully && running_flag.load()) {
