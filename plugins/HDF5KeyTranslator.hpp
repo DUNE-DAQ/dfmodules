@@ -76,11 +76,10 @@ public:
     apaNumberString << std::setw(APANUMBER_DIGITS) << std::setfill('0') << key.getApaNumber();
     elementList.push_back(apaNumberString.str());
 
-    // Finally, add link number 
+    // Finally, add link number
     std::ostringstream linkNumberString;
     linkNumberString << std::setw(LINKNUMBER_DIGITS) << std::setfill('0') << key.getLinkNumber();
     elementList.push_back(linkNumberString.str());
-
 
     return elementList;
   }
@@ -139,13 +138,14 @@ public:
         linkNumber >> link_number;
       }
 
-
       return StorageKey(run_number, trigger_number, detector_type, apa_number, link_number);
 
-
-
     } else {
-      StorageKey emptyKey(StorageKey::INVALID_RUNNUMBER, StorageKey::INVALID_TRIGGERNUMBER, StorageKey::INVALID_DETECTORTYPE, StorageKey::INVALID_APANUMBER, StorageKey::INVALID_LINKNUMBER);
+      StorageKey emptyKey(StorageKey::INVALID_RUNNUMBER,
+                          StorageKey::INVALID_TRIGGERNUMBER,
+                          StorageKey::INVALID_DETECTORTYPE,
+                          StorageKey::INVALID_APANUMBER,
+                          StorageKey::INVALID_LINKNUMBER);
       return emptyKey;
     }
   }
@@ -153,35 +153,46 @@ public:
   /**
    * @brief Translates the specified input parameters into the appropriate filename.
    */
-  static std::string get_file_name(const StorageKey& data_key, const hdf5datastore::ConfParams& config_params, size_t file_index)
+  static std::string get_file_name(const StorageKey& data_key,
+                                   const hdf5datastore::ConfParams& config_params,
+                                   size_t file_index)
   {
     std::ostringstream work_oss;
     work_oss << config_params.directory_path;
-    if (work_oss.str().length() > 0) {work_oss << "/";}
+    if (work_oss.str().length() > 0) {
+      work_oss << "/";
+    }
     work_oss << config_params.filename_parameters.overall_prefix;
-    if (work_oss.str().length() > 0) {work_oss << "_";}
+    if (work_oss.str().length() > 0) {
+      work_oss << "_";
+    }
 
     size_t trigger_number = data_key.getTriggerNumber();
     size_t apa_number = data_key.getApaNumber();
     std::string file_name = std::string("");
     if (config_params.mode == "one-event-per-file") {
 
-      file_name = config_params.directory_path + "/" + config_params.filename_parameters.overall_prefix + "_trigger_number_" + std::to_string(trigger_number) + ".hdf5";
+      file_name = config_params.directory_path + "/" + config_params.filename_parameters.overall_prefix +
+                  "_trigger_number_" + std::to_string(trigger_number) + ".hdf5";
       return file_name;
 
     } else if (config_params.mode == "one-fragment-per-file") {
 
-      file_name =
-        config_params.directory_path + "/" + config_params.filename_parameters.overall_prefix + "_trigger_number_" + std::to_string(trigger_number) + "_apa_number_" + std::to_string(apa_number) + ".hdf5";
+      file_name = config_params.directory_path + "/" + config_params.filename_parameters.overall_prefix +
+                  "_trigger_number_" + std::to_string(trigger_number) + "_apa_number_" + std::to_string(apa_number) +
+                  ".hdf5";
       return file_name;
 
     } else if (config_params.mode == "all-per-file") {
 
-      //file_name = config_params.directory_path + "/" + config_params.filename_parameters.overall_prefix + "_all_events" + ".hdf5";
-      //file_name = config_params.directory_path + "/" + config_params.filename_parameters.overall_prefix + "_trigger_number_" + "file_number_" + std::to_string(file_index) + ".hdf5";
+      // file_name = config_params.directory_path + "/" + config_params.filename_parameters.overall_prefix +
+      // "_all_events" + ".hdf5"; file_name = config_params.directory_path + "/" +
+      // config_params.filename_parameters.overall_prefix + "_trigger_number_" + "file_number_" +
+      // std::to_string(file_index) + ".hdf5";
 
       work_oss << config_params.filename_parameters.run_number_prefix;
-      work_oss << std::setw(config_params.filename_parameters.digits_for_run_number) << std::setfill('0') << data_key.getRunNumber();
+      work_oss << std::setw(config_params.filename_parameters.digits_for_run_number) << std::setfill('0')
+               << data_key.getRunNumber();
       work_oss << "_";
       work_oss << config_params.filename_parameters.file_index_prefix;
       work_oss << std::setw(config_params.filename_parameters.digits_for_file_index) << std::setfill('0') << file_index;
