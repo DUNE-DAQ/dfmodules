@@ -3,8 +3,9 @@
 /**
  * @file HDF5KeyTranslator.hpp
  *
- * HDF5KeyTranslator collection of functions to translate between
- * StorageKeys and HDF5 Group/DataSet 'paths'.
+ * HDF5KeyTranslator is a collection of functions to translate between
+ * StorageKeys+configuration and HDF5 Group/DataSet 'paths', and between Storage
+ * StorageKeys+configuration and HDF5 file names.
  *
  * This is part of the DUNE DAQ Software Suite, copyright 2020.
  * Licensing/copyright details are in the COPYING file that you should have
@@ -147,6 +148,47 @@ public:
       StorageKey emptyKey(StorageKey::INVALID_RUNNUMBER, StorageKey::INVALID_TRIGGERNUMBER, StorageKey::INVALID_DETECTORTYPE, StorageKey::INVALID_APANUMBER, StorageKey::INVALID_LINKNUMBER);
       return emptyKey;
     }
+  }
+
+  /**
+   * @brief Translates the specified input parameters into the appropriate filename.
+   */
+  static std::string get_file_name(const StorageKey& data_key, const hdf5datastore::ConfParams& config_params, size_t file_index)
+  {
+    std::ostringstream work_oss;
+    work_oss << config_params.directory_path;
+    if (work_oss.str().length() > 0) {work_oss << "/";}
+    work_oss << config_params.filename_parameters.overall_prefix;
+    if (work_oss.str().length() > 0) {work_oss << "_";}
+
+    size_t trigger_number = data_key.getTriggerNumber();
+    size_t apa_number = data_key.getApaNumber();
+    std::string file_name = std::string("");
+    if (config_params.mode == "one-event-per-file") {
+
+      file_name = config_params.directory_path + "/" + config_params.filename_parameters.overall_prefix + "_trigger_number_" + std::to_string(trigger_number) + ".hdf5";
+      return file_name;
+
+    } else if (config_params.mode == "one-fragment-per-file") {
+
+      file_name =
+        config_params.directory_path + "/" + config_params.filename_parameters.overall_prefix + "_trigger_number_" + std::to_string(trigger_number) + "_apa_number_" + std::to_string(apa_number) + ".hdf5";
+      return file_name;
+
+    } else if (config_params.mode == "all-per-file") {
+
+      //file_name = config_params.directory_path + "/" + config_params.filename_parameters.overall_prefix + "_all_events" + ".hdf5";
+      //file_name = config_params.directory_path + "/" + config_params.filename_parameters.overall_prefix + "_trigger_number_" + "file_number_" + std::to_string(file_index) + ".hdf5";
+
+      work_oss << config_params.filename_parameters.run_number_prefix;
+      work_oss << std::setw(config_params.filename_parameters.digits_for_run_number) << std::setfill('0') << data_key.getRunNumber();
+      work_oss << "_";
+      work_oss << config_params.filename_parameters.file_index_prefix;
+      work_oss << std::setw(config_params.filename_parameters.digits_for_file_index) << std::setfill('0') << file_index;
+    }
+
+    work_oss << ".hdf5";
+    return work_oss.str();
   }
 
 private:

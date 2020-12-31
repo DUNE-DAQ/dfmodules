@@ -248,6 +248,7 @@
                             },
                             "filename_parameters": {
                                 "digits_for_run_number": 7,
+                                "file_index_prefix": "file",
                                 "overall_prefix": "fake_minidaq"
                             },
                             "mode": "all-per-file",

@@ -74,6 +74,7 @@ local qspec_list = [
                     "filename_parameters": {
                       "overall_prefix": "fake_minidaq",
                       "digits_for_run_number": 7,
+                      "file_index_prefix": "file",
                     },
                     "file_internal_parameters": {
                       "trigger_record_name_prefix": "",

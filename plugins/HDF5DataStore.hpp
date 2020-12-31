@@ -14,6 +14,7 @@
 
 #include "dfmodules/DataStore.hpp"
 #include "dfmodules/hdf5datastore/Nljs.hpp"
+#include "dfmodules/hdf5datastore/Structs.hpp"
 #include "HDF5FileUtils.hpp"
 #include "HDF5KeyTranslator.hpp"
 
@@ -78,11 +79,11 @@ public:
   {
     TLOG(TLVL_DEBUG) << get_name() << ": Configuration: " << conf ; 
     
-    hdf5datastore::ConfParams config_params = conf.get<hdf5datastore::ConfParams>();
-    fileName_ = config_params.filename_parameters.overall_prefix;
-    path_ = config_params.directory_path;
-    operation_mode_ = config_params.mode;
-    max_file_size_ = config_params.max_file_size_bytes;
+    config_params_ = conf.get<hdf5datastore::ConfParams>();
+    fileName_ = config_params_.filename_parameters.overall_prefix;
+    path_ = config_params_.directory_path;
+    operation_mode_ = config_params_.mode;
+    max_file_size_ = config_params_.max_file_size_bytes;
     //fileName_ = conf["filename_prefix"].get<std::string>() ; 
     //path_ = conf["directory_path"].get<std::string>() ;
     //operation_mode_ = conf["mode"].get<std::string>() ; 
@@ -185,7 +186,8 @@ public:
     const size_t linkNumber = dataBlock.data_key.getLinkNumber();
 
     // opening the file from Storage Key + path_ + fileName_ + operation_mode_
-    std::string fullFileName = getFileNameFromKey(dataBlock.data_key);
+    std::string fullFileName = HDF5KeyTranslator::get_file_name(dataBlock.data_key, config_params_, file_count_);
+
     // filePtr will be the handle to the Opened-File after a call to openFileIfNeeded()
     openFileIfNeeded(fullFileName, HighFive::File::OpenOrCreate);
 
@@ -305,6 +307,11 @@ private:
 
   unsigned openFlagsOfOpenFile_;
 
+  // Configuration
+  hdf5datastore::ConfParams config_params_;
+
+  // 31-Dec-2020, KAB: this private method is deprecated; it is moving to
+  // HDF5KeyTranslator::get_file_name().
   std::string getFileNameFromKey(const StorageKey& data_key)
   {
     size_t trigger_number = data_key.getTriggerNumber();
