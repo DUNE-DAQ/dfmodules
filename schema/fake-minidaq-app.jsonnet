@@ -70,8 +70,14 @@ local qspec_list = [
                     "name" : "data_store",
                     "type" : "HDF5DataStore",
                     "directory_path": ".",
-                    "filename_prefix": "fake_minidaq",
                     "mode": "all-per-file",
+                    "filename_parameters": {
+                      "overall_prefix": "fake_minidaq",
+                      "digits_for_run_number": 7,
+                    },
+                    "file_internal_parameters": {
+                      "trigger_record_name_prefix": "",
+                    },
                   }
                 })] +
               [cmd.mcmd("fdp"+idx, fdp_ns.generate_config_params(idx))

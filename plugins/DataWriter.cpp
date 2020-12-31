@@ -8,7 +8,6 @@
 
 #include "DataWriter.hpp"
 #include "dfmodules/CommonIssues.hpp"
-#include "dfmodules/datawriter/Nljs.hpp"
 #include "dfmodules/KeyedDataBlock.hpp"
 #include "dfmodules/StorageKey.hpp"
 
@@ -85,9 +84,6 @@ void
 DataWriter::do_conf(const data_t& payload)
 {
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
-
-  datawriter::ConfParams tmpConfig = payload.get<datawriter::ConfParams>();
-  TLOG(TLVL_CONFIG) << get_name() << ": operational mode = " << tmpConfig.mode;
 
   // create the DataStore instance here
   data_writer_ = makeDataStore( payload["data_store_parameters"] ) ; 

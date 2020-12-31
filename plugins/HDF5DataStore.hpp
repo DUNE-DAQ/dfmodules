@@ -13,6 +13,7 @@
  */
 
 #include "dfmodules/DataStore.hpp"
+#include "dfmodules/hdf5datastore/Nljs.hpp"
 #include "HDF5FileUtils.hpp"
 #include "HDF5KeyTranslator.hpp"
 
@@ -77,13 +78,18 @@ public:
   {
     TLOG(TLVL_DEBUG) << get_name() << ": Configuration: " << conf ; 
     
-    fileName_ = conf["filename_prefix"].get<std::string>() ; 
-    path_ = conf["directory_path"].get<std::string>() ;
-    operation_mode_ = conf["mode"].get<std::string>() ; 
+    hdf5datastore::ConfParams config_params = conf.get<hdf5datastore::ConfParams>();
+    fileName_ = config_params.filename_parameters.overall_prefix;
+    path_ = config_params.directory_path;
+    operation_mode_ = config_params.mode;
+    max_file_size_ = config_params.max_file_size_bytes;
+    //fileName_ = conf["filename_prefix"].get<std::string>() ; 
+    //path_ = conf["directory_path"].get<std::string>() ;
+    //operation_mode_ = conf["mode"].get<std::string>() ; 
     // Get maximum file size in bytes
     // AAA: todo get from configuration params, force that max file size to be in bytes?
     //max_file_size_ = conf["MaxFileSize"].get()*1024ULL*1024ULL;
-    max_file_size_ = 1*1024ULL*1024ULL;
+    //max_file_size_ = 1*1024ULL*1024ULL;
     file_count_ = 0;
     recorded_size_ = 0;
 
