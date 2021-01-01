@@ -78,7 +78,7 @@ local qspec_list = [
                     },
                     "file_layout_parameters": {
                       "trigger_record_name_prefix": "TriggerRecord",
-                      "digits_for_trigger_record_name": 5,
+                      "digits_for_trigger_number": 5,
                     },
                   }
                 })] +

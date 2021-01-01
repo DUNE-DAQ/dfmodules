@@ -244,7 +244,7 @@
                         "data_store_parameters": {
                             "directory_path": ".",
                             "file_layout_parameters": {
-                                "digits_for_trigger_record_name": 5,
+                                "digits_for_trigger_number": 5,
                                 "trigger_record_name_prefix": "TriggerRecord"
                             },
                             "filename_parameters": {

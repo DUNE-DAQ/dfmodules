@@ -13,6 +13,8 @@
  */
 
 #include "dfmodules/StorageKey.hpp"
+#include "dfmodules/hdf5datastore/Nljs.hpp"
+#include "dfmodules/hdf5datastore/Structs.hpp"
 
 #include <boost/algorithm/string.hpp>
 
@@ -64,7 +66,7 @@ public:
     // first, we take care of the trigger number
     std::ostringstream triggerNumberString;
     triggerNumberString << layout_params.trigger_record_name_prefix
-                        << std::setw(layout_params.digits_for_trigger_record_name) << std::setfill('0')
+                        << std::setw(layout_params.digits_for_trigger_number) << std::setfill('0')
                         << data_key.getTriggerNumber();
     elementList.push_back(triggerNumberString.str());
 

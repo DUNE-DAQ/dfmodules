@@ -39,7 +39,7 @@ local types = {
     hdf5_file_layout_params: s.record("HDF5DataStoreFileLayoutParams", [
         s.field("trigger_record_name_prefix", self.flprefix, "TriggerRecord",
                 doc="Prefix for the TriggerRecord name"),
-        s.field("digits_for_trigger_record_name", self.count, 6,
+        s.field("digits_for_trigger_number", self.count, 6,
                 doc="Number of digits to use for the TriggerRecord name inside the HDF5 file"),
         s.field("detector_name", self.detname, "TPC",
                 doc="Name for the detector"),
