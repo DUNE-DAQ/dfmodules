@@ -47,16 +47,16 @@ void
 FakeTrigDecEmu::init(const data_t& init_data)
 {
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
-  auto qi = appfwk::qindex(init_data, { "trigger_decision_output_queue", "trigger_inhibit_input_queue" });
+  auto qi = appfwk::qindex(init_data, { "trigger_decision_sink", "trigger_inhibit_source" });
   try {
-    triggerDecisionOutputQueue_.reset(new trigdecsink_t(qi["trigger_decision_output_queue"].inst));
+    triggerDecisionOutputQueue_.reset(new trigdecsink_t(qi["trigger_decision_sink"].inst));
   } catch (const ers::Issue& excpt) {
-    throw InvalidQueueFatalError(ERS_HERE, get_name(), "trigger_decision_output_queue", excpt);
+    throw InvalidQueueFatalError(ERS_HERE, get_name(), "trigger_decision_sink", excpt);
   }
   try {
-    triggerInhibitInputQueue_.reset(new triginhsource_t(qi["trigger_inhibit_input_queue"].inst));
+    triggerInhibitInputQueue_.reset(new triginhsource_t(qi["trigger_inhibit_source"].inst));
   } catch (const ers::Issue& excpt) {
-    throw InvalidQueueFatalError(ERS_HERE, get_name(), "trigger_inhibit_input_queue", excpt);
+    throw InvalidQueueFatalError(ERS_HERE, get_name(), "trigger_inhibit_source", excpt);
   }
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }

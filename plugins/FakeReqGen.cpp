@@ -51,11 +51,11 @@ FakeReqGen::init(const data_t& init_data)
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
   auto qilist = appfwk::qindex(
     init_data,
-    { "trigger_decision_from_data_selection", "trigger_decision_for_event_building", "trigger_decision_for_inhibit" });
+    { "trigger_decision_input_queue", "trigger_decision_for_event_building", "trigger_decision_for_inhibit" });
   try {
-    triggerDecisionInputQueue_.reset(new trigdecsource_t(qilist["trigger_decision_from_data_selection"].inst));
+    triggerDecisionInputQueue_.reset(new trigdecsource_t(qilist["trigger_decision_input_queue"].inst));
   } catch (const ers::Issue& excpt) {
-    throw InvalidQueueFatalError(ERS_HERE, get_name(), "trigger_decision_from_data_selection", excpt);
+    throw InvalidQueueFatalError(ERS_HERE, get_name(), "trigger_decision_input_queue", excpt);
   }
   try {
     triggerDecisionOutputQueue_.reset(new trigdecsink_t(qilist["trigger_decision_for_event_building"].inst));
