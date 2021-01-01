@@ -30,10 +30,6 @@ class HDF5KeyTranslator
 public:
   inline static const std::string PATH_SEPARATOR = "/";
 
-  static const int TRIGGERNUMBER_DIGITS = 6;
-  static const int APANUMBER_DIGITS = 3;
-  static const int LINKNUMBER_DIGITS = 2;
-
   /**
    * @brief Translates the specified StorageKey into an HDF5 'path',
    * where the 'path' is string that has values from the StorageKey
@@ -41,9 +37,10 @@ public:
    * The intention of this path string is to specify the Group/DataSet
    * structure that should be used in the HDF5 files that are created by this library.
    */
-  static std::string getPathString(const StorageKey& key)
+  static std::string get_path_string(const StorageKey& data_key,
+                                     const hdf5datastore::HDF5DataStoreFileLayoutParams& layout_params)
   {
-    std::vector<std::string> elementList = getPathElements(key);
+    std::vector<std::string> elementList = get_path_elements(data_key, layout_params);
 
     std::string path = elementList[0]; // need error checking
 
@@ -59,26 +56,31 @@ public:
    * where the 'path' elements are the strings that specify the Group/DataSet
    * structure that should be used in the HDF5 files that are created by this library.
    */
-  static std::vector<std::string> getPathElements(const StorageKey& key)
+  static std::vector<std::string> get_path_elements(const StorageKey& data_key,
+                                                    const hdf5datastore::HDF5DataStoreFileLayoutParams& layout_params)
   {
     std::vector<std::string> elementList;
 
     // first, we take care of the trigger number
     std::ostringstream triggerNumberString;
-    triggerNumberString << std::setw(TRIGGERNUMBER_DIGITS) << std::setfill('0') << key.getTriggerNumber();
+    triggerNumberString << layout_params.trigger_record_name_prefix
+                        << std::setw(layout_params.digits_for_trigger_record_name) << std::setfill('0')
+                        << data_key.getTriggerNumber();
     elementList.push_back(triggerNumberString.str());
 
     // Add detector type
-    elementList.push_back(key.getDetectorType());
+    elementList.push_back(data_key.getDetectorType());
 
     // next, we translate the APA number location
     std::ostringstream apaNumberString;
-    apaNumberString << std::setw(APANUMBER_DIGITS) << std::setfill('0') << key.getApaNumber();
+    apaNumberString << layout_params.apa_name_prefix << std::setw(layout_params.digits_for_apa_number)
+                    << std::setfill('0') << data_key.getApaNumber();
     elementList.push_back(apaNumberString.str());
 
     // Finally, add link number
     std::ostringstream linkNumberString;
-    linkNumberString << std::setw(LINKNUMBER_DIGITS) << std::setfill('0') << key.getLinkNumber();
+    linkNumberString << layout_params.link_name_prefix << std::setw(layout_params.digits_for_link_number)
+                     << std::setfill('0') << data_key.getLinkNumber();
     elementList.push_back(linkNumberString.str());
 
     return elementList;

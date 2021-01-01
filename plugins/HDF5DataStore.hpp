@@ -107,7 +107,8 @@ public:
   virtual KeyedDataBlock read(const StorageKey& key)
   {
     TLOG(TLVL_DEBUG) << get_name() << ": going to read data block from triggerNumber/detectorType/apaNumber/linkNumber "
-                     << HDF5KeyTranslator::getPathString(key) << " from file " << getFileNameFromKey(key);
+                     << HDF5KeyTranslator::get_path_string(key, config_params_.file_layout_parameters) << " from file "
+                     << getFileNameFromKey(key);
 
     // opening the file from Storage Key + path_ + fileName_ + operation_mode_
     std::string fullFileName = getFileNameFromKey(key);
@@ -178,13 +179,6 @@ public:
    */
   virtual void write(const KeyedDataBlock& dataBlock)
   {
-
-
-    const size_t triggerNumber = dataBlock.data_key.getTriggerNumber();
-    const std::string detectorType = dataBlock.data_key.getDetectorType();
-    const size_t apaNumber = dataBlock.data_key.getApaNumber();
-    const size_t linkNumber = dataBlock.data_key.getLinkNumber();
-
     // opening the file from Storage Key + path_ + fileName_ + operation_mode_
     std::string fullFileName = HDF5KeyTranslator::get_file_name(dataBlock.data_key, config_params_, file_count_);
 
@@ -197,8 +191,10 @@ public:
                      << " and apa/link number " << dataBlock.data_key.getApaNumber()
                      << " / " << dataBlock.data_key.getLinkNumber();
 
-    const std::string datagroup_name = std::to_string(triggerNumber);
-
+    std::vector<std::string> group_and_dataset_path_elements =
+      HDF5KeyTranslator::get_path_elements(dataBlock.data_key, config_params_.file_layout_parameters);
+    const std::string datagroup_name = group_and_dataset_path_elements[0];
+    const std::string detectorType = group_and_dataset_path_elements[1];
 
     // Check if a HDF5 group exists and if not create one
     if (!filePtr->exist(datagroup_name)) {
@@ -218,7 +214,7 @@ public:
       if (!detectorTypeGroup.isValid()) {
         throw InvalidHDF5Group(ERS_HERE, get_name(), detectorType, detectorType);
       } else {
-        const std::string apagroup_name = std::to_string(apaNumber);
+        const std::string apagroup_name = group_and_dataset_path_elements[2];
         // Check if a HDF5 group exists and if not create one
         if (!detectorTypeGroup.exist(apagroup_name)) {
           detectorTypeGroup.createGroup(apagroup_name);
@@ -228,7 +224,7 @@ public:
           throw InvalidHDF5Group(ERS_HERE, get_name(), apagroup_name, apagroup_name);
         } else {
 
-          const std::string dataset_name = std::to_string(linkNumber);
+          const std::string dataset_name = group_and_dataset_path_elements[3];
           HighFive::DataSpace theDataSpace = HighFive::DataSpace({ dataBlock.data_size, 1 });
           HighFive::DataSetCreateProps dataCProps_;
           HighFive::DataSetAccessProps dataAProps_;

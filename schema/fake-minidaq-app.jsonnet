@@ -72,12 +72,13 @@ local qspec_list = [
                     "directory_path": ".",
                     "mode": "all-per-file",
                     "filename_parameters": {
-                      "overall_prefix": "fake_minidaq",
-                      "digits_for_run_number": 7,
+                      "overall_prefix": "fake_minidaqapp",
+                      "digits_for_run_number": 6,
                       "file_index_prefix": "file",
                     },
-                    "file_internal_parameters": {
-                      "trigger_record_name_prefix": "",
+                    "file_layout_parameters": {
+                      "trigger_record_name_prefix": "TriggerRecord",
+                      "digits_for_trigger_record_name": 5,
                     },
                   }
                 })] +

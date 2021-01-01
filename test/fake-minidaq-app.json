@@ -243,13 +243,14 @@
                     "data": {
                         "data_store_parameters": {
                             "directory_path": ".",
-                            "file_internal_parameters": {
-                                "trigger_record_name_prefix": ""
+                            "file_layout_parameters": {
+                                "digits_for_trigger_record_name": 5,
+                                "trigger_record_name_prefix": "TriggerRecord"
                             },
                             "filename_parameters": {
-                                "digits_for_run_number": 7,
+                                "digits_for_run_number": 6,
                                 "file_index_prefix": "file",
-                                "overall_prefix": "fake_minidaq"
+                                "overall_prefix": "fake_minidaqapp"
                             },
                             "mode": "all-per-file",
                             "name": "data_store",

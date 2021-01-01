@@ -21,6 +21,8 @@ local types = {
 
     flprefix: s.string("FileLayoutPrefix", doc="String used to specify a Group or DataSet name prefix"),
 
+    detname: s.string("DetectorName", doc="String used to specify a detector type"),
+
     hdf5_filename_params: s.record("HDF5DataStoreFileNameParams", [
         s.field("overall_prefix", self.fnprefix, "fake_minidaqapp",
                 doc="Prefix for the overall filename for the files on disk"),
@@ -39,6 +41,8 @@ local types = {
                 doc="Prefix for the TriggerRecord name"),
         s.field("digits_for_trigger_record_name", self.count, 6,
                 doc="Number of digits to use for the TriggerRecord name inside the HDF5 file"),
+        s.field("detector_name", self.detname, "TPC",
+                doc="Name for the detector"),
         s.field("apa_name_prefix", self.flprefix, "APA",
                 doc="Prefix for the APA name"),
         s.field("digits_for_apa_number", self.count, 3,
@@ -62,7 +66,7 @@ local types = {
                 doc="Maximum number of bytes in each raw data file"),
         s.field("filename_parameters", self.hdf5_filename_params,
                 doc="Parameters that are use for the filenames of the HDF5 files"),
-        s.field("file_internal_parameters", self.hdf5_file_layout_params,
+        s.field("file_layout_parameters", self.hdf5_file_layout_params,
                 doc="Parameters that are use for the layout of Groups and DataSets within the HDF5 file"),
     ], doc="HDF5DataStore configuration"),
 
