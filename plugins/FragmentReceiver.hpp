@@ -68,9 +68,9 @@ private:
 
   // Input Queues
   using trigger_decision_source_t = dunedaq::appfwk::DAQSource<dfmessages::TriggerDecision> ;
-  using fragment_source_t = dunedaq::appfwk::DAQSource<dataformats::Fragment> ;
+  using fragment_source_t = dunedaq::appfwk::DAQSource<dataformats::Fragment*> ;
 
-  std::vector<fragment_source_t> frag_queues_ ;
+  //std::vector<std::unique_ptr<fragment_source_t>> frag_queues_ ;
   
   std::string trigger_decision_source_name_ ;
   std::vector<std::string> fragment_source_names_ ; 
@@ -80,6 +80,11 @@ private:
   using trigger_record_sink_t = appfwk::DAQSink<dataformats::Fragment> ;
   
   std::string trigger_record_sink_name_ ;
+
+  // loop configurations
+  unsigned int decision_loop_cnt_ ;
+  unsigned int fragment_loop_cnt_ ;
+  timestamp_diff_t max_time_difference_ ; 
 
   // bookeeping
   struct TriggerId {
@@ -94,13 +99,13 @@ private:
     run_number_t run_number;
 
     bool operator < ( const TriggerId & other ) noexecpt { 
-      return  trigger_number != other.trigger_number ? 
+      return  run_number == other.run_number ? 
 	trigger_number < other.trigger_number : 
 	run_number < other.run_number ; 
     }
   };
 
-  std::map<TriggerId, std::vector<dataformats::Fragment>> fragments_ ; // shall we store by pointer? 
+  std::map<TriggerId, std::vector<dataformats::Fragment*>> fragments_ ; 
   std::map<TriggerId, dfmessages::TriggerDecision> trigger_decisions_ ;
 
 };

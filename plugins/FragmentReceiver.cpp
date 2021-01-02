@@ -94,18 +94,85 @@ void
 FragmentReceiver::do_work(std::atomic<bool>& running_flag)
 {
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() method";
-  int32_t receivedCount = 0;
+  //uint32_t receivedCount = 0;
+
+  // allocate queues
+  trigger_decision_source_t decision_source( trigger_decision_source_name_ ) ;
+  std::vector<std::unique_ptr<fragment_source_t>> frag_sources ; 
+  for ( unsigned int i = 0 ; i < fragment_source_names_.size() ; ++i ) {
+    frag_sources.push_back( new fragment_source_t( fragment_source_names_[i] ) ) ; 
+  }
+    
+  timestamp_t current_time = 0 ; 
+  
+  // temp memory allocations
+  dfmessages::TriggerDecision  temp_dec ;
+  dataformats::Fragment* temp_fragment ; 
+  TriggerId temp_id ;
 
   while (running_flag.load()) {
-    dfmessages::DataRequest dataReq;
-    try {
-      dataRequestInputQueue_->pop(dataReq, queueTimeout_);
-      ++receivedCount;
-    } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
-      // it is perfectly reasonable that there might be no data in the queue
-      // some fraction of the times that we check, so we just continue on and try again
-      continue;
-    }
+
+    //-------------------------------------------------
+    // Retrieve a certain number of trigger decisions
+    //--------------------------------------------------
+
+    for ( unsigned int i = 0 ; i < decision_loop_cnt_ ; ++i ) {
+      
+      try {
+	decision_source.pop( temp_dec, queueTimeout_) ;
+	
+      } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
+	// it is perfectly reasonable that there might be no data in the queue
+	// some fraction of the times that we check, so we just continue on and try again
+	continue;
+      }
+
+      current_time = temp_dec.trigger_timestamp ; 
+
+      temp_id = TriggerId( temp_dec ) ;
+      trigger_decisions_[temp_id] = temp_dec ; 
+      
+    }  // decision loop
+    
+    //-------------------------------------------------
+    // Try to get Fragments from every queue 
+    //--------------------------------------------------
+    
+    for ( unsigned int i = 0 ; i < fragment_loop_cnt_ ; ++i ) {
+      
+      for ( unsigned int j = 0 ; j < frag_sources.size() ; ++j ) {
+
+	try {
+	  frag_sources[j] -> pop( temp_fragment, queueTimeout_) ;
+	
+	} catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
+	// it is perfectly reasonable that there might be no data in the queue
+	// some fraction of the times that we check, so we just continue on and try again
+	  continue;
+	}
+	
+	temp_id  = TriggerId( *temp_fragment ) ;
+	fragments_[temp_id].push_back( temp_fragment ) ;
+	
+      } // queue loop 
+    }  // fragment loop
+    
+    
+    //-------------------------------------------------
+    // Check if some decisions are complete and create dedicated record
+    //--------------------------------------------------
+
+
+    
+    
+
+    //-------------------------------------------------
+    // Check if some decisions are obsolete 
+    //--------------------------------------------------
+
+    
+
+    
 
     // TODO PAR 2020-12-17: dataformats::Fragment has to be
     // constructed with some payload data, so I'm putting a single int
