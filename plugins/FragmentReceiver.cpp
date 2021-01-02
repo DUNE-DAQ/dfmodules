@@ -98,6 +98,7 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
 
   // allocate queues
   trigger_decision_source_t decision_source( trigger_decision_source_name_ ) ;
+  trigger_record_sink_t record_sink( trigger_record_sink_name_ ) ;
   std::vector<std::unique_ptr<fragment_source_t>> frag_sources ; 
   for ( unsigned int i = 0 ; i < fragment_source_names_.size() ; ++i ) {
     frag_sources.push_back( new fragment_source_t( fragment_source_names_[i] ) ) ; 
@@ -119,7 +120,7 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
     for ( unsigned int i = 0 ; i < decision_loop_cnt_ ; ++i ) {
       
       try {
-	decision_source.pop( temp_dec, queueTimeout_) ;
+	decision_source.pop( temp_dec, trigger_decision_timeout_ ) ;
 	
       } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
 	// it is perfectly reasonable that there might be no data in the queue
@@ -143,7 +144,7 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
       for ( unsigned int j = 0 ; j < frag_sources.size() ; ++j ) {
 
 	try {
-	  frag_sources[j] -> pop( temp_fragment, queueTimeout_) ;
+	  frag_sources[j] -> pop( temp_fragment, fragment_timeout_) ;
 	
 	} catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
 	// it is perfectly reasonable that there might be no data in the queue
@@ -162,54 +163,94 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
     // Check if some decisions are complete and create dedicated record
     //--------------------------------------------------
 
+    for ( auto it = trigger_decisions_.begin() ;
+	  it != trigger_decisions_.end() ;
+	  ++it ) {
 
-    
-    
+      auto frag_it = fragments_.find( it -> first ) ;
+
+      if ( frag_it == fragments.end() ) continue ;
+
+      if ( frag_it -> second.size() == it -> second.components.size() ) {
+
+	dataformats::TriggerRecord * temp_record =  BuildTriggerRecord( it -> first ) ; 
+
+	try {
+	  record_sink.push( temp_record, trigger_decision_timeout_ );
+	} catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
+	  std::ostringstream oss_warn;
+	  oss_warn << "push to output queue \"" << get_name() << "\"";
+	  ers::warning(
+		       dunedaq::appfwk::QueueTimeoutExpired( ERS_HERE,
+							     record_sink.get_name(),
+							     oss_warn.str(),
+							     std::chrono::duration_cast<std::chrono::milliseconds>(trigger_decision_timeout_).count()));
+	}
+	
+      } // completed record
+      
+      
+    } // decision loop for complete record
+      
 
     //-------------------------------------------------
     // Check if some decisions are obsolete 
     //--------------------------------------------------
 
+    for ( auto it = trigger_decisions_.begin() ;
+	  it != trigger_decisions_.end() ;
+	  ++it ) {
+
+      if ( current_time - it -> second.trigger_timestamp > max_time_difference_ ) {
+
+	ers::warning( TimedOutTriggerDecision( ERS_HERE, it -> second, current_time ) ) ;
+	
+	temp_id = it -> first ;
+	
+	// remove possible fragments associated with the decision
+	auto frag_it = fragments_.find( it -> first ) ;
+	if ( frag_it !=  fragments_.end() ) {
+	  //  there are fragments corresponding to this ID
+	  for( dataformats::Fragment* f : frag_it -> second ) {
+
+	    ers::error( RemovingFragment( ERS_HERE, f -> get_header() ) ) ;
+	    
+	    delete f ;
+	  }
+	  
+	} // if there were fragments corresponding to this ID
+
+	// remove the decision
+	it = trigger_decisions_.erase( it ) ;
+	
+      }  // timed out request
+
+    } // decision loop for obsolete searches
     
-
-    
-
-    // TODO PAR 2020-12-17: dataformats::Fragment has to be
-    // constructed with some payload data, so I'm putting a single int
-    // in it for now
-    int dummy_int = 3;
-    std::unique_ptr<dataformats::Fragment> dataFragPtr(new dataformats::Fragment(&dummy_int, sizeof(dummy_int)));
-    dataFragPtr->set_trigger_number(dataReq.trigger_number);
-    bool wasSentSuccessfully = false;
-    while (!wasSentSuccessfully && running_flag.load()) {
-      TLOG(TLVL_WORK_STEPS) << get_name() << ": Pushing the Data Fragment for trigger number "
-                            << dataFragPtr->get_trigger_number() << " onto the output queue";
-      try {
-        dataFragmentOutputQueue_->push(std::move(dataFragPtr), queueTimeout_);
-        wasSentSuccessfully = true;
-      } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
-        std::ostringstream oss_warn;
-        oss_warn << "push to output queue \"" << dataFragmentOutputQueue_->get_name() << "\"";
-        ers::warning(dunedaq::appfwk::QueueTimeoutExpired(
-          ERS_HERE,
-          get_name(),
-          oss_warn.str(),
-          std::chrono::duration_cast<std::chrono::milliseconds>(queueTimeout_).count()));
-      }
-    }
-
-    // TLOG(TLVL_WORK_STEPS) << get_name() << ": Start of sleep while waiting for run Stop";
-    // std::this_thread::sleep_for(std::chrono::milliseconds(sleepMsecWhileRunning_));
-    // TLOG(TLVL_WORK_STEPS) << get_name() << ": End of sleep while waiting for run Stop";
-  }
+  }  // working loop
 
   std::ostringstream oss_summ;
   oss_summ << ": Exiting the do_work() method, received Fake trigger decision messages for " << receivedCount
            << " triggers.";
   ers::info(ProgressUpdate(ERS_HERE, get_name(), oss_summ.str()));
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_work() method";
+}  
+
+
+dataformats::TriggerRecord * FragmentReceiver::BuildTriggerRecord( const TriggerId & id ) {
+  
+  // create and fill trigger header
+  
+  // create trigger record
+  
+  // fill header and fragments
+  
+  // somehow derive the requests and add them as well
+  
+  // all the operations have to be done removing the memory from the maps
 }
 
+  
 } // namespace dfmodules
 } // namespace dunedaq
 
