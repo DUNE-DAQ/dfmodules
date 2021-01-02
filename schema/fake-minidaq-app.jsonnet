@@ -80,7 +80,8 @@ local qspec_list = [
                       "trigger_record_name_prefix": "TriggerRecord",
                       "digits_for_trigger_number": 5,
                     },
-                  }
+                  },
+                  "threshold_for_inhibit": 3
                 })] +
               [cmd.mcmd("fdp"+idx, fdp_ns.generate_config_params(idx))
                for idx in std.range(1, NUMBER_OF_FAKE_DATA_PRODUCERS)

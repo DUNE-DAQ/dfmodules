@@ -51,6 +51,11 @@ public:
 
   void stop_checking();
 
+  void set_threshold_for_inhibit(uint32_t value)
+  {
+    threshold_for_inhibit_.store(value);
+  }
+
   void set_latest_trigger_number(dataformats::trigger_number_t trig_num)
   {
     trigger_number_at_end_of_processing_chain_.store(trig_num);
@@ -63,7 +68,7 @@ private:
 
   // Configuration
   std::chrono::milliseconds queueTimeout_;
-  uint32_t trig_num_diff_threshold_for_inhibit_;
+  std::atomic<uint32_t> threshold_for_inhibit_;
 
   // Queue(s)
   std::unique_ptr<trigdecsource_t> trigger_decision_source_;

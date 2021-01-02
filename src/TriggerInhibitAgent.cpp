@@ -30,7 +30,7 @@ TriggerInhibitAgent::TriggerInhibitAgent(const std::string& parent_name,
   : NamedObject(parent_name + "::TriggerInhibitAgent")
   , thread_(std::bind(&TriggerInhibitAgent::do_work, this, std::placeholders::_1))
   , queueTimeout_(100)
-  , trig_num_diff_threshold_for_inhibit_(1)
+  , threshold_for_inhibit_(1)
   , trigger_decision_source_(std::move(our_input))
   , trigger_inhibit_sink_(std::move(our_output))
   , trigger_number_at_start_of_processing_chain_(0)
@@ -104,11 +104,12 @@ TriggerInhibitAgent::do_work(std::atomic<bool>& running_flag)
 
     // check if A) we are supposed to be checking the trigger_number difference, and
     // B) if so, whether an Inhibit should be asserted or cleared
-    if (trig_num_diff_threshold_for_inhibit_ > 0) {
+    uint32_t threshold = threshold_for_inhibit_.load();
+    if (threshold > 0) {
       dataformats::trigger_number_t temp_trig_num_at_start = trigger_number_at_start_of_processing_chain_.load();
       dataformats::trigger_number_t temp_trig_num_at_end = trigger_number_at_end_of_processing_chain_.load();
       if (temp_trig_num_at_start >= temp_trig_num_at_end &&
-          (temp_trig_num_at_start - temp_trig_num_at_end) >= trig_num_diff_threshold_for_inhibit_) {
+          (temp_trig_num_at_start - temp_trig_num_at_end) >= threshold) {
         if (current_state == free_state) {
           requested_state = busy_state;
         }

@@ -10,6 +10,7 @@
 #include "dfmodules/CommonIssues.hpp"
 #include "dfmodules/KeyedDataBlock.hpp"
 #include "dfmodules/StorageKey.hpp"
+#include "dfmodules/datawriter/Nljs.hpp"
 
 #include "appfwk/DAQModuleHelper.hpp"
 #include "dataformats/Fragment.hpp"
@@ -85,8 +86,13 @@ DataWriter::do_conf(const data_t& payload)
 {
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
 
+  datawriter::ConfParams conf_params = payload.get<datawriter::ConfParams>();
+  trigger_inhibit_agent_->set_threshold_for_inhibit(conf_params.threshold_for_inhibit);
+  TLOG(TLVL_CONFIG) << get_name() << ": threshold_for_inhibit is " << conf_params.threshold_for_inhibit;
+  TLOG(TLVL_CONFIG) << get_name() << ": data_store_parameters are " << conf_params.data_store_parameters;
+
   // create the DataStore instance here
-  data_writer_ = makeDataStore( payload["data_store_parameters"] ) ; 
+  data_writer_ = makeDataStore(payload["data_store_parameters"]);
 
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
 }
@@ -156,8 +162,11 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
 
       // write each Fragment to the DataStore
       // //StorageKey fragment_skey(trigRecPtr->get_run_number(), trigRecPtr->get_trigger_number, "FELIX",
-      StorageKey fragment_skey(frag_ptr->get_run_number(), frag_ptr->get_trigger_number(), "FELIX",
-                               frag_ptr->get_link_ID().APA_number, frag_ptr->get_link_ID().link_number);
+      StorageKey fragment_skey(frag_ptr->get_run_number(),
+                               frag_ptr->get_trigger_number(),
+                               "FELIX",
+                               frag_ptr->get_link_ID().APA_number,
+                               frag_ptr->get_link_ID().link_number);
       KeyedDataBlock data_block(fragment_skey);
       data_block.unowned_data_start = frag_ptr->get_storage_location();
       data_block.data_size = frag_ptr->get_size();

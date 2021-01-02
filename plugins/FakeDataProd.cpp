@@ -8,9 +8,9 @@
 
 #include "FakeDataProd.hpp"
 #include "dfmodules/CommonIssues.hpp"
+#include "dfmodules/fakedataprod/Nljs.hpp"
 
 #include "appfwk/DAQModuleHelper.hpp"
-#include "dfmodules/fakedataprod/Nljs.hpp"
 
 #include "TRACE/trace.h"
 #include "ers/ers.h"
@@ -133,7 +133,9 @@ FakeDataProd::do_work(std::atomic<bool>& running_flag)
     dataFragPtr->set_window_width(dataReq.window_width);
 
     // to-do?  add config parameter for artificial delay?
-    // std::this_thread::sleep_for(std::chrono::milliseconds(550));
+    // if ((dataReq.trigger_number % 7) == 0) {
+    //  std::this_thread::sleep_for(std::chrono::milliseconds(4550));
+    //}
 
     bool wasSentSuccessfully = false;
     while (!wasSentSuccessfully && running_flag.load()) {

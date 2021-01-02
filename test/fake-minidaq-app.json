@@ -255,7 +255,8 @@
                             "mode": "all-per-file",
                             "name": "data_store",
                             "type": "HDF5DataStore"
-                        }
+                        },
+                        "threshold_for_inhibit": 3
                     },
                     "match": "datawriter"
                 },
