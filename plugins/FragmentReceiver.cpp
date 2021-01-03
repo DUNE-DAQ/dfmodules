@@ -164,17 +164,26 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
     //--------------------------------------------------
 
     for ( auto it = trigger_decisions_.begin() ;
-	  it != trigger_decisions_.end() ;
-	  ++it ) {
+	  it != trigger_decisions_.end() ; ) {
+
+      dataformats::TriggerRecord * temp_record = nullptr ;
+      
+      if ( current_time - it -> second.trigger_timestamp > max_time_difference_ ) {
+	ers::warning( TimedOutTriggerDecision( ERS_HERE, it -> second, current_time ) ) ;
+	temp_record = BuildTriggerRecord( it -> first ) ; 
+      }
 
       auto frag_it = fragments_.find( it -> first ) ;
-
-      if ( frag_it == fragments.end() ) continue ;
-
-      if ( frag_it -> second.size() == it -> second.components.size() ) {
-
-	dataformats::TriggerRecord * temp_record =  BuildTriggerRecord( it -> first ) ; 
-
+      
+      if ( frag_it != fragments.end() ) {
+	
+	if ( frag_it -> second.size() == it -> second.components.size() ) {
+	  temp_record = BuildTriggerRecord( it -> first ) ; 
+	}
+      } 
+      
+      if ( temp_record ) {
+	
 	try {
 	  record_sink.push( temp_record, trigger_decision_timeout_ );
 	} catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
@@ -187,46 +196,36 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
 							     std::chrono::duration_cast<std::chrono::milliseconds>(trigger_decision_timeout_).count()));
 	}
 	
-      } // completed record
+      } // there is a record
+      else {
+	++it ;
+      }
       
       
     } // decision loop for complete record
       
 
     //-------------------------------------------------
-    // Check if some decisions are obsolete 
+    // Check if some fragments are obsolete 
     //--------------------------------------------------
 
-    for ( auto it = trigger_decisions_.begin() ;
-	  it != trigger_decisions_.end() ;
-	  ++it ) {
+    for ( auto it = fragments_.begin() ;
+	  it != fragments_.end() ; ) {
 
-      if ( current_time - it -> second.trigger_timestamp > max_time_difference_ ) {
+      if ( current_time - it -> second.get_header().trigger_timestamp > max_time_difference_ ) {
 
-	ers::warning( TimedOutTriggerDecision( ERS_HERE, it -> second, current_time ) ) ;
+	ers::error( RemovingFragment( ERS_HERE, it -> second.get_header() ) ) ;
+	delete it -> second ;
 	
-	temp_id = it -> first ;
-	
-	// remove possible fragments associated with the decision
-	auto frag_it = fragments_.find( it -> first ) ;
-	if ( frag_it !=  fragments_.end() ) {
-	  //  there are fragments corresponding to this ID
-	  for( dataformats::Fragment* f : frag_it -> second ) {
-
-	    ers::error( RemovingFragment( ERS_HERE, f -> get_header() ) ) ;
-	    
-	    delete f ;
-	  }
-	  
-	} // if there were fragments corresponding to this ID
-
-	// remove the decision
 	it = trigger_decisions_.erase( it ) ;
 	
-      }  // timed out request
+      }
+      else {
+	++it ;
+      }
+      
+    } // fragment loop
 
-    } // decision loop for obsolete searches
-    
   }  // working loop
 
   std::ostringstream oss_summ;
