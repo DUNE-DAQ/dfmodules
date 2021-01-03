@@ -108,7 +108,7 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
   
   // temp memory allocations
   dfmessages::TriggerDecision  temp_dec ;
-  dataformats::Fragment* temp_fragment ; 
+  std::unique_ptr<dataformats::Fragment> temp_fragment ; 
   TriggerId temp_id ;
 
   while (running_flag.load()) {
@@ -153,7 +153,7 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
 	}
 	
 	temp_id  = TriggerId( *temp_fragment ) ;
-	fragments_[temp_id].push_back( temp_fragment ) ;
+	fragments_[temp_id].push_back( std::move(temp_fragment) ) ;
 	
       } // queue loop 
     }  // fragment loop
@@ -167,7 +167,7 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
     for ( auto it = trigger_decisions_.begin() ;
 	  it != trigger_decisions_.end() ; ) {
 
-      dataformats::TriggerRecord * temp_record = nullptr ;
+      std::unique_ptr<dataformats::TriggerRecord> temp_record ; 
       
       if ( current_time - it -> second.trigger_timestamp > max_time_difference_ ) {
 	ers::warning( TimedOutTriggerDecision( ERS_HERE, it -> second, current_time ) ) ;
@@ -184,10 +184,10 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
 	} 
       }
       
-      if ( temp_record ) {
-	
+      if ( temp_record.get() ) {
+
 	try {
-	  record_sink.push( temp_record, trigger_decision_timeout_ );
+	  record_sink.push( std::move(temp_record), trigger_decision_timeout_ );
 	} catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
 	  std::ostringstream oss_warn;
 	  oss_warn << "push to output queue \"" << get_name() << "\"";
@@ -216,7 +216,6 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
       if ( current_time - it -> second.get_header().trigger_timestamp > max_time_difference_ ) {
 
 	ers::error( RemovingFragment( ERS_HERE, it -> second.get_header() ) ) ;
-	delete it -> second ;
 	
 	it = trigger_decisions_.erase( it ) ;
 
@@ -241,7 +240,30 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
 
 
 dataformats::TriggerRecord * FragmentReceiver::BuildTriggerRecord( const TriggerId & id ) {
+
+  dataformats::TriggerRecord * trig_rec_ptr = new dataformats::TriggerRecord() ;
   
+  auto trig_dec_it = trigger_decisions_.find( id ) ;
+  const dfmessages::TriggerDecision & trig_dec = trig_dec_it -> second ;
+
+  trig_rec_ptr -> set_trigger_number( trig_dec.trigger_number );
+  trig_rec_ptr -> set_run_number( trig_dec.run_number );
+  trig_rec_ptr -> set_trigger_timestamp(trig_dec.trigger_timestamp);
+
+  auto frags_it = fragments_.find( id ) ;
+  auto & frags = frags_it -> second ;
+
+  timestamp_t min_time = 0, max_time = 0 ;
+
+  for ( unsigned int i = 0 ; i < frags.size() ; ++i ) {
+
+    
+  }
+  
+
+  trig_rec_ptr -> set_fragments(frag_ptr_vector);
+
+
   // create and fill trigger header
   
   // create trigger record

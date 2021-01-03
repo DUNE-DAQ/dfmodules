@@ -102,7 +102,7 @@ namespace dunedaq {
 
 
     protected:
-      dataformats::TriggerRecord * BuildTriggerRecord( const TriggerId & ) noexept ;
+      dataformats::TriggerRecord * BuildTriggerRecord( const TriggerId & ) ;
       // Plese note that the method will destroy the memory saved in the bookkeeping map
   
     private:
@@ -122,13 +122,13 @@ namespace dunedaq {
 
       // Input Queues
       using trigger_decision_source_t = dunedaq::appfwk::DAQSource<dfmessages::TriggerDecision> ;
-      using fragment_source_t = dunedaq::appfwk::DAQSource<dataformats::Fragment*> ;
+      using fragment_source_t = dunedaq::appfwk::DAQSource<std::unique_ptr<dataformats::Fragment>> ;
 
       std::string trigger_decision_source_name_ ;
       std::vector<std::string> fragment_source_names_ ; 
   
       // Output queues
-      using trigger_record_sink_t = appfwk::DAQSink<dataformats::TriggerRecordHeader*> ;
+      using trigger_record_sink_t = appfwk::DAQSink<std::unique_ptr<dataformats::TriggerRecord>> ;
   
       std::string trigger_record_sink_name_ ;
 
@@ -138,7 +138,7 @@ namespace dunedaq {
       timestamp_diff_t max_time_difference_ ; 
 
       // bookeeping
-      std::map<TriggerId, std::vector<dataformats::Fragment*>> fragments_ ; 
+      std::map<TriggerId, std::vector<std::unique_ptr<dataformats::Fragment>> fragments_ ; 
       std::map<TriggerId, dfmessages::TriggerDecision> trigger_decisions_ ;
 
     };
