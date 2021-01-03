@@ -72,8 +72,8 @@ public:
    * @param name, path, fileName, operationMode
    *
    */
-  explicit HDF5DataStore( const nlohmann::json & conf ) 
-    : DataStore( conf["name"].get<std::string>() ) 
+  explicit HDF5DataStore( const nlohmann::json & conf )
+    : DataStore( conf.value("name", "data_store") )
     , fullNameOfOpenFile_("")
     , openFlagsOfOpenFile_(0)
   {
