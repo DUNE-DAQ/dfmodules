@@ -8,6 +8,7 @@
  */
 
 #include "../plugins/HDF5KeyTranslator.hpp"
+#include "../src/dfmodules/hdf5datastore/Structs.hpp"
 
 #include "ers/ers.h"
 
@@ -26,30 +27,60 @@ BOOST_AUTO_TEST_CASE(PathString)
 {
   std::string path;
 
-  StorageKey key1(1, "None", 2);
-  path = HDF5KeyTranslator::getPathString(key1);
-  BOOST_REQUIRE_EQUAL(path, "0001/002");
+  hdf5datastore::HDF5DataStoreFileLayoutParams layout_params;
+  layout_params.trigger_record_name_prefix = "";
+  layout_params.digits_for_trigger_number = 4;
+  layout_params.apa_name_prefix = "";
+  layout_params.digits_for_apa_number = 3;
+  layout_params.link_name_prefix = "";
+  layout_params.digits_for_link_number = 2;
 
-  StorageKey key2(12345, "None", 6);
-  path = HDF5KeyTranslator::getPathString(key2);
-  BOOST_REQUIRE_EQUAL(path, "12345/006");
+  StorageKey key1(101, 1, "None", 2, 3);  // run number, trigger number, detector name, APA number, link number
+  path = HDF5KeyTranslator::get_path_string(key1, layout_params);
+  BOOST_REQUIRE_EQUAL(path, "0001/None/002/03");
 
-  StorageKey key3(123, "None", 4567);
-  path = HDF5KeyTranslator::getPathString(key3);
-  BOOST_REQUIRE_EQUAL(path, "0123/4567");
+  StorageKey key2(101, 12345, "None", 6, 7);
+  path = HDF5KeyTranslator::get_path_string(key2, layout_params);
+  BOOST_REQUIRE_EQUAL(path, "12345/None/006/07");
+
+  StorageKey key3(101, 123, "None", 4567, 890);
+  path = HDF5KeyTranslator::get_path_string(key3, layout_params);
+  BOOST_REQUIRE_EQUAL(path, "0123/None/4567/890");
+
+  layout_params.trigger_record_name_prefix = "TriggerRecord";
+  layout_params.digits_for_trigger_number = 3;
+  layout_params.apa_name_prefix = "APA";
+  layout_params.digits_for_apa_number = 2;
+  layout_params.link_name_prefix = "Link";
+  layout_params.digits_for_link_number = 3;
+
+  StorageKey key4(101, 22, "FELIX", 33, 44);
+  path = HDF5KeyTranslator::get_path_string(key4, layout_params);
+  BOOST_REQUIRE_EQUAL(path, "TriggerRecord022/FELIX/APA33/Link044");
 }
 
 BOOST_AUTO_TEST_CASE(PathElements)
 {
   std::vector<std::string> elementList;
 
-  StorageKey key1(1, "None", 2);
-  elementList = HDF5KeyTranslator::getPathElements(key1);
-  BOOST_REQUIRE_EQUAL(elementList.size(), 2);
-  BOOST_REQUIRE_EQUAL(elementList[0], "0001");
-  BOOST_REQUIRE_EQUAL(elementList[1], "002");
+  hdf5datastore::HDF5DataStoreFileLayoutParams layout_params;
+  layout_params.trigger_record_name_prefix = "Test";
+  layout_params.digits_for_trigger_number = 4;
+  layout_params.apa_name_prefix = "Fake";
+  layout_params.digits_for_apa_number = 3;
+  layout_params.link_name_prefix = "Link";
+  layout_params.digits_for_link_number = 2;
+
+  StorageKey key1(101, 1, "None", 2, 3);  // run number, trigger number, detector name, APA number, link number
+  elementList = HDF5KeyTranslator::get_path_elements(key1, layout_params);
+  BOOST_REQUIRE_EQUAL(elementList.size(), 4);
+  BOOST_REQUIRE_EQUAL(elementList[0], "Test0001");
+  BOOST_REQUIRE_EQUAL(elementList[1], "None");
+  BOOST_REQUIRE_EQUAL(elementList[2], "Fake002");
+  BOOST_REQUIRE_EQUAL(elementList[3], "Link03");
 }
 
+#if 0
 BOOST_AUTO_TEST_CASE(KeyFromString)
 {
   StorageKey key(0, "", 0); // do we want to add support for a default constructor in StorageKey?
@@ -83,5 +114,6 @@ BOOST_AUTO_TEST_CASE(KeyFromList)
   BOOST_REQUIRE_EQUAL(key.getDetectorID(), StorageKey::INVALID_DETECTORID);
   BOOST_REQUIRE_EQUAL(key.getGeoLocation(), 9);
 }
+#endif
 
 BOOST_AUTO_TEST_SUITE_END()

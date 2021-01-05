@@ -19,26 +19,43 @@
 namespace dunedaq {
 namespace dfmodules {
 
-const int StorageKey::INVALID_EVENTID = std::numeric_limits<int>::max();
-const int StorageKey::INVALID_GEOLOCATION = std::numeric_limits<int>::max();
+
+const int StorageKey::INVALID_RUNNUMBER = std::numeric_limits<int>::max();
+const int StorageKey::INVALID_TRIGGERNUMBER = std::numeric_limits<int>::max();
+const int StorageKey::INVALID_APANUMBER = std::numeric_limits<int>::max(); // AAA:to be changed to something more reasonable, like 150
+const int StorageKey::INVALID_LINKNUMBER = std::numeric_limits<int>::max(); // AAA: to be changed to something more reasonable, like 10
 
 int
-StorageKey::getEventID() const
+StorageKey::getRunNumber() const
 {
-  return m_key.m_event_id;
+  return m_key.m_run_number;
+}
+
+int
+StorageKey::getTriggerNumber() const
+{
+  return m_key.m_trigger_number;
 }
 
 std::string
-StorageKey::getDetectorID() const
+StorageKey::getDetectorType() const
 {
-  return m_key.m_detector_id;
+  return m_key.m_detector_type;
 }
 
 int
-StorageKey::getGeoLocation() const
+StorageKey::getApaNumber() const
 {
-  return m_key.m_geoLocation;
+  return m_key.m_apa_number;
 }
+
+int
+StorageKey::getLinkNumber() const
+{
+  return m_key.m_link_number;
+}
+
+
 
 } // namespace dfmodules
 } // namespace dunedaq

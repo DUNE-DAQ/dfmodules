@@ -6,14 +6,14 @@
                     "data": {
                         "qinfos": [
                             {
-                                "dir": "output",
-                                "inst": "trigger_decision_from_data_selection",
-                                "name": "trigger_decision_output_queue"
+                                "dir": "input",
+                                "inst": "trigger_inhibit_q",
+                                "name": "trigger_inhibit_source"
                             },
                             {
-                                "dir": "input",
-                                "inst": "trigger_inhibit_to_data_selection",
-                                "name": "trigger_inhibit_input_queue"
+                                "dir": "output",
+                                "inst": "trigger_decision_q",
+                                "name": "trigger_decision_sink"
                             }
                         ]
                     },
@@ -25,18 +25,18 @@
                         "qinfos": [
                             {
                                 "dir": "input",
-                                "inst": "trigger_decision_from_data_selection",
+                                "inst": "trigger_decision_q",
                                 "name": "trigger_decision_input_queue"
                             },
                             {
                                 "dir": "output",
-                                "inst": "trigger_inhibit_to_data_selection",
-                                "name": "trigger_inhibit_output_queue"
+                                "inst": "trigger_decision_copy_for_bookkeeping",
+                                "name": "trigger_decision_for_event_building"
                             },
                             {
                                 "dir": "output",
-                                "inst": "trigger_decision_copy_for_bookkeeping",
-                                "name": "trigger_decision_output_queue"
+                                "inst": "trigger_decision_copy_for_inhibit",
+                                "name": "trigger_decision_for_inhibit"
                             },
                             {
                                 "dir": "output",
@@ -68,7 +68,7 @@
                             },
                             {
                                 "dir": "output",
-                                "inst": "trigger_records",
+                                "inst": "trigger_record_q",
                                 "name": "trigger_record_output_queue"
                             },
                             {
@@ -96,8 +96,18 @@
                         "qinfos": [
                             {
                                 "dir": "input",
-                                "inst": "trigger_records",
+                                "inst": "trigger_record_q",
                                 "name": "trigger_record_input_queue"
+                            },
+                            {
+                                "dir": "input",
+                                "inst": "trigger_decision_copy_for_inhibit",
+                                "name": "trigger_decision_for_inhibit"
+                            },
+                            {
+                                "dir": "output",
+                                "inst": "trigger_inhibit_q",
+                                "name": "trigger_inhibit_output_queue"
                             }
                         ]
                     },
@@ -161,54 +171,59 @@
             ],
             "queues": [
                 {
-                    "capacity": 2,
+                    "capacity": 20,
                     "inst": "data_fragments_1",
-                    "kind": "StdDeQueue"
+                    "kind": "FollySPSCQueue"
                 },
                 {
-                    "capacity": 2,
+                    "capacity": 20,
                     "inst": "data_fragments_2",
-                    "kind": "StdDeQueue"
+                    "kind": "FollySPSCQueue"
                 },
                 {
-                    "capacity": 2,
+                    "capacity": 20,
                     "inst": "data_fragments_3",
-                    "kind": "StdDeQueue"
+                    "kind": "FollySPSCQueue"
                 },
                 {
-                    "capacity": 2,
+                    "capacity": 20,
                     "inst": "data_requests_1",
-                    "kind": "StdDeQueue"
+                    "kind": "FollySPSCQueue"
                 },
                 {
-                    "capacity": 2,
+                    "capacity": 20,
                     "inst": "data_requests_2",
-                    "kind": "StdDeQueue"
+                    "kind": "FollySPSCQueue"
                 },
                 {
-                    "capacity": 2,
+                    "capacity": 20,
                     "inst": "data_requests_3",
-                    "kind": "StdDeQueue"
+                    "kind": "FollySPSCQueue"
                 },
                 {
-                    "capacity": 2,
+                    "capacity": 20,
                     "inst": "trigger_decision_copy_for_bookkeeping",
-                    "kind": "StdDeQueue"
+                    "kind": "FollySPSCQueue"
                 },
                 {
-                    "capacity": 2,
-                    "inst": "trigger_decision_from_data_selection",
-                    "kind": "StdDeQueue"
+                    "capacity": 20,
+                    "inst": "trigger_decision_copy_for_inhibit",
+                    "kind": "FollySPSCQueue"
                 },
                 {
-                    "capacity": 2,
-                    "inst": "trigger_records",
-                    "kind": "StdDeQueue"
+                    "capacity": 20,
+                    "inst": "trigger_decision_q",
+                    "kind": "FollySPSCQueue"
                 },
                 {
-                    "capacity": 2,
-                    "inst": "trigger_inhibit_to_data_selection",
-                    "kind": "StdDeQueue"
+                    "capacity": 20,
+                    "inst": "trigger_inhibit_q",
+                    "kind": "FollySPSCQueue"
+                },
+                {
+                    "capacity": 20,
+                    "inst": "trigger_record_q",
+                    "kind": "FollySPSCQueue"
                 }
             ]
         },
@@ -226,10 +241,42 @@
                 },
                 {
                     "data": {
-                        "directory_path": ".",
-                        "mode": "all-per-file"
+                        "data_store_parameters": {
+                            "directory_path": ".",
+                            "file_layout_parameters": {
+                                "digits_for_trigger_number": 5,
+                                "trigger_record_name_prefix": "TriggerRecord"
+                            },
+                            "filename_parameters": {
+                                "digits_for_run_number": 6,
+                                "file_index_prefix": "file",
+                                "overall_prefix": "fake_minidaqapp"
+                            },
+                            "mode": "all-per-file",
+                            "name": "data_store",
+                            "type": "HDF5DataStore"
+                        },
+                        "threshold_for_inhibit": 3
                     },
                     "match": "datawriter"
+                },
+                {
+                    "data": {
+                        "temporarily_hacked_link_number": 1
+                    },
+                    "match": "fdp1"
+                },
+                {
+                    "data": {
+                        "temporarily_hacked_link_number": 2
+                    },
+                    "match": "fdp2"
+                },
+                {
+                    "data": {
+                        "temporarily_hacked_link_number": 3
+                    },
+                    "match": "fdp3"
                 }
             ]
         },
