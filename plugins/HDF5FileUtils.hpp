@@ -28,7 +28,24 @@ namespace dunedaq {
 namespace dfmodules {
 
 namespace HDF5FileUtils {
-
+/**
+ * @brief Check the valididty of an HDF5 SUB-group and, if not existing, create the group
+ */
+HighFive::Group
+addSubGroup(HighFive::Group parentGroup, const std::string& parentGroupName, const std::string& subGroupName)
+{
+  // Check if group exists and if not create one
+  if (!parentGroup.exist(subGroupName)) {
+    parentGroup.createGroup(subGroupName);
+  }
+  if (!parentGroup.isValid()) {
+    // AAA: throw error or define issue 
+    //throw ErrorHDF5Group(ERS_HERE, parentGroupName, subGroupName);
+  } else {
+    HighFive::Group subGroup = parentGroup.getGroup(subGroupName);
+    return subGroup;
+  }
+}
 /**
  * @brief This is a recursive function that adds the 'paths' to all of the DataSets
  * contained within the specified Group to the specified path list.  This function

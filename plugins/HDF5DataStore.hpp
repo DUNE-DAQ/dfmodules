@@ -164,6 +164,24 @@ public:
          
           } // apa group
         } // detectorGroup
+
+/*
+       HighFive::Group detectorTypeGroup = HDF5FileUtils::addSubGroup(theGroup, groupName, detectorName);
+       HighFive::Group apaGroup = HDF5FileUtils::addSubGroup(detectorTypeGroup, detectorName, apagroup_name);
+       try { // to determine if the dataset exists in the group and copy it to membuffer
+
+         HighFive::DataSet theDataSet = apaGroup.getDataSet(datasetName);
+         dataBlock.data_size = theDataSet.getStorageSize();
+         HighFive::DataSpace thedataSpace = theDataSet.getSpace();
+         char* membuffer = new char[dataBlock.data_size];
+         theDataSet.read(membuffer);
+         std::unique_ptr<char> memPtr(membuffer);
+         dataBlock.owned_data_start = std::move(memPtr);
+       } catch (HighFive::DataSetException const&) {
+
+         ERS_INFO("HDF5DataSet " << datasetName << " not found.");
+       }
+*/ 
       } // TriggerNumber group
     }
 
@@ -195,6 +213,8 @@ public:
       HDF5KeyTranslator::get_path_elements(dataBlock.data_key, config_params_.file_layout_parameters);
     const std::string datagroup_name = group_and_dataset_path_elements[0];
     const std::string detectorType = group_and_dataset_path_elements[1];
+    const std::string apagroup_name = group_and_dataset_path_elements[2];
+    const std::string dataset_name = group_and_dataset_path_elements[3];
 
     // Check if a HDF5 group exists and if not create one
     if (!filePtr->exist(datagroup_name)) {
@@ -205,38 +225,23 @@ public:
     if (!theGroup.isValid()) {
       throw InvalidHDF5Group(ERS_HERE, get_name(), datagroup_name, filePtr->getName());
     } else {
+ 
+      // Create detector type group
+      HighFive::Group detectorTypeGroup = HDF5FileUtils::addSubGroup(theGroup, datagroup_name, detectorType);
+      // Create APA group 
+      HighFive::Group apaGroup = HDF5FileUtils::addSubGroup(detectorTypeGroup, detectorType, apagroup_name);
+      
+      // Create dataset
+      HighFive::DataSpace theDataSpace = HighFive::DataSpace({ dataBlock.data_size, 1 });
+      HighFive::DataSetCreateProps dataCProps_;
+      HighFive::DataSetAccessProps dataAProps_;
 
-      // Check if a HDF5 group exists and if not create one
-      if (!theGroup.exist(detectorType)) {
-        theGroup.createGroup(detectorType);
-      }
-      HighFive::Group detectorTypeGroup = theGroup.getGroup(detectorType);
-      if (!detectorTypeGroup.isValid()) {
-        throw InvalidHDF5Group(ERS_HERE, get_name(), detectorType, detectorType);
+      auto theDataSet = apaGroup.createDataSet<char>(dataset_name, theDataSpace, dataCProps_, dataAProps_);
+      if (theDataSet.isValid()) {
+        theDataSet.write_raw(static_cast<const char*>(dataBlock.getDataStart()));
       } else {
-        const std::string apagroup_name = group_and_dataset_path_elements[2];
-        // Check if a HDF5 group exists and if not create one
-        if (!detectorTypeGroup.exist(apagroup_name)) {
-          detectorTypeGroup.createGroup(apagroup_name);
-        }       
-        HighFive::Group apaGroup = detectorTypeGroup.getGroup(apagroup_name);  
-        if (!apaGroup.isValid()) {
-          throw InvalidHDF5Group(ERS_HERE, get_name(), apagroup_name, apagroup_name);
-        } else {
-
-          const std::string dataset_name = group_and_dataset_path_elements[3];
-          HighFive::DataSpace theDataSpace = HighFive::DataSpace({ dataBlock.data_size, 1 });
-          HighFive::DataSetCreateProps dataCProps_;
-          HighFive::DataSetAccessProps dataAProps_;
-
-          auto theDataSet = apaGroup.createDataSet<char>(dataset_name, theDataSpace, dataCProps_, dataAProps_);
-          if (theDataSet.isValid()) {
-            theDataSet.write_raw(static_cast<const char*>(dataBlock.getDataStart()));
-          } else {
-            throw InvalidHDF5Dataset(ERS_HERE, get_name(), dataset_name, filePtr->getName());
-          } // link number
-        } // apa number
-      } //detector type     
+        throw InvalidHDF5Dataset(ERS_HERE, get_name(), dataset_name, filePtr->getName());
+      } // link number
     } // trigger number
 
     filePtr->flush();
