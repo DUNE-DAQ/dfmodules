@@ -7,10 +7,9 @@
  * received with this code.
  */
 
-//#include "dfmodules/DataStore.hpp"
-//#include "dfmodules/hdf5datastore/Nljs.hpp"
-//#include "dfmodules/hdf5datastore/Structs.hpp"
 #include "../plugins/HDF5DataStore.hpp"
+#include "dfmodules/hdf5datastore/Nljs.hpp"
+#include "dfmodules/hdf5datastore/Structs.hpp"
 
 #include "ers/ers.h"
 
@@ -166,15 +165,6 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
   std::cout << "Current path is " << std::filesystem::current_path() << '\n';
 
   // create the DataStore
-  nlohmann::json conf ;
-  conf["name"] = "tempWriter" ;
-  conf["directory_path"] = filePath ; 
-  conf["mode"] = "all-per-file" ;
-  nlohmann::json subconf ;
-  subconf["overall_prefix"] = filePrefix ; 
-  conf["filename_parameters"] = subconf ;
-  std::unique_ptr<HDF5DataStore> dsPtr(new HDF5DataStore(conf));
-#if 0
   hdf5datastore::ConfParams config_params;
   config_params.name = "tempWriter";
   config_params.mode = "all-per-file";
@@ -183,9 +173,7 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
   config_params.filename_parameters.overall_prefix = filePrefix;
   hdf5datastore::data_t hdf5ds_json;
   hdf5datastore::to_json(hdf5ds_json, config_params);
-  std::unique_ptr<DataStore> dsPtr;
-  dsPtr = makeDataStore(hdf5ds_json);
-#endif
+  std::unique_ptr<DataStore> dsPtr(new HDF5DataStore(hdf5ds_json));
 
   // write several events, each with several fragments
   char dummyData[DUMMYDATA_SIZE];
