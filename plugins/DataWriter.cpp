@@ -170,6 +170,9 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
       KeyedDataBlock data_block(fragment_skey);
       data_block.unowned_data_start = frag_ptr->get_storage_location();
       data_block.data_size = frag_ptr->get_size();
+
+      //data_block.unowned_trigger_record_header = 
+      //data_block.trh_size =
       data_writer_->write(data_block);
     }
 

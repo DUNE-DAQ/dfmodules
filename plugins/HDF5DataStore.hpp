@@ -215,6 +215,7 @@ public:
     const std::string detectorType = group_and_dataset_path_elements[1];
     const std::string apagroup_name = group_and_dataset_path_elements[2];
     const std::string dataset_name = group_and_dataset_path_elements[3];
+    const std::string trh_dataset_name = "TriggerRecordHeader";
 
     // Check if a HDF5 group exists and if not create one
     if (!filePtr->exist(datagroup_name)) {
@@ -225,6 +226,20 @@ public:
     if (!theGroup.isValid()) {
       throw InvalidHDF5Group(ERS_HERE, get_name(), datagroup_name, filePtr->getName());
     } else {
+
+      // Create TriggerRecordHeader dataset 
+      /*
+      HighFive::DataSpace trh_theDataSpace = HighFive::DataSpace({ dataBlock.data_size, 1 });
+      HighFive::DataSetCreateProps trh_dataCProps_;
+      HighFive::DataSetAccessProps trh_dataAProps_;
+
+      auto trh_theDataSet = theGroup.createDataSet<char>(trh_dataset_name, trh_theDataSpace, trg_dataCProps_, trh_dataAProps_);
+      if (trh_theDataSet.isValid()) {
+        trh_theDataSet.write_raw(static_cast<const char*>(dataBlock.getTriggerRecordHeader()));
+      } else {
+        throw InvalidHDF5Dataset(ERS_HERE, get_name(), trh_dataset_name, filePtr->getName());
+      } // TriggerRecordHeader
+      */
  
       // Create detector type group
       HighFive::Group detectorTypeGroup = HDF5FileUtils::addSubGroup(theGroup, datagroup_name, detectorType);
