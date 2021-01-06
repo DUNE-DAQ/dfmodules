@@ -47,6 +47,9 @@ void
 FragmentReceiver::init(const data_t& init_data)
 {
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
+
+  // set names for the 
+
   auto qi = appfwk::qindex(init_data, { "data_request_input_queue", "data_fragment_output_queue" });
   try {
     dataRequestInputQueue_.reset(new datareqsource_t(qi["data_request_input_queue"].inst));
