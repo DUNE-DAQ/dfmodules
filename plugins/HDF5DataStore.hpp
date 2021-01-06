@@ -123,7 +123,7 @@ public:
 
     KeyedDataBlock dataBlock(key);
 
-    HighFive::Group theGroup = HDF5FileUtils::getSubGroup(filePtr, group_and_dataset_path_elements);
+    HighFive::Group theGroup = HDF5FileUtils::getSubGroup(filePtr, group_and_dataset_path_elements, false);
 
     try { // to determine if the dataset exists in the group and copy it to membuffer
       HighFive::DataSet theDataSet = theGroup.getDataSet(datasetName);
@@ -167,7 +167,7 @@ public:
     const std::string dataset_name = group_and_dataset_path_elements[3];
     const std::string trh_dataset_name = "TriggerRecordHeader";
 
-    HighFive::Group theGroup = HDF5FileUtils::addSubGroup(filePtr, group_and_dataset_path_elements, true);
+    HighFive::Group theGroup = HDF5FileUtils::getSubGroup(filePtr, group_and_dataset_path_elements, true);
 
     // Create dataset
     HighFive::DataSpace theDataSpace = HighFive::DataSpace({ dataBlock.data_size, 1 });

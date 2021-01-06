@@ -29,38 +29,10 @@ namespace dfmodules {
 
 namespace HDF5FileUtils {
 /**
- * @brief Recursive function to retrieve the last HDF5 sub-group
- */
-HighFive::Group
-getSubGroup(std::unique_ptr<HighFive::File> &filePtr, const std::vector<std::string>& group_dataset)
-{
-  std::string topLevelGroupName = group_dataset[0];
-  HighFive::Group workingGroup = filePtr->getGroup(topLevelGroupName);
-  if (! workingGroup.isValid()) {
-    throw "Error: top-level group " + topLevelGroupName + " not found";
-  }
-  // Retrieve the remaining subgroups
-  for (size_t idx = 1; idx < group_dataset.size(); ++idx) {
-    std::string childGroupName = group_dataset[idx];
-    if (childGroupName.empty()) {
-      throw "Error: child group name is an empty string";
-    }
-    HighFive::Group childGroup = workingGroup.getGroup(childGroupName);
-    if (! childGroup.isValid()) {
-      throw "Error: child group " + childGroupName + " not found ";
-    }
-    workingGroup = childGroup;
-  }
-  
-  return workingGroup;
-}
-
-
-/**
  * @brief Recursive function to create HDF5 sub-groups
  */
 HighFive::Group
-addSubGroup(std::unique_ptr<HighFive::File> &filePtr, const std::vector<std::string>& group_dataset, bool createIfNeeded)
+getSubGroup(std::unique_ptr<HighFive::File> &filePtr, const std::vector<std::string>& group_dataset, bool createIfNeeded)
 {
   std::string topLevelGroupName = group_dataset[0];
   if (createIfNeeded && ! filePtr->exist(topLevelGroupName)) {
