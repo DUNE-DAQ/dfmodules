@@ -144,7 +144,7 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
     }
 
     // if we received a TriggerRecord, print out some debug information, if requested
-    auto frag_vec = trigRecPtr->get_fragments();
+    const auto & frag_vec = trigRecPtr->get_fragments();
     for (const auto& frag_ptr : frag_vec) {
       TLOG(TLVL_FRAGMENT_HEADER_DUMP) << get_name() << ": Memory contents for the Fragment from link "
                                       << frag_ptr->get_link_ID().link_number;

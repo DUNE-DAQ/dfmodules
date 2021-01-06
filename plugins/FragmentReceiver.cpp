@@ -7,10 +7,10 @@
  */
 
 #include "FragmentReceiver.hpp"
-#include "CommonIssues.hpp"
+//#include "CommonIssues.hpp"
 
 #include "appfwk/DAQModuleHelper.hpp"
-//#include "dfmodules/fakedataprod/Nljs.hpp"
+#include "dfmodules/fragmentreceiver/Structs.hpp"
 
 #include "TRACE/trace.h"
 #include "ers/ers.h"
@@ -32,11 +32,10 @@ namespace dunedaq {
 namespace dfmodules {
 
 FragmentReceiver::FragmentReceiver(const std::string& name)
-  : dunedaq::appfwk::DAQModule(name)
-  , thread_(std::bind(&FragmentReceiver::do_work, this, std::placeholders::_1))
-  , queueTimeout_(100)
-  , dataRequestInputQueue_(nullptr)
-  , dataFragmentOutputQueue_(nullptr)
+  : dunedaq::appfwk::DAQModule(name),
+    thread_(std::bind(&FragmentReceiver::do_work, this, std::placeholders::_1)),
+    trigger_decision_timeout_(100),
+    fragment_timeout_(100)
 {
   register_command("conf", &FragmentReceiver::do_conf);
   register_command("start", &FragmentReceiver::do_start);

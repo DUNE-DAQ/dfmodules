@@ -10,9 +10,10 @@
 #define DFMODULES_SRC_FAKEDATAPROD_HPP_
 
 #include "dataformats/Fragment.hpp"
-#include "dfmessages/DataRequest.hpp"
+#include "dfmessages/TriggerDecision.hpp"
 #include "dfmessages/Types.hpp"
-
+#include "dataformats/Types.hpp"
+#include "dataformats/TriggerRecord.hpp"
 
 #include "appfwk/DAQModule.hpp"
 #include "appfwk/DAQSink.hpp"
@@ -22,6 +23,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <map>
 
 namespace dunedaq {
 
@@ -62,14 +64,14 @@ namespace dunedaq {
       
       TriggerId( const dfmessages::TriggerDecision & td ) : trigger_number(td.trigger_number), 
 							    run_number(td.run_number) { ; } 
-      TriggerId( const dfmessages::Fragment & f ) : trigger_number(f.get_trigger_number()), 
-						    run_number(f.get_run_number()) { ; } 
+      TriggerId( dataformats::Fragment & f ) : trigger_number(f.get_trigger_number()), 
+		                               run_number(f.get_run_number()) { ; } 
       
       
-      trigger_number_t trigger_number;
-      run_number_t run_number;
+      dataformats::trigger_number_t trigger_number;
+      dataformats::run_number_t run_number;
       
-      bool operator < ( const TriggerId & other ) noexecpt { 
+      bool operator < ( const TriggerId & other ) noexcept { 
 	return  run_number == other.run_number ? 
 	  trigger_number < other.trigger_number : 
 	  run_number < other.run_number ; 
@@ -134,11 +136,11 @@ namespace dunedaq {
 
       // loop configurations
       unsigned int decision_loop_cnt_ ;
-      unsigned int fragment_loop_cnt_ ;
-      timestamp_diff_t max_time_difference_ ; 
+      unsigned int fragment_loop_cnt_  ;
+      dataformats::timestamp_diff_t max_time_difference_ ; 
 
       // bookeeping
-      std::map<TriggerId, std::vector<std::unique_ptr<dataformats::Fragment>> fragments_ ; 
+      std::map<TriggerId, std::vector<std::unique_ptr<dataformats::Fragment>>> fragments_ ; 
       std::map<TriggerId, dfmessages::TriggerDecision> trigger_decisions_ ;
 
     };
