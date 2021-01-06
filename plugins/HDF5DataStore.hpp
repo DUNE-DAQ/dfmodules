@@ -41,14 +41,6 @@ ERS_DECLARE_ISSUE_BASE(dfmodules,
                        ((std::string)selected_operation))
 
 ERS_DECLARE_ISSUE_BASE(dfmodules,
-                       InvalidHDF5Group,
-                       appfwk::GeneralDAQModuleIssue,
-                       "The HDF5 Group associated with name \"" << groupName << "\" is invalid. (file = " << filename
-                                                                << ")",
-                       ((std::string)name),
-                       ((std::string)groupName)((std::string)filename))
-
-ERS_DECLARE_ISSUE_BASE(dfmodules,
                        InvalidHDF5Dataset,
                        appfwk::GeneralDAQModuleIssue,
                        "The HDF5 Dataset associated with name \"" << dataSet << "\" is invalid. (file = " << filename
@@ -167,19 +159,38 @@ public:
     const std::string dataset_name = group_and_dataset_path_elements[3];
     const std::string trh_dataset_name = "TriggerRecordHeader";
 
-    HighFive::Group theGroup = HDF5FileUtils::getSubGroup(filePtr, group_and_dataset_path_elements, true);
+    HighFive::Group subGroups = HDF5FileUtils::getSubGroup(filePtr, group_and_dataset_path_elements, true);
 
     // Create dataset
     HighFive::DataSpace theDataSpace = HighFive::DataSpace({ dataBlock.data_size, 1 });
     HighFive::DataSetCreateProps dataCProps_;
     HighFive::DataSetAccessProps dataAProps_;
 
-    auto theDataSet = theGroup.createDataSet<char>(dataset_name, theDataSpace, dataCProps_, dataAProps_);
+    auto theDataSet = subGroups.createDataSet<char>(dataset_name, theDataSpace, dataCProps_, dataAProps_);
     if (theDataSet.isValid()) {
       theDataSet.write_raw(static_cast<const char*>(dataBlock.getDataStart()));
     } else {
       throw InvalidHDF5Dataset(ERS_HERE, get_name(), dataset_name, filePtr->getName());
     } 
+
+    HighFive::Group topGroup = HDF5FileUtils::getTopGroup(filePtr, group_and_dataset_path_elements);
+
+    // Create TriggerRecordHeader dataset 
+    /*
+    HighFive::DataSpace trh_theDataSpace = HighFive::DataSpace({ dataBlock.trh_size, 1 });
+    HighFive::DataSetCreateProps trh_dataCProps_;
+    HighFive::DataSetAccessProps trh_dataAProps_;
+
+    auto trh_theDataSet = topGroup.createDataSet<char>(trh_dataset_name, trh_theDataSpace, trg_dataCProps_, trh_dataAProps_);
+    if (trh_theDataSet.isValid()) {
+      trh_theDataSet.write_raw(static_cast<const char*>(dataBlock.getTriggerRecordHeader()));
+    } else {
+      throw InvalidHDF5Dataset(ERS_HERE, get_name(), trh_dataset_name, filePtr->getName());
+    } // TriggerRecordHeader
+    */
+
+
+   
 
     filePtr->flush();
     recorded_size_ += dataBlock.data_size; 

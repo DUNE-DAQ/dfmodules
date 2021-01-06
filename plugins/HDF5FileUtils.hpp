@@ -12,6 +12,8 @@
  */
 
 #include <ers/ers.h>
+//#include "dfmodules/CommonIssues.hpp"
+
 #include <highfive/H5File.hpp>
 
 #include <filesystem>
@@ -26,8 +28,24 @@
 
 namespace dunedaq {
 namespace dfmodules {
-
 namespace HDF5FileUtils {
+/**
+ * @brief Retrieve top HDF5 group
+ */
+HighFive::Group
+getTopGroup(std::unique_ptr<HighFive::File> &filePtr, const std::vector<std::string>& group_dataset)
+{
+  std::string topLevelGroupName = group_dataset[0];
+  HighFive::Group topGroup = filePtr->getGroup(topLevelGroupName);
+  if (!topGroup.isValid()) {
+    //throw "Error in HDFFileHelper::getGroupFromPath: top-level group " + topLevelGroupName + " not found";
+    //throw InvalidHDF5Group(ERS_HERE, topLevelGroupName, topLevelGroupName, topLevelGroupName);
+  }
+  
+  return topGroup;
+}
+
+
 /**
  * @brief Recursive function to create HDF5 sub-groups
  */
@@ -41,6 +59,7 @@ getSubGroup(std::unique_ptr<HighFive::File> &filePtr, const std::vector<std::str
   HighFive::Group workingGroup = filePtr->getGroup(topLevelGroupName);
   if (! workingGroup.isValid()) {
     throw "Error in HDFFileHelper::getGroupFromPath: top-level group " + topLevelGroupName + " not found";
+    //throw InvalidHDF5Group(ERS_HERE, topLevelGroupName, topLevelGroupName, topLevelGroupName);
   }
   // Create the remaining subgroups
   for (size_t idx = 1; idx < group_dataset.size(); ++idx) {
