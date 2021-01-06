@@ -144,7 +144,7 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
     }
 
     // if we received a TriggerRecord, print out some debug information, if requested
-    std::vector<dataformats::Fragment*> frag_vec = trigRecPtr->get_fragments();
+    std::vector<std::unique_ptr<dataformats::Fragment>>& frag_vec = trigRecPtr->get_fragments();
     for (const auto& frag_ptr : frag_vec) {
       TLOG(TLVL_FRAGMENT_HEADER_DUMP) << get_name() << ": Memory contents for the Fragment from link "
                                       << frag_ptr->get_link_ID().link_number;
@@ -165,7 +165,7 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
       StorageKey fragment_skey(frag_ptr->get_run_number(),
                                frag_ptr->get_trigger_number(),
                                "FELIX",
-                               frag_ptr->get_link_ID().APA_number,
+                               frag_ptr->get_link_ID().apa_number,
                                frag_ptr->get_link_ID().link_number);
       KeyedDataBlock data_block(fragment_skey);
       data_block.unowned_data_start = frag_ptr->get_storage_location();
