@@ -12,7 +12,7 @@
  */
 
 #include <ers/ers.h>
-//#include "dfmodules/CommonIssues.hpp"
+#include "dfmodules/CommonIssues.hpp"
 
 #include <highfive/H5File.hpp>
 
@@ -39,7 +39,8 @@ getTopGroup(std::unique_ptr<HighFive::File> &filePtr, const std::vector<std::str
   HighFive::Group topGroup = filePtr->getGroup(topLevelGroupName);
   if (!topGroup.isValid()) {
     //throw "Error in HDFFileHelper::getGroupFromPath: top-level group " + topLevelGroupName + " not found";
-    //throw InvalidHDF5Group(ERS_HERE, topLevelGroupName, topLevelGroupName, topLevelGroupName);
+    throw InvalidHDF5Group(ERS_HERE, topLevelGroupName, topLevelGroupName, topLevelGroupName);
+    //throw InvalidHDF5Group(ERS_HERE, get_name(), topLevelGroupName, topLevelGroupName);
   }
   
   return topGroup;
