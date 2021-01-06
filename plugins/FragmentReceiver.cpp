@@ -165,27 +165,27 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
     //--------------------------------------------------
 
     for ( auto it = trigger_decisions_.begin() ;
-	  it != trigger_decisions_.end() ; ) {
+	  it != trigger_decisions_.end() ; 
+	  ++it ) {
 
       std::unique_ptr<dataformats::TriggerRecord> temp_record ; 
       
-      if ( current_time - it -> second.trigger_timestamp > max_time_difference_ ) {
-	ers::warning( TimedOutTriggerDecision( ERS_HERE, it -> second, current_time ) ) ;
-	temp_record = BuildTriggerRecord( it -> first ) ; 
-      }
-      else { 
-	auto frag_it = fragments_.find( it -> first ) ;
+      // if ( current_time - it -> second.trigger_timestamp > max_time_difference_ ) {
+      // 	ers::warning( TimedOutTriggerDecision( ERS_HERE, it -> second, current_time ) ) ;
+      // 	temp_record = BuildTriggerRecord( it -> first ) ; 
+      // }
       
-	if ( frag_it != fragments.end() ) {
-	  
-	  if ( frag_it -> second.size() == it -> second.components.size() ) {
-	    temp_record = BuildTriggerRecord( it -> first ) ; 
-	  }
-	} 
-      }
+      auto frag_it = fragments_.find( it -> first ) ;
       
+      if ( frag_it != fragments.end() ) {
+	
+	if ( frag_it -> second.size() == it -> second.components.size() ) {
+	  temp_record = BuildTriggerRecord( it -> first ) ; 
+	}
+      } 
+    
       if ( temp_record.get() ) {
-
+	
 	try {
 	  record_sink.push( std::move(temp_record), trigger_decision_timeout_ );
 	} catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
@@ -199,32 +199,27 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
 	}
 	
       } // if there was a record to be send
-      else {
-	++it ;
-      }
-     
+    
     } // decision loop for complete record
       
-
+    
     //-------------------------------------------------
     // Check if some fragments are obsolete 
     //--------------------------------------------------
-
+    
     for ( auto it = fragments_.begin() ;
-	  it != fragments_.end() ; ) {
+	  it != fragments_.end() ; 
+	  ++it ) {
 
       if ( current_time - it -> second.get_header().trigger_timestamp > max_time_difference_ ) {
 
 	ers::error( RemovingFragment( ERS_HERE, it -> second.get_header() ) ) ;
 	
-	it = trigger_decisions_.erase( it ) ;
+	//it = trigger_decisions_.erase( it ) ;
 
 	// note that if we reached this point it means there is no corresponding trigger decision for this id
 	// otherwise we would have created a dedicated trigger record (though probably incomplete)
 	// so there is no need to check the trigger decision book 
-      }
-      else {
-	++it ;
       }
       
     } // fragment loop
