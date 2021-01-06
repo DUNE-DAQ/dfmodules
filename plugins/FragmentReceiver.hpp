@@ -32,12 +32,14 @@ namespace dunedaq {
    */
   ERS_DECLARE_ISSUE(dfmodules,                 ///< Namespace
                     TimedOutTriggerDecision,  ///< Issue class name
-                    "trigger number " << decision.trigger_number
-		    << " of run: " << decision.run_number
-		    << " generate at: " << decision.trigger_timestamp
+                    "trigger number " << trigger_number
+		    << " of run: " << run_number
+		    << " generate at: " << trigger_timestamp
 		    << " too late for: " << present_time,     ///< Message
-                    ((dfmessages::TriggerDecision)decision)   ///< Message parameters
-		    ((dataformats::timestamp_t)present_time)  ///< Message parameters 
+		    ((dataformats::trigger_number_t)trigger_number)  ///< Message parameters 
+		    ((dataformats::run_number_t)run_number)          ///< Message parameters 
+		    ((dataformats::timestamp_t)trigger_timestamp)    ///< Message parameters 
+		    ((dataformats::timestamp_t)present_time)         ///< Message parameters 
 		    )
 
 
@@ -46,10 +48,10 @@ namespace dunedaq {
    */
   ERS_DECLARE_ISSUE(dfmodules,         ///< Namespace
                     RemovingFragment,  ///< Issue class name
-                    "trigger_number: " << header.trigger_number
-		    << " type: " << header.fragment_type
-		    << " GEO Id: " << header.link_ID,         ///< Message
-                    ((dataformats::FragmentHeader)header)     ///< Message parameters
+                    "trigger_number: " << trigger_number
+		    << " type: " << fragment_type,                         ///< Message    
+		    ((dataformats::trigger_number_t)trigger_number)        ///< Message parameters 
+		    ((dataformats::fragment_type_t)fragment_type)          ///< Message parameters 
 		    )
 
   
@@ -71,7 +73,7 @@ namespace dunedaq {
       dataformats::trigger_number_t trigger_number;
       dataformats::run_number_t run_number;
       
-      bool operator < ( const TriggerId & other ) noexcept { 
+      bool operator < ( const TriggerId & other ) const noexcept { 
 	return  run_number == other.run_number ? 
 	  trigger_number < other.trigger_number : 
 	  run_number < other.run_number ; 

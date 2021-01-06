@@ -217,8 +217,7 @@ namespace dfmodules {
       //--------------------------------------------------
 
       for ( auto it = trigger_decisions_.begin() ;
-	    it != trigger_decisions_.end() ; 
-	    ++it ) {
+	    it != trigger_decisions_.end() ; ) {
 
 	std::unique_ptr<dataformats::TriggerRecord> temp_record ; 
       
@@ -251,7 +250,10 @@ namespace dfmodules {
 	  }
 	
 	} // if there was a record to be send
-    
+	else {
+	  ++it ;
+	}
+	
       } // decision loop for complete record
       
     
@@ -269,8 +271,9 @@ namespace dfmodules {
 	  
 	  if ( current_time > max_time_difference_  + (*frag_it) -> get_trigger_timestamp() ) {
 
-	    ers::error( RemovingFragment( ERS_HERE, (*frag_it) -> get_header() ) ) ;
-	
+	    ers::error( RemovingFragment( ERS_HERE, 
+					  (*frag_it) -> get_trigger_number(),  
+					  (*frag_it) -> get_fragment_type() ) ) ;
 	    //it = trigger_decisions_.erase( it ) ;
 
 	    // note that if we reached this point it means there is no corresponding trigger decision for this id
@@ -305,24 +308,15 @@ namespace dfmodules {
     auto frags_it = fragments_.find( id ) ;
     auto & frags = frags_it -> second ;
 
-    for ( unsigned int i = 0 ; i < frags.size() ; ++i ) {
-      
-      
+    while( frags.size() > 0 ) {
+      trig_rec_ptr -> add_fragment( std::move( frags.back() ) ) ;
+      frags.pop_back() ;
     }
-  
 
-    trig_rec_ptr -> set_fragments(frag_ptr_vector);
+    trigger_decisions_.erase( trig_dec_it ) ;
+    fragments_.erase( frags_it ) ;
 
-
-    // create and fill trigger header
-  
-    // create trigger record
-  
-    // fill header and fragments
-  
-    // somehow derive the requests and add them as well
-  
-    // all the operations have to be done removing the memory from the maps
+    return trig_rec_ptr ;
   }
 
   
