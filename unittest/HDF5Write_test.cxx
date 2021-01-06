@@ -154,10 +154,10 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
 
   const int DUMMYDATA_SIZE = 7;  
   const int RUN_NUMBER = 52;
-  const int TRIGGER_COUNT = 10;
+  const int TRIGGER_COUNT = 5;
   const std::string DETECTOR = "FELIX";
-  const int APA_COUNT = 5;
-  const int LINK_COUNT = 10;
+  const int APA_COUNT = 3;
+  const int LINK_COUNT = 1;
  
   // delete any pre-existing files so that we start with a clean slate
   std::string deletePattern = filePrefix + ".*.hdf5";

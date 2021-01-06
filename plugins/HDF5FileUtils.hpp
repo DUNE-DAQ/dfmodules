@@ -29,22 +29,64 @@ namespace dfmodules {
 
 namespace HDF5FileUtils {
 /**
- * @brief Check the valididty of an HDF5 SUB-group and, if not existing, create the group
+ * @brief Recursive function to retrieve the last HDF5 sub-group
  */
 HighFive::Group
-addSubGroup(HighFive::Group parentGroup, const std::string& parentGroupName, const std::string& subGroupName)
+getSubGroup(std::unique_ptr<HighFive::File> &filePtr, const std::vector<std::string>& group_dataset)
 {
-  // Check if group exists and if not create one
-  if (!parentGroup.exist(subGroupName)) {
-    parentGroup.createGroup(subGroupName);
+  std::string topLevelGroupName = group_dataset[0];
+  HighFive::Group workingGroup = filePtr->getGroup(topLevelGroupName);
+  if (! workingGroup.isValid()) {
+    throw "Error: top-level group " + topLevelGroupName + " not found";
   }
-  if (!parentGroup.isValid()) {
-    // AAA: throw error or define issue 
-    //throw ErrorHDF5Group(ERS_HERE, parentGroupName, subGroupName);
-  } else {
-    HighFive::Group subGroup = parentGroup.getGroup(subGroupName);
-    return subGroup;
+  // Retrieve the remaining subgroups
+  for (size_t idx = 1; idx < group_dataset.size(); ++idx) {
+    std::string childGroupName = group_dataset[idx];
+    if (childGroupName.empty()) {
+      throw "Error: child group name is an empty string";
+    }
+    HighFive::Group childGroup = workingGroup.getGroup(childGroupName);
+    if (! childGroup.isValid()) {
+      throw "Error: child group " + childGroupName + " not found ";
+    }
+    workingGroup = childGroup;
   }
+  
+  return workingGroup;
+}
+
+
+/**
+ * @brief Recursive function to create HDF5 sub-groups
+ */
+HighFive::Group
+addSubGroup(std::unique_ptr<HighFive::File> &filePtr, const std::vector<std::string>& group_dataset, bool createIfNeeded)
+{
+  std::string topLevelGroupName = group_dataset[0];
+  if (createIfNeeded && ! filePtr->exist(topLevelGroupName)) {
+    filePtr->createGroup(topLevelGroupName);
+  }
+  HighFive::Group workingGroup = filePtr->getGroup(topLevelGroupName);
+  if (! workingGroup.isValid()) {
+    throw "Error in HDFFileHelper::getGroupFromPath: top-level group " + topLevelGroupName + " not found";
+  }
+  // Create the remaining subgroups
+  for (size_t idx = 1; idx < group_dataset.size(); ++idx) {
+    std::string childGroupName = group_dataset[idx];
+    if (childGroupName.empty()) {
+      throw "Error: child group name is an empty string";
+    }
+    if (createIfNeeded && !workingGroup.exist(childGroupName)) {
+      workingGroup.createGroup(childGroupName);
+    }
+    HighFive::Group childGroup = workingGroup.getGroup(childGroupName);
+    if (! childGroup.isValid()) {
+      throw "Error: child group " + childGroupName + " not found ";
+    }
+    workingGroup = childGroup;
+  }
+  
+  return workingGroup;
 }
 /**
  * @brief This is a recursive function that adds the 'paths' to all of the DataSets

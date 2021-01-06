@@ -115,76 +115,28 @@ public:
     // filePtr will be the handle to the Opened-File after a call to openFileIfNeeded()
     openFileIfNeeded(fullFileName, HighFive::File::ReadOnly);
 
-    const std::string groupName = std::to_string(key.getTriggerNumber());
-    const std::string detectorName = key.getDetectorType(); 
-    const std::string apagroup_name = std::to_string(key.getApaNumber());
+    std::vector<std::string> group_and_dataset_path_elements =
+      HDF5KeyTranslator::get_path_elements(key, config_params_.file_layout_parameters);
+
+
     const std::string datasetName = std::to_string(key.getLinkNumber());
 
     KeyedDataBlock dataBlock(key);
 
-    if (!filePtr->exist(groupName)) {
-      throw InvalidHDF5Group(ERS_HERE, get_name(), groupName, fullFileName);
+    HighFive::Group theGroup = HDF5FileUtils::getSubGroup(filePtr, group_and_dataset_path_elements);
 
-    } else {
-
-      HighFive::Group theGroup = filePtr->getGroup(groupName);
-
-      if (!theGroup.isValid()) {
-
-        throw InvalidHDF5Group(ERS_HERE, get_name(), groupName, fullFileName);
-
-      } else {
-
-        HighFive::Group detectorTypeGroup = theGroup.getGroup(detectorName);
-        if (!detectorTypeGroup.isValid()) {
-
-          throw InvalidHDF5Group(ERS_HERE, get_name(), detectorName, fullFileName);
-
-        } else {
-
-          HighFive::Group apaGroup = detectorTypeGroup.getGroup(apagroup_name);
-          if (!apaGroup.isValid()) {
-
-           throw InvalidHDF5Group(ERS_HERE, get_name(), apagroup_name, fullFileName);
-
-          } else {
-            try { // to determine if the dataset exists in the group and copy it to membuffer
-
-              HighFive::DataSet theDataSet = apaGroup.getDataSet(datasetName);
-              dataBlock.data_size = theDataSet.getStorageSize();
-              HighFive::DataSpace thedataSpace = theDataSet.getSpace();
-              char* membuffer = new char[dataBlock.data_size];
-              theDataSet.read(membuffer);
-              std::unique_ptr<char> memPtr(membuffer);
-              dataBlock.owned_data_start = std::move(memPtr);
-            } catch (HighFive::DataSetException const&) {
-
-              ERS_INFO("HDF5DataSet " << datasetName << " not found.");
-            }
-         
-          } // apa group
-        } // detectorGroup
-
-/*
-       HighFive::Group detectorTypeGroup = HDF5FileUtils::addSubGroup(theGroup, groupName, detectorName);
-       HighFive::Group apaGroup = HDF5FileUtils::addSubGroup(detectorTypeGroup, detectorName, apagroup_name);
-       try { // to determine if the dataset exists in the group and copy it to membuffer
-
-         HighFive::DataSet theDataSet = apaGroup.getDataSet(datasetName);
-         dataBlock.data_size = theDataSet.getStorageSize();
-         HighFive::DataSpace thedataSpace = theDataSet.getSpace();
-         char* membuffer = new char[dataBlock.data_size];
-         theDataSet.read(membuffer);
-         std::unique_ptr<char> memPtr(membuffer);
-         dataBlock.owned_data_start = std::move(memPtr);
-       } catch (HighFive::DataSetException const&) {
-
-         ERS_INFO("HDF5DataSet " << datasetName << " not found.");
-       }
-*/ 
-      } // TriggerNumber group
+    try { // to determine if the dataset exists in the group and copy it to membuffer
+      HighFive::DataSet theDataSet = theGroup.getDataSet(datasetName);
+      dataBlock.data_size = theDataSet.getStorageSize();
+      HighFive::DataSpace thedataSpace = theDataSet.getSpace();
+      char* membuffer = new char[dataBlock.data_size];
+      theDataSet.read(membuffer);
+      std::unique_ptr<char> memPtr(membuffer);
+      dataBlock.owned_data_start = std::move(memPtr);
+    } catch (HighFive::DataSetException const&) {
+      ERS_INFO("HDF5DataSet " << datasetName << " not found.");
     }
-
+         
     return dataBlock;
   }
 
@@ -211,53 +163,23 @@ public:
 
     std::vector<std::string> group_and_dataset_path_elements =
       HDF5KeyTranslator::get_path_elements(dataBlock.data_key, config_params_.file_layout_parameters);
-    const std::string datagroup_name = group_and_dataset_path_elements[0];
-    const std::string detectorType = group_and_dataset_path_elements[1];
-    const std::string apagroup_name = group_and_dataset_path_elements[2];
+
     const std::string dataset_name = group_and_dataset_path_elements[3];
     const std::string trh_dataset_name = "TriggerRecordHeader";
 
-    // Check if a HDF5 group exists and if not create one
-    if (!filePtr->exist(datagroup_name)) {
-      filePtr->createGroup(datagroup_name);
-    }
-    HighFive::Group theGroup = filePtr->getGroup(datagroup_name);
+    HighFive::Group theGroup = HDF5FileUtils::addSubGroup(filePtr, group_and_dataset_path_elements, true);
 
-    if (!theGroup.isValid()) {
-      throw InvalidHDF5Group(ERS_HERE, get_name(), datagroup_name, filePtr->getName());
+    // Create dataset
+    HighFive::DataSpace theDataSpace = HighFive::DataSpace({ dataBlock.data_size, 1 });
+    HighFive::DataSetCreateProps dataCProps_;
+    HighFive::DataSetAccessProps dataAProps_;
+
+    auto theDataSet = theGroup.createDataSet<char>(dataset_name, theDataSpace, dataCProps_, dataAProps_);
+    if (theDataSet.isValid()) {
+      theDataSet.write_raw(static_cast<const char*>(dataBlock.getDataStart()));
     } else {
-
-      // Create TriggerRecordHeader dataset 
-      /*
-      HighFive::DataSpace trh_theDataSpace = HighFive::DataSpace({ dataBlock.data_size, 1 });
-      HighFive::DataSetCreateProps trh_dataCProps_;
-      HighFive::DataSetAccessProps trh_dataAProps_;
-
-      auto trh_theDataSet = theGroup.createDataSet<char>(trh_dataset_name, trh_theDataSpace, trg_dataCProps_, trh_dataAProps_);
-      if (trh_theDataSet.isValid()) {
-        trh_theDataSet.write_raw(static_cast<const char*>(dataBlock.getTriggerRecordHeader()));
-      } else {
-        throw InvalidHDF5Dataset(ERS_HERE, get_name(), trh_dataset_name, filePtr->getName());
-      } // TriggerRecordHeader
-      */
- 
-      // Create detector type group
-      HighFive::Group detectorTypeGroup = HDF5FileUtils::addSubGroup(theGroup, datagroup_name, detectorType);
-      // Create APA group 
-      HighFive::Group apaGroup = HDF5FileUtils::addSubGroup(detectorTypeGroup, detectorType, apagroup_name);
-      
-      // Create dataset
-      HighFive::DataSpace theDataSpace = HighFive::DataSpace({ dataBlock.data_size, 1 });
-      HighFive::DataSetCreateProps dataCProps_;
-      HighFive::DataSetAccessProps dataAProps_;
-
-      auto theDataSet = apaGroup.createDataSet<char>(dataset_name, theDataSpace, dataCProps_, dataAProps_);
-      if (theDataSet.isValid()) {
-        theDataSet.write_raw(static_cast<const char*>(dataBlock.getDataStart()));
-      } else {
-        throw InvalidHDF5Dataset(ERS_HERE, get_name(), dataset_name, filePtr->getName());
-      } // link number
-    } // trigger number
+      throw InvalidHDF5Dataset(ERS_HERE, get_name(), dataset_name, filePtr->getName());
+    } 
 
     filePtr->flush();
     recorded_size_ += dataBlock.data_size; 
