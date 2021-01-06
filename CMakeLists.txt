@@ -25,7 +25,7 @@ daq_add_plugin( FragmentReceiver   duneDAQModule SCHEMA LINK_LIBRARIES dfmodules
 daq_add_plugin( FakeFragRec        duneDAQModule LINK_LIBRARIES dfmodules )
 daq_add_plugin( FakeReqGen         duneDAQModule LINK_LIBRARIES dfmodules )
 daq_add_plugin( FakeTrigDecEmu     duneDAQModule SCHEMA LINK_LIBRARIES dfmodules )
-daq_add_plugin( TriggerReceiver    duneDAQModule LINK_LIBRARIES dfmodules dfmessages )
+
 
 
 ##############################################################################

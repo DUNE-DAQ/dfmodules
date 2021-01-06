@@ -4,12 +4,13 @@ local s = moo.oschema.schema(ns);
 
 local types = {
 
-    timestamp_diff: s.number( "TimetampDiff", "i64", doc="A timestamp difference" ),
+    timestamp_diff: s.number( "TimestampDiff", "i8", 
+    		              doc="A timestamp difference" ),
 
-    loop_counter: s.number( "LoopCounter", "u8", 
+    loop_counter: s.number( "LoopCounter", "u4", 
                              doc="Number of times a queue is attempt to read" ),
 
-    queue_timeout: s.number( "QueueTimeout", "u8", 
+    queue_timeout: s.number( "QueueTimeout", "u4", 
                              doc="Queue timeout in milliseconds" ),				    
 
     conf: s.record("ConfParams", [
