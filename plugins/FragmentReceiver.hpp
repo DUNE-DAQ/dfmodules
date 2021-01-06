@@ -6,8 +6,8 @@
  * received with this code.
  */
 
-#ifndef DFMODULES_SRC_FAKEDATAPROD_HPP_
-#define DFMODULES_SRC_FAKEDATAPROD_HPP_
+#ifndef DFMODULES_PLUGINS_FRAGMENTRECEIVER_HPP_
+#define DFMODULES_PLUGINS_FRAGMENTRECEIVER_HPP_
 
 #include "dataformats/Fragment.hpp"
 #include "dfmessages/TriggerDecision.hpp"
@@ -131,7 +131,6 @@ namespace dunedaq {
   
       // Output queues
       using trigger_record_sink_t = appfwk::DAQSink<std::unique_ptr<dataformats::TriggerRecord>> ;
-  
       std::string trigger_record_sink_name_ ;
 
       // loop configurations
@@ -147,4 +146,4 @@ namespace dunedaq {
   } // namespace dfmodules
 } // namespace dunedaq
 
-#endif // DFMODULES_SRC_FAKEDATAPROD_HPP_
+#endif // DFMODULES_PLUGINS_FRAGMENTRECEIVER_HPP_
