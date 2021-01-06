@@ -13,6 +13,8 @@
  */
 
 #include "dfmodules/DataStore.hpp"
+#include "dfmodules/hdf5datastore/Nljs.hpp"
+#include "dfmodules/hdf5datastore/Structs.hpp"
 #include "HDF5FileUtils.hpp"
 #include "HDF5KeyTranslator.hpp"
 
@@ -70,16 +72,28 @@ public:
    * @param name, path, fileName, operationMode
    *
    */
-  explicit HDF5DataStore( const nlohmann::json & conf ) 
-    : DataStore( conf["name"].get<std::string>() ) 
+  explicit HDF5DataStore( const nlohmann::json & conf )
+    : DataStore( conf.value("name", "data_store") )
     , fullNameOfOpenFile_("")
     , openFlagsOfOpenFile_(0)
   {
     TLOG(TLVL_DEBUG) << get_name() << ": Configuration: " << conf ; 
     
-    fileName_ = conf["filename_prefix"].get<std::string>() ; 
-    path_ = conf["directory_path"].get<std::string>() ;
-    operation_mode_ = conf["mode"].get<std::string>() ; 
+    config_params_ = conf.get<hdf5datastore::ConfParams>();
+    fileName_ = config_params_.filename_parameters.overall_prefix;
+    path_ = config_params_.directory_path;
+    operation_mode_ = config_params_.mode;
+    max_file_size_ = config_params_.max_file_size_bytes;
+    //fileName_ = conf["filename_prefix"].get<std::string>() ; 
+    //path_ = conf["directory_path"].get<std::string>() ;
+    //operation_mode_ = conf["mode"].get<std::string>() ; 
+    // Get maximum file size in bytes
+    // AAA: todo get from configuration params, force that max file size to be in bytes?
+    //max_file_size_ = conf["MaxFileSize"].get()*1024ULL*1024ULL;
+    //max_file_size_ = 1*1024ULL*1024ULL;
+    file_count_ = 0;
+    recorded_size_ = 0;
+
 
     if (operation_mode_ != "one-event-per-file" && operation_mode_ != "one-fragment-per-file" &&
         operation_mode_ != "all-per-file") {
@@ -92,16 +106,20 @@ public:
 
   virtual KeyedDataBlock read(const StorageKey& key)
   {
-    TLOG(TLVL_DEBUG) << get_name() << ": going to read data block from eventID/geoLocationID "
-                     << HDF5KeyTranslator::getPathString(key) << " from file " << getFileNameFromKey(key);
+    TLOG(TLVL_DEBUG) << get_name() << ": going to read data block from triggerNumber/detectorType/apaNumber/linkNumber "
+                     << HDF5KeyTranslator::get_path_string(key, config_params_.file_layout_parameters) << " from file "
+                     << getFileNameFromKey(key);
 
     // opening the file from Storage Key + path_ + fileName_ + operation_mode_
     std::string fullFileName = getFileNameFromKey(key);
     // filePtr will be the handle to the Opened-File after a call to openFileIfNeeded()
     openFileIfNeeded(fullFileName, HighFive::File::ReadOnly);
 
-    const std::string groupName = std::to_string(key.getEventID());
-    const std::string datasetName = std::to_string(key.getGeoLocation());
+    const std::string groupName = std::to_string(key.getTriggerNumber());
+    const std::string detectorName = key.getDetectorType(); 
+    const std::string apagroup_name = std::to_string(key.getApaNumber());
+    const std::string datasetName = std::to_string(key.getLinkNumber());
+
     KeyedDataBlock dataBlock(key);
 
     if (!filePtr->exist(groupName)) {
@@ -117,20 +135,36 @@ public:
 
       } else {
 
-        try { // to determine if the dataset exists in the group and copy it to membuffer
+        HighFive::Group detectorTypeGroup = theGroup.getGroup(detectorName);
+        if (!detectorTypeGroup.isValid()) {
 
-          HighFive::DataSet theDataSet = theGroup.getDataSet(datasetName);
-          dataBlock.data_size = theDataSet.getStorageSize();
-          HighFive::DataSpace thedataSpace = theDataSet.getSpace();
-          char* membuffer = new char[dataBlock.data_size];
-          theDataSet.read(membuffer);
-          std::unique_ptr<char> memPtr(membuffer);
-          dataBlock.owned_data_start = std::move(memPtr);
-        } catch (HighFive::DataSetException const&) {
+          throw InvalidHDF5Group(ERS_HERE, get_name(), detectorName, fullFileName);
 
-          ERS_INFO("HDF5DataSet " << datasetName << " not found.");
-        }
-      }
+        } else {
+
+          HighFive::Group apaGroup = detectorTypeGroup.getGroup(apagroup_name);
+          if (!apaGroup.isValid()) {
+
+           throw InvalidHDF5Group(ERS_HERE, get_name(), apagroup_name, fullFileName);
+
+          } else {
+            try { // to determine if the dataset exists in the group and copy it to membuffer
+
+              HighFive::DataSet theDataSet = apaGroup.getDataSet(datasetName);
+              dataBlock.data_size = theDataSet.getStorageSize();
+              HighFive::DataSpace thedataSpace = theDataSet.getSpace();
+              char* membuffer = new char[dataBlock.data_size];
+              theDataSet.read(membuffer);
+              std::unique_ptr<char> memPtr(membuffer);
+              dataBlock.owned_data_start = std::move(memPtr);
+            } catch (HighFive::DataSetException const&) {
+
+              ERS_INFO("HDF5DataSet " << datasetName << " not found.");
+            }
+         
+          } // apa group
+        } // detectorGroup
+      } // TriggerNumber group
     }
 
     return dataBlock;
@@ -145,19 +179,22 @@ public:
    */
   virtual void write(const KeyedDataBlock& dataBlock)
   {
-
-    size_t idx = dataBlock.data_key.getEventID();
-    size_t geoID = dataBlock.data_key.getGeoLocation();
-
     // opening the file from Storage Key + path_ + fileName_ + operation_mode_
-    std::string fullFileName = getFileNameFromKey(dataBlock.data_key);
+    std::string fullFileName = HDF5KeyTranslator::get_file_name(dataBlock.data_key, config_params_, file_count_);
+
     // filePtr will be the handle to the Opened-File after a call to openFileIfNeeded()
     openFileIfNeeded(fullFileName, HighFive::File::OpenOrCreate);
 
-    TLOG(TLVL_DEBUG) << get_name() << ": Writing data with event ID " << dataBlock.data_key.getEventID()
-                     << " and geolocation ID " << dataBlock.data_key.getGeoLocation();
+    TLOG(TLVL_DEBUG) << get_name() << ": Writing data with run number " << dataBlock.data_key.getRunNumber()
+                     << " and trigger number " << dataBlock.data_key.getTriggerNumber()
+                     << " and detector type " << dataBlock.data_key.getDetectorType()
+                     << " and apa/link number " << dataBlock.data_key.getApaNumber()
+                     << " / " << dataBlock.data_key.getLinkNumber();
 
-    const std::string datagroup_name = std::to_string(idx);
+    std::vector<std::string> group_and_dataset_path_elements =
+      HDF5KeyTranslator::get_path_elements(dataBlock.data_key, config_params_.file_layout_parameters);
+    const std::string datagroup_name = group_and_dataset_path_elements[0];
+    const std::string detectorType = group_and_dataset_path_elements[1];
 
     // Check if a HDF5 group exists and if not create one
     if (!filePtr->exist(datagroup_name)) {
@@ -168,21 +205,51 @@ public:
     if (!theGroup.isValid()) {
       throw InvalidHDF5Group(ERS_HERE, get_name(), datagroup_name, filePtr->getName());
     } else {
-      const std::string dataset_name = std::to_string(geoID);
-      HighFive::DataSpace theDataSpace = HighFive::DataSpace({ dataBlock.data_size, 1 });
-      HighFive::DataSetCreateProps dataCProps_;
-      HighFive::DataSetAccessProps dataAProps_;
 
-      auto theDataSet = theGroup.createDataSet<char>(dataset_name, theDataSpace, dataCProps_, dataAProps_);
-      if (theDataSet.isValid()) {
-        theDataSet.write_raw(static_cast<const char*>(dataBlock.getDataStart()));
-      } else {
-        throw InvalidHDF5Dataset(ERS_HERE, get_name(), dataset_name, filePtr->getName());
+      // Check if a HDF5 group exists and if not create one
+      if (!theGroup.exist(detectorType)) {
+        theGroup.createGroup(detectorType);
       }
-    }
+      HighFive::Group detectorTypeGroup = theGroup.getGroup(detectorType);
+      if (!detectorTypeGroup.isValid()) {
+        throw InvalidHDF5Group(ERS_HERE, get_name(), detectorType, detectorType);
+      } else {
+        const std::string apagroup_name = group_and_dataset_path_elements[2];
+        // Check if a HDF5 group exists and if not create one
+        if (!detectorTypeGroup.exist(apagroup_name)) {
+          detectorTypeGroup.createGroup(apagroup_name);
+        }       
+        HighFive::Group apaGroup = detectorTypeGroup.getGroup(apagroup_name);  
+        if (!apaGroup.isValid()) {
+          throw InvalidHDF5Group(ERS_HERE, get_name(), apagroup_name, apagroup_name);
+        } else {
+
+          const std::string dataset_name = group_and_dataset_path_elements[3];
+          HighFive::DataSpace theDataSpace = HighFive::DataSpace({ dataBlock.data_size, 1 });
+          HighFive::DataSetCreateProps dataCProps_;
+          HighFive::DataSetAccessProps dataAProps_;
+
+          auto theDataSet = apaGroup.createDataSet<char>(dataset_name, theDataSpace, dataCProps_, dataAProps_);
+          if (theDataSet.isValid()) {
+            theDataSet.write_raw(static_cast<const char*>(dataBlock.getDataStart()));
+          } else {
+            throw InvalidHDF5Dataset(ERS_HERE, get_name(), dataset_name, filePtr->getName());
+          } // link number
+        } // apa number
+      } //detector type     
+    } // trigger number
 
     filePtr->flush();
+    recorded_size_ += dataBlock.data_size; 
+
+    //AAA: be careful on the units, maybe force it somehow? 
+    if (recorded_size_ > max_file_size_) {
+      file_count_++;
+    }
   }
+
+
+
 
   /**
    * @brief HDF5DataStore getAllExistingKeys
@@ -203,7 +270,7 @@ public:
       TLOG(TLVL_DEBUG) << get_name() << ": Path list has element count: " << pathList.size();
 
       for (auto& path : pathList) {
-        StorageKey thisKey(0, "", 0);
+        StorageKey thisKey(0, 0, "", 0, 0);
         thisKey = HDF5KeyTranslator::getKeyFromString(path);
         keyList.push_back(thisKey);
       }
@@ -226,25 +293,39 @@ private:
   std::string fileName_;
   std::string operation_mode_;
   std::string fullNameOfOpenFile_;
+  size_t max_file_size_;
+
+  // Total number of generated files
+  size_t file_count_;
+
+  // Total size of data being written
+  size_t recorded_size_;
+
   unsigned openFlagsOfOpenFile_;
 
+  // Configuration
+  hdf5datastore::ConfParams config_params_;
+
+  // 31-Dec-2020, KAB: this private method is deprecated; it is moving to
+  // HDF5KeyTranslator::get_file_name().
   std::string getFileNameFromKey(const StorageKey& data_key)
   {
-    size_t idx = data_key.getEventID();
-    size_t geoID = data_key.getGeoLocation();
+    size_t trigger_number = data_key.getTriggerNumber();
+    size_t apa_number = data_key.getApaNumber();
     std::string file_name = std::string("");
     if (operation_mode_ == "one-event-per-file") {
 
-      file_name = path_ + "/" + fileName_ + "_event_" + std::to_string(idx) + ".hdf5";
+      file_name = path_ + "/" + fileName_ + "_trigger_number_" + std::to_string(trigger_number) + ".hdf5";
 
     } else if (operation_mode_ == "one-fragment-per-file") {
 
       file_name =
-        path_ + "/" + fileName_ + "_event_" + std::to_string(idx) + "_geoID_" + std::to_string(geoID) + ".hdf5";
+        path_ + "/" + fileName_ + "_trigger_number_" + std::to_string(trigger_number) + "_apa_number_" + std::to_string(apa_number) + ".hdf5";
 
     } else if (operation_mode_ == "all-per-file") {
 
-      file_name = path_ + "/" + fileName_ + "_all_events" + ".hdf5";
+      //file_name = path_ + "/" + fileName_ + "_all_events" + ".hdf5";
+      file_name = path_ + "/" + fileName_ + "_trigger_number_" + "file_number_" + std::to_string(file_count_) + ".hdf5";
     }
 
     return file_name;

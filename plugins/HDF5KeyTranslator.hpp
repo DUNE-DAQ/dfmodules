@@ -3,8 +3,9 @@
 /**
  * @file HDF5KeyTranslator.hpp
  *
- * HDF5KeyTranslator collection of functions to translate between
- * StorageKeys and HDF5 Group/DataSet 'paths'.
+ * HDF5KeyTranslator is a collection of functions to translate between
+ * StorageKeys+configuration and HDF5 Group/DataSet 'paths', and between Storage
+ * StorageKeys+configuration and HDF5 file names.
  *
  * This is part of the DUNE DAQ Software Suite, copyright 2020.
  * Licensing/copyright details are in the COPYING file that you should have
@@ -12,6 +13,8 @@
  */
 
 #include "dfmodules/StorageKey.hpp"
+#include "dfmodules/hdf5datastore/Nljs.hpp"
+#include "dfmodules/hdf5datastore/Structs.hpp"
 
 #include <boost/algorithm/string.hpp>
 
@@ -29,9 +32,6 @@ class HDF5KeyTranslator
 public:
   inline static const std::string PATH_SEPARATOR = "/";
 
-  static const int EVENT_ID_DIGITS = 4;
-  static const int GEO_LOCATION_DIGITS = 3;
-
   /**
    * @brief Translates the specified StorageKey into an HDF5 'path',
    * where the 'path' is string that has values from the StorageKey
@@ -39,9 +39,10 @@ public:
    * The intention of this path string is to specify the Group/DataSet
    * structure that should be used in the HDF5 files that are created by this library.
    */
-  static std::string getPathString(const StorageKey& key)
+  static std::string get_path_string(const StorageKey& data_key,
+                                     const hdf5datastore::HDF5DataStoreFileLayoutParams& layout_params)
   {
-    std::vector<std::string> elementList = getPathElements(key);
+    std::vector<std::string> elementList = get_path_elements(data_key, layout_params);
 
     std::string path = elementList[0]; // need error checking
 
@@ -57,19 +58,32 @@ public:
    * where the 'path' elements are the strings that specify the Group/DataSet
    * structure that should be used in the HDF5 files that are created by this library.
    */
-  static std::vector<std::string> getPathElements(const StorageKey& key)
+  static std::vector<std::string> get_path_elements(const StorageKey& data_key,
+                                                    const hdf5datastore::HDF5DataStoreFileLayoutParams& layout_params)
   {
     std::vector<std::string> elementList;
 
-    // first, we take care of the event ID
-    std::ostringstream evIdString;
-    evIdString << std::setw(EVENT_ID_DIGITS) << std::setfill('0') << key.getEventID();
-    elementList.push_back(evIdString.str());
+    // first, we take care of the trigger number
+    std::ostringstream triggerNumberString;
+    triggerNumberString << layout_params.trigger_record_name_prefix
+                        << std::setw(layout_params.digits_for_trigger_number) << std::setfill('0')
+                        << data_key.getTriggerNumber();
+    elementList.push_back(triggerNumberString.str());
 
-    // next, we translate the geographic location
-    std::ostringstream geoLocString;
-    geoLocString << std::setw(GEO_LOCATION_DIGITS) << std::setfill('0') << key.getGeoLocation();
-    elementList.push_back(geoLocString.str());
+    // Add detector type
+    elementList.push_back(data_key.getDetectorType());
+
+    // next, we translate the APA number location
+    std::ostringstream apaNumberString;
+    apaNumberString << layout_params.apa_name_prefix << std::setw(layout_params.digits_for_apa_number)
+                    << std::setfill('0') << data_key.getApaNumber();
+    elementList.push_back(apaNumberString.str());
+
+    // Finally, add link number
+    std::ostringstream linkNumberString;
+    linkNumberString << layout_params.link_name_prefix << std::setw(layout_params.digits_for_link_number)
+                     << std::setfill('0') << data_key.getLinkNumber();
+    elementList.push_back(linkNumberString.str());
 
     return elementList;
   }
@@ -98,25 +112,98 @@ public:
                                    int translationVersion = CURRENT_VERSION)
   {
     if (translationVersion == 1) {
-      int eventId = StorageKey::INVALID_EVENTID;
-      std::string detectorId = StorageKey::INVALID_DETECTORID;
-      int geoLocation = StorageKey::INVALID_GEOLOCATION;
+      int run_number = StorageKey::INVALID_RUNNUMBER;
+      int trigger_number = StorageKey::INVALID_TRIGGERNUMBER;
+      std::string detector_type = StorageKey::INVALID_DETECTORTYPE;
+      int apa_number = StorageKey::INVALID_APANUMBER;
+      int link_number = StorageKey::INVALID_LINKNUMBER;
 
       if (pathElements.size() >= 1) {
-        std::stringstream evId(pathElements[0]);
-        evId >> eventId;
+        std::stringstream runNumber(pathElements[0]);
+        runNumber >> run_number;
       }
       if (pathElements.size() >= 2) {
-        std::stringstream geoLoc(pathElements[1]);
-        geoLoc >> geoLocation;
+        std::stringstream trigNumber(pathElements[1]);
+        trigNumber >> trigger_number;
       }
 
-      return StorageKey(eventId, detectorId, geoLocation);
+      if (pathElements.size() >= 3) {
+        std::stringstream detectorType(pathElements[2]);
+        detectorType >> detector_type;
+      }
+
+      if (pathElements.size() >= 4) {
+        std::stringstream apaNumber(pathElements[3]);
+        apaNumber >> apa_number;
+      }
+
+      if (pathElements.size() >= 5) {
+        std::stringstream linkNumber(pathElements[4]);
+        linkNumber >> link_number;
+      }
+
+      return StorageKey(run_number, trigger_number, detector_type, apa_number, link_number);
 
     } else {
-      StorageKey emptyKey(StorageKey::INVALID_EVENTID, StorageKey::INVALID_DETECTORID, StorageKey::INVALID_GEOLOCATION);
+      StorageKey emptyKey(StorageKey::INVALID_RUNNUMBER,
+                          StorageKey::INVALID_TRIGGERNUMBER,
+                          StorageKey::INVALID_DETECTORTYPE,
+                          StorageKey::INVALID_APANUMBER,
+                          StorageKey::INVALID_LINKNUMBER);
       return emptyKey;
     }
+  }
+
+  /**
+   * @brief Translates the specified input parameters into the appropriate filename.
+   */
+  static std::string get_file_name(const StorageKey& data_key,
+                                   const hdf5datastore::ConfParams& config_params,
+                                   size_t file_index)
+  {
+    std::ostringstream work_oss;
+    work_oss << config_params.directory_path;
+    if (work_oss.str().length() > 0) {
+      work_oss << "/";
+    }
+    work_oss << config_params.filename_parameters.overall_prefix;
+    if (work_oss.str().length() > 0) {
+      work_oss << "_";
+    }
+
+    size_t trigger_number = data_key.getTriggerNumber();
+    size_t apa_number = data_key.getApaNumber();
+    std::string file_name = std::string("");
+    if (config_params.mode == "one-event-per-file") {
+
+      file_name = config_params.directory_path + "/" + config_params.filename_parameters.overall_prefix +
+                  "_trigger_number_" + std::to_string(trigger_number) + ".hdf5";
+      return file_name;
+
+    } else if (config_params.mode == "one-fragment-per-file") {
+
+      file_name = config_params.directory_path + "/" + config_params.filename_parameters.overall_prefix +
+                  "_trigger_number_" + std::to_string(trigger_number) + "_apa_number_" + std::to_string(apa_number) +
+                  ".hdf5";
+      return file_name;
+
+    } else if (config_params.mode == "all-per-file") {
+
+      // file_name = config_params.directory_path + "/" + config_params.filename_parameters.overall_prefix +
+      // "_all_events" + ".hdf5"; file_name = config_params.directory_path + "/" +
+      // config_params.filename_parameters.overall_prefix + "_trigger_number_" + "file_number_" +
+      // std::to_string(file_index) + ".hdf5";
+
+      work_oss << config_params.filename_parameters.run_number_prefix;
+      work_oss << std::setw(config_params.filename_parameters.digits_for_run_number) << std::setfill('0')
+               << data_key.getRunNumber();
+      work_oss << "_";
+      work_oss << config_params.filename_parameters.file_index_prefix;
+      work_oss << std::setw(config_params.filename_parameters.digits_for_file_index) << std::setfill('0') << file_index;
+    }
+
+    work_oss << ".hdf5";
+    return work_oss.str();
   }
 
 private:

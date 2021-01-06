@@ -56,6 +56,8 @@ private:
   // Configuration
   // size_t sleepMsecWhileRunning_;
   std::chrono::milliseconds queueTimeout_;
+  dunedaq::dataformats::run_number_t run_number_;
+  uint32_t fake_link_number_;
 
   // Queue(s)
   using datareqsource_t = dunedaq::appfwk::DAQSource<dfmessages::DataRequest>;
