@@ -170,13 +170,14 @@ namespace dfmodules {
 	      << trigger_decisions_.size() << " decisions and " 
 	      << fragments_.size() << " Fragment stashes" 
 	      << std::endl 
-	      << " Trigger Decisions" << std::endl ;
+	      << "Trigger Decisions" << std::endl ;
       
       for ( const auto & d : trigger_decisions_ ) {
-	message << d.first << " with " << d.second.components.size() << " components " << std::endl ;
+	message << "\t" << d.first << " with " << d.second.components.size() << " components " << std::endl ;
       }
+      message << "Fragments" << std::endl ;
       for ( const auto & f : fragments_ ) {
-	message << f.first << " with " << f.second.size() << " fragments " << std::endl ;
+	message << "\t" << f.first << " with " << f.second.size() << " fragments " << std::endl ;
       }
      
       ers::info(ProgressUpdate(ERS_HERE, get_name(), message.str()));
