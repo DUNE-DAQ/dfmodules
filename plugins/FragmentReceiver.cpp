@@ -106,21 +106,18 @@ namespace dfmodules {
     TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
     
     fragmentreceiver::ConfParams parsed_conf = payload.get<fragmentreceiver::ConfParams>() ;
-    
-    trigger_decision_timeout_ = std::chrono::milliseconds( parsed_conf.general_queue_timeout ) ;
-    if ( fragment_source_names_.size() > 0 ) {
-      fragment_timeout_ = std::chrono::milliseconds( parsed_conf.general_queue_timeout / 
-						     fragment_source_names_.size() ) ;   
-    }
-    else {
-      fragment_timeout_ = std::chrono::milliseconds( parsed_conf.general_queue_timeout ) ;
-    }
-    
+
     decision_loop_cnt_ = parsed_conf.decision_loop_counter ; 
     fragment_loop_cnt_ = parsed_conf.fragment_loop_counter == 0 ? 
       fragment_source_names_.size() : parsed_conf.fragment_loop_counter ;
     
     max_time_difference_  = parsed_conf.max_timestamp_diff ;
+    
+    trigger_decision_timeout_ = std::chrono::milliseconds( parsed_conf.general_queue_timeout ) ;
+    auto scaling_factor = fragment_loop_cnt_ * fragment_source_names_.size() ;
+    if ( scaling_factor <= 0 ) scaling_factor = 1 ;
+    fragment_timeout_ = std::chrono::milliseconds( parsed_conf.general_queue_timeout / 
+						   scaling_factor ) ;   
     
     TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
   }
