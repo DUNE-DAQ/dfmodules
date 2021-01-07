@@ -29,6 +29,11 @@ public:
   const void* unowned_data_start;
   std::unique_ptr<char> owned_data_start;
 
+  // size_t trh_size;
+  //const void* unowned_trigger_record_header;
+  //std::unique_ptr<char> owned_trigger_record_header;
+
+
   explicit KeyedDataBlock(const StorageKey& theKey)
     : data_key(theKey)
   {}
@@ -42,7 +47,19 @@ public:
     }
   }
 
+/*
+  const void* getTriggerRecordHeader() const
+  {
+    if (owned_trigger_record_header.get() != nullptr) {
+      return static_cast<const void*>(owned_trigger_record_header.get());
+    } else {
+      return unowned_trigger_record_header;
+    }
+  }
+*/
+
   size_t getDataSizeBytes() const { return data_size; }
+  //size_t getTriggerRecordHeaderSizeBytes() const {return trh_size}
 };
 
 } // namespace dfmodules
