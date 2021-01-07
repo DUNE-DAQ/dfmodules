@@ -103,7 +103,9 @@ public:
                      << getFileNameFromKey(key);
 
     // opening the file from Storage Key + path_ + fileName_ + operation_mode_
-    std::string fullFileName = getFileNameFromKey(key);
+    //std::string fullFileName = getFileNameFromKey(key);
+    std::string fullFileName = HDF5KeyTranslator::get_file_name(key, config_params_, file_count_);
+
     // filePtr will be the handle to the Opened-File after a call to openFileIfNeeded()
     openFileIfNeeded(fullFileName, HighFive::File::ReadOnly);
 
@@ -111,7 +113,9 @@ public:
       HDF5KeyTranslator::get_path_elements(key, config_params_.file_layout_parameters);
 
 
-    const std::string datasetName = std::to_string(key.getLinkNumber());
+    //const std::string datasetName = std::to_string(key.getLinkNumber());
+    const std::string datasetName = group_and_dataset_path_elements[3];
+
 
     KeyedDataBlock dataBlock(key);
 
