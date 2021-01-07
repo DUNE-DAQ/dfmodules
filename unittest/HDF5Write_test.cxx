@@ -57,94 +57,138 @@ deleteFilesMatchingPattern(const std::string& path, const std::string& pattern)
 
 BOOST_AUTO_TEST_SUITE(HDF5Write_test)
 
-/*
 BOOST_AUTO_TEST_CASE(WriteFragmentFiles)
 {
   std::string filePath(std::filesystem::temp_directory_path());
   std::string filePrefix = "demo" + std::to_string(getpid());
-  const int EVENT_COUNT = 7;
-  const int GEOLOC_COUNT = 4;
-  const int DUMMYDATA_SIZE = 100;
 
+  const int DUMMYDATA_SIZE = 7;  
+  const int RUN_NUMBER = 52;
+  const int TRIGGER_COUNT = 5;
+  const std::string DETECTOR = "FELIX";
+  const int APA_COUNT = 3;
+  const int LINK_COUNT = 1;
+ 
   // delete any pre-existing files so that we start with a clean slate
-  std::string deletePattern = filePrefix + ".*.hdf5";
+  //std::string deletePattern = filePrefix + ".*.hdf5";
+  std::string deletePattern = ".*.hdf5";
   deleteFilesMatchingPattern(filePath, deletePattern);
 
+
+  // create the DataStore
+  //nlohmann::json conf ;
+  //conf["name"] = "tempWriter" ;
+  //conf["filename_prefix"] = filePrefix ; 
+  //conf["directory_path"] = filePath ; 
+  //conf["mode"] = "one-fragment-per-file" ;
+  
   // create the DataStore
   nlohmann::json conf ;
   conf["name"] = "tempWriter" ;
-  conf["filename_prefix"] = filePrefix ; 
   conf["directory_path"] = filePath ; 
   conf["mode"] = "one-fragment-per-file" ;
-  
+  nlohmann::json subconf ;
+  subconf["overall_prefix"] = filePrefix ; 
+  conf["filename_parameters"] = subconf ;
   std::unique_ptr<HDF5DataStore> dsPtr(new HDF5DataStore(conf));
-
+ 
   // write several events, each with several fragments
   char dummyData[DUMMYDATA_SIZE];
-  for (int eventID = 1; eventID <= EVENT_COUNT; ++eventID) {
-    for (int geoLoc = 0; geoLoc < GEOLOC_COUNT; ++geoLoc) {
-      StorageKey key(eventID, StorageKey::INVALID_DETECTORID, geoLoc);
-      KeyedDataBlock dataBlock(key);
-      dataBlock.unowned_data_start = static_cast<void*>(&dummyData[0]);
-      dataBlock.data_size = DUMMYDATA_SIZE;
-      dsPtr->write(dataBlock);
-    }
-  }
+  for (int triggerNumber = 1; triggerNumber <= TRIGGER_COUNT; ++triggerNumber) {
+    for (int apaNumber = 1; apaNumber <= APA_COUNT; ++apaNumber) {
+      for (int linkNumber = 1; linkNumber <= LINK_COUNT; ++linkNumber) {
+        StorageKey key(RUN_NUMBER, triggerNumber, DETECTOR, apaNumber, linkNumber);
+        KeyedDataBlock dataBlock(key);
+        dataBlock.unowned_data_start = static_cast<void*>(&dummyData[0]);
+        dataBlock.data_size = DUMMYDATA_SIZE;
+        dsPtr->write(dataBlock);
+      } //link number
+    } // apa number
+  } // trigger number
   dsPtr.reset(); // explicit destruction
 
+
+
   // check that the expected number of files was created
-  std::string searchPattern = filePrefix + ".*event.*geoID.*.hdf5";
+  //std::string searchPattern = filePrefix+"_trigger_number*_apa_number_*.hdf5";
+  std::string searchPattern = ".*.hdf5";
   std::vector<std::string> fileList = getFilesMatchingPattern(filePath, searchPattern);
-  BOOST_REQUIRE_EQUAL(fileList.size(), (EVENT_COUNT * GEOLOC_COUNT));
+  BOOST_REQUIRE_EQUAL(fileList.size(), (TRIGGER_COUNT * APA_COUNT));
 
   // clean up the files that were created
   fileList = deleteFilesMatchingPattern(filePath, deletePattern);
-  BOOST_REQUIRE_EQUAL(fileList.size(), (EVENT_COUNT * GEOLOC_COUNT));
+  BOOST_REQUIRE_EQUAL(fileList.size(), (TRIGGER_COUNT * APA_COUNT));
+
 }
+
+
 
 BOOST_AUTO_TEST_CASE(WriteEventFiles)
 {
   std::string filePath(std::filesystem::temp_directory_path());
   std::string filePrefix = "demo" + std::to_string(getpid());
-  const int EVENT_COUNT = 7;
-  const int GEOLOC_COUNT = 4;
-  const int DUMMYDATA_SIZE = 100;
 
+  const int DUMMYDATA_SIZE = 7;  
+  const int RUN_NUMBER = 52;
+  const int TRIGGER_COUNT = 5;
+  const std::string DETECTOR = "FELIX";
+  const int APA_COUNT = 3;
+  const int LINK_COUNT = 1;
+ 
   // delete any pre-existing files so that we start with a clean slate
-  std::string deletePattern = filePrefix + ".*.hdf5";
+  //std::string deletePattern = filePrefix + ".*.hdf5";
+  std::string deletePattern = ".*.hdf5";
   deleteFilesMatchingPattern(filePath, deletePattern);
+
+
+
+  // create the DataStore
+  //nlohmann::json conf ;
+  //conf["name"] = "tempWriter" ;
+  //conf["filename_prefix"] = filePrefix ; 
+  //conf["directory_path"] = filePath ; 
+  //conf["mode"] = "one-event-per-file" ;
+  //std::unique_ptr<HDF5DataStore> dsPtr(new HDF5DataStore(conf));
+   
 
   // create the DataStore
   nlohmann::json conf ;
   conf["name"] = "tempWriter" ;
-  conf["filename_prefix"] = filePrefix ; 
   conf["directory_path"] = filePath ; 
   conf["mode"] = "one-event-per-file" ;
+  nlohmann::json subconf ;
+  subconf["overall_prefix"] = filePrefix ; 
+  conf["filename_parameters"] = subconf ;
   std::unique_ptr<HDF5DataStore> dsPtr(new HDF5DataStore(conf));
+ 
 
   // write several events, each with several fragments
   char dummyData[DUMMYDATA_SIZE];
-  for (int eventID = 1; eventID <= EVENT_COUNT; ++eventID) {
-    for (int geoLoc = 0; geoLoc < GEOLOC_COUNT; ++geoLoc) {
-      StorageKey key(eventID, StorageKey::INVALID_DETECTORID, geoLoc);
-      KeyedDataBlock dataBlock(key);
-      dataBlock.unowned_data_start = static_cast<void*>(&dummyData[0]);
-      dataBlock.data_size = DUMMYDATA_SIZE;
-      dsPtr->write(dataBlock);
-    }
-  }
+  for (int triggerNumber = 1; triggerNumber <= TRIGGER_COUNT; ++triggerNumber) {
+    for (int apaNumber = 1; apaNumber <= APA_COUNT; ++apaNumber) {
+      for (int linkNumber = 1; linkNumber <= LINK_COUNT; ++linkNumber) {
+        StorageKey key(RUN_NUMBER, triggerNumber, DETECTOR, apaNumber, linkNumber);
+        KeyedDataBlock dataBlock(key);
+        dataBlock.unowned_data_start = static_cast<void*>(&dummyData[0]);
+        dataBlock.data_size = DUMMYDATA_SIZE;
+        dsPtr->write(dataBlock);
+      } //link number
+    } // apa number
+  } // trigger number
   dsPtr.reset(); // explicit destruction
 
+
   // check that the expected number of files was created
-  std::string searchPattern = filePrefix + ".*event.*.hdf5";
+  std::string searchPattern =  ".*.hdf5";
+  //std::string searchPattern = filePrefix + "trigger_number*.hdf5";
   std::vector<std::string> fileList = getFilesMatchingPattern(filePath, searchPattern);
-  BOOST_REQUIRE_EQUAL(fileList.size(), EVENT_COUNT);
+  BOOST_REQUIRE_EQUAL(fileList.size(), TRIGGER_COUNT);
 
   // clean up the files that were created
   fileList = deleteFilesMatchingPattern(filePath, deletePattern);
-  BOOST_REQUIRE_EQUAL(fileList.size(), EVENT_COUNT);
+  BOOST_REQUIRE_EQUAL(fileList.size(), TRIGGER_COUNT);
 }
-*/
+
 
 BOOST_AUTO_TEST_CASE(WriteOneFile)
 {
@@ -153,10 +197,10 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
 
   const int DUMMYDATA_SIZE = 7;  
   const int RUN_NUMBER = 52;
-  const int TRIGGER_COUNT = 10;
+  const int TRIGGER_COUNT = 5;
   const std::string DETECTOR = "FELIX";
-  const int APA_COUNT = 5;
-  const int LINK_COUNT = 10;
+  const int APA_COUNT = 3;
+  const int LINK_COUNT = 1;
  
   // delete any pre-existing files so that we start with a clean slate
   std::string deletePattern = filePrefix + ".*.hdf5";
@@ -196,8 +240,7 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
   BOOST_REQUIRE_EQUAL(fileList.size(), 1);
 
   // clean up the files that were created
-  //fileList = deleteFilesMatchingPattern(filePath, deletePattern);
-  //BOOST_REQUIRE_EQUAL(fileList.size(), 1);
+  fileList = deleteFilesMatchingPattern(filePath, deletePattern);
+  BOOST_REQUIRE_EQUAL(fileList.size(), 1);
 }
-
 BOOST_AUTO_TEST_SUITE_END()

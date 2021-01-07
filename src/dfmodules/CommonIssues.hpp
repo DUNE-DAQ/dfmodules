@@ -33,6 +33,14 @@ ERS_DECLARE_ISSUE_BASE(dfmodules,
                        ((std::string)name),
                        ((std::string)queueType))
 
+ERS_DECLARE_ISSUE_BASE(dfmodules,
+                       InvalidHDF5Group,
+                       appfwk::GeneralDAQModuleIssue,
+                       "The HDF5 Group associated with name \"" << groupName << "\" is invalid. ",
+                       ((std::string)name),
+                       ((std::string)groupName))
+
+
 } // namespace dunedaq
 
 #endif // DFMODULES_SRC_COMMONISSUES_HPP_
