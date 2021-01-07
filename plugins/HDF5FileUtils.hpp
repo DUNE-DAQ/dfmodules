@@ -11,8 +11,9 @@
  * received with this code.
  */
 
-#include <ers/ers.h>
 #include "dfmodules/CommonIssues.hpp"
+#include "TRACE/trace.h"
+#include <ers/ers.h>
 
 #include <highfive/H5File.hpp>
 
@@ -38,9 +39,8 @@ getTopGroup(std::unique_ptr<HighFive::File> &filePtr, const std::vector<std::str
   std::string topLevelGroupName = group_dataset[0];
   HighFive::Group topGroup = filePtr->getGroup(topLevelGroupName);
   if (!topGroup.isValid()) {
-    //throw "Error in HDFFileHelper::getGroupFromPath: top-level group " + topLevelGroupName + " not found";
-    throw InvalidHDF5Group(ERS_HERE, topLevelGroupName, topLevelGroupName, topLevelGroupName);
-    //throw InvalidHDF5Group(ERS_HERE, get_name(), topLevelGroupName, topLevelGroupName);
+    //throw InvalidHDF5Group(ERS_HERE, get_name(), topLevelGroupName);
+    throw InvalidHDF5Group(ERS_HERE, topLevelGroupName, topLevelGroupName);
   }
   
   return topGroup;
@@ -59,21 +59,20 @@ getSubGroup(std::unique_ptr<HighFive::File> &filePtr, const std::vector<std::str
   }
   HighFive::Group workingGroup = filePtr->getGroup(topLevelGroupName);
   if (! workingGroup.isValid()) {
-    throw "Error in HDFFileHelper::getGroupFromPath: top-level group " + topLevelGroupName + " not found";
-    //throw InvalidHDF5Group(ERS_HERE, topLevelGroupName, topLevelGroupName, topLevelGroupName);
+    throw InvalidHDF5Group(ERS_HERE, topLevelGroupName, topLevelGroupName);
   }
   // Create the remaining subgroups
   for (size_t idx = 1; idx < group_dataset.size(); ++idx) {
     std::string childGroupName = group_dataset[idx];
     if (childGroupName.empty()) {
-      throw "Error: child group name is an empty string";
+      throw InvalidHDF5Group(ERS_HERE, childGroupName, childGroupName);
     }
     if (createIfNeeded && !workingGroup.exist(childGroupName)) {
       workingGroup.createGroup(childGroupName);
     }
     HighFive::Group childGroup = workingGroup.getGroup(childGroupName);
     if (! childGroup.isValid()) {
-      throw "Error: child group " + childGroupName + " not found ";
+      throw InvalidHDF5Group(ERS_HERE, childGroupName, childGroupName);
     }
     workingGroup = childGroup;
   }
