@@ -261,20 +261,23 @@ namespace dfmodules {
 	} 
     
 	if ( temp_record.get() ) {
+
+	  bool wasSentSuccessfully = false;
+	  while( !wasSentSuccessfully ) {
+	    try {
+	      record_sink.push( std::move(temp_record), trigger_decision_timeout_ );
+	      wasSentSuccessfully = true ;
+	    } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
+	      std::ostringstream oss_warn;
+	      oss_warn << "push to output queue \"" << get_name() << "\"";
+	      ers::warning(
+			   dunedaq::appfwk::QueueTimeoutExpired( ERS_HERE,
+								 record_sink.get_name(),
+								 oss_warn.str(),
+								 std::chrono::duration_cast<std::chrono::milliseconds>(trigger_decision_timeout_).count()));
+	    }
+	  }  // push while loop
 	
-	  try {
-            TLOG(TLVL_WORK_STEPS) << get_name() << ": Pushing TriggerRecord for trigger number "
-                                  << temp_record->get_trigger_number() << " onto the output queue.";
-	    record_sink.push( std::move(temp_record), trigger_decision_timeout_ );
-	  } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
-	    std::ostringstream oss_warn;
-	    oss_warn << "push to output queue \"" << get_name() << "\"";
-	    ers::warning(
-			 dunedaq::appfwk::QueueTimeoutExpired( ERS_HERE,
-							       record_sink.get_name(),
-							       oss_warn.str(),
-							       std::chrono::duration_cast<std::chrono::milliseconds>(trigger_decision_timeout_).count()));
-	  }
           // 07-Jan-2021, KAB: the following "break" statement is needed to get things to work.
           // Without it, the code hangs on the ++it; in the "else" block below in the next iteration
           // of the loop.  I presume that this is because the trigger_decisions_ map has been
