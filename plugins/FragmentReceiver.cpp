@@ -234,11 +234,12 @@ namespace dfmodules {
       // and create dedicated record
       //--------------------------------------------------
 
-      for ( auto it = trigger_decisions_.begin() ;
-	    it != trigger_decisions_.end() ; ) {
+      std::vector<TriggerId> complete ;
 
-	std::unique_ptr<dataformats::TriggerRecord> temp_record ; 
-      
+      for ( auto it = trigger_decisions_.begin() ;
+	    it != trigger_decisions_.end() ; 
+	    ++it ) {
+
 	// if ( current_time - it -> second.trigger_timestamp > max_time_difference_ ) {
 	// 	ers::warning( TimedOutTriggerDecision( ERS_HERE, it -> second, current_time ) ) ;
 	// 	temp_record = BuildTriggerRecord( it -> first ) ; 
@@ -249,7 +250,7 @@ namespace dfmodules {
 	if ( frag_it != fragments_.end() ) {
 	
 	  if ( frag_it -> second.size() >= it -> second.components.size() ) {
-	    temp_record.reset( BuildTriggerRecord( it -> first ) ) ; 
+	    complete.push_back( it -> first ) ; 
 	  }
 	  else {
 	    std::ostringstream message ;
@@ -260,37 +261,35 @@ namespace dfmodules {
 
 	} 
     
-	if ( temp_record.get() ) {
-
-	  bool wasSentSuccessfully = false;
-	  while( !wasSentSuccessfully ) {
-	    try {
-	      record_sink.push( std::move(temp_record), trigger_decision_timeout_ );
-	      wasSentSuccessfully = true ;
-	    } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
-	      std::ostringstream oss_warn;
-	      oss_warn << "push to output queue \"" << get_name() << "\"";
-	      ers::warning(
-			   dunedaq::appfwk::QueueTimeoutExpired( ERS_HERE,
-								 record_sink.get_name(),
-								 oss_warn.str(),
-								 std::chrono::duration_cast<std::chrono::milliseconds>(trigger_decision_timeout_).count()));
-	    }
-	  }  // push while loop
-	
-          // 07-Jan-2021, KAB: the following "break" statement is needed to get things to work.
-          // Without it, the code hangs on the "++it" statement in the "else" block below in the next
-          // iteration of the loop.  I presume that this is because the trigger_decisions_ map has been
-          // modified and the iterator has somehow been invalidated.
-          break;
-	} // if there was a record to be send
-	else {
-	  ++it ;
-	}
-	
       } // decision loop for complete record
+
       
-    
+      //------------------------------------------------
+      // Create TriggerRecords and send them
+      //-----------------------------------------------
+
+      for( const auto & id : complete ) {
+	
+	std::unique_ptr<dataformats::TriggerRecord> temp_record( BuildTriggerRecord( id ) ) ; 
+	
+	bool wasSentSuccessfully = false;
+	while( !wasSentSuccessfully ) {
+	  try {
+	    record_sink.push( std::move(temp_record), trigger_decision_timeout_ );
+	    wasSentSuccessfully = true ;
+	  } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
+	    std::ostringstream oss_warn;
+	    oss_warn << "push to output queue \"" << get_name() << "\"";
+	    ers::warning(
+			 dunedaq::appfwk::QueueTimeoutExpired( ERS_HERE,
+							       record_sink.get_name(),
+							       oss_warn.str(),
+							       std::chrono::duration_cast<std::chrono::milliseconds>(trigger_decision_timeout_).count()));
+	  }
+	}  // push while loop
+      }  // loop over compled trigger id
+      
+
       //-------------------------------------------------
       // Check if some fragments are obsolete 
       //--------------------------------------------------
