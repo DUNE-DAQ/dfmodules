@@ -12,6 +12,7 @@
 #ifndef DFMODULES_SRC_DATAGENERATOR_HPP_
 #define DFMODULES_SRC_DATAGENERATOR_HPP_
 
+#include "dfmodules/CommonIssues.hpp"
 #include "dfmodules/DataStore.hpp"
 
 #include <appfwk/DAQModule.hpp>
@@ -70,13 +71,6 @@ private:
   std::unique_ptr<DataStore> dataWriter_;
 };
 } // namespace dfmodules
-
-ERS_DECLARE_ISSUE_BASE(dfmodules,
-                       ProgressUpdate,
-                       appfwk::GeneralDAQModuleIssue,
-                       message,
-                       ((std::string)name),
-                       ((std::string)message))
 
 ERS_DECLARE_ISSUE_BASE(dfmodules,
                        InvalidDataWriterError,
