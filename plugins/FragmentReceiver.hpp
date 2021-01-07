@@ -47,11 +47,15 @@ namespace dunedaq {
    * @brief Removing fragment
    */
   ERS_DECLARE_ISSUE(dfmodules,         ///< Namespace
-                    RemovingFragment,  ///< Issue class name
-                    "trigger_number: " << trigger_number
-		    << " type: " << fragment_type,                         ///< Message    
+                    FragmentObsolete,  ///< Issue class name
+                    "Fragment obsolete - trigger_number: " << trigger_number
+		    << " type: " << fragment_type
+		    << " with timestamp: " << trigger_timestamp
+		    << " and present time is " << present_time,            ///< Message    
 		    ((dataformats::trigger_number_t)trigger_number)        ///< Message parameters 
 		    ((dataformats::fragment_type_t)fragment_type)          ///< Message parameters 
+		    ((dataformats::timestamp_t)trigger_timestamp)    ///< Message parameters 
+		    ((dataformats::timestamp_t)present_time)         ///< Message parameters 
 		    )
 
   

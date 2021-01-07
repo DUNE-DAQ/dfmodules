@@ -211,6 +211,9 @@ namespace dfmodules {
       }  // fragment loop
     
     
+      TLOG(TLVL_WORK_STEPS) << "Decision size: " << trigger_decisions_.size() ;
+      TLOG(TLVL_WORK_STEPS) << "Frag size: " << fragments_.size() ;
+
       //-------------------------------------------------
       // Check if some decisions are complete or timedout 
       // and create dedicated record
@@ -230,9 +233,16 @@ namespace dfmodules {
       
 	if ( frag_it != fragments_.end() ) {
 	
-	  if ( frag_it -> second.size() == it -> second.components.size() ) {
+	  if ( frag_it -> second.size() >= it -> second.components.size() ) {
 	    temp_record.reset( BuildTriggerRecord( it -> first ) ) ; 
 	  }
+	  else {
+	    std::ostringstream message ;
+	    message << "Trigger decision stauts: " 
+		    << frag_it -> second.size() << " / " << it -> second.components.size() << "Fragments" ;
+	    ers::info(ProgressUpdate(ERS_HERE, get_name(), message.str()));
+	  }
+
 	} 
     
 	if ( temp_record.get() ) {
@@ -271,9 +281,11 @@ namespace dfmodules {
 	  
 	  if ( current_time > max_time_difference_  + (*frag_it) -> get_trigger_timestamp() ) {
 
-	    ers::error( RemovingFragment( ERS_HERE, 
+	    ers::error( FragmentObsolete( ERS_HERE, 
 					  (*frag_it) -> get_trigger_number(),  
-					  (*frag_it) -> get_fragment_type() ) ) ;
+					  (*frag_it) -> get_fragment_type(),
+					  (*frag_it) -> get_trigger_timestamp(),
+					  current_time ) ) ;
 	    //it = trigger_decisions_.erase( it ) ;
 
 	    // note that if we reached this point it means there is no corresponding trigger decision for this id
