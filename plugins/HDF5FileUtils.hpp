@@ -11,7 +11,10 @@
  * received with this code.
  */
 
+#include "dfmodules/CommonIssues.hpp"
+#include "TRACE/trace.h"
 #include <ers/ers.h>
+
 #include <highfive/H5File.hpp>
 
 #include <filesystem>
@@ -26,9 +29,56 @@
 
 namespace dunedaq {
 namespace dfmodules {
-
 namespace HDF5FileUtils {
+/**
+ * @brief Retrieve top HDF5 group
+ */
+HighFive::Group
+getTopGroup(std::unique_ptr<HighFive::File> &filePtr, const std::vector<std::string>& group_dataset)
+{
+  std::string topLevelGroupName = group_dataset[0];
+  HighFive::Group topGroup = filePtr->getGroup(topLevelGroupName);
+  if (!topGroup.isValid()) {
+    //throw InvalidHDF5Group(ERS_HERE, get_name(), topLevelGroupName);
+    throw InvalidHDF5Group(ERS_HERE, topLevelGroupName, topLevelGroupName);
+  }
+  
+  return topGroup;
+}
 
+
+/**
+ * @brief Recursive function to create HDF5 sub-groups
+ */
+HighFive::Group
+getSubGroup(std::unique_ptr<HighFive::File> &filePtr, const std::vector<std::string>& group_dataset, bool createIfNeeded)
+{
+  std::string topLevelGroupName = group_dataset[0];
+  if (createIfNeeded && ! filePtr->exist(topLevelGroupName)) {
+    filePtr->createGroup(topLevelGroupName);
+  }
+  HighFive::Group workingGroup = filePtr->getGroup(topLevelGroupName);
+  if (! workingGroup.isValid()) {
+    throw InvalidHDF5Group(ERS_HERE, topLevelGroupName, topLevelGroupName);
+  }
+  // Create the remaining subgroups
+  for (size_t idx = 1; idx < group_dataset.size(); ++idx) {
+    std::string childGroupName = group_dataset[idx];
+    if (childGroupName.empty()) {
+      throw InvalidHDF5Group(ERS_HERE, childGroupName, childGroupName);
+    }
+    if (createIfNeeded && !workingGroup.exist(childGroupName)) {
+      workingGroup.createGroup(childGroupName);
+    }
+    HighFive::Group childGroup = workingGroup.getGroup(childGroupName);
+    if (! childGroup.isValid()) {
+      throw InvalidHDF5Group(ERS_HERE, childGroupName, childGroupName);
+    }
+    workingGroup = childGroup;
+  }
+  
+  return workingGroup;
+}
 /**
  * @brief This is a recursive function that adds the 'paths' to all of the DataSets
  * contained within the specified Group to the specified path list.  This function
