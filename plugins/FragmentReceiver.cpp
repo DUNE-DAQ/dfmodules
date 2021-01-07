@@ -165,6 +165,23 @@ namespace dfmodules {
 
     while (running_flag.load()) {
 
+      std::ostringstream message ;
+      message << "Bookeeping status: "
+	      << trigger_decisions_.size() << " decisions and " 
+	      << fragments_.size() << " Fragment stashes" 
+	      << std::endl 
+	      << " Trigger Decisions" << std::endl ;
+      
+      for ( const auto & d : trigger_decisions_ ) {
+	message << d.first << " with " << d.second.components.size() << " components " << std::endl ;
+      }
+      for ( const auto & f : fragments_ ) {
+	message << f.first << " with " << f.second.size() << " fragments " << std::endl ;
+      }
+     
+      ers::info(ProgressUpdate(ERS_HERE, get_name(), message.str()));
+
+
       //-------------------------------------------------
       // Retrieve a certain number of trigger decisions
       //--------------------------------------------------
@@ -240,7 +257,7 @@ namespace dfmodules {
 	    std::ostringstream message ;
 	    message << "Trigger decision stauts: " 
 		    << frag_it -> second.size() << " / " << it -> second.components.size() << "Fragments" ;
-	    ers::info(ProgressUpdate(ERS_HERE, get_name(), message.str()));
+	    ers::error(ProgressUpdate(ERS_HERE, get_name(), message.str()));
 	  }
 
 	} 

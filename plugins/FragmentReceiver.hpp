@@ -82,6 +82,11 @@ namespace dunedaq {
 	  trigger_number < other.trigger_number : 
 	  run_number < other.run_number ; 
       }
+
+      friend std::ostream & operator << ( std::ostream & out, const TriggerId & id ) {
+	out << id.trigger_number << '/' << id.run_number ;
+	return out ;
+      }
     };
   
     
