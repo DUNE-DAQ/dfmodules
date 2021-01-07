@@ -279,11 +279,9 @@ namespace dfmodules {
 	  }  // push while loop
 	
           // 07-Jan-2021, KAB: the following "break" statement is needed to get things to work.
-          // Without it, the code hangs on the ++it; in the "else" block below in the next iteration
-          // of the loop.  I presume that this is because the trigger_decisions_ map has been
+          // Without it, the code hangs on the "++it" statement in the "else" block below in the next
+          // iteration of the loop.  I presume that this is because the trigger_decisions_ map has been
           // modified and the iterator has somehow been invalidated.
-          // This break statement worries me a little bit because I don't know how it might
-          // interact with a queue push timeout above.  But, for now, it is definitely needed.
           break;
 	} // if there was a record to be send
 	else {
