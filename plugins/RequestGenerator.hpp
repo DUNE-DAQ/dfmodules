@@ -24,6 +24,21 @@
 #include <map>
 
 namespace dunedaq {
+  using apatype = decltype(dataformats::GeoID::apa_number) ;
+  using linktype = decltype(dataformats::GeoID::link_number) ;
+			  
+  ERS_DECLARE_ISSUE(dfmodules,                 ///< Namespace
+                    UnknownGeoID,  ///< Issue class name
+                    "trigger number " << trigger_number
+		    << " of run: " << run_number
+		    << " of APA: " << apa
+		    << " of Link: " << link, 
+		    ((dataformats::trigger_number_t)trigger_number)  ///< Message parameters 
+		    ((dataformats::run_number_t)run_number)          ///< Message parameters 
+		    ((apatype)apa)    ///< Message parameters 
+		    ((linktype)link)    ///< Message parameters 
+		    )
+
 namespace dfmodules {
 
 /**
@@ -66,8 +81,8 @@ private:
   using trigdecsink_t = dunedaq::appfwk::DAQSink<dfmessages::TriggerDecision>;
   std::unique_ptr<trigdecsink_t> triggerDecisionOutputQueue_;
   using datareqsink_t = dunedaq::appfwk::DAQSink<dfmessages::DataRequest>;
-  std::vector<std::unique_ptr<datareqsink_t>> dataRequestOutputQueues_;
-  std::map<uint32_t, std::string> map_links_queues_;
+  //  std::vector<std::unique_ptr<datareqsink_t>> dataRequestOutputQueues_;
+  std::map<dataformats::GeoID, std::string> m_map_geoid_queues;
   // Worker(s)
   std::unique_ptr<TriggerDecisionForwarder> trigger_decision_forwarder_;
 };

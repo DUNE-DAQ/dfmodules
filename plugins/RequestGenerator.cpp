@@ -11,7 +11,8 @@
 
 #include "appfwk/DAQModuleHelper.hpp"
 #include "appfwk/cmd/Nljs.hpp"
-//#include "dfmodules/fakereqgen/Nljs.hpp"
+#include "dfmodules/requestgenerator/Structs.hpp"
+#include "dfmodules/requestgenerator/Nljs.hpp"
 
 #include "TRACE/trace.h"
 #include "ers/ers.h"
@@ -38,7 +39,6 @@ RequestGenerator::RequestGenerator(const std::string& name)
   , queueTimeout_(100)
   , triggerDecisionInputQueue_(nullptr)
   , triggerDecisionOutputQueue_(nullptr)
-  , dataRequestOutputQueues_()
 {
   register_command("conf", &RequestGenerator::do_conf);
   register_command("start", &RequestGenerator::do_start);
@@ -74,7 +74,8 @@ RequestGenerator::init(const data_t& init_data)
   for (const auto& qitem : ini.qinfos) {
     if (qitem.name.rfind("data_request_") == 0) {
       try {
-        dataRequestOutputQueues_.emplace_back(new datareqsink_t(qitem.inst));
+        datareqsink_t temp(qitem.inst);
+	//        dataRequestOutputQueues_.emplace_back(new datareqsink_t(qitem.inst));
       } catch (const ers::Issue& excpt) {
         throw InvalidQueueFatalError(ERS_HERE, get_name(), qitem.name, excpt);
       }
@@ -83,18 +84,21 @@ RequestGenerator::init(const data_t& init_data)
 }
 
 void
-RequestGenerator::do_conf(const data_t& /*payload*/)
+RequestGenerator::do_conf(const data_t& payload)
 //RequestGenerator::do_conf(const nlohmann::json& confobj /*payload*/)
 {
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
-  // fakereqgen::Conf tmpConfig = payload.get<fakereqgen::Conf>();
-  // sleepMsecWhileRunning_ = tmpConfig.sleep_msec_while_running;
-  //  auto params=confobj.get<requestgenerator::ConfParams>();
 
-  //  for(auto const& link_queue: params.links){
-    // TODO: Set APA properly                                                                                                                  
-  //    map_links_queues_.insert(link_queue->first,);
-  //  }
+  m_map_geoid_queues.clear();
+
+  requestgenerator::ConfParams parsed_conf = payload.get<requestgenerator::ConfParams>() ;
+  
+  for (auto const& entry : parsed_conf.map) {
+    dataformats::GeoID key;
+    key.apa_number = entry.apa ; 
+    key.link_number = entry.link ;    
+    m_map_geoid_queues[key] = entry.queueinstance; 
+  }
 
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
 }
@@ -124,6 +128,12 @@ RequestGenerator::do_work(std::atomic<bool>& running_flag)
 {
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() method";
   int32_t receivedCount = 0;
+
+  std::map< dataformats::GeoID , std::unique_ptr<datareqsink_t> > map; 
+
+  for(auto const& entry : m_map_geoid_queues){
+    map[entry.first] = std::unique_ptr<datareqsink_t>(new datareqsink_t(entry.second));
+  }
 
   while (running_flag.load()) {
     dfmessages::TriggerDecision trigDecision;
@@ -177,42 +187,42 @@ RequestGenerator::do_work(std::atomic<bool>& running_flag)
       dataReq.window_width = comp_req.window_width;
 
       
-      std::string requestQueue = "data_requests_" + std::to_string(geoid_req.link_number); 
-      TLOG(TLVL_WORK_STEPS) << get_name() << ": APA : "<<geoid_req.apa_number 
-                            <<"  Link_num : " << geoid_req.link_number 
-                            << " window_offset " << comp_req.window_offset  
-                            << " window_width " << comp_req.window_width 
-                            << " requestQueue : " << requestQueue; 
+       TLOG(TLVL_WORK_STEPS) << get_name() << ": APA : "<<geoid_req.apa_number 
+                             <<"  Link_num : " << geoid_req.link_number 
+                             << " window_offset " << comp_req.window_offset  
+			     << " window_width " << comp_req.window_width ;
 
+      auto it_req = map.find(geoid_req) ;
+      if ( it_req == map.end() ){
+	ers::error(dunedaq::dfmodules::UnknownGeoID(ERS_HERE, dataReq.trigger_number, dataReq.run_number, geoid_req.apa_number, geoid_req.link_number) ); //trhow error and continue
+	continue ;
+      }
 
-      //Looping over the queues as a hack while we get the mapping of configuration working properly
-      for ( auto& dataReqQueue : dataRequestOutputQueues_ ) {
+      auto& queue = it_req->second ;
 
-	if ( requestQueue.compare( dataReqQueue->get_name() ) ) continue ; // 
-	  
-	TLOG(TLVL_WORK_STEPS) << get_name() << ": dataReqQueue->get_name() : " 
-                              << dataReqQueue->get_name() << "  requestQueue : "<<requestQueue ;
-	
-	wasSentSuccessfully = false;
-	while (!wasSentSuccessfully && running_flag.load()) {
-	  TLOG(TLVL_WORK_STEPS) << get_name() << ": Pushing the DataRequest for trigger number " 
+      wasSentSuccessfully = false;
+      while (!wasSentSuccessfully && running_flag.load()) {
+ 
+        TLOG(TLVL_WORK_STEPS) << get_name() << ": Pushing the DataRequest for trigger number " 
                                 << dataReq.trigger_number
 				<< " onto an output queue";	    
-	  try {
-	    dataReqQueue->push(dataReq, queueTimeout_);
-	    wasSentSuccessfully = true;
-	  } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
-	    std::ostringstream oss_warn;
-	    oss_warn << "push to output queue \"" << dataReqQueue->get_name() << "\"";
-	    ers::warning(dunedaq::appfwk::QueueTimeoutExpired(
-              ERS_HERE,
-	      get_name(),
-	      oss_warn.str(),
-	      std::chrono::duration_cast<std::chrono::milliseconds>(queueTimeout_).count()));
+
+
+        try {
+          queue->push(dataReq, queueTimeout_);
+          wasSentSuccessfully = true;
+        } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
+          std::ostringstream oss_warn;
+          oss_warn << "push to output queue \"" << queue->get_name() << "\"";
+          ers::warning(dunedaq::appfwk::QueueTimeoutExpired(
+            ERS_HERE,
+	    get_name(),
+	    oss_warn.str(),
+	    std::chrono::duration_cast<std::chrono::milliseconds>(queueTimeout_).count()));
 	  }
 	}
       }
-    }
+ 
  
     trigger_decision_forwarder_->set_latest_trigger_decision(trigDecision);
 
