@@ -261,19 +261,22 @@ namespace dfmodules {
 	} 
     
 	if ( temp_record.get() ) {
-	
-	  try {
-	    record_sink.push( std::move(temp_record), trigger_decision_timeout_ );
-	  } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
-	    std::ostringstream oss_warn;
-	    oss_warn << "push to output queue \"" << get_name() << "\"";
-	    ers::warning(
-			 dunedaq::appfwk::QueueTimeoutExpired( ERS_HERE,
-							       record_sink.get_name(),
-							       oss_warn.str(),
-							       std::chrono::duration_cast<std::chrono::milliseconds>(trigger_decision_timeout_).count()));
-	  }
-	
+
+	  bool wasSentSuccessfully = false;
+	  while( !wasSentSuccessfully ) {
+	    try {
+	      record_sink.push( std::move(temp_record), trigger_decision_timeout_ );
+	      wasSentSuccessfully = true ;
+	    } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
+	      std::ostringstream oss_warn;
+	      oss_warn << "push to output queue \"" << get_name() << "\"";
+	      ers::warning(
+			   dunedaq::appfwk::QueueTimeoutExpired( ERS_HERE,
+								 record_sink.get_name(),
+								 oss_warn.str(),
+								 std::chrono::duration_cast<std::chrono::milliseconds>(trigger_decision_timeout_).count()));
+	    }
+	  }  // push while loop
 	} // if there was a record to be send
 	else {
 	  ++it ;
