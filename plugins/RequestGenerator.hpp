@@ -21,6 +21,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <map>
 
 namespace dunedaq {
 namespace dfmodules {
@@ -46,7 +47,8 @@ public:
 
 private:
   // Commands
-  void do_conf(const data_t&);
+  //  void do_conf(const data_t&);
+  void do_conf(const nlohmann::json& obj);
   void do_start(const data_t&);
   void do_stop(const data_t&);
 
@@ -65,7 +67,7 @@ private:
   std::unique_ptr<trigdecsink_t> triggerDecisionOutputQueue_;
   using datareqsink_t = dunedaq::appfwk::DAQSink<dfmessages::DataRequest>;
   std::vector<std::unique_ptr<datareqsink_t>> dataRequestOutputQueues_;
-
+  std::map<uint32_t, std::string> map_links_queues_;
   // Worker(s)
   std::unique_ptr<TriggerDecisionForwarder> trigger_decision_forwarder_;
 };

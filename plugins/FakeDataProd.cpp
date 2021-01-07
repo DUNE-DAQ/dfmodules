@@ -123,7 +123,7 @@ FakeDataProd::do_work(std::atomic<bool>& running_flag)
     dataFragPtr->set_trigger_number(dataReq.trigger_number);
     dataFragPtr->set_run_number(run_number_);
     dunedaq::dataformats::GeoID geo_location;
-    geo_location.APA_number = 1;
+    geo_location.apa_number = 1;
     geo_location.link_number = fake_link_number_;
     dataFragPtr->set_link_ID(geo_location);
     dataFragPtr->set_error_bits(0);

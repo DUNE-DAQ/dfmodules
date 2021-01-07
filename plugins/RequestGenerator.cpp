@@ -84,11 +84,17 @@ RequestGenerator::init(const data_t& init_data)
 
 void
 RequestGenerator::do_conf(const data_t& /*payload*/)
+//RequestGenerator::do_conf(const nlohmann::json& confobj /*payload*/)
 {
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
-
   // fakereqgen::Conf tmpConfig = payload.get<fakereqgen::Conf>();
   // sleepMsecWhileRunning_ = tmpConfig.sleep_msec_while_running;
+  //  auto params=confobj.get<requestgenerator::ConfParams>();
+
+  //  for(auto const& link_queue: params.links){
+    // TODO: Set APA properly                                                                                                                  
+  //    map_links_queues_.insert(link_queue->first,);
+  //  }
 
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
 }
@@ -153,61 +159,61 @@ RequestGenerator::do_work(std::atomic<bool>& running_flag)
     //-----------------------------------------
     //Loop over trigger decision components 
     //Spawn each component_data_request to the corresponding link_data_handler_queue 
-
- 
-
+    //----------------------------------------
     for ( auto it = trigDecision.components.begin() ; it != trigDecision.components.end() ; it++) {
-      TLOG(TLVL_WORK_STEPS) << get_name() << " trigDecision.components.size :"<<  trigDecision.components.size();
+      TLOG(TLVL_WORK_STEPS) << get_name() << ": trigDecision.components.size :"<<  trigDecision.components.size();
       dfmessages::DataRequest dataReq;
       dataReq.trigger_number = trigDecision.trigger_number;
       dataReq.run_number = trigDecision.run_number;
       dataReq.trigger_timestamp = trigDecision.trigger_timestamp;
 
-      TLOG(TLVL_WORK_STEPS) << get_name() << ": trig_number : "<<dataReq.trigger_number <<"  run_number : "<< dataReq.run_number << "  trig_timestamp " << dataReq.trigger_timestamp ; 
-      auto first_map_element = it->first ;
+      TLOG(TLVL_WORK_STEPS) << get_name() << ": trig_number : "<<dataReq.trigger_number 
+                            <<"  run_number : "<< dataReq.run_number 
+                            << "  trig_timestamp " << dataReq.trigger_timestamp ; 
+
       dataformats::ComponentRequest comp_req = it->second;
-      dataformats::GeoID geoid_req = comp_req.component ; 
-      TLOG(TLVL_WORK_STEPS) << get_name() << ": APA : "<<geoid_req.apa_number <<"  Link_num : "<< geoid_req.link_number << " window_offset " << comp_req.window_offset  << " window_width " << comp_req.window_width; 
+      dataformats::GeoID geoid_req = it->first ; 
+      dataReq.window_offset = comp_req.window_offset;
+      dataReq.window_width = comp_req.window_width;
 
-    }
+      
+      std::string requestQueue = "data_requests_" + std::to_string(geoid_req.link_number); 
+      TLOG(TLVL_WORK_STEPS) << get_name() << ": APA : "<<geoid_req.apa_number 
+                            <<"  Link_num : " << geoid_req.link_number 
+                            << " window_offset " << comp_req.window_offset  
+                            << " window_width " << comp_req.window_width 
+                            << " requestQueue : " << requestQueue; 
 
 
-    for (auto& dataReqQueue : dataRequestOutputQueues_) {
-      dfmessages::DataRequest dataReq;
-      dataReq.trigger_number = trigDecision.trigger_number;
-      dataReq.run_number = trigDecision.run_number;
-      dataReq.trigger_timestamp = trigDecision.trigger_timestamp;
+      //Looping over the queues as a hack while we get the mapping of configuration working properly
+      for ( auto& dataReqQueue : dataRequestOutputQueues_ ) {
 
-      // hack: only use the request window from one of the components
-      auto first_map_element = trigDecision.components.begin();
-      if (first_map_element != trigDecision.components.end()) {
-        dataformats::ComponentRequest comp_req = first_map_element->second;
-        dataReq.window_offset = comp_req.window_offset;
-        dataReq.window_width = comp_req.window_width;
-      } else {
-        dataReq.window_offset = 0x123456789abcdef0; // placeholder
-        dataReq.window_width = 0x123456789abcdef0;  // placeholder
+	if ( requestQueue.compare( dataReqQueue->get_name() ) ) continue ; // 
+	  
+	TLOG(TLVL_WORK_STEPS) << get_name() << ": dataReqQueue->get_name() : " 
+                              << dataReqQueue->get_name() << "  requestQueue : "<<requestQueue ;
+	
+	wasSentSuccessfully = false;
+	while (!wasSentSuccessfully && running_flag.load()) {
+	  TLOG(TLVL_WORK_STEPS) << get_name() << ": Pushing the DataRequest for trigger number " 
+                                << dataReq.trigger_number
+				<< " onto an output queue";	    
+	  try {
+	    dataReqQueue->push(dataReq, queueTimeout_);
+	    wasSentSuccessfully = true;
+	  } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
+	    std::ostringstream oss_warn;
+	    oss_warn << "push to output queue \"" << dataReqQueue->get_name() << "\"";
+	    ers::warning(dunedaq::appfwk::QueueTimeoutExpired(
+              ERS_HERE,
+	      get_name(),
+	      oss_warn.str(),
+	      std::chrono::duration_cast<std::chrono::milliseconds>(queueTimeout_).count()));
+	  }
+	}
       }
-
-      wasSentSuccessfully = false;
-      while (!wasSentSuccessfully && running_flag.load()) {
-        TLOG(TLVL_WORK_STEPS) << get_name() << ": Pushing the DataRequest for trigger number " << dataReq.trigger_number
-                              << " onto an output queue";
-        try {
-          dataReqQueue->push(dataReq, queueTimeout_);
-          wasSentSuccessfully = true;
-        } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
-          std::ostringstream oss_warn;
-          oss_warn << "push to output queue \"" << dataReqQueue->get_name() << "\"";
-          ers::warning(dunedaq::appfwk::QueueTimeoutExpired(
-            ERS_HERE,
-            get_name(),
-            oss_warn.str(),
-            std::chrono::duration_cast<std::chrono::milliseconds>(queueTimeout_).count()));
-        }
-      }
     }
-
+ 
     trigger_decision_forwarder_->set_latest_trigger_decision(trigDecision);
 
     // TLOG(TLVL_WORK_STEPS) << get_name() << ": Start of sleep while waiting for run Stop";
