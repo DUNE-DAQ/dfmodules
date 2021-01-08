@@ -32,6 +32,7 @@ daq_add_plugin( FakeTrigDecEmu     duneDAQModule SCHEMA LINK_LIBRARIES dfmodules
 #daq_add_unit_test( HDF5FileUtils_test       LINK_LIBRARIES dfmodules )
 daq_add_unit_test( HDF5Write_test           LINK_LIBRARIES dfmodules )
 daq_add_unit_test( HDF5Read_test            LINK_LIBRARIES dfmodules )
+daq_add_unit_test( TriggerRecordHeader_test  LINK_LIBRARIES dfmodules )
 #daq_add_unit_test( HDF5GetAllKeys_test      LINK_LIBRARIES dfmodules )
 #daq_add_unit_test( HDF5Combiner_test        LINK_LIBRARIES dfmodules )
 #daq_add_unit_test( DataStoreFactory_test    LINK_LIBRARIES dfmodules )

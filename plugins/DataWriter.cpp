@@ -144,6 +144,21 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
     }
 
     // if we received a TriggerRecord, print out some debug information, if requested
+    // First store the trigger record header
+    /*
+    //auto * trh_ptr = & trigRecPtr->get_header_data()
+    size_t trh_size = trh_ptr->get_header().get_total_size_bytes();
+
+    // Apa number and link number in trh_key 
+    // are not taken into account for the Trigger
+    StorageKey trh_key (trh_ptr->get_header().get_run_number(), trigRecPtr->get_trigger_number(), "TriggerRecordHeader", 1,1);
+    KeyedDataBlock trh_block(trh_key);
+    //trh_block.unowned_data_start = ;
+    trh_block.data_size = trh_size;
+    data_writer_->write(trh_block);
+    */
+
+    // Write the fragments
     std::vector<dataformats::Fragment*> frag_vec = trigRecPtr->get_fragments();
     for (const auto& frag_ptr : frag_vec) {
       TLOG(TLVL_FRAGMENT_HEADER_DUMP) << get_name() << ": Memory contents for the Fragment from link "
@@ -170,9 +185,6 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
       KeyedDataBlock data_block(fragment_skey);
       data_block.unowned_data_start = frag_ptr->get_storage_location();
       data_block.data_size = frag_ptr->get_size();
-
-      //data_block.unowned_trigger_record_header = 
-      //data_block.trh_size =
       data_writer_->write(data_block);
     }
 

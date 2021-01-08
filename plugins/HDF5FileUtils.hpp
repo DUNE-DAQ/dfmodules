@@ -63,6 +63,7 @@ getSubGroup(std::unique_ptr<HighFive::File> &filePtr, const std::vector<std::str
   }
   // Create the remaining subgroups
   for (size_t idx = 1; idx < group_dataset.size()-1; ++idx) {
+    // group_dataset.size()-1 because last element is the dataset
     std::string childGroupName = group_dataset[idx];
     if (childGroupName.empty()) {
       throw InvalidHDF5Group(ERS_HERE, childGroupName, childGroupName);
