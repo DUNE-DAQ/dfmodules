@@ -24,6 +24,7 @@ daq_add_plugin( FakeDataProd       duneDAQModule SCHEMA LINK_LIBRARIES dfmodules
 daq_add_plugin( FragmentReceiver   duneDAQModule SCHEMA LINK_LIBRARIES dfmodules )
 ##daq_add_plugin( FakeFragRec        duneDAQModule LINK_LIBRARIES dfmodules )
 daq_add_plugin( FakeReqGen         duneDAQModule LINK_LIBRARIES dfmodules )
+daq_add_plugin( RequestGenerator   duneDAQModule SCHEMA LINK_LIBRARIES dfmodules )
 daq_add_plugin( FakeTrigDecEmu     duneDAQModule SCHEMA LINK_LIBRARIES dfmodules )
 
 
