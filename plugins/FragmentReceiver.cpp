@@ -36,8 +36,7 @@ namespace dfmodules {
   FragmentReceiver::FragmentReceiver(const std::string& name) : 
     dunedaq::appfwk::DAQModule(name),
     thread_(std::bind(&FragmentReceiver::do_work, this, std::placeholders::_1)),
-    trigger_decision_timeout_(100),
-    fragment_timeout_(100) {
+    queue_timeout_(100) {
     
     register_command("conf", &FragmentReceiver::do_conf);
     register_command("start", &FragmentReceiver::do_start);
@@ -107,17 +106,9 @@ namespace dfmodules {
     
     fragmentreceiver::ConfParams parsed_conf = payload.get<fragmentreceiver::ConfParams>() ;
 
-    decision_loop_cnt_ = parsed_conf.decision_loop_counter ; 
-    fragment_loop_cnt_ = parsed_conf.fragment_loop_counter == 0 ? 
-      fragment_source_names_.size() : parsed_conf.fragment_loop_counter ;
-    
     max_time_difference_  = parsed_conf.max_timestamp_diff ;
     
-    trigger_decision_timeout_ = std::chrono::milliseconds( parsed_conf.general_queue_timeout ) ;
-    auto scaling_factor = fragment_loop_cnt_ * fragment_source_names_.size() ;
-    if ( scaling_factor <= 0 ) scaling_factor = 1 ;
-    fragment_timeout_ = std::chrono::milliseconds( parsed_conf.general_queue_timeout / 
-						   scaling_factor ) ;   
+    queue_timeout_ = std::chrono::milliseconds( parsed_conf.general_queue_timeout ) ;
     
     TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
   }
@@ -162,70 +153,58 @@ namespace dfmodules {
 
     while (running_flag.load()) {
 
-      std::ostringstream message ;
-      message << "Bookeeping status: "
-	      << trigger_decisions_.size() << " decisions and " 
-	      << fragments_.size() << " Fragment stashes" 
-	      << std::endl 
-	      << "Trigger Decisions" << std::endl ;
-      
-      for ( const auto & d : trigger_decisions_ ) {
-	message << "\t" << d.first << " with " << d.second.components.size() << " components " << std::endl ;
-      }
-      message << "Fragments" << std::endl ;
-      for ( const auto & f : fragments_ ) {
-	message << "\t" << f.first << " with " << f.second.size() << " fragments " << std::endl ;
-      }
-     
-      ers::info(ProgressUpdate(ERS_HERE, get_name(), message.str()));
-
+      bool book_updates = false ;
 
       //-------------------------------------------------
-      // Retrieve a certain number of trigger decisions
+      // Try to get a trigger decision of trigger decisions
       //--------------------------------------------------
-
-      for ( unsigned int i = 0 ; i < decision_loop_cnt_ ; ++i ) {
       
-	try {
-	  decision_source.pop( temp_dec, trigger_decision_timeout_ ) ;
+      if ( decision_source.can_pop() ) {
 	
+	try {
+	  decision_source.pop( temp_dec, queue_timeout_ ) ;
 	} catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
 	  // it is perfectly reasonable that there might be no data in the queue
 	  // some fraction of the times that we check, so we just continue on and try again
 	  continue;
 	}
-
+	
 	current_time = temp_dec.trigger_timestamp ; 
 
 	TriggerId temp_id( temp_dec ) ;
 	trigger_decisions_[temp_id] = temp_dec ; 
-      
-      }  // decision loop
+	
+	book_updates = true ;
+      }  // if decisions has something to be read
+
     
       //-------------------------------------------------
       // Try to get Fragments from every queue 
       //--------------------------------------------------
     
-      for ( unsigned int i = 0 ; i < fragment_loop_cnt_ ; ++i ) {
-      
-	for ( unsigned int j = 0 ; j < frag_sources.size() ; ++j ) {
+      for ( unsigned int j = 0 ; j < frag_sources.size() ; ++j ) {
+	
+	if ( frag_sources[j] -> can_pop() ) {
 
 	  try {
-	    frag_sources[j] -> pop( temp_fragment, fragment_timeout_) ;
-	
+	    frag_sources[j] -> pop( temp_fragment, queue_timeout_) ;
+	    
 	  } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
 	    // it is perfectly reasonable that there might be no data in the queue
 	    // some fraction of the times that we check, so we just continue on and try again
 	    continue;
 	  }
-	
+	  
 	  TriggerId temp_id( *temp_fragment ) ;
 	  fragments_[temp_id].push_back( std::move(temp_fragment) ) ;
+
+	  book_updates = true ;
+	  
+	}
 	
-	} // queue loop 
-      }  // fragment loop
+      } // queue loop 
     
-    
+        
       TLOG(TLVL_WORK_STEPS) << "Decision size: " << trigger_decisions_.size() ;
       TLOG(TLVL_WORK_STEPS) << "Frag size: " << fragments_.size() ;
 
@@ -234,92 +213,114 @@ namespace dfmodules {
       // and create dedicated record
       //--------------------------------------------------
 
-      std::vector<TriggerId> complete ;
+      if ( book_updates ) {
 
-      for ( auto it = trigger_decisions_.begin() ;
-	    it != trigger_decisions_.end() ; 
-	    ++it ) {
-
-	// if ( current_time - it -> second.trigger_timestamp > max_time_difference_ ) {
-	// 	ers::warning( TimedOutTriggerDecision( ERS_HERE, it -> second, current_time ) ) ;
-	// 	temp_record = BuildTriggerRecord( it -> first ) ; 
-	// }
-      
-	auto frag_it = fragments_.find( it -> first ) ;
-      
-	if ( frag_it != fragments_.end() ) {
+	std::ostringstream message ;
+	message << "Bookeeping status: "
+		<< trigger_decisions_.size() << " decisions and " 
+		<< fragments_.size() << " Fragment stashes" 
+		<< std::endl 
+		<< "Trigger Decisions" << std::endl ;
 	
-	  if ( frag_it -> second.size() >= it -> second.components.size() ) {
-	    complete.push_back( it -> first ) ; 
-	  }
-	  else {
-	    std::ostringstream message ;
-	    message << "Trigger decision stauts: " 
-		    << frag_it -> second.size() << " / " << it -> second.components.size() << "Fragments" ;
-	    ers::error(ProgressUpdate(ERS_HERE, get_name(), message.str()));
-	  }
-
-	} 
-    
-      } // decision loop for complete record
-
-      
-      //------------------------------------------------
-      // Create TriggerRecords and send them
-      //-----------------------------------------------
-
-      for( const auto & id : complete ) {
+	for ( const auto & d : trigger_decisions_ ) {
+	  message << "\t" << d.first << " with " << d.second.components.size() << " components " << std::endl ;
+	}
+	message << "Fragments" << std::endl ;
+	for ( const auto & f : fragments_ ) {
+	  message << "\t" << f.first << " with " << f.second.size() << " fragments " << std::endl ;
+	}
 	
-	std::unique_ptr<dataformats::TriggerRecord> temp_record( BuildTriggerRecord( id ) ) ; 
+	ers::info(ProgressUpdate(ERS_HERE, get_name(), message.str()));
 	
-	bool wasSentSuccessfully = false;
-	while( !wasSentSuccessfully ) {
-	  try {
-	    record_sink.push( std::move(temp_record), trigger_decision_timeout_ );
-	    wasSentSuccessfully = true ;
-	  } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
-	    std::ostringstream oss_warn;
-	    oss_warn << "push to output queue \"" << get_name() << "\"";
-	    ers::warning(
-			 dunedaq::appfwk::QueueTimeoutExpired( ERS_HERE,
-							       record_sink.get_name(),
-							       oss_warn.str(),
-							       std::chrono::duration_cast<std::chrono::milliseconds>(trigger_decision_timeout_).count()));
-	  }
-	}  // push while loop
-      }  // loop over compled trigger id
-      
-
-      //-------------------------------------------------
-      // Check if some fragments are obsolete 
-      //--------------------------------------------------
-    
-      for ( auto it = fragments_.begin() ;
-	    it != fragments_.end() ; 
-	    ++it ) {
-
-	for ( auto frag_it = it -> second.begin() ;
-	      frag_it != it-> second.end() ;
-	      ++ frag_it ) {
+	
+	std::vector<TriggerId> complete ;
+	
+	for ( auto it = trigger_decisions_.begin() ;
+	      it != trigger_decisions_.end() ; 
+	      ++it ) {
 	  
-	  if ( current_time > max_time_difference_  + (*frag_it) -> get_trigger_timestamp() ) {
+	  // if ( current_time - it -> second.trigger_timestamp > max_time_difference_ ) {
+	  // 	ers::warning( TimedOutTriggerDecision( ERS_HERE, it -> second, current_time ) ) ;
+	  // 	temp_record = BuildTriggerRecord( it -> first ) ; 
+	  // }
+	  
+	  auto frag_it = fragments_.find( it -> first ) ;
+	  
+	  if ( frag_it != fragments_.end() ) {
+	    
+	    if ( frag_it -> second.size() >= it -> second.components.size() ) {
+	      complete.push_back( it -> first ) ; 
+	    }
+	    else {
+	      std::ostringstream message ;
+	      message << "Trigger decision stauts: " 
+		      << frag_it -> second.size() << " / " << it -> second.components.size() << "Fragments" ;
+	      ers::error(ProgressUpdate(ERS_HERE, get_name(), message.str()));
+	    }
+	    
+	  } 
+	  
+	} // decision loop for complete record
+	
+	
+	//------------------------------------------------
+	// Create TriggerRecords and send them
+	//-----------------------------------------------
+	
+	for( const auto & id : complete ) {
+	  
+	  std::unique_ptr<dataformats::TriggerRecord> temp_record( BuildTriggerRecord( id ) ) ; 
+	  
+	  bool wasSentSuccessfully = false;
+	  while( !wasSentSuccessfully ) {
+	    try {
+	      record_sink.push( std::move(temp_record), queue_timeout_ );
+	      wasSentSuccessfully = true ;
+	    } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
+	      std::ostringstream oss_warn;
+	      oss_warn << "push to output queue \"" << get_name() << "\"";
+	      ers::warning(
+			   dunedaq::appfwk::QueueTimeoutExpired( ERS_HERE,
+								 record_sink.get_name(),
+								 oss_warn.str(),
+								 std::chrono::duration_cast<std::chrono::milliseconds>(queue_timeout_).count()));
+	    }
+	  }  // push while loop
+	}  // loop over compled trigger id
+	
+	
+	//-------------------------------------------------
+	// Check if some fragments are obsolete 
+	//--------------------------------------------------
+	
+	for ( auto it = fragments_.begin() ;
+	      it != fragments_.end() ; 
+	      ++it ) {
+	  
+	  for ( auto frag_it = it -> second.begin() ;
+		frag_it != it-> second.end() ;
+		++ frag_it ) {
+	    
+	    if ( current_time > max_time_difference_  + (*frag_it) -> get_trigger_timestamp() ) {
+	      
+	      ers::error( FragmentObsolete( ERS_HERE, 
+					    (*frag_it) -> get_trigger_number(),  
+					    (*frag_it) -> get_fragment_type(),
+					    (*frag_it) -> get_trigger_timestamp(),
+					    current_time ) ) ;
+	      //it = trigger_decisions_.erase( it ) ;
+	      
+	      // note that if we reached this point it means there is no corresponding trigger decision for this id
+	      // otherwise we would have created a dedicated trigger record (though probably incomplete)
+	      // so there is no need to check the trigger decision book 
+	    }
+	  } // vector loop
+	} // fragment loop
 
-	    ers::error( FragmentObsolete( ERS_HERE, 
-					  (*frag_it) -> get_trigger_number(),  
-					  (*frag_it) -> get_fragment_type(),
-					  (*frag_it) -> get_trigger_timestamp(),
-					  current_time ) ) ;
-	    //it = trigger_decisions_.erase( it ) ;
-
-	    // note that if we reached this point it means there is no corresponding trigger decision for this id
-	  // otherwise we would have created a dedicated trigger record (though probably incomplete)
-	  // so there is no need to check the trigger decision book 
-	  }
-	} // vector loop
-      } // fragment loop
-
+      }  // if a books were updated 
+	
     }  // working loop
-
+      
     std::ostringstream oss_summ;
     oss_summ << ": Exiting the do_work() method, " 
 	     << trigger_decisions_.size() << " reminaing Trigger Decision and " 

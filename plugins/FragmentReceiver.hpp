@@ -130,8 +130,7 @@ namespace dunedaq {
 
       // Configuration
       // size_t sleepMsecWhileRunning_;
-      std::chrono::milliseconds trigger_decision_timeout_;
-      std::chrono::milliseconds fragment_timeout_;
+      std::chrono::milliseconds queue_timeout_;
 
       // Input Queues
       using trigger_decision_source_t = dunedaq::appfwk::DAQSource<dfmessages::TriggerDecision> ;
@@ -144,14 +143,11 @@ namespace dunedaq {
       using trigger_record_sink_t = appfwk::DAQSink<std::unique_ptr<dataformats::TriggerRecord>> ;
       std::string trigger_record_sink_name_ ;
 
-      // loop configurations
-      unsigned int decision_loop_cnt_ ;
-      unsigned int fragment_loop_cnt_  ;
-      dataformats::timestamp_diff_t max_time_difference_ ; 
-
       // bookeeping
       std::map<TriggerId, std::vector<std::unique_ptr<dataformats::Fragment>>> fragments_ ; 
       std::map<TriggerId, dfmessages::TriggerDecision> trigger_decisions_ ;
+
+      dataformats::timestamp_diff_t max_time_difference_ ; 
 
     };
   } // namespace dfmodules
