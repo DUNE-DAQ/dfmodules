@@ -146,17 +146,16 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
     // if we received a TriggerRecord, print out some debug information, if requested
 
     // First store the trigger record header
-    /*
-    //auto * trh_ptr = & trigRecPtr->get_header_data()
-    size_t trh_size = trh_ptr->get_header().get_total_size_bytes();
+    void * trh_ptr = trigRecPtr->get_header().get_storage_location();
+    size_t trh_size = trigRecPtr->get_header().get_total_size_bytes();
     // Apa number and link number in trh_key 
     // are not taken into account for the Trigger
-    StorageKey trh_key (trh_ptr->get_header().get_run_number(), trigRecPtr->get_trigger_number(), "TriggerRecordHeader", 1,1);
+    StorageKey trh_key (trigRecPtr->get_header().get_run_number(), trigRecPtr->get_header().get_trigger_number(), "TriggerRecordHeader", 1,1);
     KeyedDataBlock trh_block(trh_key);
-    //trh_block.unowned_data_start = ;
+    trh_block.unowned_data_start = trh_ptr;
     trh_block.data_size = trh_size;
     data_writer_->write(trh_block);
-    */
+    
 
     // Write the fragments
     const auto & frag_vec = trigRecPtr->get_fragments();
