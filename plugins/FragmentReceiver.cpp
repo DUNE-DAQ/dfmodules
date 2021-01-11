@@ -332,14 +332,22 @@ namespace dfmodules {
 
   dataformats::TriggerRecord * FragmentReceiver::BuildTriggerRecord( const TriggerId & id ) {
 
-    dataformats::TriggerRecord * trig_rec_ptr = new dataformats::TriggerRecord() ;
-  
+
     auto trig_dec_it = trigger_decisions_.find( id ) ;
     const dfmessages::TriggerDecision & trig_dec = trig_dec_it -> second ;
 
-    trig_rec_ptr -> set_trigger_number( trig_dec.trigger_number );
-    trig_rec_ptr -> set_run_number( trig_dec.run_number );
-    trig_rec_ptr -> set_trigger_timestamp(trig_dec.trigger_timestamp);
+    // Create a trigger decision components vector
+    std::vector<dunedaq::dataformats::ComponentRequest> trig_dec_comp;    
+    for (auto elem : trig_dec.components) {
+      trig_dec_comp.push_back(elem.second);
+    } 
+     
+ 
+    dataformats::TriggerRecord * trig_rec_ptr = new dataformats::TriggerRecord( trig_dec_comp ) ;
+
+    trig_rec_ptr ->get_header().set_trigger_number( trig_dec.trigger_number );
+    trig_rec_ptr ->get_header().set_run_number( trig_dec.run_number );
+    trig_rec_ptr ->get_header().set_trigger_timestamp(trig_dec.trigger_timestamp);
 
     auto frags_it = fragments_.find( id ) ;
     auto & frags = frags_it -> second ;

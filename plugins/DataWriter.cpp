@@ -136,7 +136,7 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
       triggerRecordInputQueue_->pop(trigRecPtr, queueTimeout_);
       ++received_count;
       TLOG(TLVL_WORK_STEPS) << get_name() << ": Popped the TriggerRecord for trigger number "
-                            << trigRecPtr->get_trigger_number() << " off the input queue";
+                            << trigRecPtr->get_header().get_trigger_number() << " off the input queue";
     } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
       // it is perfectly reasonable that there might be no data in the queue
       // some fraction of the times that we check, so we just continue on and try again
@@ -147,7 +147,7 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
     const auto & frag_vec = trigRecPtr->get_fragments();
     for (const auto& frag_ptr : frag_vec) {
       TLOG(TLVL_FRAGMENT_HEADER_DUMP) << get_name() << ": Memory contents for the Fragment from link "
-                                      << frag_ptr->get_link_ID().link_number;
+                                      << frag_ptr->get_link_id().link_number;
       const uint32_t* mem_ptr = static_cast<const uint32_t*>(frag_ptr->get_storage_location());
       for (int idx = 0; idx < 4; ++idx) {
         std::ostringstream oss_hexdump;
@@ -165,8 +165,8 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
       StorageKey fragment_skey(frag_ptr->get_run_number(),
                                frag_ptr->get_trigger_number(),
                                "FELIX",
-                               frag_ptr->get_link_ID().apa_number,
-                               frag_ptr->get_link_ID().link_number);
+                               frag_ptr->get_link_id().apa_number,
+                               frag_ptr->get_link_id().link_number);
       KeyedDataBlock data_block(fragment_skey);
       data_block.unowned_data_start = frag_ptr->get_storage_location();
       data_block.data_size = frag_ptr->get_size();
@@ -179,14 +179,14 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
     // progress updates
     if ((received_count % 3) == 0) {
       std::ostringstream oss_prog;
-      oss_prog << ": Processing trigger number " << trigRecPtr->get_trigger_number() << ", this is one of "
+      oss_prog << ": Processing trigger number " << trigRecPtr->get_header().get_trigger_number() << ", this is one of "
                << received_count << " trigger records received so far.";
       ers::info(ProgressUpdate(ERS_HERE, get_name(), oss_prog.str()));
     }
 
     // tell the TriggerInhibitAgent the trigger_number of this TriggerRecord so that
     // it can check whether an Inhibit needs to be asserted or cleared.
-    trigger_inhibit_agent_->set_latest_trigger_number(trigRecPtr->get_trigger_number());
+    trigger_inhibit_agent_->set_latest_trigger_number(trigRecPtr->get_header().get_trigger_number());
   }
 
   std::ostringstream oss_summ;

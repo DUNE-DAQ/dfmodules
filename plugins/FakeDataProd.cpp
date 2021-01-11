@@ -125,7 +125,7 @@ FakeDataProd::do_work(std::atomic<bool>& running_flag)
     dunedaq::dataformats::GeoID geo_location;
     geo_location.apa_number = 1;
     geo_location.link_number = fake_link_number_;
-    dataFragPtr->set_link_ID(geo_location);
+    dataFragPtr->set_link_id(geo_location);
     dataFragPtr->set_error_bits(0);
     dataFragPtr->set_type(0x123); // placeholder
     dataFragPtr->set_trigger_timestamp(dataReq.trigger_timestamp);
