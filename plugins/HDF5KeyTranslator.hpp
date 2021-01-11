@@ -70,23 +70,29 @@ public:
                         << data_key.getTriggerNumber();
     elementList.push_back(triggerNumberString.str());
 
-    // Add detector type
-    elementList.push_back(data_key.getDetectorType());
+    if (data_key.getDetectorType() != "TriggerRecordHeader") {
+      // Add detector type
+      elementList.push_back(data_key.getDetectorType());
 
-    // next, we translate the APA number location
-    std::ostringstream apaNumberString;
-    apaNumberString << layout_params.apa_name_prefix << std::setw(layout_params.digits_for_apa_number)
+      // next, we translate the APA number location
+      std::ostringstream apaNumberString;
+      apaNumberString << layout_params.apa_name_prefix << std::setw(layout_params.digits_for_apa_number)
                     << std::setfill('0') << data_key.getApaNumber();
-    elementList.push_back(apaNumberString.str());
+      elementList.push_back(apaNumberString.str());
 
-    // Finally, add link number
-    std::ostringstream linkNumberString;
-    linkNumberString << layout_params.link_name_prefix << std::setw(layout_params.digits_for_link_number)
+      // Finally, add link number
+      std::ostringstream linkNumberString;
+      linkNumberString << layout_params.link_name_prefix << std::setw(layout_params.digits_for_link_number)
                      << std::setfill('0') << data_key.getLinkNumber();
-    elementList.push_back(linkNumberString.str());
+      elementList.push_back(linkNumberString.str());
+    } else {
+      // Add TriggerRecordHeader instead of detector type
+      elementList.push_back("TriggerRecordHeader");
+    }
 
     return elementList;
   }
+
 
   /**
    * @brief Returns the version number of the HDF5 paths that are currently being
@@ -214,3 +220,4 @@ private:
 } // namespace dunedaq
 
 #endif // DFMODULES_SRC_HDF5KEYTRANSLATOR_HPP_
+
