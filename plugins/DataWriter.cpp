@@ -47,6 +47,7 @@ DataWriter::DataWriter(const std::string& name)
   register_command("conf", &DataWriter::do_conf);
   register_command("start", &DataWriter::do_start);
   register_command("stop", &DataWriter::do_stop);
+  register_command("scrap", &DataWriter::do_scrap);
 }
 
 void
@@ -115,6 +116,17 @@ DataWriter::do_stop(const data_t& /*args*/)
   thread_.stop_working_thread();
   ERS_LOG(get_name() << " successfully stopped");
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_stop() method";
+}
+
+void
+DataWriter::do_scrap(const data_t& payload)
+{
+  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_scrap() method";
+
+  // clear/reset the DataStore instance here
+  data_writer_.reset();
+
+  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_scrap() method";
 }
 
 void
