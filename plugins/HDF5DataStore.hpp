@@ -128,7 +128,7 @@ public:
       std::unique_ptr<char> memPtr(membuffer);
       dataBlock.owned_data_start = std::move(memPtr);
     } catch (HighFive::DataSetException const&) {
-      ERS_INFO("HDF5DataSet " << datasetName << " not found.");
+      ERS_LOG("HDF5DataSet " << datasetName << " not found.");
     }
          
     return dataBlock;

@@ -29,11 +29,11 @@
 /**
  * @brief Name used by TRACE TLOG calls from this source file
  */
-#define TRACE_NAME "DataWriter"      // NOLINT
-#define TLVL_ENTER_EXIT_METHODS 10   // NOLINT
-#define TLVL_CONFIG 12               // NOLINT
-#define TLVL_WORK_STEPS 15           // NOLINT
-#define TLVL_FRAGMENT_HEADER_DUMP 27 // NOLINT
+#define TRACE_NAME "DataWriter"                   // NOLINT
+#define TLVL_ENTER_EXIT_METHODS TLVL_DEBUG + 5    // NOLINT
+#define TLVL_CONFIG TLVL_DEBUG + 7                // NOLINT
+#define TLVL_WORK_STEPS TLVL_DEBUG + 10           // NOLINT
+#define TLVL_FRAGMENT_HEADER_DUMP TLVL_DEBUG + 17 // NOLINT
 
 namespace dunedaq {
 namespace dfmodules {
@@ -146,27 +146,29 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
     // if we received a TriggerRecord, print out some debug information, if requested
 
     // First store the trigger record header
-    void * trh_ptr = trigRecPtr->get_header().get_storage_location();
+    void* trh_ptr = trigRecPtr->get_header().get_storage_location();
     size_t trh_size = trigRecPtr->get_header().get_total_size_bytes();
-    // Apa number and link number in trh_key 
+    // Apa number and link number in trh_key
     // are not taken into account for the Trigger
-    StorageKey trh_key (trigRecPtr->get_header().get_run_number(), trigRecPtr->get_header().get_trigger_number(), "TriggerRecordHeader", 1,1);
+    StorageKey trh_key(trigRecPtr->get_header().get_run_number(),
+                       trigRecPtr->get_header().get_trigger_number(),
+                       "TriggerRecordHeader",
+                       1,
+                       1);
     KeyedDataBlock trh_block(trh_key);
     trh_block.unowned_data_start = trh_ptr;
     trh_block.data_size = trh_size;
     data_writer_->write(trh_block);
-    
 
     // Write the fragments
-    const auto & frag_vec = trigRecPtr->get_fragments();
+    const auto& frag_vec = trigRecPtr->get_fragments();
     for (const auto& frag_ptr : frag_vec) {
       TLOG(TLVL_FRAGMENT_HEADER_DUMP) << get_name() << ": Partial(?) contents of the Fragment from link "
                                       << frag_ptr->get_link_id().link_number;
       const size_t number_of_32bit_values_per_row = 5;
       const size_t max_number_of_rows = 5;
-      int number_of_32bit_values_to_print =
-        std::min((number_of_32bit_values_per_row * max_number_of_rows),
-                 (static_cast<size_t>(frag_ptr->get_size()) / sizeof(uint32_t)));
+      int number_of_32bit_values_to_print = std::min((number_of_32bit_values_per_row * max_number_of_rows),
+                                                     (static_cast<size_t>(frag_ptr->get_size()) / sizeof(uint32_t)));
       const uint32_t* mem_ptr = static_cast<const uint32_t*>(frag_ptr->get_storage_location());
       std::ostringstream oss_hexdump;
       for (int idx = 0; idx < number_of_32bit_values_to_print; ++idx) {
@@ -175,7 +177,7 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
         }
         oss_hexdump << " 0x" << std::setw(8) << std::setfill('0') << *mem_ptr;
         ++mem_ptr;
-        if (((idx+1) % number_of_32bit_values_per_row) == 0) {
+        if (((idx + 1) % number_of_32bit_values_per_row) == 0) {
           oss_hexdump << std::dec;
           TLOG(TLVL_FRAGMENT_HEADER_DUMP) << get_name() << ": " << oss_hexdump.str();
           oss_hexdump.str("");
@@ -197,8 +199,8 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
       data_block.unowned_data_start = frag_ptr->get_storage_location();
       data_block.data_size = frag_ptr->get_size();
 
-      //data_block.unowned_trigger_record_header = 
-      //data_block.trh_size =
+      // data_block.unowned_trigger_record_header =
+      // data_block.trh_size =
       data_writer_->write(data_block);
     }
 
@@ -207,7 +209,7 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
       std::ostringstream oss_prog;
       oss_prog << ": Processing trigger number " << trigRecPtr->get_header().get_trigger_number() << ", this is one of "
                << received_count << " trigger records received so far.";
-      ers::info(ProgressUpdate(ERS_HERE, get_name(), oss_prog.str()));
+      ers::log(ProgressUpdate(ERS_HERE, get_name(), oss_prog.str()));
     }
 
     // tell the TriggerInhibitAgent the trigger_number of this TriggerRecord so that
@@ -217,7 +219,7 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
 
   std::ostringstream oss_summ;
   oss_summ << ": Exiting the do_work() method, received trigger record messages for " << received_count << " triggers.";
-  ers::info(ProgressUpdate(ERS_HERE, get_name(), oss_summ.str()));
+  ers::log(ProgressUpdate(ERS_HERE, get_name(), oss_summ.str()));
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_work() method";
 }
 

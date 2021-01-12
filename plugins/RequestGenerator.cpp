@@ -11,8 +11,8 @@
 
 #include "appfwk/DAQModuleHelper.hpp"
 #include "appfwk/cmd/Nljs.hpp"
-#include "dfmodules/requestgenerator/Structs.hpp"
 #include "dfmodules/requestgenerator/Nljs.hpp"
+#include "dfmodules/requestgenerator/Structs.hpp"
 
 #include "TRACE/trace.h"
 #include "ers/ers.h"
@@ -26,9 +26,9 @@
 /**
  * @brief Name used by TRACE TLOG calls from this source file
  */
-#define TRACE_NAME "RequestGenerator"    // NOLINT
-#define TLVL_ENTER_EXIT_METHODS 10 // NOLINT
-#define TLVL_WORK_STEPS 15         // NOLINT
+#define TRACE_NAME "RequestGenerator"          // NOLINT
+#define TLVL_ENTER_EXIT_METHODS TLVL_DEBUG + 5 // NOLINT
+#define TLVL_WORK_STEPS TLVL_DEBUG + 10        // NOLINT
 
 namespace dunedaq {
 namespace dfmodules {
@@ -89,13 +89,13 @@ RequestGenerator::do_conf(const data_t& payload)
 
   m_map_geoid_queues.clear();
 
-  requestgenerator::ConfParams parsed_conf = payload.get<requestgenerator::ConfParams>() ;
-  
+  requestgenerator::ConfParams parsed_conf = payload.get<requestgenerator::ConfParams>();
+
   for (auto const& entry : parsed_conf.map) {
     dataformats::GeoID key;
-    key.apa_number = entry.apa ; 
-    key.link_number = entry.link ;    
-    m_map_geoid_queues[key] = entry.queueinstance; 
+    key.apa_number = entry.apa;
+    key.link_number = entry.link;
+    m_map_geoid_queues[key] = entry.queueinstance;
   }
 
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
@@ -127,9 +127,9 @@ RequestGenerator::do_work(std::atomic<bool>& running_flag)
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() method";
   int32_t receivedCount = 0;
   // setting up the map <GeoID,data_req_queues>
-  std::map< dataformats::GeoID , std::unique_ptr<datareqsink_t> > map; 
+  std::map<dataformats::GeoID, std::unique_ptr<datareqsink_t>> map;
 
-  for(auto const& entry : m_map_geoid_queues){
+  for (auto const& entry : m_map_geoid_queues) {
     map[entry.first] = std::unique_ptr<datareqsink_t>(new datareqsink_t(entry.second));
   }
 
@@ -165,58 +165,47 @@ RequestGenerator::do_work(std::atomic<bool>& running_flag)
     }
 
     //-----------------------------------------
-    //Loop over trigger decision components 
-    //Spawn each component_data_request to the corresponding link_data_handler_queue 
+    // Loop over trigger decision components
+    // Spawn each component_data_request to the corresponding link_data_handler_queue
     //----------------------------------------
-    for ( auto it = trigDecision.components.begin() ; it != trigDecision.components.end() ; it++) {
-      TLOG(TLVL_WORK_STEPS) << get_name() 
-                            << ": trigDecision.components.size :" 
-                            <<  trigDecision.components.size();
+    for (auto it = trigDecision.components.begin(); it != trigDecision.components.end(); it++) {
+      TLOG(TLVL_WORK_STEPS) << get_name() << ": trigDecision.components.size :" << trigDecision.components.size();
       dfmessages::DataRequest dataReq;
       dataReq.trigger_number = trigDecision.trigger_number;
       dataReq.run_number = trigDecision.run_number;
       dataReq.trigger_timestamp = trigDecision.trigger_timestamp;
 
-      TLOG(TLVL_WORK_STEPS) << get_name() << ": trig_number " <<dataReq.trigger_number 
-                            << ": run_number " << dataReq.run_number 
-                            << ": trig_timestamp " << dataReq.trigger_timestamp ; 
+      TLOG(TLVL_WORK_STEPS) << get_name() << ": trig_number " << dataReq.trigger_number << ": run_number "
+                            << dataReq.run_number << ": trig_timestamp " << dataReq.trigger_timestamp;
 
       dataformats::ComponentRequest comp_req = it->second;
-      dataformats::GeoID geoid_req = it->first ; 
+      dataformats::GeoID geoid_req = it->first;
       dataReq.window_offset = comp_req.window_offset;
       dataReq.window_width = comp_req.window_width;
 
-      
-      TLOG(TLVL_WORK_STEPS) << get_name() << ": apa_number "<<geoid_req.apa_number 
-                            << ": link_number " << geoid_req.link_number 
-                            << ": window_offset " << comp_req.window_offset  
-			    << ": window_width " << comp_req.window_width ;
+      TLOG(TLVL_WORK_STEPS) << get_name() << ": apa_number " << geoid_req.apa_number << ": link_number "
+                            << geoid_req.link_number << ": window_offset " << comp_req.window_offset
+                            << ": window_width " << comp_req.window_width;
 
-      //find the queue for geoid_req in the map
-      auto it_req = map.find(geoid_req) ;
-      if ( it_req == map.end() ){
-	//if geoid request is not valid. then trhow error and continue
-	ers::error(dunedaq::dfmodules::UnknownGeoID(
-          ERS_HERE, 
-          dataReq.trigger_number, 
-          dataReq.run_number, 
-          geoid_req.apa_number, 
-          geoid_req.link_number) ); 
-	continue ;
+      // find the queue for geoid_req in the map
+      auto it_req = map.find(geoid_req);
+      if (it_req == map.end()) {
+        // if geoid request is not valid. then trhow error and continue
+        ers::error(dunedaq::dfmodules::UnknownGeoID(
+          ERS_HERE, dataReq.trigger_number, dataReq.run_number, geoid_req.apa_number, geoid_req.link_number));
+        continue;
       }
 
-      //get the queue from map element 
-      auto& queue = it_req->second ;
+      // get the queue from map element
+      auto& queue = it_req->second;
 
-      wasSentSuccessfully = false ;
+      wasSentSuccessfully = false;
       while (!wasSentSuccessfully && running_flag.load()) {
- 
-        TLOG(TLVL_WORK_STEPS) << get_name() << ": Pushing the DataRequest from trigger number " 
-                              << dataReq.trigger_number
-			      << " onto output queue :"
-			      << queue->get_name() ;	    
 
-        //push data request into the corresponding queue
+        TLOG(TLVL_WORK_STEPS) << get_name() << ": Pushing the DataRequest from trigger number "
+                              << dataReq.trigger_number << " onto output queue :" << queue->get_name();
+
+        // push data request into the corresponding queue
         try {
           queue->push(dataReq, queueTimeout_);
           wasSentSuccessfully = true;
@@ -225,14 +214,13 @@ RequestGenerator::do_work(std::atomic<bool>& running_flag)
           oss_warn << "push to output queue \"" << queue->get_name() << "\"";
           ers::warning(dunedaq::appfwk::QueueTimeoutExpired(
             ERS_HERE,
-	    get_name(),
-	    oss_warn.str(),
-	    std::chrono::duration_cast<std::chrono::milliseconds>(queueTimeout_).count()));
-	  }
-	}
+            get_name(),
+            oss_warn.str(),
+            std::chrono::duration_cast<std::chrono::milliseconds>(queueTimeout_).count()));
+        }
       }
- 
- 
+    }
+
     trigger_decision_forwarder_->set_latest_trigger_decision(trigDecision);
 
     // TLOG(TLVL_WORK_STEPS) << get_name() << ": Start of sleep while waiting for run Stop";
@@ -243,7 +231,7 @@ RequestGenerator::do_work(std::atomic<bool>& running_flag)
   std::ostringstream oss_summ;
   oss_summ << ": Exiting the do_work() method, received Fake trigger decision messages for " << receivedCount
            << " triggers.";
-  ers::info(ProgressUpdate(ERS_HERE, get_name(), oss_summ.str()));
+  ers::log(ProgressUpdate(ERS_HERE, get_name(), oss_summ.str()));
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_work() method";
 }
 

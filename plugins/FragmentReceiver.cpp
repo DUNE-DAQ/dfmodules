@@ -230,7 +230,7 @@ namespace dfmodules {
 	  message << "\t" << f.first << " with " << f.second.size() << " fragments " << std::endl ;
 	}
 	
-	ers::info(ProgressUpdate(ERS_HERE, get_name(), message.str()));
+	ers::log(ProgressUpdate(ERS_HERE, get_name(), message.str()));
 	
 	
 	std::vector<TriggerId> complete ;
@@ -325,7 +325,7 @@ namespace dfmodules {
     oss_summ << ": Exiting the do_work() method, " 
 	     << trigger_decisions_.size() << " reminaing Trigger Decision and " 
 	     << fragments_.size() << " remaining fragment stashes" ;
-    ers::info(ProgressUpdate(ERS_HERE, get_name(), oss_summ.str()));
+    ers::log(ProgressUpdate(ERS_HERE, get_name(), oss_summ.str()));
     TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_work() method";
   }  
 
