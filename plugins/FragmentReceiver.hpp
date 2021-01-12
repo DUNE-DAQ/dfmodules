@@ -87,6 +87,11 @@ namespace dunedaq {
 	out << id.trigger_number << '/' << id.run_number ;
 	return out ;
       }
+
+      friend TraceStreamer& operator<<(TraceStreamer& out, const TriggerId& id)
+      {
+        return out << id.trigger_number << "/" << id.run_number;
+      }
     };
   
     
