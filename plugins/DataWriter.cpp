@@ -160,17 +160,29 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
     // Write the fragments
     const auto & frag_vec = trigRecPtr->get_fragments();
     for (const auto& frag_ptr : frag_vec) {
-      TLOG(TLVL_FRAGMENT_HEADER_DUMP) << get_name() << ": Memory contents for the Fragment from link "
+      TLOG(TLVL_FRAGMENT_HEADER_DUMP) << get_name() << ": Partial(?) contents of the Fragment from link "
                                       << frag_ptr->get_link_id().link_number;
+      const size_t number_of_32bit_values_per_row = 5;
+      const size_t max_number_of_rows = 5;
+      int number_of_32bit_values_to_print =
+        std::min((number_of_32bit_values_per_row * max_number_of_rows),
+                 (static_cast<size_t>(frag_ptr->get_size()) / sizeof(uint32_t)));
       const uint32_t* mem_ptr = static_cast<const uint32_t*>(frag_ptr->get_storage_location());
-      for (int idx = 0; idx < 4; ++idx) {
-        std::ostringstream oss_hexdump;
-        oss_hexdump << "32-bit offset " << std::setw(2) << (idx * 5) << ":" << std::hex;
-        for (int jdx = 0; jdx < 5; ++jdx) {
-          oss_hexdump << " 0x" << std::setw(8) << std::setfill('0') << *mem_ptr;
-          ++mem_ptr;
+      std::ostringstream oss_hexdump;
+      for (int idx = 0; idx < number_of_32bit_values_to_print; ++idx) {
+        if ((idx % number_of_32bit_values_per_row) == 0) {
+          oss_hexdump << "32-bit offset " << std::setw(2) << std::setfill(' ') << idx << ":" << std::hex;
         }
-        oss_hexdump << std::dec;
+        oss_hexdump << " 0x" << std::setw(8) << std::setfill('0') << *mem_ptr;
+        ++mem_ptr;
+        if (((idx+1) % number_of_32bit_values_per_row) == 0) {
+          oss_hexdump << std::dec;
+          TLOG(TLVL_FRAGMENT_HEADER_DUMP) << get_name() << ": " << oss_hexdump.str();
+          oss_hexdump.str("");
+          oss_hexdump.clear();
+        }
+      }
+      if (oss_hexdump.str().length() > 0) {
         TLOG(TLVL_FRAGMENT_HEADER_DUMP) << get_name() << ": " << oss_hexdump.str();
       }
 
