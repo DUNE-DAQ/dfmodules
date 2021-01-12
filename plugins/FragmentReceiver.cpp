@@ -27,8 +27,9 @@
  * @brief Name used by TRACE TLOG calls from this source file
  */
 #define TRACE_NAME "FragmentReceiver"  // NOLINT
-#define TLVL_ENTER_EXIT_METHODS 10 // NOLINT
-#define TLVL_WORK_STEPS 15         // NOLINT
+#define TLVL_ENTER_EXIT_METHODS TLVL_DEBUG + 5 // NOLINT
+#define TLVL_WORK_STEPS TLVL_DEBUG + 10         // NOLINT
+#define TLVL_BOOKKEEPING TLVL_DEBUG + 15 // NOLINT
 
 namespace dunedaq {
 namespace dfmodules {
@@ -205,8 +206,8 @@ namespace dfmodules {
       } // queue loop 
     
         
-      TLOG(TLVL_WORK_STEPS) << "Decision size: " << trigger_decisions_.size() ;
-      TLOG(TLVL_WORK_STEPS) << "Frag size: " << fragments_.size() ;
+      //TLOG(TLVL_WORK_STEPS) << "Decision size: " << trigger_decisions_.size() ;
+      //TLOG(TLVL_WORK_STEPS) << "Frag size: " << fragments_.size() ;
 
       //-------------------------------------------------
       // Check if some decisions are complete or timedout 
@@ -216,22 +217,22 @@ namespace dfmodules {
       if ( book_updates ) {
 
 	std::ostringstream message ;
-	message << "Bookeeping status: "
-		<< trigger_decisions_.size() << " decisions and " 
-		<< fragments_.size() << " Fragment stashes" 
-		<< std::endl 
-		<< "Trigger Decisions" << std::endl ;
+        TLOG(TLVL_BOOKKEEPING) << "Bookeeping status: " << trigger_decisions_.size() << " decisions and "
+                               << fragments_.size() << " Fragment stashes";
+		message << "Trigger Decisions: ";
 	
 	for ( const auto & d : trigger_decisions_ ) {
-	  message << "\t" << d.first << " with " << d.second.components.size() << " components " << std::endl ;
+	  message << d.first << " with " << d.second.components.size() << " components, ";
 	}
-	message << "Fragments" << std::endl ;
+        TLOG(TLVL_BOOKKEEPING) << message.str();
+        message.str("");
+	message << "Fragments: ";
 	for ( const auto & f : fragments_ ) {
-	  message << "\t" << f.first << " with " << f.second.size() << " fragments " << std::endl ;
+	  message << f.first << " with " << f.second.size() << " fragments, ";
 	}
 	
-	ers::log(ProgressUpdate(ERS_HERE, get_name(), message.str()));
-	
+	TLOG(TLVL_BOOKKEEPING) << message.str();
+	//ers::info(ProgressUpdate(ERS_HERE, get_name(), message.str()));
 	
 	std::vector<TriggerId> complete ;
 	
@@ -252,10 +253,11 @@ namespace dfmodules {
 	      complete.push_back( it -> first ) ; 
 	    }
 	    else {
-	      std::ostringstream message ;
-	      message << "Trigger decision stauts: " 
-		      << frag_it -> second.size() << " / " << it -> second.components.size() << "Fragments" ;
-	      ers::error(ProgressUpdate(ERS_HERE, get_name(), message.str()));
+	      //std::ostringstream message ;
+	      TLOG(TLVL_WORK_STEPS) << "Trigger decision " << it->first << " status: " 
+		      << frag_it -> second.size() << " / " << it -> second.components.size() << " Fragments" ;
+
+	      //ers::error(ProgressUpdate(ERS_HERE, get_name(), message.str()));
 	    }
 	    
 	  } 
