@@ -178,10 +178,11 @@ public:
     filePtr->flush();
     recorded_size_ += dataBlock.data_size; 
 
+    // 13-Jan-2021, KAB: disable the file size checking, for now.
     //AAA: be careful on the units, maybe force it somehow? 
-    if (recorded_size_ > max_file_size_) {
-      file_count_++;
-    }
+    //if (recorded_size_ > max_file_size_) {
+    //  file_count_++;
+    //}
   }
 
 
