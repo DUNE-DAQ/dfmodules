@@ -119,7 +119,7 @@ DataWriter::do_stop(const data_t& /*args*/)
 }
 
 void
-DataWriter::do_scrap(const data_t& payload)
+DataWriter::do_scrap(const data_t& /*payload*/)
 {
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_scrap() method";
 
