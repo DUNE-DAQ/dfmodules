@@ -7,8 +7,8 @@
  * received with this code.
  */
 
-#include "../plugins/HDF5KeyTranslator.hpp"
-#include "../src/dfmodules/hdf5datastore/Structs.hpp"
+#include "HDF5KeyTranslator.hpp"
+#include "dfmodules/hdf5datastore/Structs.hpp"
 
 #include "ers/ers.h"
 
