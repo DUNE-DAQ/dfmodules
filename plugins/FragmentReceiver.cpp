@@ -22,6 +22,8 @@
 #include <string>
 #include <thread>
 #include <vector>
+#include <memory>
+#include <utility>
 
 /**
  * @brief Name used by TRACE TLOG calls from this source file
@@ -251,8 +253,7 @@ namespace dfmodules {
 	    
 	    if ( frag_it -> second.size() >= it -> second.components.size() ) {
 	      complete.push_back( it -> first ) ; 
-	    }
-	    else {
+	    } else {
 	      //std::ostringstream message ;
 	      TLOG(TLVL_WORK_STEPS) << "Trigger decision " << it->first << " status: " 
 		      << frag_it -> second.size() << " / " << it -> second.components.size() << " Fragments" ;

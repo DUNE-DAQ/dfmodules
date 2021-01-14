@@ -20,6 +20,8 @@
 #include <string>
 #include <thread>
 #include <vector>
+#include <utility>
+#include <memory>
 
 /**
  * @brief Name used by TRACE TLOG calls from this source file
@@ -112,7 +114,7 @@ FakeDataProd::do_work(std::atomic<bool>& running_flag)
       continue;
     }
 
-    // TODO PAR 2020-12-17: dataformats::Fragment has to be
+    //NOLINT TODO PAR 2020-12-17: dataformats::Fragment has to be
     // constructed with some payload data, so I'm putting a few ints
     // in it for now
     int dummy_ints[3];

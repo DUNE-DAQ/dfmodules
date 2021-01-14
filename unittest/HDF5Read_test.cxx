@@ -7,7 +7,7 @@
  * received with this code.
  */
 
-#include "../plugins/HDF5DataStore.hpp"
+#include "../plugins/HDF5DataStore.hpp" //NOLINT
 
 #include "ers/ers.h"
 
@@ -176,7 +176,7 @@ BOOST_AUTO_TEST_CASE(ReadEventFiles)
   // clean up the files that were created
   deleteFilesMatchingPattern(filePath, deletePattern);
 }
-*/
+*/ 
 BOOST_AUTO_TEST_CASE(ReadSingleFile)
 {
   std::string filePath(std::filesystem::temp_directory_path());

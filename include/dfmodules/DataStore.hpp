@@ -16,17 +16,13 @@
 #define DFMODULES_INCLUDE_DFMODULES_DATASTORE_HPP_
 
 #include "dfmodules/KeyedDataBlock.hpp"
-
+#include "ers/ers.h"
 #include <appfwk/NamedObject.hpp>
-
 #include <nlohmann/json.hpp>
 
-#include "ers/ers.h"
 
 #include <cetlib/BasicPluginFactory.h>
 #include <cetlib/compiler_macros.h>
-#include <memory>
-
 #include <chrono>
 #include <cstddef>
 #include <memory>
@@ -117,7 +113,7 @@ private:
    */
   inline std::unique_ptr<DataStore>
   makeDataStore( const std::string & type, const nlohmann::json & conf ) {
-    static cet::BasicPluginFactory bpf("duneDataStore", "make");
+    static cet::BasicPluginFactory bpf("duneDataStore", "make"); // NOLINT
 
     std::unique_ptr<DataStore> ds ;
     try { 

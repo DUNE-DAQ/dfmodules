@@ -15,6 +15,7 @@
 
 #include <boost/test/unit_test.hpp>
 
+#include <utility>
 #include <memory>
 
 using namespace dunedaq::dfmodules;

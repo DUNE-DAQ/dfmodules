@@ -13,6 +13,8 @@
 #include "ers/ers.h"
 
 #include <string>
+#include <utility>
+#include <memory>
 
 /**
  * @brief Name used by TRACE TLOG calls from this source file
@@ -104,7 +106,7 @@ TriggerInhibitAgent::do_work(std::atomic<bool>& running_flag)
 
     // check if A) we are supposed to be checking the trigger_number difference, and
     // B) if so, whether an Inhibit should be asserted or cleared
-    uint32_t threshold = threshold_for_inhibit_.load();
+    uint32_t threshold = threshold_for_inhibit_.load(); // NOLINT
     if (threshold > 0) {
       dataformats::trigger_number_t temp_trig_num_at_start = trigger_number_at_start_of_processing_chain_.load();
       dataformats::trigger_number_t temp_trig_num_at_end = trigger_number_at_end_of_processing_chain_.load();

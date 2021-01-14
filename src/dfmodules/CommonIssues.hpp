@@ -9,8 +9,8 @@
  * received with this code.
  */
 
-#ifndef DFMODULES_SRC_COMMONISSUES_HPP_
-#define DFMODULES_SRC_COMMONISSUES_HPP_
+#ifndef DFMODULES_SRC_DFMODULES_COMMONISSUES_HPP_
+#define DFMODULES_SRC_DFMODULES_COMMONISSUES_HPP_
 
 #include "appfwk/DAQModule.hpp"
 #include "ers/Issue.h"
@@ -43,4 +43,4 @@ ERS_DECLARE_ISSUE_BASE(dfmodules,
 
 } // namespace dunedaq
 
-#endif // DFMODULES_SRC_COMMONISSUES_HPP_
+#endif // DFMODULES_SRC_DFMODULES_COMMONISSUES_HPP_

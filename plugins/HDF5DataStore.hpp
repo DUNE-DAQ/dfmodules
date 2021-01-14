@@ -1,6 +1,3 @@
-#ifndef DFMODULES_SRC_HDF5DATASTORE_HPP_
-#define DFMODULES_SRC_HDF5DATASTORE_HPP_
-
 /**
  * @file HDF5DataStore.hpp
  *
@@ -11,6 +8,9 @@
  * Licensing/copyright details are in the COPYING file that you should have
  * received with this code.
  */
+
+#ifndef DFMODULES_PLUGINS_HDF5DATASTORE_HPP_
+#define DFMODULES_PLUGINS_HDF5DATASTORE_HPP_
 
 #include "dfmodules/DataStore.hpp"
 #include "dfmodules/hdf5datastore/Nljs.hpp"
@@ -305,7 +305,7 @@ private:
 } // namespace dfmodules
 } // namespace dunedaq
 
-#endif // DFMODULES_SRC_HDF5DATASTORE_HPP_
+#endif // DFMODULES_PLUGINS_HDF5DATASTORE_HPP_
 
 // Local Variables:
 // c-basic-offset: 2

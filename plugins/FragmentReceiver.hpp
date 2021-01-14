@@ -68,9 +68,9 @@ namespace dunedaq {
      */
     struct TriggerId {
       
-      TriggerId( const dfmessages::TriggerDecision & td ) : trigger_number(td.trigger_number), 
+      explicit TriggerId( const dfmessages::TriggerDecision & td ) : trigger_number(td.trigger_number), 
 							    run_number(td.run_number) { ; } 
-      TriggerId( dataformats::Fragment & f ) : trigger_number(f.get_trigger_number()), 
+      explicit TriggerId( dataformats::Fragment & f ) : trigger_number(f.get_trigger_number()), 
 		                               run_number(f.get_run_number()) { ; } 
       
       

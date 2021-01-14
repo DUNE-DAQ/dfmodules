@@ -47,16 +47,16 @@ public:
     }
   }
 
-/*
-  const void* getTriggerRecordHeader() const
-  {
-    if (owned_trigger_record_header.get() != nullptr) {
-      return static_cast<const void*>(owned_trigger_record_header.get());
-    } else {
-      return unowned_trigger_record_header;
-    }
-  }
-*/
+//
+//  const void* getTriggerRecordHeader() const
+//  {
+//    if (owned_trigger_record_header.get() != nullptr) {
+//      return static_cast<const void*>(owned_trigger_record_header.get());
+//    } else {
+//      return unowned_trigger_record_header;
+//    }
+//  }
+
 
   size_t getDataSizeBytes() const { return data_size; }
   //size_t getTriggerRecordHeaderSizeBytes() const {return trh_size}

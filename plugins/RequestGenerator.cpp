@@ -22,7 +22,9 @@
 #include <string>
 #include <thread>
 #include <vector>
-
+#include <utility>
+#include <memory> 
+#include <map> 
 /**
  * @brief Name used by TRACE TLOG calls from this source file
  */
@@ -233,7 +235,7 @@ RequestGenerator::do_work(std::atomic<bool>& running_flag)
            << " triggers.";
   ers::log(ProgressUpdate(ERS_HERE, get_name(), oss_summ.str()));
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_work() method";
-}
+} // NOLINT
 
 } // namespace dfmodules
 } // namespace dunedaq

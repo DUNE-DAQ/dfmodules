@@ -1,5 +1,3 @@
-#ifndef DFMODULES_SRC_HDF5KEYTRANSLATOR_HPP_
-#define DFMODULES_SRC_HDF5KEYTRANSLATOR_HPP_
 /**
  * @file HDF5KeyTranslator.hpp
  *
@@ -11,6 +9,9 @@
  * Licensing/copyright details are in the COPYING file that you should have
  * received with this code.
  */
+
+#ifndef DFMODULES_PLUGINS_HDF5KEYTRANSLATOR_HPP_
+#define DFMODULES_PLUGINS_HDF5KEYTRANSLATOR_HPP_
 
 #include "dfmodules/StorageKey.hpp"
 #include "dfmodules/hdf5datastore/Nljs.hpp"
@@ -219,5 +220,5 @@ private:
 } // namespace dfmodules
 } // namespace dunedaq
 
-#endif // DFMODULES_SRC_HDF5KEYTRANSLATOR_HPP_
+#endif // DFMODULES_PLUGINS_HDF5KEYTRANSLATOR_HPP_
 

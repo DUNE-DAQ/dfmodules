@@ -1,5 +1,3 @@
-#ifndef DFMODULES_SRC_HDF5FILEUTILS_HPP_
-#define DFMODULES_SRC_HDF5FILEUTILS_HPP_
 /**
  * @file HDF5FileUtils.hpp
  *
@@ -11,6 +9,9 @@
  * received with this code.
  */
 
+#ifndef DFMODULES_PLUGINS_HDF5FILEUTILS_HPP_
+#define DFMODULES_PLUGINS_HDF5FILEUTILS_HPP_
+
 #include "dfmodules/CommonIssues.hpp"
 #include "TRACE/trace.h"
 #include <ers/ers.h>
@@ -21,6 +22,7 @@
 #include <regex>
 #include <string>
 #include <vector>
+#include <memory>
 
 //#include "dfmodules/StorageKey.hpp"
 //#include <boost/algorithm/string.hpp>
@@ -150,4 +152,4 @@ getFilesMatchingPattern(const std::string& directoryPath, const std::string& fil
 } // namespace dfmodules
 } // namespace dunedaq
 
-#endif // DFMODULES_SRC_HDF5FILEUTILS_HPP_
+#endif // DFMODULES_PLUGINS_HDF5FILEUTILS_HPP_

@@ -6,8 +6,8 @@
  * received with this code.
  */
 
-#ifndef DFMODULES_SRC_FAKEREQGEN_HPP_
-#define DFMODULES_SRC_FAKEREQGEN_HPP_
+#ifndef DFMODULES_PLUGINS_FAKEREQGEN_HPP_
+#define DFMODULES_PLUGINS_FAKEREQGEN_HPP_
 
 #include "dfmodules/TriggerDecisionForwarder.hpp"
 
@@ -72,4 +72,4 @@ private:
 } // namespace dfmodules
 } // namespace dunedaq
 
-#endif // DFMODULES_SRC_FAKEREQGEN_HPP_
+#endif // DFMODULES_PLUGINS_FAKEREQGEN_HPP_

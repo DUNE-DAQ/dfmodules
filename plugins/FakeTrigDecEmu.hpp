@@ -6,8 +6,8 @@
  * received with this code.
  */
 
-#ifndef DFMODULES_SRC_FAKETRIGDECEMU_HPP_
-#define DFMODULES_SRC_FAKETRIGDECEMU_HPP_
+#ifndef DFMODULES_PLUGINS_FAKETRIGDECEMU_HPP_
+#define DFMODULES_PLUGINS_FAKETRIGDECEMU_HPP_
 
 #include "dfmessages/TriggerDecision.hpp"
 #include "dfmessages/TriggerInhibit.hpp"
@@ -66,4 +66,4 @@ private:
 } // namespace dfmodules
 } // namespace dunedaq
 
-#endif // DFMODULES_SRC_FAKETRIGDECEMU_HPP_
+#endif // DFMODULES_PLUGINS_FAKETRIGDECEMU_HPP_

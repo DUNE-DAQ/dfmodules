@@ -6,8 +6,8 @@
  * received with this code.
  */
 
-#ifndef DFMODULES_SRC_DATAWRITER_HPP_
-#define DFMODULES_SRC_DATAWRITER_HPP_
+#ifndef DFMODULES_PLUGINS_DATAWRITER_HPP_
+#define DFMODULES_PLUGINS_DATAWRITER_HPP_
 
 #include "dfmodules/DataStore.hpp"
 #include "dfmodules/TriggerInhibitAgent.hpp"
@@ -78,4 +78,4 @@ ERS_DECLARE_ISSUE_BASE(dfmodules,
 
 } // namespace dunedaq
 
-#endif // DFMODULES_SRC_DATAWRITER_HPP_
+#endif // DFMODULES_PLUGINS_DATAWRITER_HPP_

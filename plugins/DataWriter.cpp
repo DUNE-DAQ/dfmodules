@@ -25,6 +25,9 @@
 #include <string>
 #include <thread>
 #include <vector>
+#include <utility>
+#include <memory>
+#include <algorithm>
 
 /**
  * @brief Name used by TRACE TLOG calls from this source file
@@ -180,8 +183,8 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
       const size_t number_of_32bit_values_per_row = 5;
       const size_t max_number_of_rows = 5;
       int number_of_32bit_values_to_print = std::min((number_of_32bit_values_per_row * max_number_of_rows),
-                                                     (static_cast<size_t>(frag_ptr->get_size()) / sizeof(uint32_t)));
-      const uint32_t* mem_ptr = static_cast<const uint32_t*>(frag_ptr->get_storage_location());
+                                                     (static_cast<size_t>(frag_ptr->get_size()) / sizeof(uint32_t))); // NOLINT
+      const uint32_t* mem_ptr = static_cast<const uint32_t*>(frag_ptr->get_storage_location()); // NOLINT
       std::ostringstream oss_hexdump;
       for (int idx = 0; idx < number_of_32bit_values_to_print; ++idx) {
         if ((idx % number_of_32bit_values_per_row) == 0) {

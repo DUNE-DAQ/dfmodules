@@ -6,8 +6,8 @@
  * received with this code.
  */
 
-#ifndef DFMODULES_SRC_REQUESTGENERATOR_HPP_
-#define DFMODULES_SRC_REQUESTGENERATOR_HPP_
+#ifndef DFMODULES_PLUGINS_REQUESTGENERATOR_HPP_
+#define DFMODULES_PLUGINS_REQUESTGENERATOR_HPP_
 
 #include "dfmodules/TriggerDecisionForwarder.hpp"
 
@@ -89,4 +89,4 @@ private:
 } // namespace dfmodules
 } // namespace dunedaq
 
-#endif // DFMODULES_SRC_REQUESTGENERATOR_HPP_
+#endif // DFMODULES_PLUGINS_REQUESTGENERATOR_HPP_

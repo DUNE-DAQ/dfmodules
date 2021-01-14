@@ -9,8 +9,8 @@
  * received with this code.
  */
 
-#ifndef DFMODULES_SRC_DATAGENERATOR_HPP_
-#define DFMODULES_SRC_DATAGENERATOR_HPP_
+#ifndef DFMODULES_PLUGINS_DATAGENERATOR_HPP_
+#define DFMODULES_PLUGINS_DATAGENERATOR_HPP_
 
 #include "dfmodules/CommonIssues.hpp"
 #include "dfmodules/DataStore.hpp"
@@ -82,4 +82,4 @@ ERS_DECLARE_ISSUE_BASE(dfmodules,
 
 } // namespace dunedaq
 
-#endif // DFMODULES_SRC_DATAGENERATOR_HPP_
+#endif // DFMODULES_PLUGINS_DATAGENERATOR_HPP_
