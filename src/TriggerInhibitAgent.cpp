@@ -12,9 +12,9 @@
 #include "TRACE/trace.h"
 #include "ers/ers.h"
 
+#include <memory>
 #include <string>
 #include <utility>
-#include <memory>
 
 /**
  * @brief Name used by TRACE TLOG calls from this source file

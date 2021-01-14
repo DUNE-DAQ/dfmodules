@@ -58,13 +58,12 @@ deleteFilesMatchingPattern(const std::string& path, const std::string& pattern)
 
 BOOST_AUTO_TEST_SUITE(TriggerRecordHeader_test)
 
-
 BOOST_AUTO_TEST_CASE(WriteOneFile)
 {
   std::string filePath(std::filesystem::temp_directory_path());
   std::string filePrefix = "demo" + std::to_string(getpid());
 
-  const int DUMMYDATA_SIZE = 7;  
+  const int DUMMYDATA_SIZE = 7;
   const int RUN_NUMBER = 52;
   const int TRIGGER_COUNT = 1;
   const std::string DETECTOR = "FELIX";
@@ -76,13 +75,13 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
   deleteFilesMatchingPattern(filePath, deletePattern);
 
   // create the DataStore
-  nlohmann::json conf ;
-  conf["name"] = "tempWriter" ;
-  conf["directory_path"] = filePath ; 
-  conf["mode"] = "all-per-file" ;
-  nlohmann::json subconf ;
-  subconf["overall_prefix"] = filePrefix ; 
-  conf["filename_parameters"] = subconf ;
+  nlohmann::json conf;
+  conf["name"] = "tempWriter";
+  conf["directory_path"] = filePath;
+  conf["mode"] = "all-per-file";
+  nlohmann::json subconf;
+  subconf["overall_prefix"] = filePrefix;
+  conf["filename_parameters"] = subconf;
   std::unique_ptr<HDF5DataStore> dsPtr(new HDF5DataStore(conf));
 #if 0
   hdf5datastore::ConfParams config_params;
@@ -101,11 +100,11 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
   char dummyData[DUMMYDATA_SIZE];
   for (int triggerNumber = 1; triggerNumber <= TRIGGER_COUNT; ++triggerNumber) {
 
-    // TriggerRecordHeader  
+    // TriggerRecordHeader
     StorageKey trh_key(RUN_NUMBER, triggerNumber, "TriggerRecordHeader", 1, 1);
     KeyedDataBlock trh_dataBlock(trh_key);
     trh_dataBlock.unowned_data_start = static_cast<void*>(&dummyData[0]);
-    trh_dataBlock.data_size = 1;     
+    trh_dataBlock.data_size = 1;
     dsPtr->write(trh_dataBlock);
 
     // Write fragments
@@ -116,9 +115,9 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
         dataBlock.unowned_data_start = static_cast<void*>(&dummyData[0]);
         dataBlock.data_size = DUMMYDATA_SIZE;
         dsPtr->write(dataBlock);
-      } //link number
-    } // apa number
-  } // trigger number
+      }          // link number
+    }            // apa number
+  }              // trigger number
   dsPtr.reset(); // explicit destruction
 
   // check that the expected number of files was created
@@ -127,7 +126,7 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
   BOOST_REQUIRE_EQUAL(fileList.size(), 1);
 
   // clean up the files that were created
-  //fileList = deleteFilesMatchingPattern(filePath, deletePattern);
-  //BOOST_REQUIRE_EQUAL(fileList.size(), 1);
+  // fileList = deleteFilesMatchingPattern(filePath, deletePattern);
+  // BOOST_REQUIRE_EQUAL(fileList.size(), 1);
 }
 BOOST_AUTO_TEST_SUITE_END()

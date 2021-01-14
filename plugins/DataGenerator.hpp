@@ -44,14 +44,14 @@ public:
   DataGenerator(DataGenerator&&) = delete;                 ///< DataGenerator is not move-constructible
   DataGenerator& operator=(DataGenerator&&) = delete;      ///< DataGenerator is not move-assignable
 
-  void init( const data_t & ) override;
+  void init(const data_t&) override;
 
 private:
   // Commands
-  void do_conf       ( const data_t& );
-  void do_start      ( const data_t& );
-  void do_stop       ( const data_t& );
-  void do_unconfigure( const data_t& );
+  void do_conf(const data_t&);
+  void do_start(const data_t&);
+  void do_stop(const data_t&);
+  void do_unconfigure(const data_t&);
 
   // Threading
   dunedaq::appfwk::ThreadHelper thread_;

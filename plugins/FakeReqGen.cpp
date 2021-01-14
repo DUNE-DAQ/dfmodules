@@ -18,11 +18,11 @@
 
 #include <chrono>
 #include <cstdlib>
+#include <memory>
 #include <string>
 #include <thread>
-#include <vector>
 #include <utility>
-#include <memory>
+#include <vector>
 
 /**
  * @brief Name used by TRACE TLOG calls from this source file

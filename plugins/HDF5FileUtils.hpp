@@ -12,17 +12,17 @@
 #ifndef DFMODULES_PLUGINS_HDF5FILEUTILS_HPP_
 #define DFMODULES_PLUGINS_HDF5FILEUTILS_HPP_
 
-#include "dfmodules/CommonIssues.hpp"
 #include "TRACE/trace.h"
+#include "dfmodules/CommonIssues.hpp"
 #include <ers/ers.h>
 
 #include <highfive/H5File.hpp>
 
 #include <filesystem>
+#include <memory>
 #include <regex>
 #include <string>
 #include <vector>
-#include <memory>
 
 //#include "dfmodules/StorageKey.hpp"
 //#include <boost/algorithm/string.hpp>
@@ -36,35 +36,36 @@ namespace HDF5FileUtils {
  * @brief Retrieve top HDF5 group
  */
 HighFive::Group
-getTopGroup(std::unique_ptr<HighFive::File> &filePtr, const std::vector<std::string>& group_dataset)
+getTopGroup(std::unique_ptr<HighFive::File>& filePtr, const std::vector<std::string>& group_dataset)
 {
   std::string topLevelGroupName = group_dataset[0];
   HighFive::Group topGroup = filePtr->getGroup(topLevelGroupName);
   if (!topGroup.isValid()) {
-    //throw InvalidHDF5Group(ERS_HERE, get_name(), topLevelGroupName);
+    // throw InvalidHDF5Group(ERS_HERE, get_name(), topLevelGroupName);
     throw InvalidHDF5Group(ERS_HERE, topLevelGroupName, topLevelGroupName);
   }
-  
+
   return topGroup;
 }
-
 
 /**
  * @brief Recursive function to create HDF5 sub-groups
  */
 HighFive::Group
-getSubGroup(std::unique_ptr<HighFive::File> &filePtr, const std::vector<std::string>& group_dataset, bool createIfNeeded)
+getSubGroup(std::unique_ptr<HighFive::File>& filePtr,
+            const std::vector<std::string>& group_dataset,
+            bool createIfNeeded)
 {
   std::string topLevelGroupName = group_dataset[0];
-  if (createIfNeeded && ! filePtr->exist(topLevelGroupName)) {
+  if (createIfNeeded && !filePtr->exist(topLevelGroupName)) {
     filePtr->createGroup(topLevelGroupName);
   }
   HighFive::Group workingGroup = filePtr->getGroup(topLevelGroupName);
-  if (! workingGroup.isValid()) {
+  if (!workingGroup.isValid()) {
     throw InvalidHDF5Group(ERS_HERE, topLevelGroupName, topLevelGroupName);
   }
   // Create the remaining subgroups
-  for (size_t idx = 1; idx < group_dataset.size()-1; ++idx) {
+  for (size_t idx = 1; idx < group_dataset.size() - 1; ++idx) {
     // group_dataset.size()-1 because the last element is the dataset
     std::string childGroupName = group_dataset[idx];
     if (childGroupName.empty()) {
@@ -74,12 +75,12 @@ getSubGroup(std::unique_ptr<HighFive::File> &filePtr, const std::vector<std::str
       workingGroup.createGroup(childGroupName);
     }
     HighFive::Group childGroup = workingGroup.getGroup(childGroupName);
-    if (! childGroup.isValid()) {
+    if (!childGroup.isValid()) {
       throw InvalidHDF5Group(ERS_HERE, childGroupName, childGroupName);
     }
     workingGroup = childGroup;
   }
-  
+
   return workingGroup;
 }
 /**

@@ -20,10 +20,10 @@
 #include <atomic>
 #include <chrono>
 #include <cstdint>
-#include <mutex>
-#include <thread>
-#include <string>
 #include <memory>
+#include <mutex>
+#include <string>
+#include <thread>
 
 namespace dunedaq {
 namespace dfmodules {

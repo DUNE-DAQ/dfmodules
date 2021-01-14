@@ -23,9 +23,9 @@
 #include <atomic>
 #include <chrono>
 #include <cstdint>
-#include <thread>
 #include <memory>
 #include <string>
+#include <thread>
 
 namespace dunedaq {
 namespace dfmodules {

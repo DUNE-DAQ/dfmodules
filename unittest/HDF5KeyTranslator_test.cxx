@@ -7,7 +7,7 @@
  * received with this code.
  */
 
-#include "../plugins/HDF5KeyTranslator.hpp" // NOLINT
+#include "../plugins/HDF5KeyTranslator.hpp"           // NOLINT
 #include "../src/dfmodules/hdf5datastore/Structs.hpp" // NOLINT
 
 #include "ers/ers.h"
@@ -35,7 +35,7 @@ BOOST_AUTO_TEST_CASE(PathString)
   layout_params.link_name_prefix = "";
   layout_params.digits_for_link_number = 2;
 
-  StorageKey key1(101, 1, "None", 2, 3);  // run number, trigger number, detector name, APA number, link number
+  StorageKey key1(101, 1, "None", 2, 3); // run number, trigger number, detector name, APA number, link number
   path = HDF5KeyTranslator::get_path_string(key1, layout_params);
   BOOST_REQUIRE_EQUAL(path, "0001/None/002/03");
 
@@ -71,7 +71,7 @@ BOOST_AUTO_TEST_CASE(PathElements)
   layout_params.link_name_prefix = "Link";
   layout_params.digits_for_link_number = 2;
 
-  StorageKey key1(101, 1, "None", 2, 3);  // run number, trigger number, detector name, APA number, link number
+  StorageKey key1(101, 1, "None", 2, 3); // run number, trigger number, detector name, APA number, link number
   elementList = HDF5KeyTranslator::get_path_elements(key1, layout_params);
   BOOST_REQUIRE_EQUAL(elementList.size(), 4);
   BOOST_REQUIRE_EQUAL(elementList[0], "Test0001");

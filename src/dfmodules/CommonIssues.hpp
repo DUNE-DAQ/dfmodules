@@ -40,7 +40,6 @@ ERS_DECLARE_ISSUE_BASE(dfmodules,
                        ((std::string)name),
                        ((std::string)groupName))
 
-
 } // namespace dunedaq
 
 #endif // DFMODULES_SRC_DFMODULES_COMMONISSUES_HPP_

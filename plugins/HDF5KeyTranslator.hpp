@@ -78,13 +78,13 @@ public:
       // next, we translate the APA number location
       std::ostringstream apaNumberString;
       apaNumberString << layout_params.apa_name_prefix << std::setw(layout_params.digits_for_apa_number)
-                    << std::setfill('0') << data_key.getApaNumber();
+                      << std::setfill('0') << data_key.getApaNumber();
       elementList.push_back(apaNumberString.str());
 
       // Finally, add link number
       std::ostringstream linkNumberString;
       linkNumberString << layout_params.link_name_prefix << std::setw(layout_params.digits_for_link_number)
-                     << std::setfill('0') << data_key.getLinkNumber();
+                       << std::setfill('0') << data_key.getLinkNumber();
       elementList.push_back(linkNumberString.str());
     } else {
       // Add TriggerRecordHeader instead of detector type
@@ -93,7 +93,6 @@ public:
 
     return elementList;
   }
-
 
   /**
    * @brief Returns the version number of the HDF5 paths that are currently being
@@ -221,4 +220,3 @@ private:
 } // namespace dunedaq
 
 #endif // DFMODULES_PLUGINS_HDF5KEYTRANSLATOR_HPP_
-

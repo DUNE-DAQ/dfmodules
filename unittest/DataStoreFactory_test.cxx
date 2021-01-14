@@ -21,18 +21,15 @@ using namespace dunedaq::dfmodules;
 
 BOOST_AUTO_TEST_SUITE(DataStoreFactory_test)
 
-
-
 BOOST_AUTO_TEST_CASE(invalid_request)
 {
 
   // we want to pass an invalid DataStore type and see if we get an exception
-  BOOST_CHECK_THROW( makeDataStore( "dummy", nlohmann::json{} ), std::exception ) ;
+  BOOST_CHECK_THROW(makeDataStore("dummy", nlohmann::json{}), std::exception);
 
   // we want to ask for a DataStore configuring absolutely nothing, not even its type
   // and check if we get an exception
-  BOOST_CHECK_THROW( makeDataStore( nlohmann::json{} ), std::exception ) ;
-
+  BOOST_CHECK_THROW(makeDataStore(nlohmann::json{}), std::exception);
 }
 
 /*
