@@ -46,7 +46,7 @@ def traverse_datasets(hdf_file):
     for key in hdf5_group.keys():
       item = hdf5_group[key]
       path = f'{prefix}/{key}'
-      if isinstance(item, h5py.Dataset): # test for dataset
+      if isinstance(item, h5py.Dataset) and key != "TriggerRecordHeader": # test for dataset
         yield (path, item)
       elif isinstance(item, h5py.Group): # test for group (go down)
        yield from h5py_dataset_iterator(item, path) 
@@ -73,6 +73,37 @@ def traverse_TRH_datasets(hdf_file):
 
 def bytes_to_int(bytes):
   return int(binascii.hexlify(bytes), 16)
+
+## Print FragmentHeader
+def print_frag_header(data_array):
+  check_word = data_array[0:4]
+  version = data_array[4:8]
+  fragment_size = data_array[8:16]
+  trigger_number = data_array[16:24]
+  trigger_timestamp = data_array[24:32]
+  window_offset = data_array[32:40]
+  window_width = data_array[40:48]
+  run_number = data_array[48:52]
+  geo_id_apa = data_array[52:56]
+  geo_id_link = data_array[56:60]
+  error_bits = data_array[60:64]
+  fragment_type = data_array[64:68]
+
+  print("Magic word:\t\t", binascii.hexlify(check_word)[::-1])
+  print("Version:\t\t", bytes_to_int((version)[::-1]))
+  print("Frag size:\t\t", bytes_to_int((fragment_size)[::-1]))
+  print("Trig number:\t\t", bytes_to_int((trigger_number)[::-1]))
+  print("Trig timestamp:\t\t", bytes_to_int((trigger_timestamp)[::-1]))
+  print("Window offset:\t\t", bytes_to_int((window_offset)[::-1]))
+  print("Window width:\t\t", bytes_to_int((window_width)[::-1]))
+  print("Run number:\t\t", bytes_to_int((run_number)[::-1]))
+  print("GeoID (APA):\t\t", bytes_to_int((geo_id_apa)[::-1]))
+  print("GeoID (link):\t\t", bytes_to_int((geo_id_link)[::-1]))
+  print("Error bits:\t\t", bytes_to_int((error_bits)[::-1]))
+  print("Fragment type:\t\t", bytes_to_int((fragment_type)[::-1]))
+
+
+
 
 ## Print TriggerRecordHeader
 def print_trh(data_array):
@@ -111,7 +142,7 @@ def get_trigger_record_headers(file_name):
       #print('Data content:', f[dset][:])
       #print(binascii.hexlify(bytearray(f[dset][:])))
       print_trh(bytearray(f[dset][:]))
-      print("============================================")
+      print("=============================================")
 
 
 ## Dump the contents of the HDF5 file
@@ -123,6 +154,8 @@ def dump_file(file_name):
       print('Size:', f[dset].shape)
       print('Data type:', f[dset].dtype)
       #print(binascii.hexlify(bytearray(f[dset][:])))
+      print_frag_header(bytearray(f[dset][:]))
+      print("=============================================")
 
 
 def main():
