@@ -58,7 +58,7 @@ public:
       int apa_number, int link_number)
     : m_key(run_number, trigger_number, detector_type, apa_number, link_number)
   {}
-  ~StorageKey() {}
+  ~StorageKey() {} // NOLINT
 
   int getRunNumber() const;
   int getTriggerNumber() const;
