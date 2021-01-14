@@ -167,13 +167,18 @@ public:
     HighFive::DataSetCreateProps dataCProps_;
     HighFive::DataSetAccessProps dataAProps_;
 
-    auto theDataSet = subGroup.createDataSet<char>(dataset_name, theDataSpace, dataCProps_, dataAProps_);
-    if (theDataSet.isValid()) {
-      theDataSet.write_raw(static_cast<const char*>(dataBlock.getDataStart()));
-    } else {
-      throw InvalidHDF5Dataset(ERS_HERE, get_name(), dataset_name, filePtr->getName());
-    } 
-
+    try {
+      auto theDataSet = subGroup.createDataSet<char>(dataset_name, theDataSpace, dataCProps_, dataAProps_);
+      if (theDataSet.isValid()) {
+        theDataSet.write_raw(static_cast<const char*>(dataBlock.getDataStart()));
+      } else {
+        throw InvalidHDF5Dataset(ERS_HERE, get_name(), dataset_name, filePtr->getName());
+      } 
+    } catch (HighFive::DataSetException const& excpt) {
+      ERS_LOG("DataSetException: " << excpt.what());
+    } catch (HighFive::Exception const& excpt) {
+      ERS_LOG("Exception: " << excpt.what());
+    }
 
     filePtr->flush();
     recorded_size_ += dataBlock.data_size; 
