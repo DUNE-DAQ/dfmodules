@@ -48,6 +48,14 @@ ERS_DECLARE_ISSUE_BASE(dfmodules,
                        ((std::string)name),
                        ((std::string)dataSet)((std::string)filename))
 
+ERS_DECLARE_ISSUE_BASE(dfmodules,
+                       HDF5DataSetError,
+                       appfwk::GeneralDAQModuleIssue,
+                       "DataSet exception from HighFive library for DataSet name \"" << dataSet
+                       << "\", exception message is \"" << msgText << "\"",
+                       ((std::string)name),
+                       ((std::string)dataSet)((std::string)msgText))
+
 namespace dfmodules {
 
 /**
@@ -175,7 +183,7 @@ public:
         throw InvalidHDF5Dataset(ERS_HERE, get_name(), dataset_name, filePtr->getName());
       } 
     } catch (HighFive::DataSetException const& excpt) {
-      ERS_LOG("DataSetException: " << excpt.what());
+      ers::error(HDF5DataSetError(ERS_HERE, get_name(), dataset_name, excpt.what()));
     } catch (HighFive::Exception const& excpt) {
       ERS_LOG("Exception: " << excpt.what());
     }
