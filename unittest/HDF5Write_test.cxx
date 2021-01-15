@@ -10,7 +10,7 @@
 //#include "dfmodules/DataStore.hpp"
 //#include "dfmodules/hdf5datastore/Nljs.hpp"
 //#include "dfmodules/hdf5datastore/Structs.hpp"
-#include "../plugins/HDF5DataStore.hpp"
+#include "../plugins/HDF5DataStore.hpp" // NOLINT
 
 #include "ers/ers.h"
 
@@ -63,36 +63,35 @@ BOOST_AUTO_TEST_CASE(WriteFragmentFiles)
   std::string filePath(std::filesystem::temp_directory_path());
   std::string filePrefix = "demo" + std::to_string(getpid());
 
-  const int DUMMYDATA_SIZE = 7;  
+  const int DUMMYDATA_SIZE = 7;
   const int RUN_NUMBER = 52;
   const int TRIGGER_COUNT = 5;
   const std::string DETECTOR = "FELIX";
   const int APA_COUNT = 3;
   const int LINK_COUNT = 1;
- 
+
   // delete any pre-existing files so that we start with a clean slate
-  //std::string deletePattern = filePrefix + ".*.hdf5";
+  // std::string deletePattern = filePrefix + ".*.hdf5";
   std::string deletePattern = ".*.hdf5";
   deleteFilesMatchingPattern(filePath, deletePattern);
 
+  // create the DataStore
+  // nlohmann::json conf ;
+  // conf["name"] = "tempWriter" ;
+  // conf["filename_prefix"] = filePrefix ;
+  // conf["directory_path"] = filePath ;
+  // conf["mode"] = "one-fragment-per-file" ;
 
   // create the DataStore
-  //nlohmann::json conf ;
-  //conf["name"] = "tempWriter" ;
-  //conf["filename_prefix"] = filePrefix ; 
-  //conf["directory_path"] = filePath ; 
-  //conf["mode"] = "one-fragment-per-file" ;
-  
-  // create the DataStore
-  nlohmann::json conf ;
-  conf["name"] = "tempWriter" ;
-  conf["directory_path"] = filePath ; 
-  conf["mode"] = "one-fragment-per-file" ;
-  nlohmann::json subconf ;
-  subconf["overall_prefix"] = filePrefix ; 
-  conf["filename_parameters"] = subconf ;
+  nlohmann::json conf;
+  conf["name"] = "tempWriter";
+  conf["directory_path"] = filePath;
+  conf["mode"] = "one-fragment-per-file";
+  nlohmann::json subconf;
+  subconf["overall_prefix"] = filePrefix;
+  conf["filename_parameters"] = subconf;
   std::unique_ptr<HDF5DataStore> dsPtr(new HDF5DataStore(conf));
- 
+
   // write several events, each with several fragments
   char dummyData[DUMMYDATA_SIZE];
   for (int triggerNumber = 1; triggerNumber <= TRIGGER_COUNT; ++triggerNumber) {
@@ -103,15 +102,13 @@ BOOST_AUTO_TEST_CASE(WriteFragmentFiles)
         dataBlock.unowned_data_start = static_cast<void*>(&dummyData[0]);
         dataBlock.data_size = DUMMYDATA_SIZE;
         dsPtr->write(dataBlock);
-      } //link number
-    } // apa number
-  } // trigger number
+      }          // link number
+    }            // apa number
+  }              // trigger number
   dsPtr.reset(); // explicit destruction
 
-
-
   // check that the expected number of files was created
-  //std::string searchPattern = filePrefix+"_trigger_number*_apa_number_*.hdf5";
+  // std::string searchPattern = filePrefix+"_trigger_number*_apa_number_*.hdf5";
   std::string searchPattern = ".*.hdf5";
   std::vector<std::string> fileList = getFilesMatchingPattern(filePath, searchPattern);
   BOOST_REQUIRE_EQUAL(fileList.size(), (TRIGGER_COUNT * APA_COUNT));
@@ -119,49 +116,42 @@ BOOST_AUTO_TEST_CASE(WriteFragmentFiles)
   // clean up the files that were created
   fileList = deleteFilesMatchingPattern(filePath, deletePattern);
   BOOST_REQUIRE_EQUAL(fileList.size(), (TRIGGER_COUNT * APA_COUNT));
-
 }
-
-
 
 BOOST_AUTO_TEST_CASE(WriteEventFiles)
 {
   std::string filePath(std::filesystem::temp_directory_path());
   std::string filePrefix = "demo" + std::to_string(getpid());
 
-  const int DUMMYDATA_SIZE = 7;  
+  const int DUMMYDATA_SIZE = 7;
   const int RUN_NUMBER = 52;
   const int TRIGGER_COUNT = 5;
   const std::string DETECTOR = "FELIX";
   const int APA_COUNT = 3;
   const int LINK_COUNT = 1;
- 
+
   // delete any pre-existing files so that we start with a clean slate
-  //std::string deletePattern = filePrefix + ".*.hdf5";
+  // std::string deletePattern = filePrefix + ".*.hdf5";
   std::string deletePattern = ".*.hdf5";
   deleteFilesMatchingPattern(filePath, deletePattern);
 
-
+  // create the DataStore
+  // nlohmann::json conf ;
+  // conf["name"] = "tempWriter" ;
+  // conf["filename_prefix"] = filePrefix ;
+  // conf["directory_path"] = filePath ;
+  // conf["mode"] = "one-event-per-file" ;
+  // std::unique_ptr<HDF5DataStore> dsPtr(new HDF5DataStore(conf));
 
   // create the DataStore
-  //nlohmann::json conf ;
-  //conf["name"] = "tempWriter" ;
-  //conf["filename_prefix"] = filePrefix ; 
-  //conf["directory_path"] = filePath ; 
-  //conf["mode"] = "one-event-per-file" ;
-  //std::unique_ptr<HDF5DataStore> dsPtr(new HDF5DataStore(conf));
-   
-
-  // create the DataStore
-  nlohmann::json conf ;
-  conf["name"] = "tempWriter" ;
-  conf["directory_path"] = filePath ; 
-  conf["mode"] = "one-event-per-file" ;
-  nlohmann::json subconf ;
-  subconf["overall_prefix"] = filePrefix ; 
-  conf["filename_parameters"] = subconf ;
+  nlohmann::json conf;
+  conf["name"] = "tempWriter";
+  conf["directory_path"] = filePath;
+  conf["mode"] = "one-event-per-file";
+  nlohmann::json subconf;
+  subconf["overall_prefix"] = filePrefix;
+  conf["filename_parameters"] = subconf;
   std::unique_ptr<HDF5DataStore> dsPtr(new HDF5DataStore(conf));
- 
 
   // write several events, each with several fragments
   char dummyData[DUMMYDATA_SIZE];
@@ -173,15 +163,14 @@ BOOST_AUTO_TEST_CASE(WriteEventFiles)
         dataBlock.unowned_data_start = static_cast<void*>(&dummyData[0]);
         dataBlock.data_size = DUMMYDATA_SIZE;
         dsPtr->write(dataBlock);
-      } //link number
-    } // apa number
-  } // trigger number
+      }          // link number
+    }            // apa number
+  }              // trigger number
   dsPtr.reset(); // explicit destruction
 
-
   // check that the expected number of files was created
-  std::string searchPattern =  ".*.hdf5";
-  //std::string searchPattern = filePrefix + "trigger_number*.hdf5";
+  std::string searchPattern = ".*.hdf5";
+  // std::string searchPattern = filePrefix + "trigger_number*.hdf5";
   std::vector<std::string> fileList = getFilesMatchingPattern(filePath, searchPattern);
   BOOST_REQUIRE_EQUAL(fileList.size(), TRIGGER_COUNT);
 
@@ -190,31 +179,30 @@ BOOST_AUTO_TEST_CASE(WriteEventFiles)
   BOOST_REQUIRE_EQUAL(fileList.size(), TRIGGER_COUNT);
 }
 
-
 BOOST_AUTO_TEST_CASE(WriteOneFile)
 {
   std::string filePath(std::filesystem::temp_directory_path());
   std::string filePrefix = "demo" + std::to_string(getpid());
 
-  const int DUMMYDATA_SIZE = 7;  
+  const int DUMMYDATA_SIZE = 7;
   const int RUN_NUMBER = 52;
   const int TRIGGER_COUNT = 5;
   const std::string DETECTOR = "FELIX";
   const int APA_COUNT = 3;
   const int LINK_COUNT = 1;
- 
+
   // delete any pre-existing files so that we start with a clean slate
   std::string deletePattern = filePrefix + ".*.hdf5";
   deleteFilesMatchingPattern(filePath, deletePattern);
 
   // create the DataStore
-  nlohmann::json conf ;
-  conf["name"] = "tempWriter" ;
-  conf["directory_path"] = filePath ; 
-  conf["mode"] = "all-per-file" ;
-  nlohmann::json subconf ;
-  subconf["overall_prefix"] = filePrefix ; 
-  conf["filename_parameters"] = subconf ;
+  nlohmann::json conf;
+  conf["name"] = "tempWriter";
+  conf["directory_path"] = filePath;
+  conf["mode"] = "all-per-file";
+  nlohmann::json subconf;
+  subconf["overall_prefix"] = filePrefix;
+  conf["filename_parameters"] = subconf;
   std::unique_ptr<HDF5DataStore> dsPtr(new HDF5DataStore(conf));
 #if 0
   hdf5datastore::ConfParams config_params;
@@ -239,9 +227,9 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
         dataBlock.unowned_data_start = static_cast<void*>(&dummyData[0]);
         dataBlock.data_size = DUMMYDATA_SIZE;
         dsPtr->write(dataBlock);
-      } //link number
-    } // apa number
-  } // trigger number
+      }          // link number
+    }            // apa number
+  }              // trigger number
   dsPtr.reset(); // explicit destruction
 
   // check that the expected number of files was created
@@ -254,4 +242,3 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
   BOOST_REQUIRE_EQUAL(fileList.size(), 1);
 }
 BOOST_AUTO_TEST_SUITE_END()
-

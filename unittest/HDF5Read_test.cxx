@@ -7,7 +7,7 @@
  * received with this code.
  */
 
-#include "../plugins/HDF5DataStore.hpp"
+#include "../plugins/HDF5DataStore.hpp" //NOLINT
 
 #include "ers/ers.h"
 
@@ -58,8 +58,8 @@ BOOST_AUTO_TEST_CASE(ReadFragmentFiles)
   // create the DataStore instance for writing
   nlohmann::json conf ;
   conf["name"] = "tempWriter" ;
-  conf["filename_prefix"] = filePrefix ; 
-  conf["directory_path"] = filePath ; 
+  conf["filename_prefix"] = filePrefix ;
+  conf["directory_path"] = filePath ;
   conf["mode"] = "one-fragment-per-file" ;
   std::unique_ptr<HDF5DataStore> dsPtr(new HDF5DataStore( conf ));
 
@@ -125,8 +125,8 @@ BOOST_AUTO_TEST_CASE(ReadEventFiles)
   // create the DataStore instance for writing
   nlohmann::json conf ;
   conf["name"] = "tempWriter" ;
-  conf["filename_prefix"] = filePrefix ; 
-  conf["directory_path"] = filePath ; 
+  conf["filename_prefix"] = filePrefix ;
+  conf["directory_path"] = filePath ;
   conf["mode"] = "one-event-per-file" ;
   std::unique_ptr<HDF5DataStore> dsPtr(new HDF5DataStore( conf ));
 
@@ -158,7 +158,7 @@ BOOST_AUTO_TEST_CASE(ReadEventFiles)
   read_conf["directory_path"] = filePath ;
   read_conf["mode"] = "one-event-per-file" ;
   std::unique_ptr<HDF5DataStore> dsPtr2(new HDF5DataStore( read_conf  ));
-  
+
   // loop over all of the keys to read in the data
   for (size_t kdx = 0; kdx < keyList.size(); ++kdx) {
     KeyedDataBlock dataBlock = dsPtr2->read(keyList[kdx]);
@@ -192,17 +192,16 @@ BOOST_AUTO_TEST_CASE(ReadSingleFile)
   // delete any pre-existing files so that we start with a clean slate
   std::string deletePattern = filePrefix + ".*.hdf5";
   deleteFilesMatchingPattern(filePath, deletePattern);
-  
-  // create the DataStore instance for writing
-  nlohmann::json conf ;
-  conf["name"] = "tempWriter" ;
-  conf["directory_path"] = filePath ;
-  conf["mode"] = "all-per-file" ;
-  nlohmann::json subconf ;
-  subconf["overall_prefix"] = filePrefix ;
-  conf["filename_parameters"] = subconf ;
-  std::unique_ptr<HDF5DataStore> dsPtr(new HDF5DataStore(conf));
 
+  // create the DataStore instance for writing
+  nlohmann::json conf;
+  conf["name"] = "tempWriter";
+  conf["directory_path"] = filePath;
+  conf["mode"] = "all-per-file";
+  nlohmann::json subconf;
+  subconf["overall_prefix"] = filePrefix;
+  conf["filename_parameters"] = subconf;
+  std::unique_ptr<HDF5DataStore> dsPtr(new HDF5DataStore(conf));
 
   int initializedChecksum = 0;
   // write several events, each with several fragments
@@ -222,23 +221,20 @@ BOOST_AUTO_TEST_CASE(ReadSingleFile)
         dataBlock.data_size = DUMMYDATA_SIZE;
         dsPtr->write(dataBlock);
         keyList.push_back(key);
-      } //link number
-    } // apa number
-  } // trigger number
+      }          // link number
+    }            // apa number
+  }              // trigger number
   dsPtr.reset(); // explicit destruction
 
-
-
   // create a new DataStore instance to read back the data that was written
-  nlohmann::json read_conf ;
-  read_conf["name"] = "tempReader" ;
-  read_conf["directory_path"] = filePath ;
-  read_conf["mode"] = "all-per-file" ;
-  nlohmann::json read_subconf ;
-  read_subconf["overall_prefix"] = filePrefix ;
-  read_conf["filename_parameters"] = read_subconf ;
+  nlohmann::json read_conf;
+  read_conf["name"] = "tempReader";
+  read_conf["directory_path"] = filePath;
+  read_conf["mode"] = "all-per-file";
+  nlohmann::json read_subconf;
+  read_subconf["overall_prefix"] = filePrefix;
+  read_conf["filename_parameters"] = read_subconf;
   std::unique_ptr<HDF5DataStore> dsPtr2(new HDF5DataStore(read_conf));
- 
 
   // loop over all of the keys to read in the data
   for (size_t kdx = 0; kdx < keyList.size(); ++kdx) {
@@ -250,14 +246,11 @@ BOOST_AUTO_TEST_CASE(ReadSingleFile)
       readbackChecksum += static_cast<int>(data_ptr[idx]);
     }
     BOOST_REQUIRE_EQUAL(readbackChecksum, initializedChecksum);
-    
   }
   dsPtr2.reset(); // explicit destruction
 
   // clean up the files that were created
   deleteFilesMatchingPattern(filePath, deletePattern);
-
 }
 
 BOOST_AUTO_TEST_SUITE_END()
-

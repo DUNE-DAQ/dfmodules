@@ -19,11 +19,12 @@
 namespace dunedaq {
 namespace dfmodules {
 
-
 const int StorageKey::INVALID_RUNNUMBER = std::numeric_limits<int>::max();
 const int StorageKey::INVALID_TRIGGERNUMBER = std::numeric_limits<int>::max();
-const int StorageKey::INVALID_APANUMBER = std::numeric_limits<int>::max(); // AAA:to be changed to something more reasonable, like 150
-const int StorageKey::INVALID_LINKNUMBER = std::numeric_limits<int>::max(); // AAA: to be changed to something more reasonable, like 10
+const int StorageKey::INVALID_APANUMBER = std::numeric_limits<int>::max();  // AAA:to be changed to something more
+                                                                            // reasonable, like 150
+const int StorageKey::INVALID_LINKNUMBER = std::numeric_limits<int>::max(); // AAA: to be changed to something more
+                                                                            // reasonable, like 10
 
 int
 StorageKey::getRunNumber() const
@@ -54,8 +55,6 @@ StorageKey::getLinkNumber() const
 {
   return m_key.m_link_number;
 }
-
-
 
 } // namespace dfmodules
 } // namespace dunedaq

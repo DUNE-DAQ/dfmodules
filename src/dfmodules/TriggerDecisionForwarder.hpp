@@ -9,8 +9,8 @@
  * received with this code.
  */
 
-#ifndef DFMODULES_INCLUDE_DFMODULES_TRIGGERDECISIONFORWARDER_HPP_
-#define DFMODULES_INCLUDE_DFMODULES_TRIGGERDECISIONFORWARDER_HPP_
+#ifndef DFMODULES_SRC_DFMODULES_TRIGGERDECISIONFORWARDER_HPP_
+#define DFMODULES_SRC_DFMODULES_TRIGGERDECISIONFORWARDER_HPP_
 
 #include "appfwk/DAQSink.hpp"
 #include "appfwk/NamedObject.hpp"
@@ -20,7 +20,9 @@
 #include <atomic>
 #include <chrono>
 #include <cstdint>
+#include <memory>
 #include <mutex>
+#include <string>
 #include <thread>
 
 namespace dunedaq {
@@ -77,4 +79,4 @@ private:
 } // namespace dfmodules
 } // namespace dunedaq
 
-#endif // DFMODULES_INCLUDE_DFMODULES_TRIGGERDECISIONFORWARDER_HPP_
+#endif // DFMODULES_SRC_DFMODULES_TRIGGERDECISIONFORWARDER_HPP_
