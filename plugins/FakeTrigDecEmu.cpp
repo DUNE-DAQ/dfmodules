@@ -24,9 +24,9 @@
 /**
  * @brief Name used by TRACE TLOG calls from this source file
  */
-#define TRACE_NAME "FakeTrigDecEmu" // NOLINT
-#define TLVL_ENTER_EXIT_METHODS 10  // NOLINT
-#define TLVL_WORK_STEPS 15          // NOLINT
+#define TRACE_NAME "FakeTrigDecEmu"            // NOLINT
+#define TLVL_ENTER_EXIT_METHODS TLVL_DEBUG + 5 // NOLINT
+#define TLVL_WORK_STEPS TLVL_DEBUG + 10        // NOLINT
 
 namespace dunedaq {
 namespace dfmodules {
@@ -143,7 +143,8 @@ FakeTrigDecEmu::do_work(std::atomic<bool>& running_flag)
       }
     }
 
-    auto time_to_wait = (start_time + std::chrono::milliseconds(sleepMsecWhileRunning_)) - std::chrono::steady_clock::now();
+    auto time_to_wait =
+      (start_time + std::chrono::milliseconds(sleepMsecWhileRunning_)) - std::chrono::steady_clock::now();
     TLOG(TLVL_WORK_STEPS) << get_name() << ": Start of sleep between fake triggers";
     std::this_thread::sleep_for(time_to_wait);
     TLOG(TLVL_WORK_STEPS) << get_name() << ": End of sleep between fake triggers";
@@ -152,7 +153,7 @@ FakeTrigDecEmu::do_work(std::atomic<bool>& running_flag)
   std::ostringstream oss_summ;
   oss_summ << ": Exiting the do_work() method, generated " << triggerCount << " Fake TriggerDecision messages "
            << "and received " << inhibit_message_count << " TriggerInhbit messages of all types (both Busy and Free).";
-  ers::info(ProgressUpdate(ERS_HERE, get_name(), oss_summ.str()));
+  ers::log(ProgressUpdate(ERS_HERE, get_name(), oss_summ.str()));
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_work() method";
 }
 

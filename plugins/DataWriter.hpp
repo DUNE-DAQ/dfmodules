@@ -6,8 +6,8 @@
  * received with this code.
  */
 
-#ifndef DFMODULES_SRC_DATAWRITER_HPP_
-#define DFMODULES_SRC_DATAWRITER_HPP_
+#ifndef DFMODULES_PLUGINS_DATAWRITER_HPP_
+#define DFMODULES_PLUGINS_DATAWRITER_HPP_
 
 #include "dfmodules/DataStore.hpp"
 #include "dfmodules/TriggerInhibitAgent.hpp"
@@ -48,6 +48,7 @@ private:
   void do_conf(const data_t&);
   void do_start(const data_t&);
   void do_stop(const data_t&);
+  void do_scrap(const data_t&);
 
   // Threading
   dunedaq::appfwk::ThreadHelper thread_;
@@ -77,4 +78,4 @@ ERS_DECLARE_ISSUE_BASE(dfmodules,
 
 } // namespace dunedaq
 
-#endif // DFMODULES_SRC_DATAWRITER_HPP_
+#endif // DFMODULES_PLUGINS_DATAWRITER_HPP_

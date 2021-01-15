@@ -9,8 +9,8 @@
  * received with this code.
  */
 
-#ifndef DFMODULES_INCLUDE_DFMODULES_TRIGGERINHIBITAGENT_HPP_
-#define DFMODULES_INCLUDE_DFMODULES_TRIGGERINHIBITAGENT_HPP_
+#ifndef DFMODULES_SRC_DFMODULES_TRIGGERINHIBITAGENT_HPP_
+#define DFMODULES_SRC_DFMODULES_TRIGGERINHIBITAGENT_HPP_
 
 #include "appfwk/DAQSink.hpp"
 #include "appfwk/DAQSource.hpp"
@@ -23,6 +23,8 @@
 #include <atomic>
 #include <chrono>
 #include <cstdint>
+#include <memory>
+#include <string>
 #include <thread>
 
 namespace dunedaq {
@@ -51,7 +53,7 @@ public:
 
   void stop_checking();
 
-  void set_threshold_for_inhibit(uint32_t value)
+  void set_threshold_for_inhibit(uint32_t value) // NOLINT
   {
     threshold_for_inhibit_.store(value);
   }
@@ -68,7 +70,7 @@ private:
 
   // Configuration
   std::chrono::milliseconds queueTimeout_;
-  std::atomic<uint32_t> threshold_for_inhibit_;
+  std::atomic<uint32_t> threshold_for_inhibit_; // NOLINT
 
   // Queue(s)
   std::unique_ptr<trigdecsource_t> trigger_decision_source_;
@@ -81,4 +83,4 @@ private:
 } // namespace dfmodules
 } // namespace dunedaq
 
-#endif // DFMODULES_INCLUDE_DFMODULES_TRIGGERINHIBITAGENT_HPP_
+#endif // DFMODULES_SRC_DFMODULES_TRIGGERINHIBITAGENT_HPP_

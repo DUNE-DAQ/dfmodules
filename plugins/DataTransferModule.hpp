@@ -9,9 +9,10 @@
  * received with this code.
  */
 
-#ifndef DFMODULES_SRC_DATATRANSFERMODULE_HPP_
-#define DFMODULES_SRC_DATATRANSFERMODULE_HPP_
+#ifndef DFMODULES_PLUGINS_DATATRANSFERMODULE_HPP_
+#define DFMODULES_PLUGINS_DATATRANSFERMODULE_HPP_
 
+#include "dfmodules/CommonIssues.hpp"
 #include "dfmodules/DataStore.hpp"
 
 #include <appfwk/DAQModule.hpp>
@@ -68,13 +69,6 @@ private:
 } // namespace dfmodules
 
 ERS_DECLARE_ISSUE_BASE(dfmodules,
-                       ProgressUpdate,
-                       appfwk::GeneralDAQModuleIssue,
-                       message,
-                       ((std::string)name),
-                       ((std::string)message))
-
-ERS_DECLARE_ISSUE_BASE(dfmodules,
                        InvalidDataStoreError,
                        appfwk::GeneralDAQModuleIssue,
                        "A valid dataStore instance is not available for "
@@ -86,4 +80,4 @@ ERS_DECLARE_ISSUE_BASE(dfmodules,
 
 } // namespace dunedaq
 
-#endif // DFMODULES_SRC_DATATRANSFERMODULE_HPP_
+#endif // DFMODULES_PLUGINS_DATATRANSFERMODULE_HPP_

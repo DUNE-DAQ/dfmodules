@@ -17,17 +17,19 @@
 
 #include <chrono>
 #include <cstdlib>
+#include <memory>
 #include <string>
 #include <thread>
+#include <utility>
 #include <vector>
 
 /**
  * @brief Name used by TRACE TLOG calls from this source file
  */
-#define TRACE_NAME "FakeDataProd"  // NOLINT
-#define TLVL_ENTER_EXIT_METHODS 10 // NOLINT
-#define TLVL_CONFIG 12             // NOLINT
-#define TLVL_WORK_STEPS 15         // NOLINT
+#define TRACE_NAME "FakeDataProd"              // NOLINT
+#define TLVL_ENTER_EXIT_METHODS TLVL_DEBUG + 5 // NOLINT
+#define TLVL_CONFIG TLVL_DEBUG + 7             // NOLINT
+#define TLVL_WORK_STEPS TLVL_DEBUG + 10        // NOLINT
 
 namespace dunedaq {
 namespace dfmodules {
@@ -112,7 +114,7 @@ FakeDataProd::do_work(std::atomic<bool>& running_flag)
       continue;
     }
 
-    // TODO PAR 2020-12-17: dataformats::Fragment has to be
+    // NOLINT TODO PAR 2020-12-17: dataformats::Fragment has to be
     // constructed with some payload data, so I'm putting a few ints
     // in it for now
     int dummy_ints[3];
@@ -125,7 +127,7 @@ FakeDataProd::do_work(std::atomic<bool>& running_flag)
     dunedaq::dataformats::GeoID geo_location;
     geo_location.apa_number = 1;
     geo_location.link_number = fake_link_number_;
-    dataFragPtr->set_link_ID(geo_location);
+    dataFragPtr->set_link_id(geo_location);
     dataFragPtr->set_error_bits(0);
     dataFragPtr->set_type(0x123); // placeholder
     dataFragPtr->set_trigger_timestamp(dataReq.trigger_timestamp);
@@ -163,7 +165,7 @@ FakeDataProd::do_work(std::atomic<bool>& running_flag)
   std::ostringstream oss_summ;
   oss_summ << ": Exiting the do_work() method, received Fake trigger decision messages for " << receivedCount
            << " triggers.";
-  ers::info(ProgressUpdate(ERS_HERE, get_name(), oss_summ.str()));
+  ers::log(ProgressUpdate(ERS_HERE, get_name(), oss_summ.str()));
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_work() method";
 }
 

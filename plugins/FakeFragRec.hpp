@@ -6,8 +6,8 @@
  * received with this code.
  */
 
-#ifndef DFMODULES_SRC_FAKEFRAGREC_HPP_
-#define DFMODULES_SRC_FAKEFRAGREC_HPP_
+#ifndef DFMODULES_PLUGINS_FAKEFRAGREC_HPP_
+#define DFMODULES_PLUGINS_FAKEFRAGREC_HPP_
 
 #include "dataformats/Fragment.hpp"
 #include "dataformats/TriggerRecord.hpp"
@@ -69,4 +69,4 @@ private:
 } // namespace dfmodules
 } // namespace dunedaq
 
-#endif // DFMODULES_SRC_FAKEFRAGREC_HPP_
+#endif // DFMODULES_PLUGINS_FAKEFRAGREC_HPP_

@@ -12,14 +12,16 @@
 #include "TRACE/trace.h"
 #include "ers/ers.h"
 
+#include <memory>
 #include <string>
+#include <utility>
 
 /**
  * @brief Name used by TRACE TLOG calls from this source file
  */
-#define TRACE_NAME "TriggerInhibitAgent" // NOLINT
-#define TLVL_ENTER_EXIT_METHODS 10       // NOLINT
-#define TLVL_WORK_STEPS 15               // NOLINT
+#define TRACE_NAME "TriggerInhibitAgent"       // NOLINT
+#define TLVL_ENTER_EXIT_METHODS TLVL_DEBUG + 5 // NOLINT
+#define TLVL_WORK_STEPS TLVL_DEBUG + 10        // NOLINT
 
 namespace dunedaq {
 namespace dfmodules {
@@ -104,7 +106,7 @@ TriggerInhibitAgent::do_work(std::atomic<bool>& running_flag)
 
     // check if A) we are supposed to be checking the trigger_number difference, and
     // B) if so, whether an Inhibit should be asserted or cleared
-    uint32_t threshold = threshold_for_inhibit_.load();
+    uint32_t threshold = threshold_for_inhibit_.load(); // NOLINT
     if (threshold > 0) {
       dataformats::trigger_number_t temp_trig_num_at_start = trigger_number_at_start_of_processing_chain_.load();
       dataformats::trigger_number_t temp_trig_num_at_end = trigger_number_at_end_of_processing_chain_.load();
@@ -142,7 +144,7 @@ TriggerInhibitAgent::do_work(std::atomic<bool>& running_flag)
           std::ostringstream oss_sent;
           oss_sent << ": Successfully pushed a TriggerInhibit message with busy state set to " << inhibit_message.busy
                    << " onto the output queue";
-          ers::info(ProgressUpdate(ERS_HERE, get_name(), oss_sent.str()));
+          ers::log(ProgressUpdate(ERS_HERE, get_name(), oss_sent.str()));
 #endif
           // if we successfully pushed the message to the Sink, then we assume that the
           // receiver will get it, and we update our internal state accordingly
@@ -165,7 +167,7 @@ TriggerInhibitAgent::do_work(std::atomic<bool>& running_flag)
   oss_summ << ": Exiting the do_work() method, received " << received_message_count
            << " TriggerDecision messages and sent " << sent_message_count
            << " TriggerInhibit messages of all types (both Busy and Free).";
-  ers::info(ProgressUpdate(ERS_HERE, get_name(), oss_summ.str()));
+  ers::log(ProgressUpdate(ERS_HERE, get_name(), oss_summ.str()));
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_work() method";
 }
 

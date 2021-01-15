@@ -18,16 +18,18 @@
 
 #include <chrono>
 #include <cstdlib>
+#include <memory>
 #include <string>
 #include <thread>
+#include <utility>
 #include <vector>
 
 /**
  * @brief Name used by TRACE TLOG calls from this source file
  */
-#define TRACE_NAME "FakeFragRec"   // NOLINT
-#define TLVL_ENTER_EXIT_METHODS 10 // NOLINT
-#define TLVL_WORK_STEPS 15         // NOLINT
+#define TRACE_NAME "FakeFragRec"               // NOLINT
+#define TLVL_ENTER_EXIT_METHODS TLVL_DEBUG + 5 // NOLINT
+#define TLVL_WORK_STEPS TLVL_DEBUG + 10        // NOLINT
 
 namespace dunedaq {
 namespace dfmodules {
@@ -129,7 +131,7 @@ FakeFragRec::do_work(std::atomic<bool>& running_flag)
     // a TriggerRecord that we create.  This is certainly too simple-minded for any
     // real implementation, but this is just a Fake...
 
-    std::vector<dataformats::Fragment*> frag_ptr_vector;
+    std::vector<std::unique_ptr<dataformats::Fragment>> frag_ptr_vector;
     for (auto& dataFragQueue : dataFragmentInputQueues_) {
       bool got_fragment = false;
       while (!got_fragment && running_flag.load()) {
@@ -138,7 +140,7 @@ FakeFragRec::do_work(std::atomic<bool>& running_flag)
           dataFragQueue->pop(dataFragPtr, queueTimeout_);
           got_fragment = true;
           ++receivedFragmentCount;
-          frag_ptr_vector.emplace_back(dataFragPtr.release());
+          frag_ptr_vector.emplace_back(std::move(dataFragPtr));
         } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
           // simply try again (forever); this is clearly a bad idea...
         }
@@ -149,17 +151,7 @@ FakeFragRec::do_work(std::atomic<bool>& running_flag)
     trigRecPtr->set_trigger_number(trigDecision.trigger_number);
     trigRecPtr->set_run_number(trigDecision.run_number);
     trigRecPtr->set_trigger_timestamp(trigDecision.trigger_timestamp);
-    trigRecPtr->set_fragments(frag_ptr_vector);
-
-    // hack: only use the request window from one of the components
-    // also, these should be offset and width in TriggerRecord, I think
-    auto first_map_element = trigDecision.components.begin();
-    if (first_map_element != trigDecision.components.end()) {
-      dataformats::ComponentRequest comp_req = first_map_element->second;
-      trigRecPtr->set_trigger_record_start_time(trigDecision.trigger_timestamp + comp_req.window_offset);
-      trigRecPtr->set_trigger_record_end_time(trigDecision.trigger_timestamp + comp_req.window_offset +
-                                              comp_req.window_width);
-    }
+    trigRecPtr->set_fragments(std::move(frag_ptr_vector));
 
     bool wasSentSuccessfully = false;
     while (!wasSentSuccessfully && running_flag.load()) {
@@ -187,7 +179,7 @@ FakeFragRec::do_work(std::atomic<bool>& running_flag)
   std::ostringstream oss_summ;
   oss_summ << ": Exiting the do_work() method, received " << receivedTriggerCount
            << " Fake trigger decision messages and " << receivedFragmentCount << " Fake data fragmentss.";
-  ers::info(ProgressUpdate(ERS_HERE, get_name(), oss_summ.str()));
+  ers::log(ProgressUpdate(ERS_HERE, get_name(), oss_summ.str()));
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_work() method";
 }
 
