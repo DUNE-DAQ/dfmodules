@@ -1,6 +1,3 @@
-#ifndef DFMODULES_SRC_HDF5DATASTORE_HPP_
-#define DFMODULES_SRC_HDF5DATASTORE_HPP_
-
 /**
  * @file HDF5DataStore.hpp
  *
@@ -12,11 +9,14 @@
  * received with this code.
  */
 
+#ifndef DFMODULES_PLUGINS_HDF5DATASTORE_HPP_
+#define DFMODULES_PLUGINS_HDF5DATASTORE_HPP_
+
+#include "HDF5FileUtils.hpp"
+#include "HDF5KeyTranslator.hpp"
 #include "dfmodules/DataStore.hpp"
 #include "dfmodules/hdf5datastore/Nljs.hpp"
 #include "dfmodules/hdf5datastore/Structs.hpp"
-#include "HDF5FileUtils.hpp"
-#include "HDF5KeyTranslator.hpp"
 
 #include <TRACE/trace.h>
 #include <appfwk/DAQModule.hpp>
@@ -48,6 +48,14 @@ ERS_DECLARE_ISSUE_BASE(dfmodules,
                        ((std::string)name),
                        ((std::string)dataSet)((std::string)filename))
 
+ERS_DECLARE_ISSUE_BASE(dfmodules,
+                       HDF5DataSetError,
+                       appfwk::GeneralDAQModuleIssue,
+                       "DataSet exception from HighFive library for DataSet name \"" << dataSet
+                       << "\", exception message is \"" << msgText << "\"",
+                       ((std::string)name),
+                       ((std::string)dataSet)((std::string)msgText))
+
 namespace dfmodules {
 
 /**
@@ -64,32 +72,31 @@ public:
    * @param name, path, fileName, operationMode
    *
    */
-  explicit HDF5DataStore( const nlohmann::json & conf )
-    : DataStore( conf.value("name", "data_store") )
+  explicit HDF5DataStore(const nlohmann::json& conf)
+    : DataStore(conf.value("name", "data_store"))
     , fullNameOfOpenFile_("")
     , openFlagsOfOpenFile_(0)
   {
-    TLOG(TLVL_DEBUG) << get_name() << ": Configuration: " << conf ; 
-    
+    TLOG(TLVL_DEBUG) << get_name() << ": Configuration: " << conf;
+
     config_params_ = conf.get<hdf5datastore::ConfParams>();
     fileName_ = config_params_.filename_parameters.overall_prefix;
     path_ = config_params_.directory_path;
     operation_mode_ = config_params_.mode;
     max_file_size_ = config_params_.max_file_size_bytes;
-    //fileName_ = conf["filename_prefix"].get<std::string>() ; 
-    //path_ = conf["directory_path"].get<std::string>() ;
-    //operation_mode_ = conf["mode"].get<std::string>() ; 
+    // fileName_ = conf["filename_prefix"].get<std::string>() ;
+    // path_ = conf["directory_path"].get<std::string>() ;
+    // operation_mode_ = conf["mode"].get<std::string>() ;
     // Get maximum file size in bytes
     // AAA: todo get from configuration params, force that max file size to be in bytes?
-    //max_file_size_ = conf["MaxFileSize"].get()*1024ULL*1024ULL;
-    //max_file_size_ = 1*1024ULL*1024ULL;
+    // max_file_size_ = conf["MaxFileSize"].get()*1024ULL*1024ULL;
+    // max_file_size_ = 1*1024ULL*1024ULL;
     file_count_ = 0;
     recorded_size_ = 0;
 
-
     if (operation_mode_ != "one-event-per-file" && operation_mode_ != "one-fragment-per-file" &&
         operation_mode_ != "all-per-file") {
-      
+
       throw InvalidOperationMode(ERS_HERE, get_name(), operation_mode_);
     }
   }
@@ -111,8 +118,7 @@ public:
     std::vector<std::string> group_and_dataset_path_elements =
       HDF5KeyTranslator::get_path_elements(key, config_params_.file_layout_parameters);
 
-
-    //const std::string datasetName = std::to_string(key.getLinkNumber());
+    // const std::string datasetName = std::to_string(key.getLinkNumber());
     const std::string datasetName = group_and_dataset_path_elements.back();
 
     KeyedDataBlock dataBlock(key);
@@ -130,7 +136,7 @@ public:
     } catch (HighFive::DataSetException const&) {
       ERS_LOG("HDF5DataSet " << datasetName << " not found.");
     }
-         
+
     return dataBlock;
   }
 
@@ -150,16 +156,15 @@ public:
     openFileIfNeeded(fullFileName, HighFive::File::OpenOrCreate);
 
     TLOG(TLVL_DEBUG) << get_name() << ": Writing data with run number " << dataBlock.data_key.getRunNumber()
-                     << " and trigger number " << dataBlock.data_key.getTriggerNumber()
-                     << " and detector type " << dataBlock.data_key.getDetectorType()
-                     << " and apa/link number " << dataBlock.data_key.getApaNumber()
-                     << " / " << dataBlock.data_key.getLinkNumber();
+                     << " and trigger number " << dataBlock.data_key.getTriggerNumber() << " and detector type "
+                     << dataBlock.data_key.getDetectorType() << " and apa/link number "
+                     << dataBlock.data_key.getApaNumber() << " / " << dataBlock.data_key.getLinkNumber();
 
     std::vector<std::string> group_and_dataset_path_elements =
       HDF5KeyTranslator::get_path_elements(dataBlock.data_key, config_params_.file_layout_parameters);
 
     const std::string dataset_name = group_and_dataset_path_elements.back();
-   
+
     HighFive::Group subGroup = HDF5FileUtils::getSubGroup(filePtr, group_and_dataset_path_elements, true);
 
     // Create dataset
@@ -167,25 +172,28 @@ public:
     HighFive::DataSetCreateProps dataCProps_;
     HighFive::DataSetAccessProps dataAProps_;
 
-    auto theDataSet = subGroup.createDataSet<char>(dataset_name, theDataSpace, dataCProps_, dataAProps_);
-    if (theDataSet.isValid()) {
-      theDataSet.write_raw(static_cast<const char*>(dataBlock.getDataStart()));
-    } else {
-      throw InvalidHDF5Dataset(ERS_HERE, get_name(), dataset_name, filePtr->getName());
-    } 
-
+    try {
+      auto theDataSet = subGroup.createDataSet<char>(dataset_name, theDataSpace, dataCProps_, dataAProps_);
+      if (theDataSet.isValid()) {
+        theDataSet.write_raw(static_cast<const char*>(dataBlock.getDataStart()));
+      } else {
+        throw InvalidHDF5Dataset(ERS_HERE, get_name(), dataset_name, filePtr->getName());
+      } 
+    } catch (HighFive::DataSetException const& excpt) {
+      ers::error(HDF5DataSetError(ERS_HERE, get_name(), dataset_name, excpt.what()));
+    } catch (HighFive::Exception const& excpt) {
+      ERS_LOG("Exception: " << excpt.what());
+    }
 
     filePtr->flush();
-    recorded_size_ += dataBlock.data_size; 
+    recorded_size_ += dataBlock.data_size;
 
     // 13-Jan-2021, KAB: disable the file size checking, for now.
-    //AAA: be careful on the units, maybe force it somehow? 
-    //if (recorded_size_ > max_file_size_) {
+    // AAA: be careful on the units, maybe force it somehow?
+    // if (recorded_size_ > max_file_size_) {
     //  file_count_++;
     //}
   }
-
-
 
   /**
    * @brief HDF5DataStore getAllExistingKeys
@@ -255,12 +263,12 @@ private:
 
     } else if (operation_mode_ == "one-fragment-per-file") {
 
-      file_name =
-        path_ + "/" + fileName_ + "_trigger_number_" + std::to_string(trigger_number) + "_apa_number_" + std::to_string(apa_number) + ".hdf5";
+      file_name = path_ + "/" + fileName_ + "_trigger_number_" + std::to_string(trigger_number) + "_apa_number_" +
+                  std::to_string(apa_number) + ".hdf5";
 
     } else if (operation_mode_ == "all-per-file") {
 
-      //file_name = path_ + "/" + fileName_ + "_all_events" + ".hdf5";
+      // file_name = path_ + "/" + fileName_ + "_all_events" + ".hdf5";
       file_name = path_ + "/" + fileName_ + "_trigger_number_" + "file_number_" + std::to_string(file_count_) + ".hdf5";
     }
 
@@ -305,7 +313,7 @@ private:
 } // namespace dfmodules
 } // namespace dunedaq
 
-#endif // DFMODULES_SRC_HDF5DATASTORE_HPP_
+#endif // DFMODULES_PLUGINS_HDF5DATASTORE_HPP_
 
 // Local Variables:
 // c-basic-offset: 2

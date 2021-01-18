@@ -6,8 +6,8 @@
  * received with this code.
  */
 
-#ifndef DFMODULES_SRC_FAKEDATAPROD_HPP_
-#define DFMODULES_SRC_FAKEDATAPROD_HPP_
+#ifndef DFMODULES_PLUGINS_FAKEDATAPROD_HPP_
+#define DFMODULES_PLUGINS_FAKEDATAPROD_HPP_
 
 #include "dataformats/Fragment.hpp"
 #include "dfmessages/DataRequest.hpp"
@@ -57,7 +57,7 @@ private:
   // size_t sleepMsecWhileRunning_;
   std::chrono::milliseconds queueTimeout_;
   dunedaq::dataformats::run_number_t run_number_;
-  uint32_t fake_link_number_;
+  uint32_t fake_link_number_; // NOLINT
 
   // Queue(s)
   using datareqsource_t = dunedaq::appfwk::DAQSource<dfmessages::DataRequest>;
@@ -68,4 +68,4 @@ private:
 } // namespace dfmodules
 } // namespace dunedaq
 
-#endif // DFMODULES_SRC_FAKEDATAPROD_HPP_
+#endif // DFMODULES_PLUGINS_FAKEDATAPROD_HPP_

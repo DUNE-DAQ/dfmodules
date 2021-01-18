@@ -1,5 +1,3 @@
-#ifndef DFMODULES_SRC_HDF5KEYTRANSLATOR_HPP_
-#define DFMODULES_SRC_HDF5KEYTRANSLATOR_HPP_
 /**
  * @file HDF5KeyTranslator.hpp
  *
@@ -11,6 +9,9 @@
  * Licensing/copyright details are in the COPYING file that you should have
  * received with this code.
  */
+
+#ifndef DFMODULES_PLUGINS_HDF5KEYTRANSLATOR_HPP_
+#define DFMODULES_PLUGINS_HDF5KEYTRANSLATOR_HPP_
 
 #include "dfmodules/StorageKey.hpp"
 #include "dfmodules/hdf5datastore/Nljs.hpp"
@@ -77,13 +78,13 @@ public:
       // next, we translate the APA number location
       std::ostringstream apaNumberString;
       apaNumberString << layout_params.apa_name_prefix << std::setw(layout_params.digits_for_apa_number)
-                    << std::setfill('0') << data_key.getApaNumber();
+                      << std::setfill('0') << data_key.getApaNumber();
       elementList.push_back(apaNumberString.str());
 
       // Finally, add link number
       std::ostringstream linkNumberString;
       linkNumberString << layout_params.link_name_prefix << std::setw(layout_params.digits_for_link_number)
-                     << std::setfill('0') << data_key.getLinkNumber();
+                       << std::setfill('0') << data_key.getLinkNumber();
       elementList.push_back(linkNumberString.str());
     } else {
       // Add TriggerRecordHeader instead of detector type
@@ -92,7 +93,6 @@ public:
 
     return elementList;
   }
-
 
   /**
    * @brief Returns the version number of the HDF5 paths that are currently being
@@ -219,5 +219,4 @@ private:
 } // namespace dfmodules
 } // namespace dunedaq
 
-#endif // DFMODULES_SRC_HDF5KEYTRANSLATOR_HPP_
-
+#endif // DFMODULES_PLUGINS_HDF5KEYTRANSLATOR_HPP_

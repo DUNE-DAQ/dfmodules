@@ -17,8 +17,10 @@
 
 #include <chrono>
 #include <cstdlib>
+#include <memory>
 #include <string>
 #include <thread>
+#include <utility>
 #include <vector>
 
 /**
@@ -112,7 +114,7 @@ FakeDataProd::do_work(std::atomic<bool>& running_flag)
       continue;
     }
 
-    // TODO PAR 2020-12-17: dataformats::Fragment has to be
+    // NOLINT TODO PAR 2020-12-17: dataformats::Fragment has to be
     // constructed with some payload data, so I'm putting a few ints
     // in it for now
     int dummy_ints[3];

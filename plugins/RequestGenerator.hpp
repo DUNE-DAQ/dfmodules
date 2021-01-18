@@ -6,8 +6,8 @@
  * received with this code.
  */
 
-#ifndef DFMODULES_SRC_REQUESTGENERATOR_HPP_
-#define DFMODULES_SRC_REQUESTGENERATOR_HPP_
+#ifndef DFMODULES_PLUGINS_REQUESTGENERATOR_HPP_
+#define DFMODULES_PLUGINS_REQUESTGENERATOR_HPP_
 
 #include "dfmodules/TriggerDecisionForwarder.hpp"
 
@@ -18,26 +18,24 @@
 #include "dfmessages/DataRequest.hpp"
 #include "dfmessages/TriggerDecision.hpp"
 
+#include <map>
 #include <memory>
 #include <string>
 #include <vector>
-#include <map>
 
 namespace dunedaq {
-  using apatype = decltype(dataformats::GeoID::apa_number) ;
-  using linktype = decltype(dataformats::GeoID::link_number) ;
-			  
-  ERS_DECLARE_ISSUE(dfmodules,                 ///< Namespace
-                    UnknownGeoID,  ///< Issue class name
-                    "trigger number " << trigger_number
-		    << " of run: " << run_number
-		    << " of APA: " << apa
-		    << " of Link: " << link, 
-		    ((dataformats::trigger_number_t)trigger_number)  ///< Message parameters 
-		    ((dataformats::run_number_t)run_number)          ///< Message parameters 
-		    ((apatype)apa)    ///< Message parameters 
-		    ((linktype)link)    ///< Message parameters 
-		    )
+using apatype = decltype(dataformats::GeoID::apa_number);
+using linktype = decltype(dataformats::GeoID::link_number);
+
+ERS_DECLARE_ISSUE(dfmodules,    ///< Namespace
+                  UnknownGeoID, ///< Issue class name
+                  "trigger number " << trigger_number << " of run: " << run_number << " of APA: " << apa
+                                    << " of Link: " << link,
+                  ((dataformats::trigger_number_t)trigger_number) ///< Message parameters
+                  ((dataformats::run_number_t)run_number)         ///< Message parameters
+                  ((apatype)apa)                                  ///< Message parameters
+                  ((linktype)link)                                ///< Message parameters
+)
 
 namespace dfmodules {
 
@@ -89,4 +87,4 @@ private:
 } // namespace dfmodules
 } // namespace dunedaq
 
-#endif // DFMODULES_SRC_REQUESTGENERATOR_HPP_
+#endif // DFMODULES_PLUGINS_REQUESTGENERATOR_HPP_

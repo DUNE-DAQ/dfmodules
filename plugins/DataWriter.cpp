@@ -20,10 +20,13 @@
 #include "TRACE/trace.h"
 #include "ers/ers.h"
 
+#include <algorithm>
 #include <chrono>
 #include <cstdlib>
+#include <memory>
 #include <string>
 #include <thread>
+#include <utility>
 #include <vector>
 
 /**
@@ -179,9 +182,10 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
                                       << frag_ptr->get_link_id().link_number;
       const size_t number_of_32bit_values_per_row = 5;
       const size_t max_number_of_rows = 5;
-      int number_of_32bit_values_to_print = std::min((number_of_32bit_values_per_row * max_number_of_rows),
-                                                     (static_cast<size_t>(frag_ptr->get_size()) / sizeof(uint32_t)));
-      const uint32_t* mem_ptr = static_cast<const uint32_t*>(frag_ptr->get_storage_location());
+      int number_of_32bit_values_to_print =
+        std::min((number_of_32bit_values_per_row * max_number_of_rows),
+                 (static_cast<size_t>(frag_ptr->get_size()) / sizeof(uint32_t)));               // NOLINT
+      const uint32_t* mem_ptr = static_cast<const uint32_t*>(frag_ptr->get_storage_location()); // NOLINT
       std::ostringstream oss_hexdump;
       for (int idx = 0; idx < number_of_32bit_values_to_print; ++idx) {
         if ((idx % number_of_32bit_values_per_row) == 0) {

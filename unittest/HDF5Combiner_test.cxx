@@ -69,12 +69,12 @@ BOOST_AUTO_TEST_CASE(CombineFragmentsIntoEvents)
   deleteFilesMatchingPattern(filePath, deletePattern);
 
   // create an initial DataStore instance for writing the fragment files
-  nlohmann::json conf ;
-  conf["name"] = "hdfDataStore" ;
-  conf["filename_prefix"] = filePrefix ; 
-  conf["directory_path"] = filePath ; 
-  conf["mode"] = "one-fragment-per-file" ;
-  std::unique_ptr<HDF5DataStore> dsPtr( new HDF5DataStore(conf) );
+  nlohmann::json conf;
+  conf["name"] = "hdfDataStore";
+  conf["filename_prefix"] = filePrefix;
+  conf["directory_path"] = filePath;
+  conf["mode"] = "one-fragment-per-file";
+  std::unique_ptr<HDF5DataStore> dsPtr(new HDF5DataStore(conf));
 
   // write several events, each with several fragments
   char dummyData[DUMMYDATA_SIZE];
@@ -95,16 +95,16 @@ BOOST_AUTO_TEST_CASE(CombineFragmentsIntoEvents)
   BOOST_REQUIRE_EQUAL(fileList.size(), (EVENT_COUNT * GEOLOC_COUNT));
 
   // now create two DataStore instances, one to read the fragment files and one to write event files
-  conf["name"] = "hdfReader" ;
-  conf["filename_prefix"] = filePrefix ;
-  conf["directory_path"] = filePath ;
-  conf["mode"] = "one-fragment-per-file" ;
-  std::unique_ptr<HDF5DataStore> inputPtr( new HDF5DataStore(conf) );
-  conf["name"] = "hdfWriter" ;
-  conf["filename_prefix"] = filePrefix ;
-  conf["directory_path"] = filePath ;
-  conf["mode"] = "one-event-per-file" ;
-  std::unique_ptr<HDF5DataStore> outputPtr(new HDF5DataStore( conf ));
+  conf["name"] = "hdfReader";
+  conf["filename_prefix"] = filePrefix;
+  conf["directory_path"] = filePath;
+  conf["mode"] = "one-fragment-per-file";
+  std::unique_ptr<HDF5DataStore> inputPtr(new HDF5DataStore(conf));
+  conf["name"] = "hdfWriter";
+  conf["filename_prefix"] = filePrefix;
+  conf["directory_path"] = filePath;
+  conf["mode"] = "one-event-per-file";
+  std::unique_ptr<HDF5DataStore> outputPtr(new HDF5DataStore(conf));
 
   // fetch all of the keys that exist in the input DataStore
   std::vector<StorageKey> keyList = inputPtr->getAllExistingKeys();
@@ -124,16 +124,16 @@ BOOST_AUTO_TEST_CASE(CombineFragmentsIntoEvents)
   BOOST_REQUIRE_EQUAL(fileList.size(), EVENT_COUNT);
 
   // now create two DataStore instances, one to read the event files and one to write a single file
-  conf["name"] = "hdfReader" ;
-  conf["filename_prefix"] = filePrefix ;
-  conf["directory_path"] = filePath ;
-  conf["mode"] = "one-event-per-file" ;
-  inputPtr.reset(new HDF5DataStore( conf ) );
-  conf["name"] = "hdfWriter" ;
-  conf["filename_prefix"] = filePrefix ;
-  conf["directory_path"] = filePath ;
-  conf["mode"] = "all-per-file" ;
-  outputPtr.reset(new HDF5DataStore( conf ) ) ;
+  conf["name"] = "hdfReader";
+  conf["filename_prefix"] = filePrefix;
+  conf["directory_path"] = filePath;
+  conf["mode"] = "one-event-per-file";
+  inputPtr.reset(new HDF5DataStore(conf));
+  conf["name"] = "hdfWriter";
+  conf["filename_prefix"] = filePrefix;
+  conf["directory_path"] = filePath;
+  conf["mode"] = "all-per-file";
+  outputPtr.reset(new HDF5DataStore(conf));
 
   // fetch all of the keys that exist in the input DataStore
   keyList = inputPtr->getAllExistingKeys();
