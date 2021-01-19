@@ -10,7 +10,7 @@
 //#include "dfmodules/DataStore.hpp"
 //#include "dfmodules/hdf5datastore/Nljs.hpp"
 //#include "dfmodules/hdf5datastore/Structs.hpp"
-#include "../plugins/HDF5DataStore.hpp" // NOLINT
+#include "HDF5DataStore.hpp"
 
 #include "ers/ers.h"
 

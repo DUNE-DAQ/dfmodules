@@ -7,7 +7,7 @@
  * received with this code.
  */
 
-#include "../plugins/HDF5DataStore.hpp" //NOLINT
+#include "HDF5DataStore.hpp"
 
 #include "ers/ers.h"
 
