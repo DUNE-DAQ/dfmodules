@@ -9,7 +9,7 @@
 #include "dfmodules/datagenerator/Nljs.hpp"
 
 #include "DataGenerator.hpp"
-#include "HDF5DataStore.hpp"
+#include "dfmodules/DataStore.hpp"
 #include "dfmodules/KeyedDataBlock.hpp"
 
 #include <TRACE/trace.h>
@@ -62,7 +62,7 @@ DataGenerator::do_conf(const data_t& payload)
   sleepMsecWhileRunning_ =
     payload.value<size_t>("sleep_msec_while_running", static_cast<size_t>(REASONABLE_DEFAULT_SLEEPMSECWHILERUNNING));
 
-  // Create the HDF5DataStore instance
+  // Create the DataStore instance
   dataWriter_ = makeDataStore(payload["data_store_parameters"]);
 
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
