@@ -17,6 +17,7 @@
 
 #include <appfwk/DAQModule.hpp>
 #include <appfwk/ThreadHelper.hpp>
+#include <dataformats/Types.hpp>
 #include <ers/Issue.h>
 
 #include <memory>
@@ -54,21 +55,22 @@ private:
   void do_unconfigure(const data_t&);
 
   // Threading
-  dunedaq::appfwk::ThreadHelper thread_;
+  dunedaq::appfwk::ThreadHelper m_thread;
   void do_work(std::atomic<bool>&);
 
   // Configuration defaults
-  const size_t REASONABLE_DEFAULT_GEOLOC = 5;
-  const size_t REASONABLE_DEFAULT_SLEEPMSECWHILERUNNING = 1000;
-  const size_t REASONABLE_IO_SIZE_BYTES = 1024;
+  const size_t m_reasonable_default_geo_loc_count = 5;
+  const size_t m_reasonable_default_sleep_msec = 1000;
+  const size_t m_reasonable_default_io_size_bytes = 1024;
 
   // Configuration
-  size_t nGeoLoc_ = REASONABLE_DEFAULT_GEOLOC;
-  size_t io_size_ = REASONABLE_IO_SIZE_BYTES;
-  size_t sleepMsecWhileRunning_ = REASONABLE_DEFAULT_SLEEPMSECWHILERUNNING;
+  size_t m_geo_loc_count = m_reasonable_default_geo_loc_count;
+  size_t m_io_size = m_reasonable_default_io_size_bytes;
+  size_t m_sleep_msec_while_running = m_reasonable_default_sleep_msec;
+  dunedaq::dataformats::run_number_t m_run_number;
 
   // Workers
-  std::unique_ptr<DataStore> dataWriter_;
+  std::unique_ptr<DataStore> m_data_writer;
 };
 } // namespace dfmodules
 
