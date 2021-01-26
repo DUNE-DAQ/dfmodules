@@ -30,20 +30,20 @@ TriggerInhibitAgent::TriggerInhibitAgent(const std::string& parent_name,
                                          std::unique_ptr<trigdecsource_t> our_input,
                                          std::unique_ptr<triginhsink_t> our_output)
   : NamedObject(parent_name + "::TriggerInhibitAgent")
-  , thread_(std::bind(&TriggerInhibitAgent::do_work, this, std::placeholders::_1))
-  , queueTimeout_(100)
-  , threshold_for_inhibit_(1)
-  , trigger_decision_source_(std::move(our_input))
-  , trigger_inhibit_sink_(std::move(our_output))
-  , trigger_number_at_start_of_processing_chain_(0)
-  , trigger_number_at_end_of_processing_chain_(0)
+  , m_thread(std::bind(&TriggerInhibitAgent::do_work, this, std::placeholders::_1))
+  , m_queue_timeout(100)
+  , m_threshold_for_inhibit(1)
+  , m_trigger_decision_source(std::move(our_input))
+  , m_trigger_inhibit_sink(std::move(our_output))
+  , m_trigger_number_at_start_of_processing_chain(0)
+  , m_trigger_number_at_end_of_processing_chain(0)
 {}
 
 void
 TriggerInhibitAgent::start_checking()
 {
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering start_checking() method";
-  thread_.start_working_thread();
+  m_thread.start_working_thread();
   ERS_LOG(get_name() << " successfully started");
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting start_checking() method";
 }
@@ -52,7 +52,7 @@ void
 TriggerInhibitAgent::stop_checking()
 {
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering stop_checking() method";
-  thread_.stop_working_thread();
+  m_thread.stop_working_thread();
   ERS_LOG(get_name() << " successfully stopped");
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting stop_checking() method";
 }
@@ -92,11 +92,11 @@ TriggerInhibitAgent::do_work(std::atomic<bool>& running_flag)
     // number contained within it, if one has arrived
     try {
       dfmessages::TriggerDecision trig_dec;
-      trigger_decision_source_->pop(trig_dec, queueTimeout_);
+      m_trigger_decision_source->pop(trig_dec, m_queue_timeout);
       ++received_message_count;
       TLOG(TLVL_WORK_STEPS) << get_name() << ": Popped the TriggerDecision for trigger number "
                             << trig_dec.trigger_number << " off the input queue";
-      trigger_number_at_start_of_processing_chain_.store(trig_dec.trigger_number);
+      m_trigger_number_at_start_of_processing_chain.store(trig_dec.trigger_number);
     } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
       // it is perfectly reasonable that there will be no data in the queue some
       // fraction of the times that we check, so we just continue on and try again later
@@ -106,10 +106,10 @@ TriggerInhibitAgent::do_work(std::atomic<bool>& running_flag)
 
     // check if A) we are supposed to be checking the trigger_number difference, and
     // B) if so, whether an Inhibit should be asserted or cleared
-    uint32_t threshold = threshold_for_inhibit_.load(); // NOLINT
+    uint32_t threshold = m_threshold_for_inhibit.load(); // NOLINT
     if (threshold > 0) {
-      dataformats::trigger_number_t temp_trig_num_at_start = trigger_number_at_start_of_processing_chain_.load();
-      dataformats::trigger_number_t temp_trig_num_at_end = trigger_number_at_end_of_processing_chain_.load();
+      dataformats::trigger_number_t temp_trig_num_at_start = m_trigger_number_at_start_of_processing_chain.load();
+      dataformats::trigger_number_t temp_trig_num_at_end = m_trigger_number_at_end_of_processing_chain.load();
       if (temp_trig_num_at_start >= temp_trig_num_at_end &&
           (temp_trig_num_at_start - temp_trig_num_at_end) >= threshold) {
         if (current_state == free_state) {
@@ -137,7 +137,7 @@ TriggerInhibitAgent::do_work(std::atomic<bool>& running_flag)
         TLOG(TLVL_WORK_STEPS) << get_name() << ": Pushing a TriggerInhibit message with busy state set to "
                               << inhibit_message.busy << " onto the output queue";
         try {
-          trigger_inhibit_sink_->push(inhibit_message, queueTimeout_);
+          m_trigger_inhibit_sink->push(inhibit_message, m_queue_timeout);
           ++sent_message_count;
 #if 0
           // temporary logging
