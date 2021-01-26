@@ -60,11 +60,11 @@ private:
   const size_t REASONABLE_DEFAULT_SLEEPMSECWHILERUNNING = 1000;
 
   // Configuration
-  size_t sleepMsecWhileRunning_ = REASONABLE_DEFAULT_SLEEPMSECWHILERUNNING;
+  size_t m_sleep_msec_wile_running = REASONABLE_DEFAULT_SLEEPMSECWHILERUNNING;
 
   // Workers
-  std::unique_ptr<DataStore> inputDataStore_;
-  std::unique_ptr<DataStore> outputDataStore_;
+  std::unique_ptr<DataStore> m_input_data_store;
+  std::unique_ptr<DataStore> m_output_data_store;
 };
 } // namespace dfmodules
 

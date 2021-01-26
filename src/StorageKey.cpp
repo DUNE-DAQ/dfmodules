@@ -27,31 +27,31 @@ const int StorageKey::INVALID_LINKNUMBER = std::numeric_limits<int>::max(); // A
                                                                             // reasonable, like 10
 
 int
-StorageKey::getRunNumber() const
+StorageKey::get_run_number() const
 {
   return m_key.m_run_number;
 }
 
 int
-StorageKey::getTriggerNumber() const
+StorageKey::get_trigger_number() const
 {
   return m_key.m_trigger_number;
 }
 
 std::string
-StorageKey::getDetectorType() const
+StorageKey::get_detector_type() const
 {
   return m_key.m_detector_type;
 }
 
 int
-StorageKey::getApaNumber() const
+StorageKey::get_apa_number() const
 {
   return m_key.m_apa_number;
 }
 
 int
-StorageKey::getLinkNumber() const
+StorageKey::get_link_number() const
 {
   return m_key.m_link_number;
 }

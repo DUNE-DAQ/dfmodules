@@ -118,7 +118,7 @@ public:
     std::vector<std::string> group_and_dataset_path_elements =
       HDF5KeyTranslator::get_path_elements(key, config_params_.file_layout_parameters);
 
-    // const std::string datasetName = std::to_string(key.getLinkNumber());
+    // const std::string datasetName = std::to_string(key.get_link_number());
     const std::string datasetName = group_and_dataset_path_elements.back();
 
     KeyedDataBlock dataBlock(key);
@@ -127,12 +127,12 @@ public:
 
     try { // to determine if the dataset exists in the group and copy it to membuffer
       HighFive::DataSet theDataSet = theGroup.getDataSet(datasetName);
-      dataBlock.data_size = theDataSet.getStorageSize();
+      dataBlock.m_data_size = theDataSet.getStorageSize();
       HighFive::DataSpace thedataSpace = theDataSet.getSpace();
-      char* membuffer = new char[dataBlock.data_size];
+      char* membuffer = new char[dataBlock.m_data_size];
       theDataSet.read(membuffer);
       std::unique_ptr<char> memPtr(membuffer);
-      dataBlock.owned_data_start = std::move(memPtr);
+      dataBlock.m_owned_data_start = std::move(memPtr);
     } catch (HighFive::DataSetException const&) {
       ERS_LOG("HDF5DataSet " << datasetName << " not found.");
     }
@@ -150,32 +150,32 @@ public:
   virtual void write(const KeyedDataBlock& dataBlock)
   {
     // opening the file from Storage Key + path_ + fileName_ + operation_mode_
-    std::string fullFileName = HDF5KeyTranslator::get_file_name(dataBlock.data_key, config_params_, file_count_);
+    std::string fullFileName = HDF5KeyTranslator::get_file_name(dataBlock.m_data_key, config_params_, file_count_);
 
     // filePtr will be the handle to the Opened-File after a call to openFileIfNeeded()
     openFileIfNeeded(fullFileName, HighFive::File::OpenOrCreate);
 
-    TLOG(TLVL_DEBUG) << get_name() << ": Writing data with run number " << dataBlock.data_key.getRunNumber()
-                     << " and trigger number " << dataBlock.data_key.getTriggerNumber() << " and detector type "
-                     << dataBlock.data_key.getDetectorType() << " and apa/link number "
-                     << dataBlock.data_key.getApaNumber() << " / " << dataBlock.data_key.getLinkNumber();
+    TLOG(TLVL_DEBUG) << get_name() << ": Writing data with run number " << dataBlock.m_data_key.get_run_number()
+                     << " and trigger number " << dataBlock.m_data_key.get_trigger_number() << " and detector type "
+                     << dataBlock.m_data_key.get_detector_type() << " and apa/link number "
+                     << dataBlock.m_data_key.get_apa_number() << " / " << dataBlock.m_data_key.get_link_number();
 
     std::vector<std::string> group_and_dataset_path_elements =
-      HDF5KeyTranslator::get_path_elements(dataBlock.data_key, config_params_.file_layout_parameters);
+      HDF5KeyTranslator::get_path_elements(dataBlock.m_data_key, config_params_.file_layout_parameters);
 
     const std::string dataset_name = group_and_dataset_path_elements.back();
 
     HighFive::Group subGroup = HDF5FileUtils::getSubGroup(filePtr, group_and_dataset_path_elements, true);
 
     // Create dataset
-    HighFive::DataSpace theDataSpace = HighFive::DataSpace({ dataBlock.data_size, 1 });
+    HighFive::DataSpace theDataSpace = HighFive::DataSpace({ dataBlock.m_data_size, 1 });
     HighFive::DataSetCreateProps dataCProps_;
     HighFive::DataSetAccessProps dataAProps_;
 
     try {
       auto theDataSet = subGroup.createDataSet<char>(dataset_name, theDataSpace, dataCProps_, dataAProps_);
       if (theDataSet.isValid()) {
-        theDataSet.write_raw(static_cast<const char*>(dataBlock.getDataStart()));
+        theDataSet.write_raw(static_cast<const char*>(dataBlock.get_data_start()));
       } else {
         throw InvalidHDF5Dataset(ERS_HERE, get_name(), dataset_name, filePtr->getName());
       } 
@@ -186,7 +186,7 @@ public:
     }
 
     filePtr->flush();
-    recorded_size_ += dataBlock.data_size;
+    recorded_size_ += dataBlock.m_data_size;
 
     // 13-Jan-2021, KAB: disable the file size checking, for now.
     // AAA: be careful on the units, maybe force it somehow?
@@ -252,10 +252,10 @@ private:
 
   // 31-Dec-2020, KAB: this private method is deprecated; it is moving to
   // HDF5KeyTranslator::get_file_name().
-  std::string getFileNameFromKey(const StorageKey& data_key)
+  std::string getFileNameFromKey(const StorageKey& m_data_key)
   {
-    size_t trigger_number = data_key.getTriggerNumber();
-    size_t apa_number = data_key.getApaNumber();
+    size_t trigger_number = m_data_key.get_trigger_number();
+    size_t apa_number = m_data_key.get_apa_number();
     std::string file_name = std::string("");
     if (operation_mode_ == "one-event-per-file") {
 

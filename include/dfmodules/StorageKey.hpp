@@ -56,11 +56,11 @@ public:
   {}
   ~StorageKey() {} // NOLINT
 
-  int getRunNumber() const;
-  int getTriggerNumber() const;
-  std::string getDetectorType() const;
-  int getApaNumber() const;
-  int getLinkNumber() const;
+  int get_run_number() const;
+  int get_trigger_number() const;
+  std::string get_detector_type() const;
+  int get_apa_number() const;
+  int get_link_number() const;
 
   // AAA: TODO delete
   // int getEventID() const;

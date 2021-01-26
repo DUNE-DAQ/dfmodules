@@ -128,29 +128,29 @@ private:
   void do_stop(const data_t&);
 
   // Threading
-  dunedaq::appfwk::ThreadHelper thread_;
+  dunedaq::appfwk::ThreadHelper m_thread;
   void do_work(std::atomic<bool>&);
 
   // Configuration
   // size_t sleepMsecWhileRunning_;
-  std::chrono::milliseconds queue_timeout_;
+  std::chrono::milliseconds m_queue_timeout;
 
   // Input Queues
   using trigger_decision_source_t = dunedaq::appfwk::DAQSource<dfmessages::TriggerDecision>;
   using fragment_source_t = dunedaq::appfwk::DAQSource<std::unique_ptr<dataformats::Fragment>>;
 
-  std::string trigger_decision_source_name_;
-  std::vector<std::string> fragment_source_names_;
+  std::string m_trigger_decision_source_name;
+  std::vector<std::string> m_fragment_source_names;
 
   // Output queues
   using trigger_record_sink_t = appfwk::DAQSink<std::unique_ptr<dataformats::TriggerRecord>>;
-  std::string trigger_record_sink_name_;
+  std::string m_trigger_record_sink_name;
 
   // bookeeping
-  std::map<TriggerId, std::vector<std::unique_ptr<dataformats::Fragment>>> fragments_;
-  std::map<TriggerId, dfmessages::TriggerDecision> trigger_decisions_;
+  std::map<TriggerId, std::vector<std::unique_ptr<dataformats::Fragment>>> m_fragments;
+  std::map<TriggerId, dfmessages::TriggerDecision> m_trigger_decisions;
 
-  dataformats::timestamp_diff_t max_time_difference_;
+  dataformats::timestamp_diff_t m_max_time_difference;
 };
 } // namespace dfmodules
 } // namespace dunedaq

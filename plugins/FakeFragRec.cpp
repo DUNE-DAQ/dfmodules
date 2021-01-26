@@ -36,11 +36,11 @@ namespace dfmodules {
 
 FakeFragRec::FakeFragRec(const std::string& name)
   : dunedaq::appfwk::DAQModule(name)
-  , thread_(std::bind(&FakeFragRec::do_work, this, std::placeholders::_1))
-  , queueTimeout_(100)
-  , triggerDecisionInputQueue_(nullptr)
-  , dataFragmentInputQueues_()
-  , triggerRecordOutputQueue_(nullptr)
+  , m_thread(std::bind(&FakeFragRec::do_work, this, std::placeholders::_1))
+  , m_queue_timeout(100)
+  , m_trigger_decision_input_queue(nullptr)
+  , m_data_fragment_input_queues()
+  , m_trigger_record_output_queue(nullptr)
 {
   register_command("conf", &FakeFragRec::do_conf);
   register_command("start", &FakeFragRec::do_start);
@@ -53,12 +53,12 @@ FakeFragRec::init(const data_t& init_data)
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
   auto qilist = appfwk::qindex(init_data, { "trigger_decision_input_queue", "trigger_record_output_queue" });
   try {
-    triggerDecisionInputQueue_.reset(new trigdecsource_t(qilist["trigger_decision_input_queue"].inst));
+    m_trigger_decision_input_queue.reset(new trigdecsource_t(qilist["trigger_decision_input_queue"].inst));
   } catch (const ers::Issue& excpt) {
     throw InvalidQueueFatalError(ERS_HERE, get_name(), "trigger_decision_input_queue", excpt);
   }
   try {
-    triggerRecordOutputQueue_.reset(new trigrecsink_t(qilist["trigger_record_output_queue"].inst));
+    m_trigger_record_output_queue.reset(new trigrecsink_t(qilist["trigger_record_output_queue"].inst));
   } catch (const ers::Issue& excpt) {
     throw InvalidQueueFatalError(ERS_HERE, get_name(), "trigger_record_output_queue", excpt);
   }
@@ -68,7 +68,7 @@ FakeFragRec::init(const data_t& init_data)
   for (const auto& qitem : ini.qinfos) {
     if (qitem.name.rfind("data_fragment_") == 0) {
       try {
-        dataFragmentInputQueues_.emplace_back(new datafragsource_t(qitem.inst));
+        m_data_fragment_input_queues.emplace_back(new datafragsource_t(qitem.inst));
       } catch (const ers::Issue& excpt) {
         throw InvalidQueueFatalError(ERS_HERE, get_name(), qitem.name, excpt);
       }
@@ -91,7 +91,7 @@ void
 FakeFragRec::do_start(const data_t& /*args*/)
 {
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_start() method";
-  thread_.start_working_thread();
+  m_thread.start_working_thread();
   ERS_LOG(get_name() << " successfully started");
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
 }
@@ -100,7 +100,7 @@ void
 FakeFragRec::do_stop(const data_t& /*args*/)
 {
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_stop() method";
-  thread_.stop_working_thread();
+  m_thread.stop_working_thread();
   ERS_LOG(get_name() << " successfully stopped");
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_stop() method";
 }
@@ -115,7 +115,7 @@ FakeFragRec::do_work(std::atomic<bool>& running_flag)
   while (running_flag.load()) {
     dfmessages::TriggerDecision trigDecision;
     try {
-      triggerDecisionInputQueue_->pop(trigDecision, queueTimeout_);
+      m_trigger_decision_input_queue->pop(trigDecision, m_queue_timeout);
       ++receivedTriggerCount;
       TLOG(TLVL_WORK_STEPS) << get_name() << ": Popped the TriggerDecision for trigger number "
                             << trigDecision.trigger_number << " off the input queue";
@@ -132,12 +132,12 @@ FakeFragRec::do_work(std::atomic<bool>& running_flag)
     // real implementation, but this is just a Fake...
 
     std::vector<std::unique_ptr<dataformats::Fragment>> frag_ptr_vector;
-    for (auto& dataFragQueue : dataFragmentInputQueues_) {
+    for (auto& dataFragQueue : m_data_fragment_input_queues) {
       bool got_fragment = false;
       while (!got_fragment && running_flag.load()) {
         try {
           std::unique_ptr<dataformats::Fragment> dataFragPtr;
-          dataFragQueue->pop(dataFragPtr, queueTimeout_);
+          dataFragQueue->pop(dataFragPtr, m_queue_timeout);
           got_fragment = true;
           ++receivedFragmentCount;
           frag_ptr_vector.emplace_back(std::move(dataFragPtr));
@@ -158,16 +158,16 @@ FakeFragRec::do_work(std::atomic<bool>& running_flag)
       TLOG(TLVL_WORK_STEPS) << get_name() << ": Pushing the Trigger Record for trigger number "
                             << trigRecPtr->get_trigger_number() << " onto the output queue";
       try {
-        triggerRecordOutputQueue_->push(std::move(trigRecPtr), queueTimeout_);
+        m_trigger_record_output_queue->push(std::move(trigRecPtr), m_queue_timeout);
         wasSentSuccessfully = true;
       } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
         std::ostringstream oss_warn;
-        oss_warn << "push to output queue \"" << triggerRecordOutputQueue_->get_name() << "\"";
+        oss_warn << "push to output queue \"" << m_trigger_record_output_queue->get_name() << "\"";
         ers::warning(dunedaq::appfwk::QueueTimeoutExpired(
           ERS_HERE,
           get_name(),
           oss_warn.str(),
-          std::chrono::duration_cast<std::chrono::milliseconds>(queueTimeout_).count()));
+          std::chrono::duration_cast<std::chrono::milliseconds>(m_queue_timeout).count()));
       }
     }
 

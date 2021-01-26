@@ -55,11 +55,11 @@ DataTransferModule::do_conf(const data_t& payload)
 
   datatransfermodule::Conf tmpConfig = payload.get<datatransfermodule::Conf>();
 
-  sleepMsecWhileRunning_ = tmpConfig.sleep_msec_while_running;
+  m_sleep_msec_wile_running = tmpConfig.sleep_msec_while_running;
 
-  inputDataStore_ = makeDataStore(payload["input_data_store_parameters"]);
+  m_input_data_store = makeDataStore(payload["input_data_store_parameters"]);
 
-  outputDataStore_ = makeDataStore(payload["output_data_store_parameters"]);
+  m_output_data_store = makeDataStore(payload["output_data_store_parameters"]);
 
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
 }
@@ -86,7 +86,7 @@ void
 DataTransferModule::do_unconfigure(const data_t& /*args*/)
 {
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_unconfigure() method";
-  sleepMsecWhileRunning_ = REASONABLE_DEFAULT_SLEEPMSECWHILERUNNING;
+  m_sleep_msec_wile_running = REASONABLE_DEFAULT_SLEEPMSECWHILERUNNING;
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_unconfigure() method";
 }
 
@@ -96,22 +96,22 @@ DataTransferModule::do_work(std::atomic<bool>& running_flag)
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() method";
 
   // ensure that we have a valid dataStore instances
-  if (inputDataStore_.get() == nullptr) {
+  if (m_input_data_store.get() == nullptr) {
     throw InvalidDataStoreError(ERS_HERE, get_name(), "reading");
   }
-  if (outputDataStore_.get() == nullptr) {
+  if (m_output_data_store.get() == nullptr) {
     throw InvalidDataStoreError(ERS_HERE, get_name(), "writing");
   }
 
-  std::vector<StorageKey> keyList = inputDataStore_->getAllExistingKeys();
+  std::vector<StorageKey> keyList = m_input_data_store->getAllExistingKeys();
   for (auto& key : keyList) {
-    KeyedDataBlock dataBlock = inputDataStore_->read(key);
-    outputDataStore_->write(dataBlock);
+    KeyedDataBlock data_block = m_input_data_store->read(key);
+    m_output_data_store->write(data_block);
   }
 
   while (running_flag.load()) {
     TLOG(TLVL_WORK_STEPS) << get_name() << ": Start of sleep while waiting for run Stop";
-    std::this_thread::sleep_for(std::chrono::milliseconds(sleepMsecWhileRunning_));
+    std::this_thread::sleep_for(std::chrono::milliseconds(m_sleep_msec_wile_running));
     TLOG(TLVL_WORK_STEPS) << get_name() << ": End of sleep while waiting for run Stop";
   }
 

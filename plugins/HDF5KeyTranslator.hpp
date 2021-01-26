@@ -68,23 +68,23 @@ public:
     std::ostringstream triggerNumberString;
     triggerNumberString << layout_params.trigger_record_name_prefix
                         << std::setw(layout_params.digits_for_trigger_number) << std::setfill('0')
-                        << data_key.getTriggerNumber();
+                        << data_key.get_trigger_number();
     elementList.push_back(triggerNumberString.str());
 
-    if (data_key.getDetectorType() != "TriggerRecordHeader") {
+    if (data_key.get_detector_type() != "TriggerRecordHeader") {
       // Add detector type
-      elementList.push_back(data_key.getDetectorType());
+      elementList.push_back(data_key.get_detector_type());
 
       // next, we translate the APA number location
       std::ostringstream apaNumberString;
       apaNumberString << layout_params.apa_name_prefix << std::setw(layout_params.digits_for_apa_number)
-                      << std::setfill('0') << data_key.getApaNumber();
+                      << std::setfill('0') << data_key.get_apa_number();
       elementList.push_back(apaNumberString.str());
 
       // Finally, add link number
       std::ostringstream linkNumberString;
       linkNumberString << layout_params.link_name_prefix << std::setw(layout_params.digits_for_link_number)
-                       << std::setfill('0') << data_key.getLinkNumber();
+                       << std::setfill('0') << data_key.get_link_number();
       elementList.push_back(linkNumberString.str());
     } else {
       // Add TriggerRecordHeader instead of detector type
@@ -177,8 +177,8 @@ public:
       work_oss << "_";
     }
 
-    size_t trigger_number = data_key.getTriggerNumber();
-    size_t apa_number = data_key.getApaNumber();
+    size_t trigger_number = data_key.get_trigger_number();
+    size_t apa_number = data_key.get_apa_number();
     std::string file_name = std::string("");
     if (config_params.mode == "one-event-per-file") {
 
@@ -202,7 +202,7 @@ public:
 
       work_oss << config_params.filename_parameters.run_number_prefix;
       work_oss << std::setw(config_params.filename_parameters.digits_for_run_number) << std::setfill('0')
-               << data_key.getRunNumber();
+               << data_key.get_run_number();
       work_oss << "_";
       work_oss << config_params.filename_parameters.file_index_prefix;
       work_oss << std::setw(config_params.filename_parameters.digits_for_file_index) << std::setfill('0') << file_index;
