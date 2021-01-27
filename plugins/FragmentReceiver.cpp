@@ -320,7 +320,6 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
   
   for (unsigned int j = 0; j < frag_sources.size(); ++j) {
   
-    
     while (frag_sources[j]->can_pop()) {
       
       try {
@@ -338,12 +337,12 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
     } // draining loop on the j-th queue 
     
   } // queue loop
-
+  
     
 
   // create all possible trigger record
   std::vector<TriggerId> triggers ;
-  for ( const auto & entry : = m_trigger_decisions ) {
+  for ( const auto & entry : m_trigger_decisions ) {
     triggers.push_back( entry.first ) ;
   }
 
@@ -378,9 +377,14 @@ FragmentReceiver::BuildTriggerRecord(const TriggerId& id)
   trig_rec_ptr->get_header().set_trigger_number(trig_dec.trigger_number);
   trig_rec_ptr->get_header().set_run_number(trig_dec.run_number);
   trig_rec_ptr->get_header().set_trigger_timestamp(trig_dec.trigger_timestamp);
-
+  trig_rec_ptr->get_header().set_trigger_type( trig_dec.trigger_type ) ;
+  
   auto frags_it = m_fragments.find(id);
   auto& frags = frags_it->second;
+
+  // if ( trig_dec_comp.size() != frags.size() ) {
+  //   trig_rec_ptr->get_header().set_error_bit(size_t bit, bool value)
+  // }
 
   while (frags.size() > 0) {
     trig_rec_ptr->add_fragment(std::move(frags.back()));
@@ -395,21 +399,21 @@ FragmentReceiver::BuildTriggerRecord(const TriggerId& id)
 
 
 bool
-FragmentReceiver::SendTriggerRecord(const TriggerId& id , trigger_record_sink_t & queue ) {
+FragmentReceiver::SendTriggerRecord(const TriggerId& id , trigger_record_sink_t & sink ) {
   
   std::unique_ptr<dataformats::TriggerRecord> temp_record(BuildTriggerRecord(id));
     
   bool wasSentSuccessfully = false;
   while (!wasSentSuccessfully) {
     try {
-      queue.push(std::move(temp_record), m_queue_timeout);
+      sink.push(std::move(temp_record), m_queue_timeout);
       wasSentSuccessfully = true;
     } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
       std::ostringstream oss_warn;
       oss_warn << "push to output queue \"" << get_name() << "\"";
       ers::warning(dunedaq::appfwk::QueueTimeoutExpired(
 							ERS_HERE,
-							record_sink.get_name(),
+							sink.get_name(),
 							oss_warn.str(),
 							std::chrono::duration_cast<std::chrono::milliseconds>(m_queue_timeout).count()));
     }

@@ -118,10 +118,15 @@ public:
   void init(const data_t&) override;
 
 protected:
-  dataformats::TriggerRecord* BuildTriggerRecord(const TriggerId&, trigger_record_sink_t & );
+  
+  using trigger_decision_source_t = dunedaq::appfwk::DAQSource<dfmessages::TriggerDecision>;
+  using fragment_source_t = dunedaq::appfwk::DAQSource<std::unique_ptr<dataformats::Fragment>>;
+  using trigger_record_sink_t = appfwk::DAQSink<std::unique_ptr<dataformats::TriggerRecord>>;
+  
+  dataformats::TriggerRecord* BuildTriggerRecord(const TriggerId&);
   // Plese note that the method will destroy the memory saved in the bookkeeping map
 
-  bool SendTriggerRecord( const TriggerId& ) ;
+  bool SendTriggerRecord( const TriggerId&, trigger_record_sink_t & ) ;
   // this creates a trigger record and send it
 
 private:
@@ -140,14 +145,10 @@ private:
   std::chrono::milliseconds m_queue_timeout;
 
   // Input Queues
-  using trigger_decision_source_t = dunedaq::appfwk::DAQSource<dfmessages::TriggerDecision>;
-  using fragment_source_t = dunedaq::appfwk::DAQSource<std::unique_ptr<dataformats::Fragment>>;
-
   std::string m_trigger_decision_source_name;
   std::vector<std::string> m_fragment_source_names;
 
   // Output queues
-  using trigger_record_sink_t = appfwk::DAQSink<std::unique_ptr<dataformats::TriggerRecord>>;
   std::string m_trigger_record_sink_name;
 
   // bookeeping
