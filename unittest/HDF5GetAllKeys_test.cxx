@@ -1,6 +1,6 @@
 /**
  * @file HDF5GetAllKeys_test.cxx Application that tests and demonstrates
- * the getAllExistingKeys() functionality of the HDF5DataStore class.
+ * the get_all_existing_keys() functionality of the HDF5DataStore class.
  *
  * This is part of the DUNE DAQ Application Framework, copyright 2020.
  * Licensing/copyright details are in the COPYING file that you should have
@@ -83,7 +83,7 @@ BOOST_AUTO_TEST_CASE(GetKeysFromFragmentFiles)
   dsPtr.reset(new HDF5DataStore(conf));
 
   // fetch all of the keys that exist in the DataStore
-  std::vector<StorageKey> keyList = dsPtr->getAllExistingKeys();
+  std::vector<StorageKey> keyList = dsPtr->get_all_existing_keys();
   BOOST_REQUIRE_EQUAL(keyList.size(), (EVENT_COUNT * GEOLOC_COUNT));
 
   // verify that all of the expected keys are present, there are no duplicates, etc.
@@ -163,7 +163,7 @@ BOOST_AUTO_TEST_CASE(GetKeysFromEventFiles)
   dsPtr.reset(new HDF5DataStore(conf));
 
   // fetch all of the keys that exist in the DataStore
-  std::vector<StorageKey> keyList = dsPtr->getAllExistingKeys();
+  std::vector<StorageKey> keyList = dsPtr->get_all_existing_keys();
   BOOST_REQUIRE_EQUAL(keyList.size(), (EVENT_COUNT * GEOLOC_COUNT));
 
   // verify that all of the expected keys are present, there are no duplicates, etc.
@@ -243,7 +243,7 @@ BOOST_AUTO_TEST_CASE(GetKeysFromAllInOneFiles)
   dsPtr.reset(new HDF5DataStore(conf));
 
   // fetch all of the keys that exist in the DataStore
-  std::vector<StorageKey> keyList = dsPtr->getAllExistingKeys();
+  std::vector<StorageKey> keyList = dsPtr->get_all_existing_keys();
   BOOST_REQUIRE_EQUAL(keyList.size(), (EVENT_COUNT * GEOLOC_COUNT));
 
   // verify that all of the expected keys are present, there are no duplicates, etc.
@@ -363,7 +363,7 @@ BOOST_AUTO_TEST_CASE(CheckCrossTalk)
   conf["directory_path"] = filePath;
   conf["mode"] = "one-fragment-per-file";
   dsPtr.reset(new HDF5DataStore(conf));
-  keyList = dsPtr->getAllExistingKeys();
+  keyList = dsPtr->get_all_existing_keys();
   BOOST_REQUIRE_EQUAL(keyList.size(), (EVENT_COUNT * GEOLOC_COUNT));
 
   // **************************************************
@@ -374,7 +374,7 @@ BOOST_AUTO_TEST_CASE(CheckCrossTalk)
   conf["directory_path"] = filePath;
   conf["mode"] = "one-event-per-file";
   dsPtr.reset(new HDF5DataStore(conf));
-  keyList = dsPtr->getAllExistingKeys();
+  keyList = dsPtr->get_all_existing_keys();
   BOOST_REQUIRE_EQUAL(keyList.size(), (EVENT_COUNT * GEOLOC_COUNT));
 
   // **************************************************
@@ -385,7 +385,7 @@ BOOST_AUTO_TEST_CASE(CheckCrossTalk)
   conf["directory_path"] = filePath;
   conf["mode"] = "all-per-file";
   dsPtr.reset(new HDF5DataStore(conf));
-  keyList = dsPtr->getAllExistingKeys();
+  keyList = dsPtr->get_all_existing_keys();
   BOOST_REQUIRE_EQUAL(keyList.size(), (EVENT_COUNT * GEOLOC_COUNT));
 
   // clean up the files that were created

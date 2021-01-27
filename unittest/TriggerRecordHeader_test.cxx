@@ -93,7 +93,7 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
   hdf5datastore::data_t hdf5ds_json;
   hdf5datastore::to_json(hdf5ds_json, config_params);
   std::unique_ptr<DataStore> dsPtr;
-  dsPtr = makeDataStore(hdf5ds_json);
+  dsPtr = make_data_store(hdf5ds_json);
 #endif
 
   // write several events, each with several fragments

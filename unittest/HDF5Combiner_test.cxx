@@ -107,7 +107,7 @@ BOOST_AUTO_TEST_CASE(CombineFragmentsIntoEvents)
   std::unique_ptr<HDF5DataStore> outputPtr(new HDF5DataStore(conf));
 
   // fetch all of the keys that exist in the input DataStore
-  std::vector<StorageKey> keyList = inputPtr->getAllExistingKeys();
+  std::vector<StorageKey> keyList = inputPtr->get_all_existing_keys();
   BOOST_REQUIRE_EQUAL(keyList.size(), (EVENT_COUNT * GEOLOC_COUNT));
 
   // copy each of the fragments (data blocks) from the input to the output
@@ -136,7 +136,7 @@ BOOST_AUTO_TEST_CASE(CombineFragmentsIntoEvents)
   outputPtr.reset(new HDF5DataStore(conf));
 
   // fetch all of the keys that exist in the input DataStore
-  keyList = inputPtr->getAllExistingKeys();
+  keyList = inputPtr->get_all_existing_keys();
   BOOST_REQUIRE_EQUAL(keyList.size(), (EVENT_COUNT * GEOLOC_COUNT));
 
   // copy each of the fragments (data blocks) from the input to the output

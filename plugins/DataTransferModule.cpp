@@ -57,9 +57,9 @@ DataTransferModule::do_conf(const data_t& payload)
 
   m_sleep_msec_wile_running = tmpConfig.sleep_msec_while_running;
 
-  m_input_data_store = makeDataStore(payload["input_data_store_parameters"]);
+  m_input_data_store = make_data_store(payload["input_data_store_parameters"]);
 
-  m_output_data_store = makeDataStore(payload["output_data_store_parameters"]);
+  m_output_data_store = make_data_store(payload["output_data_store_parameters"]);
 
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
 }
@@ -103,7 +103,7 @@ DataTransferModule::do_work(std::atomic<bool>& running_flag)
     throw InvalidDataStoreError(ERS_HERE, get_name(), "writing");
   }
 
-  std::vector<StorageKey> keyList = m_input_data_store->getAllExistingKeys();
+  std::vector<StorageKey> keyList = m_input_data_store->get_all_existing_keys();
   for (auto& key : keyList) {
     KeyedDataBlock data_block = m_input_data_store->read(key);
     m_output_data_store->write(data_block);

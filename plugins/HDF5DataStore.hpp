@@ -196,12 +196,12 @@ public:
   }
 
   /**
-   * @brief HDF5DataStore getAllExistingKeys
+   * @brief HDF5DataStore get_all_existing_keys
    * Method used to retrieve a vector with all
    * the StorageKeys
    *
    */
-  virtual std::vector<StorageKey> getAllExistingKeys() const
+  virtual std::vector<StorageKey> get_all_existing_keys() const
   {
     std::vector<StorageKey> keyList;
     std::vector<std::string> fileList = getAllFiles_();

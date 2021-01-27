@@ -96,7 +96,7 @@ DataWriter::do_conf(const data_t& payload)
   TLOG(TLVL_CONFIG) << get_name() << ": data_store_parameters are " << conf_params.data_store_parameters;
 
   // create the DataStore instance here
-  m_data_writer = makeDataStore(payload["data_store_parameters"]);
+  m_data_writer = make_data_store(payload["data_store_parameters"]);
 
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
 }
