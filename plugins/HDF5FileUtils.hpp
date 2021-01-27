@@ -36,52 +36,52 @@ namespace HDF5FileUtils {
  * @brief Retrieve top HDF5 group
  */
 HighFive::Group
-getTopGroup(std::unique_ptr<HighFive::File>& filePtr, const std::vector<std::string>& group_dataset)
+getTopGroup(std::unique_ptr<HighFive::File>& file_ptr, const std::vector<std::string>& group_dataset)
 {
-  std::string topLevelGroupName = group_dataset[0];
-  HighFive::Group topGroup = filePtr->getGroup(topLevelGroupName);
-  if (!topGroup.isValid()) {
-    // throw InvalidHDF5Group(ERS_HERE, get_name(), topLevelGroupName);
-    throw InvalidHDF5Group(ERS_HERE, topLevelGroupName, topLevelGroupName);
+  std::string top_level_group_name = group_dataset[0];
+  HighFive::Group top_group = file_ptr->getGroup(top_level_group_name);
+  if (!top_group.isValid()) {
+    // throw InvalidHDF5Group(ERS_HERE, get_name(), top_level_group_name);
+    throw InvalidHDF5Group(ERS_HERE, top_level_group_name, top_level_group_name);
   }
 
-  return topGroup;
+  return top_group;
 }
 
 /**
  * @brief Recursive function to create HDF5 sub-groups
  */
 HighFive::Group
-getSubGroup(std::unique_ptr<HighFive::File>& filePtr,
+getSubGroup(std::unique_ptr<HighFive::File>& file_ptr,
             const std::vector<std::string>& group_dataset,
-            bool createIfNeeded)
+            bool create_if_needed)
 {
-  std::string topLevelGroupName = group_dataset[0];
-  if (createIfNeeded && !filePtr->exist(topLevelGroupName)) {
-    filePtr->createGroup(topLevelGroupName);
+  std::string top_level_group_name = group_dataset[0];
+  if (create_if_needed && !file_ptr->exist(top_level_group_name)) {
+    file_ptr->createGroup(top_level_group_name);
   }
-  HighFive::Group workingGroup = filePtr->getGroup(topLevelGroupName);
-  if (!workingGroup.isValid()) {
-    throw InvalidHDF5Group(ERS_HERE, topLevelGroupName, topLevelGroupName);
+  HighFive::Group working_group = file_ptr->getGroup(top_level_group_name);
+  if (!working_group.isValid()) {
+    throw InvalidHDF5Group(ERS_HERE, top_level_group_name, top_level_group_name);
   }
   // Create the remaining subgroups
   for (size_t idx = 1; idx < group_dataset.size() - 1; ++idx) {
     // group_dataset.size()-1 because the last element is the dataset
-    std::string childGroupName = group_dataset[idx];
-    if (childGroupName.empty()) {
-      throw InvalidHDF5Group(ERS_HERE, childGroupName, childGroupName);
+    std::string child_group_name = group_dataset[idx];
+    if (child_group_name.empty()) {
+      throw InvalidHDF5Group(ERS_HERE, child_group_name, child_group_name);
     }
-    if (createIfNeeded && !workingGroup.exist(childGroupName)) {
-      workingGroup.createGroup(childGroupName);
+    if (create_if_needed && !working_group.exist(child_group_name)) {
+      working_group.createGroup(child_group_name);
     }
-    HighFive::Group childGroup = workingGroup.getGroup(childGroupName);
-    if (!childGroup.isValid()) {
-      throw InvalidHDF5Group(ERS_HERE, childGroupName, childGroupName);
+    HighFive::Group child_group = working_group.getGroup(child_group_name);
+    if (!child_group.isValid()) {
+      throw InvalidHDF5Group(ERS_HERE, child_group_name, child_group_name);
     }
-    workingGroup = childGroup;
+    working_group = child_group;
   }
 
-  return workingGroup;
+  return working_group;
 }
 /**
  * @brief This is a recursive function that adds the 'paths' to all of the DataSets
@@ -89,17 +89,17 @@ getSubGroup(std::unique_ptr<HighFive::File>& filePtr,
  * is used by the getAlDataSetPaths() function.
  */
 void
-addDataSetsToPath(HighFive::Group parentGroup, const std::string& parentPath, std::vector<std::string>& pathList)
+addDataSetsToPath(HighFive::Group parent_group, const std::string& parent_path, std::vector<std::string>& path_list)
 {
-  std::vector<std::string> childNames = parentGroup.listObjectNames();
-  for (auto& childName : childNames) {
-    std::string fullPath = parentPath + "/" + childName;
-    HighFive::ObjectType childType = parentGroup.getObjectType(childName);
-    if (childType == HighFive::ObjectType::Dataset) {
-      pathList.push_back(fullPath);
-    } else if (childType == HighFive::ObjectType::Group) {
-      HighFive::Group childGroup = parentGroup.getGroup(childName);
-      addDataSetsToPath(childGroup, fullPath, pathList);
+  std::vector<std::string> childNames = parent_group.listObjectNames();
+  for (auto& child_name : childNames) {
+    std::string full_path = parent_path + "/" + child_name;
+    HighFive::ObjectType child_type = parent_group.getObjectType(child_name);
+    if (child_type == HighFive::ObjectType::Dataset) {
+      path_list.push_back(full_path);
+    } else if (child_type == HighFive::ObjectType::Group) {
+      HighFive::Group child_group = parent_group.getGroup(child_name);
+      addDataSetsToPath(child_group, full_path, path_list);
     }
   }
 }
@@ -108,23 +108,23 @@ addDataSetsToPath(HighFive::Group parentGroup, const std::string& parentPath, st
  * @brief Fetches the list of all DataSet paths in the specified file.
  */
 std::vector<std::string>
-getAllDataSetPaths(const HighFive::File& hdfFile)
+getAllDataSetPaths(const HighFive::File& hdf_file)
 {
-  std::vector<std::string> pathList;
+  std::vector<std::string> path_list;
 
-  std::vector<std::string> topLevelNames = hdfFile.listObjectNames();
-  for (auto& topLevelName : topLevelNames) {
-    HighFive::ObjectType topLevelType = hdfFile.getObjectType(topLevelName);
-    // ERS_INFO("Top level name and type: " << topLevelName << " " << ((int)topLevelType));
-    if (topLevelType == HighFive::ObjectType::Dataset) {
-      pathList.push_back(topLevelName);
-    } else if (topLevelType == HighFive::ObjectType::Group) {
-      HighFive::Group topLevelGroup = hdfFile.getGroup(topLevelName);
-      addDataSetsToPath(topLevelGroup, topLevelName, pathList);
+  std::vector<std::string> top_level_names = hdf_file.listObjectNames();
+  for (auto& top_level_name : top_level_names) {
+    HighFive::ObjectType top_level_type = hdf_file.getObjectType(top_level_name);
+    // ERS_INFO("Top level name and type: " << top_level_name << " " << ((int)top_level_type));
+    if (top_level_type == HighFive::ObjectType::Dataset) {
+      path_list.push_back(top_level_name);
+    } else if (top_level_type == HighFive::ObjectType::Group) {
+      HighFive::Group top_level_group = hdf_file.getGroup(top_level_name);
+      addDataSetsToPath(top_level_group, top_level_name, path_list);
     }
   }
 
-  return pathList;
+  return path_list;
 }
 
 /**
@@ -134,18 +134,18 @@ getAllDataSetPaths(const HighFive::File& hdfFile)
  * @return the list of filenames
  */
 std::vector<std::string>
-getFilesMatchingPattern(const std::string& directoryPath, const std::string& filenamePattern)
+getFilesMatchingPattern(const std::string& directory_path, const std::string& filename_pattern)
 {
-  std::regex regexSearchPattern(filenamePattern);
-  std::vector<std::string> fileList;
-  for (const auto& entry : std::filesystem::directory_iterator(directoryPath)) {
+  std::regex regexSearchPattern(filename_pattern);
+  std::vector<std::string> file_list;
+  for (const auto& entry : std::filesystem::directory_iterator(directory_path)) {
     // TLOG(TLVL_DEBUG) << "Directory element: " << entry.path().string();
     if (std::regex_match(entry.path().filename().string(), regexSearchPattern)) {
       // TLOG(TLVL_DEBUG) << "Matching directory element: " << entry.path().string();
-      fileList.push_back(entry.path());
+      file_list.push_back(entry.path());
     }
   }
-  return fileList;
+  return file_list;
 }
 
 } // namespace HDF5FileUtils

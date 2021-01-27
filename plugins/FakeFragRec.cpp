@@ -147,19 +147,19 @@ FakeFragRec::do_work(std::atomic<bool>& running_flag)
       }
     }
 
-    std::unique_ptr<dataformats::TriggerRecord> trigRecPtr(new dataformats::TriggerRecord());
-    trigRecPtr->set_trigger_number(trigDecision.trigger_number);
-    trigRecPtr->set_run_number(trigDecision.run_number);
-    trigRecPtr->set_trigger_timestamp(trigDecision.trigger_timestamp);
-    trigRecPtr->set_fragments(std::move(frag_ptr_vector));
+    std::unique_ptr<dataformats::TriggerRecord> trig_rec_ptr(new dataformats::TriggerRecord());
+    trig_rec_ptr->set_trigger_number(trigDecision.trigger_number);
+    trig_rec_ptr->set_run_number(trigDecision.run_number);
+    trig_rec_ptr->set_trigger_timestamp(trigDecision.trigger_timestamp);
+    trig_rec_ptr->set_fragments(std::move(frag_ptr_vector));
 
-    bool wasSentSuccessfully = false;
-    while (!wasSentSuccessfully && running_flag.load()) {
+    bool was_sent_successfully = false;
+    while (!was_sent_successfully && running_flag.load()) {
       TLOG(TLVL_WORK_STEPS) << get_name() << ": Pushing the Trigger Record for trigger number "
-                            << trigRecPtr->get_trigger_number() << " onto the output queue";
+                            << trig_rec_ptr->get_trigger_number() << " onto the output queue";
       try {
-        m_trigger_record_output_queue->push(std::move(trigRecPtr), m_queue_timeout);
-        wasSentSuccessfully = true;
+        m_trigger_record_output_queue->push(std::move(trig_rec_ptr), m_queue_timeout);
+        was_sent_successfully = true;
       } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
         std::ostringstream oss_warn;
         oss_warn << "push to output queue \"" << m_trigger_record_output_queue->get_name() << "\"";

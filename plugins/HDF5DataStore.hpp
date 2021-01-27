@@ -112,7 +112,7 @@ public:
     // opening the file from Storage Key + path_ + fileName_ + operation_mode_
     std::string fullFileName = HDF5KeyTranslator::get_file_name(key, config_params_, file_count_);
 
-    // filePtr will be the handle to the Opened-File after a call to openFileIfNeeded()
+    // file_ptr will be the handle to the Opened-File after a call to openFileIfNeeded()
     openFileIfNeeded(fullFileName, HighFive::File::ReadOnly);
 
     std::vector<std::string> group_and_dataset_path_elements =
@@ -121,23 +121,23 @@ public:
     // const std::string datasetName = std::to_string(key.get_link_number());
     const std::string datasetName = group_and_dataset_path_elements.back();
 
-    KeyedDataBlock dataBlock(key);
+    KeyedDataBlock data_block(key);
 
-    HighFive::Group theGroup = HDF5FileUtils::getSubGroup(filePtr, group_and_dataset_path_elements, false);
+    HighFive::Group hdf5_group = HDF5FileUtils::getSubGroup(file_ptr, group_and_dataset_path_elements, false);
 
     try { // to determine if the dataset exists in the group and copy it to membuffer
-      HighFive::DataSet theDataSet = theGroup.getDataSet(datasetName);
-      dataBlock.m_data_size = theDataSet.getStorageSize();
-      HighFive::DataSpace thedataSpace = theDataSet.getSpace();
-      char* membuffer = new char[dataBlock.m_data_size];
-      theDataSet.read(membuffer);
+      HighFive::DataSet data_set = hdf5_group.getDataSet(datasetName);
+      data_block.m_data_size = data_set.getStorageSize();
+      HighFive::DataSpace thedataSpace = data_set.getSpace();
+      char* membuffer = new char[data_block.m_data_size];
+      data_set.read(membuffer);
       std::unique_ptr<char> memPtr(membuffer);
-      dataBlock.m_owned_data_start = std::move(memPtr);
+      data_block.m_owned_data_start = std::move(memPtr);
     } catch (HighFive::DataSetException const&) {
       ERS_LOG("HDF5DataSet " << datasetName << " not found.");
     }
 
-    return dataBlock;
+    return data_block;
   }
 
   /**
@@ -147,37 +147,37 @@ public:
    * defined in the configuration file.
    *
    */
-  virtual void write(const KeyedDataBlock& dataBlock)
+  virtual void write(const KeyedDataBlock& data_block)
   {
     // opening the file from Storage Key + path_ + fileName_ + operation_mode_
-    std::string fullFileName = HDF5KeyTranslator::get_file_name(dataBlock.m_data_key, config_params_, file_count_);
+    std::string fullFileName = HDF5KeyTranslator::get_file_name(data_block.m_data_key, config_params_, file_count_);
 
-    // filePtr will be the handle to the Opened-File after a call to openFileIfNeeded()
+    // file_ptr will be the handle to the Opened-File after a call to openFileIfNeeded()
     openFileIfNeeded(fullFileName, HighFive::File::OpenOrCreate);
 
-    TLOG(TLVL_DEBUG) << get_name() << ": Writing data with run number " << dataBlock.m_data_key.get_run_number()
-                     << " and trigger number " << dataBlock.m_data_key.get_trigger_number() << " and detector type "
-                     << dataBlock.m_data_key.get_detector_type() << " and apa/link number "
-                     << dataBlock.m_data_key.get_apa_number() << " / " << dataBlock.m_data_key.get_link_number();
+    TLOG(TLVL_DEBUG) << get_name() << ": Writing data with run number " << data_block.m_data_key.get_run_number()
+                     << " and trigger number " << data_block.m_data_key.get_trigger_number() << " and detector type "
+                     << data_block.m_data_key.get_detector_type() << " and apa/link number "
+                     << data_block.m_data_key.get_apa_number() << " / " << data_block.m_data_key.get_link_number();
 
     std::vector<std::string> group_and_dataset_path_elements =
-      HDF5KeyTranslator::get_path_elements(dataBlock.m_data_key, config_params_.file_layout_parameters);
+      HDF5KeyTranslator::get_path_elements(data_block.m_data_key, config_params_.file_layout_parameters);
 
     const std::string dataset_name = group_and_dataset_path_elements.back();
 
-    HighFive::Group subGroup = HDF5FileUtils::getSubGroup(filePtr, group_and_dataset_path_elements, true);
+    HighFive::Group sub_group = HDF5FileUtils::getSubGroup(file_ptr, group_and_dataset_path_elements, true);
 
     // Create dataset
-    HighFive::DataSpace theDataSpace = HighFive::DataSpace({ dataBlock.m_data_size, 1 });
-    HighFive::DataSetCreateProps dataCProps_;
-    HighFive::DataSetAccessProps dataAProps_;
+    HighFive::DataSpace data_space = HighFive::DataSpace({ data_block.m_data_size, 1 });
+    HighFive::DataSetCreateProps data_set_create_props;
+    HighFive::DataSetAccessProps data_set_access_props;
 
     try {
-      auto theDataSet = subGroup.createDataSet<char>(dataset_name, theDataSpace, dataCProps_, dataAProps_);
-      if (theDataSet.isValid()) {
-        theDataSet.write_raw(static_cast<const char*>(dataBlock.get_data_start()));
+      auto data_set = sub_group.createDataSet<char>(dataset_name, data_space, data_set_create_props, data_set_access_props);
+      if (data_set.isValid()) {
+        data_set.write_raw(static_cast<const char*>(data_block.get_data_start()));
       } else {
-        throw InvalidHDF5Dataset(ERS_HERE, get_name(), dataset_name, filePtr->getName());
+        throw InvalidHDF5Dataset(ERS_HERE, get_name(), dataset_name, file_ptr->getName());
       } 
     } catch (HighFive::DataSetException const& excpt) {
       ers::error(HDF5DataSetError(ERS_HERE, get_name(), dataset_name, excpt.what()));
@@ -185,8 +185,8 @@ public:
       ERS_LOG("Exception: " << excpt.what());
     }
 
-    filePtr->flush();
-    recorded_size_ += dataBlock.m_data_size;
+    file_ptr->flush();
+    recorded_size_ += data_block.m_data_size;
 
     // 13-Jan-2021, KAB: disable the file size checking, for now.
     // AAA: be careful on the units, maybe force it somehow?
@@ -231,7 +231,7 @@ private:
   HDF5DataStore(HDF5DataStore&&) = delete;
   HDF5DataStore& operator=(HDF5DataStore&&) = delete;
 
-  std::unique_ptr<HighFive::File> filePtr;
+  std::unique_ptr<HighFive::File> file_ptr;
 
   std::string path_;
   std::string fileName_;
@@ -299,7 +299,7 @@ private:
                        << std::to_string(openFlags);
       fullNameOfOpenFile_ = fileName;
       openFlagsOfOpenFile_ = openFlags;
-      filePtr.reset(new HighFive::File(fileName, openFlags));
+      file_ptr.reset(new HighFive::File(fileName, openFlags));
       TLOG(TLVL_DEBUG) << get_name() << "Created HDF5 file.";
 
     } else {

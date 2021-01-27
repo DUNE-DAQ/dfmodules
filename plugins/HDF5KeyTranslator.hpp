@@ -31,7 +31,7 @@ class HDF5KeyTranslator
 {
 
 public:
-  inline static const std::string PATH_SEPARATOR = "/";
+  inline static const std::string path_separator = "/";
 
   /**
    * @brief Translates the specified StorageKey into an HDF5 'path',
@@ -43,12 +43,12 @@ public:
   static std::string get_path_string(const StorageKey& data_key,
                                      const hdf5datastore::HDF5DataStoreFileLayoutParams& layout_params)
   {
-    std::vector<std::string> elementList = get_path_elements(data_key, layout_params);
+    std::vector<std::string> element_list = get_path_elements(data_key, layout_params);
 
-    std::string path = elementList[0]; // need error checking
+    std::string path = element_list[0]; // need error checking
 
-    for (size_t idx = 1; idx < elementList.size(); ++idx) {
-      path = path + PATH_SEPARATOR + elementList[idx];
+    for (size_t idx = 1; idx < element_list.size(); ++idx) {
+      path = path + path_separator + element_list[idx];
     }
 
     return path;
@@ -62,36 +62,36 @@ public:
   static std::vector<std::string> get_path_elements(const StorageKey& data_key,
                                                     const hdf5datastore::HDF5DataStoreFileLayoutParams& layout_params)
   {
-    std::vector<std::string> elementList;
+    std::vector<std::string> element_list;
 
     // first, we take care of the trigger number
-    std::ostringstream triggerNumberString;
-    triggerNumberString << layout_params.trigger_record_name_prefix
+    std::ostringstream trigger_number_string;
+    trigger_number_string << layout_params.trigger_record_name_prefix
                         << std::setw(layout_params.digits_for_trigger_number) << std::setfill('0')
                         << data_key.get_trigger_number();
-    elementList.push_back(triggerNumberString.str());
+    element_list.push_back(trigger_number_string.str());
 
     if (data_key.get_detector_type() != "TriggerRecordHeader") {
       // Add detector type
-      elementList.push_back(data_key.get_detector_type());
+      element_list.push_back(data_key.get_detector_type());
 
       // next, we translate the APA number location
-      std::ostringstream apaNumberString;
-      apaNumberString << layout_params.apa_name_prefix << std::setw(layout_params.digits_for_apa_number)
+      std::ostringstream apa_number_string;
+      apa_number_string << layout_params.apa_name_prefix << std::setw(layout_params.digits_for_apa_number)
                       << std::setfill('0') << data_key.get_apa_number();
-      elementList.push_back(apaNumberString.str());
+      element_list.push_back(apa_number_string.str());
 
       // Finally, add link number
-      std::ostringstream linkNumberString;
-      linkNumberString << layout_params.link_name_prefix << std::setw(layout_params.digits_for_link_number)
+      std::ostringstream link_number_string;
+      link_number_string << layout_params.link_name_prefix << std::setw(layout_params.digits_for_link_number)
                        << std::setfill('0') << data_key.get_link_number();
-      elementList.push_back(linkNumberString.str());
+      element_list.push_back(link_number_string.str());
     } else {
       // Add TriggerRecordHeader instead of detector type
-      elementList.push_back("TriggerRecordHeader");
+      element_list.push_back("TriggerRecordHeader");
     }
 
-    return elementList;
+    return element_list;
   }
 
   /**
@@ -99,52 +99,52 @@ public:
    * returned by this class. This is independent of the translations from HDF5 paths
    * to StorageKeys (that translation may support multiple versions).
    */
-  static int getCurrentVersion() { return CURRENT_VERSION; }
+  static int getCurrentVersion() { return current_version; }
 
   /**
    * @brief Translates the specified HDF5 'path' into the appropriate StorageKey.
    */
-  static StorageKey getKeyFromString(const std::string& path, int translationVersion = CURRENT_VERSION)
+  static StorageKey getKeyFromString(const std::string& path, int translation_version = current_version)
   {
-    std::vector<std::string> elementList;
-    boost::split(elementList, path, boost::is_any_of(PATH_SEPARATOR));
-    return getKeyFromList(elementList, translationVersion);
+    std::vector<std::string> element_list;
+    boost::split(element_list, path, boost::is_any_of(path_separator));
+    return getKeyFromList(element_list, translation_version);
   }
 
   /**
    * @brief Translates the specified HDF5 'path' elements into the appropriate StorageKey.
    */
-  static StorageKey getKeyFromList(const std::vector<std::string>& pathElements,
-                                   int translationVersion = CURRENT_VERSION)
+  static StorageKey getKeyFromList(const std::vector<std::string>& path_elements,
+                                   int translation_version = current_version)
   {
-    if (translationVersion == 1) {
+    if (translation_version == 1) {
       int run_number = StorageKey::INVALID_RUNNUMBER;
       int trigger_number = StorageKey::INVALID_TRIGGERNUMBER;
       std::string detector_type = StorageKey::INVALID_DETECTORTYPE;
       int apa_number = StorageKey::INVALID_APANUMBER;
       int link_number = StorageKey::INVALID_LINKNUMBER;
 
-      if (pathElements.size() >= 1) {
-        std::stringstream runNumber(pathElements[0]);
+      if (path_elements.size() >= 1) {
+        std::stringstream runNumber(path_elements[0]);
         runNumber >> run_number;
       }
-      if (pathElements.size() >= 2) {
-        std::stringstream trigNumber(pathElements[1]);
+      if (path_elements.size() >= 2) {
+        std::stringstream trigNumber(path_elements[1]);
         trigNumber >> trigger_number;
       }
 
-      if (pathElements.size() >= 3) {
-        std::stringstream detectorType(pathElements[2]);
+      if (path_elements.size() >= 3) {
+        std::stringstream detectorType(path_elements[2]);
         detectorType >> detector_type;
       }
 
-      if (pathElements.size() >= 4) {
-        std::stringstream apaNumber(pathElements[3]);
+      if (path_elements.size() >= 4) {
+        std::stringstream apaNumber(path_elements[3]);
         apaNumber >> apa_number;
       }
 
-      if (pathElements.size() >= 5) {
-        std::stringstream linkNumber(pathElements[4]);
+      if (path_elements.size() >= 5) {
+        std::stringstream linkNumber(path_elements[4]);
         linkNumber >> link_number;
       }
 
@@ -213,7 +213,7 @@ public:
   }
 
 private:
-  static const int CURRENT_VERSION = 1;
+  static const int current_version = 1;
 };
 
 } // namespace dfmodules
