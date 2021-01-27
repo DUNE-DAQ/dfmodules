@@ -118,11 +118,11 @@ public:
                                    int translation_version = current_version)
   {
     if (translation_version == 1) {
-      int run_number = StorageKey::INVALID_RUNNUMBER;
-      int trigger_number = StorageKey::INVALID_TRIGGERNUMBER;
-      std::string detector_type = StorageKey::INVALID_DETECTORTYPE;
-      int apa_number = StorageKey::INVALID_APANUMBER;
-      int link_number = StorageKey::INVALID_LINKNUMBER;
+      int run_number = StorageKey::s_invalid_run_number;
+      int trigger_number = StorageKey::s_invalid_trigger_number;
+      std::string detector_type = StorageKey::s_invalid_detector_type;
+      int apa_number = StorageKey::s_invalid_apa_number;
+      int link_number = StorageKey::s_invalid_link_number;
 
       if (path_elements.size() >= 1) {
         std::stringstream runNumber(path_elements[0]);
@@ -151,11 +151,11 @@ public:
       return StorageKey(run_number, trigger_number, detector_type, apa_number, link_number);
 
     } else {
-      StorageKey emptyKey(StorageKey::INVALID_RUNNUMBER,
-                          StorageKey::INVALID_TRIGGERNUMBER,
-                          StorageKey::INVALID_DETECTORTYPE,
-                          StorageKey::INVALID_APANUMBER,
-                          StorageKey::INVALID_LINKNUMBER);
+      StorageKey emptyKey(StorageKey::s_invalid_run_number,
+                          StorageKey::s_invalid_trigger_number,
+                          StorageKey::s_invalid_detector_type,
+                          StorageKey::s_invalid_apa_number,
+                          StorageKey::s_invalid_link_number);
       return emptyKey;
     }
   }

@@ -52,25 +52,25 @@ BOOST_AUTO_TEST_CASE(check_placeholder_values)
   const int SAMPLE_GEOLOCATION = 0;
 
   // Something would have to be very wrong for this test to fail...
-  StorageKey key1(StorageKey::INVALID_EVENTID, StorageKey::INVALID_DETECTORID, StorageKey::INVALID_GEOLOCATION);
-  BOOST_CHECK_EQUAL(key1.getEventID(), StorageKey::INVALID_EVENTID);
-  BOOST_CHECK_EQUAL(key1.getDetectorID(), StorageKey::INVALID_DETECTORID);
-  BOOST_CHECK_EQUAL(key1.getGeoLocation(), StorageKey::INVALID_GEOLOCATION);
+  StorageKey key1(StorageKey::s_invalid_event_id, StorageKey::s_invalid_detector_id, StorageKey::s_invalid_geo_location);
+  BOOST_CHECK_EQUAL(key1.getEventID(), StorageKey::s_invalid_event_id);
+  BOOST_CHECK_EQUAL(key1.getDetectorID(), StorageKey::s_invalid_detector_id);
+  BOOST_CHECK_EQUAL(key1.getGeoLocation(), StorageKey::s_invalid_geo_location);
 
   // check for some sort of weird cross-talk
-  StorageKey key2(SAMPLE_EVENTID, StorageKey::INVALID_DETECTORID, StorageKey::INVALID_GEOLOCATION);
+  StorageKey key2(SAMPLE_EVENTID, StorageKey::s_invalid_detector_id, StorageKey::s_invalid_geo_location);
   BOOST_CHECK_EQUAL(key2.getEventID(), SAMPLE_EVENTID);
-  BOOST_CHECK_EQUAL(key2.getDetectorID(), StorageKey::INVALID_DETECTORID);
-  BOOST_CHECK_EQUAL(key2.getGeoLocation(), StorageKey::INVALID_GEOLOCATION);
+  BOOST_CHECK_EQUAL(key2.getDetectorID(), StorageKey::s_invalid_detector_id);
+  BOOST_CHECK_EQUAL(key2.getGeoLocation(), StorageKey::s_invalid_geo_location);
 
-  StorageKey key3(StorageKey::INVALID_EVENTID, SAMPLE_DETECTORID, StorageKey::INVALID_GEOLOCATION);
-  BOOST_CHECK_EQUAL(key3.getEventID(), StorageKey::INVALID_EVENTID);
+  StorageKey key3(StorageKey::s_invalid_event_id, SAMPLE_DETECTORID, StorageKey::s_invalid_geo_location);
+  BOOST_CHECK_EQUAL(key3.getEventID(), StorageKey::s_invalid_event_id);
   BOOST_CHECK_EQUAL(key3.getDetectorID(), SAMPLE_DETECTORID);
-  BOOST_CHECK_EQUAL(key3.getGeoLocation(), StorageKey::INVALID_GEOLOCATION);
+  BOOST_CHECK_EQUAL(key3.getGeoLocation(), StorageKey::s_invalid_geo_location);
 
-  StorageKey key4(StorageKey::INVALID_EVENTID, StorageKey::INVALID_DETECTORID, SAMPLE_GEOLOCATION);
-  BOOST_CHECK_EQUAL(key4.getEventID(), StorageKey::INVALID_EVENTID);
-  BOOST_CHECK_EQUAL(key4.getDetectorID(), StorageKey::INVALID_DETECTORID);
+  StorageKey key4(StorageKey::s_invalid_event_id, StorageKey::s_invalid_detector_id, SAMPLE_GEOLOCATION);
+  BOOST_CHECK_EQUAL(key4.getEventID(), StorageKey::s_invalid_event_id);
+  BOOST_CHECK_EQUAL(key4.getDetectorID(), StorageKey::s_invalid_detector_id);
   BOOST_CHECK_EQUAL(key4.getGeoLocation(), SAMPLE_GEOLOCATION);
 }
 

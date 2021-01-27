@@ -66,7 +66,7 @@ BOOST_AUTO_TEST_CASE(GetKeysFromFragmentFiles)
   char dummyData[DUMMYDATA_SIZE];
   for (int eventID = 1; eventID <= EVENT_COUNT; ++eventID) {
     for (int geoLoc = 0; geoLoc < GEOLOC_COUNT; ++geoLoc) {
-      StorageKey key(eventID, StorageKey::INVALID_DETECTORID, geoLoc);
+      StorageKey key(eventID, StorageKey::s_invalid_detector_id, geoLoc);
       KeyedDataBlock dataBlock(key);
       dataBlock.unowned_data_start = static_cast<void*>(&dummyData[0]);
       dataBlock.data_size = DUMMYDATA_SIZE;
@@ -146,7 +146,7 @@ BOOST_AUTO_TEST_CASE(GetKeysFromEventFiles)
   char dummyData[DUMMYDATA_SIZE];
   for (int eventID = 1; eventID <= EVENT_COUNT; ++eventID) {
     for (int geoLoc = 0; geoLoc < GEOLOC_COUNT; ++geoLoc) {
-      StorageKey key(eventID, StorageKey::INVALID_DETECTORID, geoLoc);
+      StorageKey key(eventID, StorageKey::s_invalid_detector_id, geoLoc);
       KeyedDataBlock dataBlock(key);
       dataBlock.unowned_data_start = static_cast<void*>(&dummyData[0]);
       dataBlock.data_size = DUMMYDATA_SIZE;
@@ -226,7 +226,7 @@ BOOST_AUTO_TEST_CASE(GetKeysFromAllInOneFiles)
   char dummyData[DUMMYDATA_SIZE];
   for (int eventID = 1; eventID <= EVENT_COUNT; ++eventID) {
     for (int geoLoc = 0; geoLoc < GEOLOC_COUNT; ++geoLoc) {
-      StorageKey key(eventID, StorageKey::INVALID_DETECTORID, geoLoc);
+      StorageKey key(eventID, StorageKey::s_invalid_detector_id, geoLoc);
       KeyedDataBlock dataBlock(key);
       dataBlock.unowned_data_start = static_cast<void*>(&dummyData[0]);
       dataBlock.data_size = DUMMYDATA_SIZE;
@@ -308,7 +308,7 @@ BOOST_AUTO_TEST_CASE(CheckCrossTalk)
   dsPtr.reset(new HDF5DataStore(conf));
   for (int eventID = 1; eventID <= EVENT_COUNT; ++eventID) {
     for (int geoLoc = 0; geoLoc < GEOLOC_COUNT; ++geoLoc) {
-      StorageKey key(eventID, StorageKey::INVALID_DETECTORID, geoLoc);
+      StorageKey key(eventID, StorageKey::s_invalid_detector_id, geoLoc);
       KeyedDataBlock dataBlock(key);
       dataBlock.unowned_data_start = static_cast<void*>(&dummyData[0]);
       dataBlock.data_size = DUMMYDATA_SIZE;
@@ -327,7 +327,7 @@ BOOST_AUTO_TEST_CASE(CheckCrossTalk)
   dsPtr.reset(new HDF5DataStore(conf));
   for (int eventID = 1; eventID <= EVENT_COUNT; ++eventID) {
     for (int geoLoc = 0; geoLoc < GEOLOC_COUNT; ++geoLoc) {
-      StorageKey key(eventID, StorageKey::INVALID_DETECTORID, geoLoc);
+      StorageKey key(eventID, StorageKey::s_invalid_detector_id, geoLoc);
       KeyedDataBlock dataBlock(key);
       dataBlock.unowned_data_start = static_cast<void*>(&dummyData[0]);
       dataBlock.data_size = DUMMYDATA_SIZE;
@@ -346,7 +346,7 @@ BOOST_AUTO_TEST_CASE(CheckCrossTalk)
   dsPtr.reset(new HDF5DataStore(conf));
   for (int eventID = 1; eventID <= EVENT_COUNT; ++eventID) {
     for (int geoLoc = 0; geoLoc < GEOLOC_COUNT; ++geoLoc) {
-      StorageKey key(eventID, StorageKey::INVALID_DETECTORID, geoLoc);
+      StorageKey key(eventID, StorageKey::s_invalid_detector_id, geoLoc);
       KeyedDataBlock dataBlock(key);
       dataBlock.unowned_data_start = static_cast<void*>(&dummyData[0]);
       dataBlock.data_size = DUMMYDATA_SIZE;

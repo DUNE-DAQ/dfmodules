@@ -13,18 +13,10 @@
 
 #include <ers/ers.h>
 
-#include <limits>
 #include <string>
 
 namespace dunedaq {
 namespace dfmodules {
-
-const int StorageKey::INVALID_RUNNUMBER = std::numeric_limits<int>::max();
-const int StorageKey::INVALID_TRIGGERNUMBER = std::numeric_limits<int>::max();
-const int StorageKey::INVALID_APANUMBER = std::numeric_limits<int>::max();  // AAA:to be changed to something more
-                                                                            // reasonable, like 150
-const int StorageKey::INVALID_LINKNUMBER = std::numeric_limits<int>::max(); // AAA: to be changed to something more
-                                                                            // reasonable, like 10
 
 int
 StorageKey::get_run_number() const

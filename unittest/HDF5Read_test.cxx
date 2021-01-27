@@ -74,7 +74,7 @@ BOOST_AUTO_TEST_CASE(ReadFragmentFiles)
   std::vector<StorageKey> keyList;
   for (int eventID = 1; eventID <= EVENT_COUNT; ++eventID) {
     for (int geoLoc = 0; geoLoc < GEOLOC_COUNT; ++geoLoc) {
-      StorageKey key(eventID, StorageKey::INVALID_DETECTORID, geoLoc);
+      StorageKey key(eventID, StorageKey::s_invalid_detector_id, geoLoc);
       KeyedDataBlock dataBlock(key);
       dataBlock.m_unowned_data_start = static_cast<void*>(&dummyData[0]);
       dataBlock.m_data_size = DUMMYDATA_SIZE;
@@ -141,7 +141,7 @@ BOOST_AUTO_TEST_CASE(ReadEventFiles)
   std::vector<StorageKey> keyList;
   for (int eventID = 1; eventID <= EVENT_COUNT; ++eventID) {
     for (int geoLoc = 0; geoLoc < GEOLOC_COUNT; ++geoLoc) {
-      StorageKey key(eventID, StorageKey::INVALID_DETECTORID, geoLoc);
+      StorageKey key(eventID, StorageKey::s_invalid_detector_id, geoLoc);
       KeyedDataBlock dataBlock(key);
       dataBlock.m_unowned_data_start = static_cast<void*>(&dummyData[0]);
       dataBlock.m_data_size = DUMMYDATA_SIZE;
