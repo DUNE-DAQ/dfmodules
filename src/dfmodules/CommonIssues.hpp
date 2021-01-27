@@ -29,16 +29,16 @@ ERS_DECLARE_ISSUE_BASE(dfmodules,
 ERS_DECLARE_ISSUE_BASE(dfmodules,
                        InvalidQueueFatalError,
                        appfwk::GeneralDAQModuleIssue,
-                       "The " << queueType << " queue was not successfully created.",
+                       "The " << queue_type << " queue was not successfully created.",
                        ((std::string)name),
-                       ((std::string)queueType))
+                       ((std::string)queue_type))
 
 ERS_DECLARE_ISSUE_BASE(dfmodules,
                        InvalidHDF5Group,
                        appfwk::GeneralDAQModuleIssue,
-                       "The HDF5 Group associated with name \"" << groupName << "\" is invalid. ",
+                       "The HDF5 Group associated with name \"" << group_name << "\" is invalid. ",
                        ((std::string)name),
-                       ((std::string)groupName))
+                       ((std::string)group_name))
 
 } // namespace dunedaq
 
