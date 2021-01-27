@@ -138,6 +138,10 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
 {
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() method";
   // uint32_t receivedCount = 0;
+  
+  // clean books from possible previous memory
+  m_trigger_decisions.clear() ;
+  m_fragments.clear() ;
 
   // allocate queues
   trigger_decision_source_t decision_source(m_trigger_decision_source_name);
