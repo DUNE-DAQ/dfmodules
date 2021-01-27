@@ -118,8 +118,11 @@ public:
   void init(const data_t&) override;
 
 protected:
-  dataformats::TriggerRecord* BuildTriggerRecord(const TriggerId&);
+  dataformats::TriggerRecord* BuildTriggerRecord(const TriggerId&, trigger_record_sink_t & );
   // Plese note that the method will destroy the memory saved in the bookkeeping map
+
+  bool SendTriggerRecord( const TriggerId& ) ;
+  // this creates a trigger record and send it
 
 private:
   // Commands
@@ -130,6 +133,7 @@ private:
   // Threading
   dunedaq::appfwk::ThreadHelper m_thread;
   void do_work(std::atomic<bool>&);
+
 
   // Configuration
   // size_t sleepMsecWhileRunning_;

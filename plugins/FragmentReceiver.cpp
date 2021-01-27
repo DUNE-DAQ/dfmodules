@@ -264,23 +264,8 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
 
       for (const auto& id : complete) {
 
-        std::unique_ptr<dataformats::TriggerRecord> temp_record(BuildTriggerRecord(id));
-
-        bool wasSentSuccessfully = false;
-        while (!wasSentSuccessfully) {
-          try {
-            record_sink.push(std::move(temp_record), m_queue_timeout);
-            wasSentSuccessfully = true;
-          } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
-            std::ostringstream oss_warn;
-            oss_warn << "push to output queue \"" << get_name() << "\"";
-            ers::warning(dunedaq::appfwk::QueueTimeoutExpired(
-              ERS_HERE,
-              record_sink.get_name(),
-              oss_warn.str(),
-              std::chrono::duration_cast<std::chrono::milliseconds>(m_queue_timeout).count()));
-          }
-        } // push while loop
+	SendTriggerRecord( id, record_sink ) ;
+	
       }   // loop over compled trigger id
 
       //-------------------------------------------------
@@ -359,39 +344,15 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
   // create all possible trigger record
   std::vector<TriggerId> triggers ;
   for ( const auto & entry : = m_trigger_decisions ) {
-    triggers.push_back( entru.first ) ;
+    triggers.push_back( entry.first ) ;
   }
 
-  std::vector<std::unique_ptr<dataformats::TriggerRecord>> remnants ; 
+  // create the trigger record and send it
   for ( const auto & t : triggers ) {
-    remnants.emplace_back( BuildTriggerRecord(t) ) ;
+    SendTriggerRecord( t, record_sink ) ;
   }
 
   
-  // pushing all the trigger records
-  for (const auto& id : complete) {
-    
-    std::unique_ptr<dataformats::TriggerRecord> temp_record(BuildTriggerRecord(id));
-    
-    bool wasSentSuccessfully = false;
-    while (!wasSentSuccessfully) {
-      try {
-	record_sink.push(std::move(temp_record), m_queue_timeout);
-	wasSentSuccessfully = true;
-      } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
-	std::ostringstream oss_warn;
-	oss_warn << "push to output queue \"" << get_name() << "\"";
-	ers::warning(dunedaq::appfwk::QueueTimeoutExpired(
-							  ERS_HERE,
-							  record_sink.get_name(),
-							  oss_warn.str(),
-							  std::chrono::duration_cast<std::chrono::milliseconds>(m_queue_timeout).count()));
-      }
-    } // push while loop
-  }   // loop over compled trigger id
-
-
-
   std::ostringstream oss_summ;
   oss_summ << ": Exiting the do_work() method, " << m_trigger_decisions.size() << " reminaing Trigger Decision and "
            << m_fragments.size() << " remaining fragment stashes";
@@ -431,6 +392,33 @@ FragmentReceiver::BuildTriggerRecord(const TriggerId& id)
 
   return trig_rec_ptr;
 }
+
+
+bool
+FragmentReceiver::SendTriggerRecord(const TriggerId& id , trigger_record_sink_t & queue ) {
+  
+  std::unique_ptr<dataformats::TriggerRecord> temp_record(BuildTriggerRecord(id));
+    
+  bool wasSentSuccessfully = false;
+  while (!wasSentSuccessfully) {
+    try {
+      queue.push(std::move(temp_record), m_queue_timeout);
+      wasSentSuccessfully = true;
+    } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
+      std::ostringstream oss_warn;
+      oss_warn << "push to output queue \"" << get_name() << "\"";
+      ers::warning(dunedaq::appfwk::QueueTimeoutExpired(
+							ERS_HERE,
+							record_sink.get_name(),
+							oss_warn.str(),
+							std::chrono::duration_cast<std::chrono::milliseconds>(m_queue_timeout).count()));
+    }
+  } // push while loop
+  
+  return true ;
+
+}
+
 
 } // namespace dfmodules
 } // namespace dunedaq
