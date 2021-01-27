@@ -29,7 +29,7 @@
 using namespace dunedaq::dfmodules;
 
 std::vector<std::string>
-getFilesMatchingPattern(const std::string& path, const std::string& pattern)
+get_files_matching_pattern(const std::string& path, const std::string& pattern)
 {
   std::regex regexSearchPattern(pattern);
   std::vector<std::string> fileList;
@@ -110,7 +110,7 @@ BOOST_AUTO_TEST_CASE(WriteFragmentFiles)
   // check that the expected number of files was created
   // std::string searchPattern = filePrefix+"_trigger_number*_apa_number_*.hdf5";
   std::string searchPattern = ".*.hdf5";
-  std::vector<std::string> fileList = getFilesMatchingPattern(filePath, searchPattern);
+  std::vector<std::string> fileList = get_files_matching_pattern(filePath, searchPattern);
   BOOST_REQUIRE_EQUAL(fileList.size(), (TRIGGER_COUNT * APA_COUNT));
 
   // clean up the files that were created
@@ -171,7 +171,7 @@ BOOST_AUTO_TEST_CASE(WriteEventFiles)
   // check that the expected number of files was created
   std::string searchPattern = ".*.hdf5";
   // std::string searchPattern = filePrefix + "trigger_number*.hdf5";
-  std::vector<std::string> fileList = getFilesMatchingPattern(filePath, searchPattern);
+  std::vector<std::string> fileList = get_files_matching_pattern(filePath, searchPattern);
   BOOST_REQUIRE_EQUAL(fileList.size(), TRIGGER_COUNT);
 
   // clean up the files that were created
@@ -234,7 +234,7 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
 
   // check that the expected number of files was created
   std::string searchPattern = filePrefix + ".*.hdf5";
-  std::vector<std::string> fileList = getFilesMatchingPattern(filePath, searchPattern);
+  std::vector<std::string> fileList = get_files_matching_pattern(filePath, searchPattern);
   BOOST_REQUIRE_EQUAL(fileList.size(), 1);
 
   // clean up the files that were created

@@ -99,22 +99,22 @@ public:
    * returned by this class. This is independent of the translations from HDF5 paths
    * to StorageKeys (that translation may support multiple versions).
    */
-  static int getCurrentVersion() { return current_version; }
+  static int get_current_version() { return current_version; }
 
   /**
    * @brief Translates the specified HDF5 'path' into the appropriate StorageKey.
    */
-  static StorageKey getKeyFromString(const std::string& path, int translation_version = current_version)
+  static StorageKey get_key_from_string(const std::string& path, int translation_version = current_version)
   {
     std::vector<std::string> element_list;
     boost::split(element_list, path, boost::is_any_of(path_separator));
-    return getKeyFromList(element_list, translation_version);
+    return get_key_from_list(element_list, translation_version);
   }
 
   /**
    * @brief Translates the specified HDF5 'path' elements into the appropriate StorageKey.
    */
-  static StorageKey getKeyFromList(const std::vector<std::string>& path_elements,
+  static StorageKey get_key_from_list(const std::vector<std::string>& path_elements,
                                    int translation_version = current_version)
   {
     if (translation_version == 1) {

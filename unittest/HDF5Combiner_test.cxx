@@ -27,7 +27,7 @@
 using namespace dunedaq::dfmodules;
 
 std::vector<std::string>
-getFilesMatchingPattern(const std::string& path, const std::string& pattern)
+get_files_matching_pattern(const std::string& path, const std::string& pattern)
 {
   std::regex regexSearchPattern(pattern);
   std::vector<std::string> fileList;
@@ -91,7 +91,7 @@ BOOST_AUTO_TEST_CASE(CombineFragmentsIntoEvents)
 
   // check that the expected number of fragment-based files was created
   std::string searchPattern = filePrefix + "_event_\\d+_geoID_\\d+.hdf5";
-  std::vector<std::string> fileList = getFilesMatchingPattern(filePath, searchPattern);
+  std::vector<std::string> fileList = get_files_matching_pattern(filePath, searchPattern);
   BOOST_REQUIRE_EQUAL(fileList.size(), (EVENT_COUNT * GEOLOC_COUNT));
 
   // now create two DataStore instances, one to read the fragment files and one to write event files
@@ -120,7 +120,7 @@ BOOST_AUTO_TEST_CASE(CombineFragmentsIntoEvents)
 
   // check that the expected number of event-based files was created
   searchPattern = filePrefix + "_event_\\d+.hdf5";
-  fileList = getFilesMatchingPattern(filePath, searchPattern);
+  fileList = get_files_matching_pattern(filePath, searchPattern);
   BOOST_REQUIRE_EQUAL(fileList.size(), EVENT_COUNT);
 
   // now create two DataStore instances, one to read the event files and one to write a single file
@@ -149,7 +149,7 @@ BOOST_AUTO_TEST_CASE(CombineFragmentsIntoEvents)
 
   // check that the expected single file was created
   searchPattern = filePrefix + "_all_events.hdf5";
-  fileList = getFilesMatchingPattern(filePath, searchPattern);
+  fileList = get_files_matching_pattern(filePath, searchPattern);
   BOOST_REQUIRE_EQUAL(fileList.size(), 1);
 
   // check that the size of the single file is reasonable

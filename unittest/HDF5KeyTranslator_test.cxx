@@ -86,19 +86,19 @@ BOOST_AUTO_TEST_CASE(KeyFromString)
   StorageKey key(0, "", 0); // do we want to add support for a default constructor in StorageKey?
 
   std::string path1 = "1/2";
-  key = HDF5KeyTranslator::getKeyFromString(path1, 1);
+  key = HDF5KeyTranslator::get_key_from_string(path1, 1);
   BOOST_REQUIRE_EQUAL(key.getEventID(), 1);
   BOOST_REQUIRE_EQUAL(key.getDetectorID(), StorageKey::s_invalid_detector_id);
   BOOST_REQUIRE_EQUAL(key.getGeoLocation(), 2);
 
   std::string path2 = "0003/004";
-  key = HDF5KeyTranslator::getKeyFromString(path2, 1);
+  key = HDF5KeyTranslator::get_key_from_string(path2, 1);
   BOOST_REQUIRE_EQUAL(key.getEventID(), 3);
   BOOST_REQUIRE_EQUAL(key.getDetectorID(), StorageKey::s_invalid_detector_id);
   BOOST_REQUIRE_EQUAL(key.getGeoLocation(), 4);
 
   std::string path3 = "12345/6789";
-  key = HDF5KeyTranslator::getKeyFromString(path3, 1);
+  key = HDF5KeyTranslator::get_key_from_string(path3, 1);
   BOOST_REQUIRE_EQUAL(key.getEventID(), 12345);
   BOOST_REQUIRE_EQUAL(key.getDetectorID(), StorageKey::s_invalid_detector_id);
   BOOST_REQUIRE_EQUAL(key.getGeoLocation(), 6789);
@@ -109,7 +109,7 @@ BOOST_AUTO_TEST_CASE(KeyFromList)
   StorageKey key(0, "", 0); // do we want to add support for a default constructor in StorageKey?
 
   std::vector<std::string> list1 = { "8", "9" };
-  key = HDF5KeyTranslator::getKeyFromList(list1, 1);
+  key = HDF5KeyTranslator::get_key_from_list(list1, 1);
   BOOST_REQUIRE_EQUAL(key.getEventID(), 8);
   BOOST_REQUIRE_EQUAL(key.getDetectorID(), StorageKey::s_invalid_detector_id);
   BOOST_REQUIRE_EQUAL(key.getGeoLocation(), 9);

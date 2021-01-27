@@ -107,7 +107,7 @@ public:
   {
     TLOG(TLVL_DEBUG) << get_name() << ": going to read data block from triggerNumber/detectorType/apaNumber/linkNumber "
                      << HDF5KeyTranslator::get_path_string(key, m_config_params.file_layout_parameters) << " from file "
-                     << get_filename_from_key(key);
+                     << HDF5KeyTranslator::get_file_name(key, m_config_params, m_file_count);
 
     // opening the file from Storage Key + m_path + m_filename_prefix + m_operation_mode
     std::string full_filename = HDF5KeyTranslator::get_file_name(key, m_config_params, m_file_count);
@@ -123,7 +123,7 @@ public:
 
     KeyedDataBlock data_block(key);
 
-    HighFive::Group hdf5_group = HDF5FileUtils::getSubGroup(file_ptr, group_and_dataset_path_elements, false);
+    HighFive::Group hdf5_group = HDF5FileUtils::get_subgroup(file_ptr, group_and_dataset_path_elements, false);
 
     try { // to determine if the dataset exists in the group and copy it to membuffer
       HighFive::DataSet data_set = hdf5_group.getDataSet(dataset_name);
@@ -165,7 +165,7 @@ public:
 
     const std::string dataset_name = group_and_dataset_path_elements.back();
 
-    HighFive::Group sub_group = HDF5FileUtils::getSubGroup(file_ptr, group_and_dataset_path_elements, true);
+    HighFive::Group sub_group = HDF5FileUtils::get_subgroup(file_ptr, group_and_dataset_path_elements, true);
 
     // Create dataset
     HighFive::DataSpace data_space = HighFive::DataSpace({ data_block.m_data_size, 1 });
@@ -210,12 +210,12 @@ public:
       std::unique_ptr<HighFive::File> localFilePtr(new HighFive::File(filename, HighFive::File::ReadOnly));
       TLOG(TLVL_DEBUG) << get_name() << ": Opened HDF5 file " << filename;
 
-      std::vector<std::string> pathList = HDF5FileUtils::getAllDataSetPaths(*localFilePtr);
+      std::vector<std::string> pathList = HDF5FileUtils::get_all_dataset_paths(*localFilePtr);
       TLOG(TLVL_DEBUG) << get_name() << ": Path list has element count: " << pathList.size();
 
       for (auto& path : pathList) {
         StorageKey thisKey(0, 0, "", 0, 0);
-        thisKey = HDF5KeyTranslator::getKeyFromString(path);
+        thisKey = HDF5KeyTranslator::get_key_from_string(path);
         keyList.push_back(thisKey);
       }
 
@@ -250,31 +250,6 @@ private:
   // Configuration
   hdf5datastore::ConfParams m_config_params;
 
-  // 31-Dec-2020, KAB: this private method is deprecated; it is moving to
-  // HDF5KeyTranslator::get_file_name().
-  std::string get_filename_from_key(const StorageKey& m_data_key)
-  {
-    size_t trigger_number = m_data_key.get_trigger_number();
-    size_t apa_number = m_data_key.get_apa_number();
-    std::string file_name = std::string("");
-    if (m_operation_mode == "one-event-per-file") {
-
-      file_name = m_path + "/" + m_filename_prefix + "_trigger_number_" + std::to_string(trigger_number) + ".hdf5";
-
-    } else if (m_operation_mode == "one-fragment-per-file") {
-
-      file_name = m_path + "/" + m_filename_prefix + "_trigger_number_" + std::to_string(trigger_number) + "_apa_number_" +
-                  std::to_string(apa_number) + ".hdf5";
-
-    } else if (m_operation_mode == "all-per-file") {
-
-      // file_name = m_path + "/" + m_filename_prefix + "_all_events" + ".hdf5";
-      file_name = m_path + "/" + m_filename_prefix + "_trigger_number_" + "file_number_" + std::to_string(m_file_count) + ".hdf5";
-    }
-
-    return file_name;
-  }
-
   std::vector<std::string> get_all_files() const
   {
     std::string work_string = m_filename_prefix;
@@ -286,7 +261,7 @@ private:
       work_string += "_all_events.hdf5";
     }
 
-    return HDF5FileUtils::getFilesMatchingPattern(m_path, work_string);
+    return HDF5FileUtils::get_files_matching_pattern(m_path, work_string);
   }
 
   void open_file_if_needed(const std::string& fileName, unsigned open_flags = HighFive::File::ReadOnly)

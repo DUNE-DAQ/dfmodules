@@ -70,7 +70,7 @@ BOOST_AUTO_TEST_CASE(GetFileList)
   touchFile(fullPath);
 
   std::string searchPattern = filePrefix + ".*" + pid + ".*" + fileExtension;
-  std::vector<std::string> fileList = HDF5FileUtils::getFilesMatchingPattern(filePath, searchPattern);
+  std::vector<std::string> fileList = HDF5FileUtils::get_files_matching_pattern(filePath, searchPattern);
   BOOST_REQUIRE_EQUAL(fileList.size(), 3);
 
   fileList = deleteFilesMatchingPattern(filePath, deletePattern);
