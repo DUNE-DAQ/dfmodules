@@ -76,8 +76,8 @@ BOOST_AUTO_TEST_CASE(ReadFragmentFiles)
     for (int geoLoc = 0; geoLoc < GEOLOC_COUNT; ++geoLoc) {
       StorageKey key(eventID, StorageKey::INVALID_DETECTORID, geoLoc);
       KeyedDataBlock dataBlock(key);
-      dataBlock.unowned_data_start = static_cast<void*>(&dummyData[0]);
-      dataBlock.data_size = DUMMYDATA_SIZE;
+      dataBlock.m_unowned_data_start = static_cast<void*>(&dummyData[0]);
+      dataBlock.m_data_size = DUMMYDATA_SIZE;
       dsPtr->write(dataBlock);
       keyList.push_back(key);
     }
@@ -95,9 +95,9 @@ BOOST_AUTO_TEST_CASE(ReadFragmentFiles)
   // loop over all of the keys to read in the data
   for (size_t kdx = 0; kdx < keyList.size(); ++kdx) {
     KeyedDataBlock dataBlock = dsPtr2->read(keyList[kdx]);
-    BOOST_REQUIRE_EQUAL(dataBlock.getDataSizeBytes(), DUMMYDATA_SIZE);
+    BOOST_REQUIRE_EQUAL(dataBlock.get_data_size_bytes(), DUMMYDATA_SIZE);
 
-    const char* data_ptr = static_cast<const char*>(dataBlock.getDataStart());
+    const char* data_ptr = static_cast<const char*>(dataBlock.get_data_start());
     int readbackChecksum = 0;
     for (int idx = 0; idx < DUMMYDATA_SIZE; ++idx) {
       readbackChecksum += static_cast<int>(data_ptr[idx]);
@@ -143,8 +143,8 @@ BOOST_AUTO_TEST_CASE(ReadEventFiles)
     for (int geoLoc = 0; geoLoc < GEOLOC_COUNT; ++geoLoc) {
       StorageKey key(eventID, StorageKey::INVALID_DETECTORID, geoLoc);
       KeyedDataBlock dataBlock(key);
-      dataBlock.unowned_data_start = static_cast<void*>(&dummyData[0]);
-      dataBlock.data_size = DUMMYDATA_SIZE;
+      dataBlock.m_unowned_data_start = static_cast<void*>(&dummyData[0]);
+      dataBlock.m_data_size = DUMMYDATA_SIZE;
       dsPtr->write(dataBlock);
       keyList.push_back(key);
     }
@@ -162,9 +162,9 @@ BOOST_AUTO_TEST_CASE(ReadEventFiles)
   // loop over all of the keys to read in the data
   for (size_t kdx = 0; kdx < keyList.size(); ++kdx) {
     KeyedDataBlock dataBlock = dsPtr2->read(keyList[kdx]);
-    BOOST_REQUIRE_EQUAL(dataBlock.getDataSizeBytes(), DUMMYDATA_SIZE);
+    BOOST_REQUIRE_EQUAL(dataBlock.get_data_size_bytes(), DUMMYDATA_SIZE);
 
-    const char* data_ptr = static_cast<const char*>(dataBlock.getDataStart());
+    const char* data_ptr = static_cast<const char*>(dataBlock.get_data_start());
     int readbackChecksum = 0;
     for (int idx = 0; idx < DUMMYDATA_SIZE; ++idx) {
       readbackChecksum += static_cast<int>(data_ptr[idx]);
@@ -217,8 +217,8 @@ BOOST_AUTO_TEST_CASE(ReadSingleFile)
       for (int linkNumber = 1; linkNumber <= LINK_COUNT; ++linkNumber) {
         StorageKey key(RUN_NUMBER, triggerNumber, DETECTOR, apaNumber, linkNumber);
         KeyedDataBlock dataBlock(key);
-        dataBlock.unowned_data_start = static_cast<void*>(&dummyData[0]);
-        dataBlock.data_size = DUMMYDATA_SIZE;
+        dataBlock.m_unowned_data_start = static_cast<void*>(&dummyData[0]);
+        dataBlock.m_data_size = DUMMYDATA_SIZE;
         dsPtr->write(dataBlock);
         keyList.push_back(key);
       }          // link number
@@ -239,8 +239,8 @@ BOOST_AUTO_TEST_CASE(ReadSingleFile)
   // loop over all of the keys to read in the data
   for (size_t kdx = 0; kdx < keyList.size(); ++kdx) {
     KeyedDataBlock dataBlock = dsPtr2->read(keyList[kdx]);
-    BOOST_REQUIRE_EQUAL(dataBlock.getDataSizeBytes(), DUMMYDATA_SIZE);
-    const char* data_ptr = static_cast<const char*>(dataBlock.getDataStart());
+    BOOST_REQUIRE_EQUAL(dataBlock.get_data_size_bytes(), DUMMYDATA_SIZE);
+    const char* data_ptr = static_cast<const char*>(dataBlock.get_data_start());
     int readbackChecksum = 0;
     for (int idx = 0; idx < DUMMYDATA_SIZE; ++idx) {
       readbackChecksum += static_cast<int>(data_ptr[idx]);

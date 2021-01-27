@@ -99,8 +99,8 @@ BOOST_AUTO_TEST_CASE(WriteFragmentFiles)
       for (int linkNumber = 1; linkNumber <= LINK_COUNT; ++linkNumber) {
         StorageKey key(RUN_NUMBER, triggerNumber, DETECTOR, apaNumber, linkNumber);
         KeyedDataBlock dataBlock(key);
-        dataBlock.unowned_data_start = static_cast<void*>(&dummyData[0]);
-        dataBlock.data_size = DUMMYDATA_SIZE;
+        dataBlock.m_unowned_data_start = static_cast<void*>(&dummyData[0]);
+        dataBlock.m_data_size = DUMMYDATA_SIZE;
         dsPtr->write(dataBlock);
       }          // link number
     }            // apa number
@@ -160,8 +160,8 @@ BOOST_AUTO_TEST_CASE(WriteEventFiles)
       for (int linkNumber = 1; linkNumber <= LINK_COUNT; ++linkNumber) {
         StorageKey key(RUN_NUMBER, triggerNumber, DETECTOR, apaNumber, linkNumber);
         KeyedDataBlock dataBlock(key);
-        dataBlock.unowned_data_start = static_cast<void*>(&dummyData[0]);
-        dataBlock.data_size = DUMMYDATA_SIZE;
+        dataBlock.m_unowned_data_start = static_cast<void*>(&dummyData[0]);
+        dataBlock.m_data_size = DUMMYDATA_SIZE;
         dsPtr->write(dataBlock);
       }          // link number
     }            // apa number
@@ -224,8 +224,8 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
       for (int linkNumber = 1; linkNumber <= LINK_COUNT; ++linkNumber) {
         StorageKey key(RUN_NUMBER, triggerNumber, DETECTOR, apaNumber, linkNumber);
         KeyedDataBlock dataBlock(key);
-        dataBlock.unowned_data_start = static_cast<void*>(&dummyData[0]);
-        dataBlock.data_size = DUMMYDATA_SIZE;
+        dataBlock.m_unowned_data_start = static_cast<void*>(&dummyData[0]);
+        dataBlock.m_data_size = DUMMYDATA_SIZE;
         dsPtr->write(dataBlock);
       }          // link number
     }            // apa number

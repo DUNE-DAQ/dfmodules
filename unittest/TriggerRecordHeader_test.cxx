@@ -103,8 +103,8 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
     // TriggerRecordHeader
     StorageKey trh_key(RUN_NUMBER, triggerNumber, "TriggerRecordHeader", 1, 1);
     KeyedDataBlock trh_dataBlock(trh_key);
-    trh_dataBlock.unowned_data_start = static_cast<void*>(&dummyData[0]);
-    trh_dataBlock.data_size = 1;
+    trh_dataBlock.m_unowned_data_start = static_cast<void*>(&dummyData[0]);
+    trh_dataBlock.m_data_size = 1;
     dsPtr->write(trh_dataBlock);
 
     // Write fragments
@@ -112,8 +112,8 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
       for (int linkNumber = 1; linkNumber <= LINK_COUNT; ++linkNumber) {
         StorageKey key(RUN_NUMBER, triggerNumber, DETECTOR, apaNumber, linkNumber);
         KeyedDataBlock dataBlock(key);
-        dataBlock.unowned_data_start = static_cast<void*>(&dummyData[0]);
-        dataBlock.data_size = DUMMYDATA_SIZE;
+        dataBlock.m_unowned_data_start = static_cast<void*>(&dummyData[0]);
+        dataBlock.m_data_size = DUMMYDATA_SIZE;
         dsPtr->write(dataBlock);
       }          // link number
     }            // apa number

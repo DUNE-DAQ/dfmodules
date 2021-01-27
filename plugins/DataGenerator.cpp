@@ -122,10 +122,10 @@ DataGenerator::do_work(std::atomic<bool>& running_flag)
       // AAA: Component ID is fixed, to be changed later
       StorageKey data_key(m_run_number, event_id, "FELIX", 0, geo_id);
       KeyedDataBlock data_block(data_key);
-      data_block.data_size = m_io_size;
+      data_block.m_data_size = m_io_size;
 
       // Set the data_block pointer to the start of the constant memory buffer
-      data_block.unowned_data_start = membuffer;
+      data_block.m_unowned_data_start = membuffer;
 
       m_data_writer->write(data_block);
       ++written_count;
