@@ -14,9 +14,9 @@
 
 #include "TRACE/trace.h"
 #include "dfmodules/CommonIssues.hpp"
-#include <ers/ers.h>
+#include "ers/ers.h"
 
-#include <highfive/H5File.hpp>
+#include "highfive/H5File.hpp"
 
 #include <filesystem>
 #include <memory>
@@ -53,8 +53,8 @@ get_top_group(std::unique_ptr<HighFive::File>& file_ptr, const std::vector<std::
  */
 HighFive::Group
 get_subgroup(std::unique_ptr<HighFive::File>& file_ptr,
-            const std::vector<std::string>& group_dataset,
-            bool create_if_needed)
+             const std::vector<std::string>& group_dataset,
+             bool create_if_needed)
 {
   std::string top_level_group_name = group_dataset[0];
   if (create_if_needed && !file_ptr->exist(top_level_group_name)) {

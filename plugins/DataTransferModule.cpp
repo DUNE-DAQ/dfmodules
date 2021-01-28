@@ -12,8 +12,8 @@
 #include "dfmodules/DataStore.hpp"
 #include "dfmodules/KeyedDataBlock.hpp"
 
-#include <TRACE/trace.h>
-#include <ers/ers.h>
+#include "TRACE/trace.h"
+#include "ers/ers.h"
 
 #include <chrono>
 #include <cstdlib>

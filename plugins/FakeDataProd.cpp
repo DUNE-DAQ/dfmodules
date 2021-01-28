@@ -10,9 +10,8 @@
 #include "dfmodules/CommonIssues.hpp"
 #include "dfmodules/fakedataprod/Nljs.hpp"
 
-#include "appfwk/DAQModuleHelper.hpp"
-
 #include "TRACE/trace.h"
+#include "appfwk/DAQModuleHelper.hpp"
 #include "ers/ers.h"
 
 #include <chrono>

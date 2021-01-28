@@ -8,12 +8,11 @@
 
 #include "FakeReqGen.hpp"
 #include "dfmodules/CommonIssues.hpp"
-
-#include "appfwk/DAQModuleHelper.hpp"
-#include "appfwk/cmd/Nljs.hpp"
 //#include "dfmodules/fakereqgen/Nljs.hpp"
 
 #include "TRACE/trace.h"
+#include "appfwk/DAQModuleHelper.hpp"
+#include "appfwk/cmd/Nljs.hpp"
 #include "ers/ers.h"
 
 #include <chrono>

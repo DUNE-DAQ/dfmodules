@@ -9,12 +9,11 @@
 #include "FragmentReceiver.hpp"
 #include "dfmodules/CommonIssues.hpp"
 
+#include "TRACE/trace.h"
 #include "appfwk/DAQModuleHelper.hpp"
 #include "appfwk/cmd/Nljs.hpp"
 #include "dfmodules/fragmentreceiver/Nljs.hpp"
 #include "dfmodules/fragmentreceiver/Structs.hpp"
-
-#include "TRACE/trace.h"
 #include "ers/ers.h"
 
 #include <chrono>

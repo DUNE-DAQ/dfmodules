@@ -17,7 +17,7 @@
 #include "dfmodules/hdf5datastore/Nljs.hpp"
 #include "dfmodules/hdf5datastore/Structs.hpp"
 
-#include <boost/algorithm/string.hpp>
+#include "boost/algorithm/string.hpp"
 
 #include <iomanip>
 #include <sstream>
@@ -67,8 +67,8 @@ public:
     // first, we take care of the trigger number
     std::ostringstream trigger_number_string;
     trigger_number_string << layout_params.trigger_record_name_prefix
-                        << std::setw(layout_params.digits_for_trigger_number) << std::setfill('0')
-                        << data_key.get_trigger_number();
+                          << std::setw(layout_params.digits_for_trigger_number) << std::setfill('0')
+                          << data_key.get_trigger_number();
     element_list.push_back(trigger_number_string.str());
 
     if (data_key.get_detector_type() != "TriggerRecordHeader") {
@@ -78,13 +78,13 @@ public:
       // next, we translate the APA number location
       std::ostringstream apa_number_string;
       apa_number_string << layout_params.apa_name_prefix << std::setw(layout_params.digits_for_apa_number)
-                      << std::setfill('0') << data_key.get_apa_number();
+                        << std::setfill('0') << data_key.get_apa_number();
       element_list.push_back(apa_number_string.str());
 
       // Finally, add link number
       std::ostringstream link_number_string;
       link_number_string << layout_params.link_name_prefix << std::setw(layout_params.digits_for_link_number)
-                       << std::setfill('0') << data_key.get_link_number();
+                         << std::setfill('0') << data_key.get_link_number();
       element_list.push_back(link_number_string.str());
     } else {
       // Add TriggerRecordHeader instead of detector type
@@ -115,7 +115,7 @@ public:
    * @brief Translates the specified HDF5 'path' elements into the appropriate StorageKey.
    */
   static StorageKey get_key_from_list(const std::vector<std::string>& path_elements,
-                                   int translation_version = current_version)
+                                      int translation_version = current_version)
   {
     if (translation_version == 1) {
       int run_number = StorageKey::s_invalid_run_number;

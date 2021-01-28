@@ -13,7 +13,7 @@
 
 #define BOOST_TEST_MODULE DataStoreFactory_test // NOLINT
 
-#include <boost/test/unit_test.hpp>
+#include "boost/test/unit_test.hpp"
 
 #include <memory>
 

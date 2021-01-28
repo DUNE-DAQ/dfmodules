@@ -9,12 +9,11 @@
 #include "RequestGenerator.hpp"
 #include "dfmodules/CommonIssues.hpp"
 
+#include "TRACE/trace.h"
 #include "appfwk/DAQModuleHelper.hpp"
 #include "appfwk/cmd/Nljs.hpp"
 #include "dfmodules/requestgenerator/Nljs.hpp"
 #include "dfmodules/requestgenerator/Structs.hpp"
-
-#include "TRACE/trace.h"
 #include "ers/ers.h"
 
 #include <chrono>

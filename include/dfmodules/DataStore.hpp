@@ -16,12 +16,14 @@
 #define DFMODULES_INCLUDE_DFMODULES_DATASTORE_HPP_
 
 #include "dfmodules/KeyedDataBlock.hpp"
-#include "ers/ers.h"
-#include <appfwk/NamedObject.hpp>
-#include <nlohmann/json.hpp>
 
-#include <cetlib/BasicPluginFactory.h>
-#include <cetlib/compiler_macros.h>
+#include "appfwk/NamedObject.hpp"
+#include "cetlib/BasicPluginFactory.h"
+#include "cetlib/compiler_macros.h"
+#include "ers/ers.h"
+
+#include "nlohmann/json.hpp"
+
 #include <chrono>
 #include <cstddef>
 #include <memory>

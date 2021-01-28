@@ -8,11 +8,10 @@
 
 #include "FakeTrigDecEmu.hpp"
 #include "dfmodules/CommonIssues.hpp"
-
-#include "appfwk/DAQModuleHelper.hpp"
 #include "dfmodules/faketrigdecemu/Nljs.hpp"
 
 #include "TRACE/trace.h"
+#include "appfwk/DAQModuleHelper.hpp"
 #include "ers/ers.h"
 
 #include <chrono>

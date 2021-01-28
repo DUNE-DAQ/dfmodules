@@ -15,9 +15,9 @@
 #include "dfmodules/CommonIssues.hpp"
 #include "dfmodules/DataStore.hpp"
 
-#include <appfwk/DAQModule.hpp>
-#include <appfwk/ThreadHelper.hpp>
-#include <ers/Issue.h>
+#include "appfwk/DAQModule.hpp"
+#include "appfwk/ThreadHelper.hpp"
+#include "ers/Issue.h"
 
 #include <memory>
 #include <string>

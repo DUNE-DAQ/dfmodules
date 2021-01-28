@@ -12,12 +12,11 @@
 #include "dfmodules/StorageKey.hpp"
 #include "dfmodules/datawriter/Nljs.hpp"
 
+#include "TRACE/trace.h"
 #include "appfwk/DAQModuleHelper.hpp"
 #include "dataformats/Fragment.hpp"
 #include "dfmessages/TriggerDecision.hpp"
 #include "dfmessages/TriggerInhibit.hpp"
-
-#include "TRACE/trace.h"
 #include "ers/ers.h"
 
 #include <algorithm>
