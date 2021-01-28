@@ -300,25 +300,20 @@ RequestGenerator::do_work(std::atomic<bool>& running_flag)
       // get the queue from map element
       auto& queue = it_req->second;
       
-      wasSentSuccessfully = false;
-      while (!wasSentSuccessfully) {
-
-        TLOG(TLVL_WORK_STEPS) << get_name() << ": Pushing the DataRequest from trigger number "
-                              << dataReq.trigger_number << " onto output queue :" << queue->get_name();
-	
-        // push data request into the corresponding queue
-        try {
-          queue->push(dataReq, m_queue_timeout);
-          wasSentSuccessfully = true;
-        } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
-          std::ostringstream oss_warn;
-          oss_warn << "push to output queue \"" << queue->get_name() << "\"";
-          ers::warning(dunedaq::appfwk::QueueTimeoutExpired(
-							    ERS_HERE,
-							    get_name(),
-							    oss_warn.str(),
-							    std::chrono::duration_cast<std::chrono::milliseconds>(m_queue_timeout).count()));
-        }
+      TLOG(TLVL_WORK_STEPS) << get_name() << ": Pushing the DataRequest from trigger number "
+			    << dataReq.trigger_number << " onto output queue :" << queue->get_name();
+      
+      // push data request into the corresponding queue
+      try {
+	queue->push(dataReq, m_queue_timeout);
+      } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
+	std::ostringstream oss_warn;
+	oss_warn << "push to output queue \"" << queue->get_name() << "\"";
+	ers::warning(dunedaq::appfwk::QueueTimeoutExpired(
+							  ERS_HERE,
+							  get_name(),
+							  oss_warn.str(),
+							  std::chrono::duration_cast<std::chrono::milliseconds>(m_queue_timeout).count()));
       }
     }
     
