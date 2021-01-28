@@ -268,7 +268,7 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
 
       for (const auto& id : complete) {
 
-	SendTriggerRecord( id, record_sink, & running_flag ) ;
+	SendTriggerRecord( id, record_sink, running_flag ) ;
 	
       }   // loop over compled trigger id
 
@@ -352,7 +352,7 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
 
   // create the trigger record and send it
   for ( const auto & t : triggers ) {
-    SendTriggerRecord( t, record_sink ) ;
+    SendTriggerRecord( t, record_sink, running_flag ) ;
   }
 
   
@@ -404,15 +404,12 @@ FragmentReceiver::BuildTriggerRecord(const TriggerId& id)
 
 bool
 FragmentReceiver::SendTriggerRecord(const TriggerId& id , trigger_record_sink_t & sink,
-				    std::atomic<bool> * const ctrl ) {
+				    std::atomic<bool> & running ) {
   
   std::unique_ptr<dataformats::TriggerRecord> temp_record(BuildTriggerRecord(id));
     
   bool wasSentSuccessfully = false;
   while (!wasSentSuccessfully) {
-    if ( ctrl ) {
-      if ( ! ctrl -> load() ) break ;
-    }
     try {
       sink.push(std::move(temp_record), m_queue_timeout);
       wasSentSuccessfully = true;
@@ -425,6 +422,8 @@ FragmentReceiver::SendTriggerRecord(const TriggerId& id , trigger_record_sink_t 
 							oss_warn.str(),
 							std::chrono::duration_cast<std::chrono::milliseconds>(m_queue_timeout).count()));
     }
+
+    if ( ! running.load() ) break ;
   } // push while loop
   
   return wasSentSuccessfully ;
