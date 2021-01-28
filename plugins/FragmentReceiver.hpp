@@ -132,7 +132,7 @@ private:
   void do_work(std::atomic<bool>&);
 
   // Configuration
-  // size_t sleepMsecWhileRunning_;
+  // size_t m_sleep_msec_while_running;
   std::chrono::milliseconds m_queue_timeout;
 
   // Input Queues

@@ -53,7 +53,7 @@ private:
   void do_unconfigure(const data_t&);
 
   // Threading
-  dunedaq::appfwk::ThreadHelper thread_;
+  dunedaq::appfwk::ThreadHelper m_thread;
   void do_work(std::atomic<bool>&);
 
   // Configuration defaults

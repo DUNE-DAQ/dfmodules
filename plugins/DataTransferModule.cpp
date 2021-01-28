@@ -33,7 +33,7 @@ namespace dfmodules {
 
 DataTransferModule::DataTransferModule(const std::string& name)
   : dunedaq::appfwk::DAQModule(name)
-  , thread_(std::bind(&DataTransferModule::do_work, this, std::placeholders::_1))
+  , m_thread(std::bind(&DataTransferModule::do_work, this, std::placeholders::_1))
 {
   register_command("conf", &DataTransferModule::do_conf);
   register_command("start", &DataTransferModule::do_start);
@@ -68,7 +68,7 @@ void
 DataTransferModule::do_start(const data_t& /*args*/)
 {
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_start() method";
-  thread_.start_working_thread();
+  m_thread.start_working_thread();
   ERS_LOG(get_name() << " successfully started");
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
 }
@@ -77,7 +77,7 @@ void
 DataTransferModule::do_stop(const data_t& /*args*/)
 {
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_stop() method";
-  thread_.stop_working_thread();
+  m_thread.stop_working_thread();
   ERS_LOG(get_name() << " successfully stopped");
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_stop() method";
 }

@@ -37,10 +37,10 @@ namespace dfmodules {
 
 RequestGenerator::RequestGenerator(const std::string& name)
   : dunedaq::appfwk::DAQModule(name)
-  , thread_(std::bind(&RequestGenerator::do_work, this, std::placeholders::_1))
-  , queueTimeout_(100)
-  , triggerDecisionInputQueue_(nullptr)
-  , triggerDecisionOutputQueue_(nullptr)
+  , m_thread(std::bind(&RequestGenerator::do_work, this, std::placeholders::_1))
+  , m_queue_timeout(100)
+  , m_trigger_decision_input_queue(nullptr)
+  , m_trigger_decision_output_queue(nullptr)
 {
   register_command("conf", &RequestGenerator::do_conf);
   register_command("start", &RequestGenerator::do_start);
@@ -55,19 +55,19 @@ RequestGenerator::init(const data_t& init_data)
     init_data,
     { "trigger_decision_input_queue", "trigger_decision_for_event_building", "trigger_decision_for_inhibit" });
   try {
-    triggerDecisionInputQueue_.reset(new trigdecsource_t(qilist["trigger_decision_input_queue"].inst));
+    m_trigger_decision_input_queue.reset(new trigdecsource_t(qilist["trigger_decision_input_queue"].inst));
   } catch (const ers::Issue& excpt) {
     throw InvalidQueueFatalError(ERS_HERE, get_name(), "trigger_decision_input_queue", excpt);
   }
   try {
-    triggerDecisionOutputQueue_.reset(new trigdecsink_t(qilist["trigger_decision_for_event_building"].inst));
+    m_trigger_decision_output_queue.reset(new trigdecsink_t(qilist["trigger_decision_for_event_building"].inst));
   } catch (const ers::Issue& excpt) {
     throw InvalidQueueFatalError(ERS_HERE, get_name(), "trigger_decision_for_event_building", excpt);
   }
   try {
     std::unique_ptr<trigdecsink_t> trig_dec_queue_for_inh;
     trig_dec_queue_for_inh.reset(new trigdecsink_t(qilist["trigger_decision_for_inhibit"].inst));
-    trigger_decision_forwarder_.reset(new TriggerDecisionForwarder(get_name(), std::move(trig_dec_queue_for_inh)));
+    m_trigger_decision_forwarder.reset(new TriggerDecisionForwarder(get_name(), std::move(trig_dec_queue_for_inh)));
   } catch (const ers::Issue& excpt) {
     throw InvalidQueueFatalError(ERS_HERE, get_name(), "trigger_decision_for_inhibit", excpt);
   }
@@ -107,8 +107,8 @@ void
 RequestGenerator::do_start(const data_t& /*args*/)
 {
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_start() method";
-  trigger_decision_forwarder_->start_forwarding();
-  thread_.start_working_thread();
+  m_trigger_decision_forwarder->start_forwarding();
+  m_thread.start_working_thread();
   ERS_LOG(get_name() << " successfully started");
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
 }
@@ -117,8 +117,8 @@ void
 RequestGenerator::do_stop(const data_t& /*args*/)
 {
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_stop() method";
-  trigger_decision_forwarder_->stop_forwarding();
-  thread_.stop_working_thread();
+  m_trigger_decision_forwarder->stop_forwarding();
+  m_thread.stop_working_thread();
   ERS_LOG(get_name() << " successfully stopped");
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_stop() method";
 }
@@ -138,7 +138,7 @@ RequestGenerator::do_work(std::atomic<bool>& running_flag)
   while (running_flag.load()) {
     dfmessages::TriggerDecision trigDecision;
     try {
-      triggerDecisionInputQueue_->pop(trigDecision, queueTimeout_);
+      m_trigger_decision_input_queue->pop(trigDecision, m_queue_timeout);
       ++receivedCount;
       TLOG(TLVL_WORK_STEPS) << get_name() << ": Popped the TriggerDecision for trigger number "
                             << trigDecision.trigger_number << " off the input queue";
@@ -153,16 +153,16 @@ RequestGenerator::do_work(std::atomic<bool>& running_flag)
       TLOG(TLVL_WORK_STEPS) << get_name() << ": Pushing the TriggerDecision for trigger number "
                             << trigDecision.trigger_number << " onto the output queue";
       try {
-        triggerDecisionOutputQueue_->push(trigDecision, queueTimeout_);
+        m_trigger_decision_output_queue->push(trigDecision, m_queue_timeout);
         wasSentSuccessfully = true;
       } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
         std::ostringstream oss_warn;
-        oss_warn << "push to output queue \"" << triggerDecisionOutputQueue_->get_name() << "\"";
+        oss_warn << "push to output queue \"" << m_trigger_decision_output_queue->get_name() << "\"";
         ers::warning(dunedaq::appfwk::QueueTimeoutExpired(
           ERS_HERE,
           get_name(),
           oss_warn.str(),
-          std::chrono::duration_cast<std::chrono::milliseconds>(queueTimeout_).count()));
+          std::chrono::duration_cast<std::chrono::milliseconds>(m_queue_timeout).count()));
       }
     }
 
@@ -209,7 +209,7 @@ RequestGenerator::do_work(std::atomic<bool>& running_flag)
 
         // push data request into the corresponding queue
         try {
-          queue->push(dataReq, queueTimeout_);
+          queue->push(dataReq, m_queue_timeout);
           wasSentSuccessfully = true;
         } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
           std::ostringstream oss_warn;
@@ -218,15 +218,15 @@ RequestGenerator::do_work(std::atomic<bool>& running_flag)
             ERS_HERE,
             get_name(),
             oss_warn.str(),
-            std::chrono::duration_cast<std::chrono::milliseconds>(queueTimeout_).count()));
+            std::chrono::duration_cast<std::chrono::milliseconds>(m_queue_timeout).count()));
         }
       }
     }
 
-    trigger_decision_forwarder_->set_latest_trigger_decision(trigDecision);
+    m_trigger_decision_forwarder->set_latest_trigger_decision(trigDecision);
 
     // TLOG(TLVL_WORK_STEPS) << get_name() << ": Start of sleep while waiting for run Stop";
-    // std::this_thread::sleep_for(std::chrono::milliseconds(sleepMsecWhileRunning_));
+    // std::this_thread::sleep_for(std::chrono::milliseconds(m_sleep_msec_while_running));
     // TLOG(TLVL_WORK_STEPS) << get_name() << ": End of sleep while waiting for run Stop";
   }
 

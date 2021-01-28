@@ -82,7 +82,7 @@ FakeFragRec::do_conf(const data_t& /*payload*/)
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
 
   // fakefragrec::Conf tmpConfig = payload.get<fakefragrec::Conf>();
-  // sleepMsecWhileRunning_ = tmpConfig.sleep_msec_while_running;
+  // m_sleep_msec_while_running = tmpConfig.sleep_msec_while_running;
 
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
 }
@@ -172,7 +172,7 @@ FakeFragRec::do_work(std::atomic<bool>& running_flag)
     }
 
     // TLOG(TLVL_WORK_STEPS) << get_name() << ": Start of sleep while waiting for run Stop";
-    // std::this_thread::sleep_for(std::chrono::milliseconds(sleepMsecWhileRunning_));
+    // std::this_thread::sleep_for(std::chrono::milliseconds(m_sleep_msec_while_running));
     // TLOG(TLVL_WORK_STEPS) << get_name() << ": End of sleep while waiting for run Stop";
   }
 
