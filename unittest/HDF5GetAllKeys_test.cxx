@@ -87,10 +87,10 @@ BOOST_AUTO_TEST_CASE(GetKeysFromFragmentFiles)
   BOOST_REQUIRE_EQUAL(key_list.size(), (events_to_generate * links_to_generate));
 
   // verify that all of the expected keys are present, there are no duplicates, etc.
-  int individualKeyCount[events_to_generate][links_to_generate];
+  int individual_key_count[events_to_generate][links_to_generate];
   for (int edx = 0; edx < events_to_generate; ++edx) {
     for (int gdx = 0; gdx < links_to_generate; ++gdx) {
-      individualKeyCount[edx][gdx] = 0;
+      individual_key_count[edx][gdx] = 0;
     }
   }
   for (auto& key : key_list) {
@@ -99,7 +99,7 @@ BOOST_AUTO_TEST_CASE(GetKeysFromFragmentFiles)
     if (event_id > 0 && (static_cast<int>(event_id)) <= events_to_generate &&
         (static_cast<int>(geo_location)) < links_to_generate) // geo_location >= 0 &&
     {
-      ++individualKeyCount[event_id - 1][geo_location]; // NOLINT
+      ++individual_key_count[event_id - 1][geo_location]; // NOLINT
     } else {
       ERS_LOG("Unexpected key found: event_id=" << event_id << ", geo_location=" << geo_location);
     }
@@ -107,11 +107,11 @@ BOOST_AUTO_TEST_CASE(GetKeysFromFragmentFiles)
   int correctlyFoundKeyCount = 0;
   for (int edx = 0; edx < events_to_generate; ++edx) {
     for (int gdx = 0; gdx < links_to_generate; ++gdx) {
-      if (individualKeyCount[edx][gdx] == 1) {
+      if (individual_key_count[edx][gdx] == 1) {
         ++correctlyFoundKeyCount;
       } else {
         ERS_LOG("Missing or duplicate key found:  event_id=" << (edx + 1) << ", geo_location=" << gdx
-                                                            << ", count=" << individualKeyCount[edx][gdx]);
+                                                             << ", count=" << individual_key_count[edx][gdx]);
       }
     }
   }
@@ -167,10 +167,10 @@ BOOST_AUTO_TEST_CASE(GetKeysFromEventFiles)
   BOOST_REQUIRE_EQUAL(key_list.size(), (events_to_generate * links_to_generate));
 
   // verify that all of the expected keys are present, there are no duplicates, etc.
-  int individualKeyCount[events_to_generate][links_to_generate];
+  int individual_key_count[events_to_generate][links_to_generate];
   for (int edx = 0; edx < events_to_generate; ++edx) {
     for (int gdx = 0; gdx < links_to_generate; ++gdx) {
-      individualKeyCount[edx][gdx] = 0;
+      individual_key_count[edx][gdx] = 0;
     }
   }
   for (auto& key : key_list) {
@@ -179,7 +179,7 @@ BOOST_AUTO_TEST_CASE(GetKeysFromEventFiles)
     if (event_id > 0 && (static_cast<int>(event_id)) <= events_to_generate &&
         (static_cast<int>(geo_location)) < links_to_generate) // geo_location >= 0 &&
     {
-      ++individualKeyCount[event_id - 1][geo_location]; // NOLINT
+      ++individual_key_count[event_id - 1][geo_location]; // NOLINT
     } else {
       ERS_LOG("Unexpected key found: event_id=" << event_id << ", geo_location=" << geo_location);
     }
@@ -187,11 +187,11 @@ BOOST_AUTO_TEST_CASE(GetKeysFromEventFiles)
   int correctlyFoundKeyCount = 0;
   for (int edx = 0; edx < events_to_generate; ++edx) {
     for (int gdx = 0; gdx < links_to_generate; ++gdx) {
-      if (individualKeyCount[edx][gdx] == 1) {
+      if (individual_key_count[edx][gdx] == 1) {
         ++correctlyFoundKeyCount;
       } else {
         ERS_LOG("Missing or duplicate key found:  event_id=" << (edx + 1) << ", geo_location=" << gdx
-                                                            << ", count=" << individualKeyCount[edx][gdx]);
+                                                             << ", count=" << individual_key_count[edx][gdx]);
       }
     }
   }
@@ -247,10 +247,10 @@ BOOST_AUTO_TEST_CASE(GetKeysFromAllInOneFiles)
   BOOST_REQUIRE_EQUAL(key_list.size(), (events_to_generate * links_to_generate));
 
   // verify that all of the expected keys are present, there are no duplicates, etc.
-  int individualKeyCount[events_to_generate][links_to_generate];
+  int individual_key_count[events_to_generate][links_to_generate];
   for (int edx = 0; edx < events_to_generate; ++edx) {
     for (int gdx = 0; gdx < links_to_generate; ++gdx) {
-      individualKeyCount[edx][gdx] = 0;
+      individual_key_count[edx][gdx] = 0;
     }
   }
   for (auto& key : key_list) {
@@ -259,7 +259,7 @@ BOOST_AUTO_TEST_CASE(GetKeysFromAllInOneFiles)
     if (event_id > 0 && (static_cast<int>(event_id)) <= events_to_generate &&
         (static_cast<int>(geo_location)) < links_to_generate) // geo_location >= 0 &&
     {
-      ++individualKeyCount[event_id - 1][geo_location]; // NOLINT
+      ++individual_key_count[event_id - 1][geo_location]; // NOLINT
     } else {
       ERS_LOG("Unexpected key found: event_id=" << event_id << ", geo_location=" << geo_location);
     }
@@ -267,11 +267,11 @@ BOOST_AUTO_TEST_CASE(GetKeysFromAllInOneFiles)
   int correctlyFoundKeyCount = 0;
   for (int edx = 0; edx < events_to_generate; ++edx) {
     for (int gdx = 0; gdx < links_to_generate; ++gdx) {
-      if (individualKeyCount[edx][gdx] == 1) {
+      if (individual_key_count[edx][gdx] == 1) {
         ++correctlyFoundKeyCount;
       } else {
         ERS_LOG("Missing or duplicate key found:  event_id=" << (edx + 1) << ", geo_location=" << gdx
-                                                            << ", count=" << individualKeyCount[edx][gdx]);
+                                                             << ", count=" << individual_key_count[edx][gdx]);
       }
     }
   }

@@ -61,7 +61,7 @@ BOOST_AUTO_TEST_CASE(PathString)
 
 BOOST_AUTO_TEST_CASE(PathElements)
 {
-  std::vector<std::string> elementList;
+  std::vector<std::string> element_list;
 
   hdf5datastore::HDF5DataStoreFileLayoutParams layout_params;
   layout_params.trigger_record_name_prefix = "Test";
@@ -72,12 +72,12 @@ BOOST_AUTO_TEST_CASE(PathElements)
   layout_params.digits_for_link_number = 2;
 
   StorageKey key1(101, 1, "None", 2, 3); // run number, trigger number, detector name, APA number, link number
-  elementList = HDF5KeyTranslator::get_path_elements(key1, layout_params);
-  BOOST_REQUIRE_EQUAL(elementList.size(), 4);
-  BOOST_REQUIRE_EQUAL(elementList[0], "Test0001");
-  BOOST_REQUIRE_EQUAL(elementList[1], "None");
-  BOOST_REQUIRE_EQUAL(elementList[2], "Fake002");
-  BOOST_REQUIRE_EQUAL(elementList[3], "Link03");
+  element_list = HDF5KeyTranslator::get_path_elements(key1, layout_params);
+  BOOST_REQUIRE_EQUAL(element_list.size(), 4);
+  BOOST_REQUIRE_EQUAL(element_list[0], "Test0001");
+  BOOST_REQUIRE_EQUAL(element_list[1], "None");
+  BOOST_REQUIRE_EQUAL(element_list[2], "Fake002");
+  BOOST_REQUIRE_EQUAL(element_list[3], "Link03");
 }
 
 #if 0
