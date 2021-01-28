@@ -66,23 +66,22 @@ private:
   void do_stop(const data_t&);
 
   // Threading
-  dunedaq::appfwk::ThreadHelper thread_;
+  dunedaq::appfwk::ThreadHelper m_thread;
   void do_work(std::atomic<bool>&);
 
   // Configuration
   // size_t sleepMsecWhileRunning_;
-  std::chrono::milliseconds queueTimeout_;
+  std::chrono::milliseconds m_queue_timeout;
 
   // Queue(s)
   using trigdecsource_t = dunedaq::appfwk::DAQSource<dfmessages::TriggerDecision>;
-  std::unique_ptr<trigdecsource_t> triggerDecisionInputQueue_;
+  std::unique_ptr<trigdecsource_t> m_trigger_decision_input_queue;
   using trigdecsink_t = dunedaq::appfwk::DAQSink<dfmessages::TriggerDecision>;
-  std::unique_ptr<trigdecsink_t> triggerDecisionOutputQueue_;
+  std::unique_ptr<trigdecsink_t> m_trigger_decision_output_queue ;
   using datareqsink_t = dunedaq::appfwk::DAQSink<dfmessages::DataRequest>;
-  //  std::vector<std::unique_ptr<datareqsink_t>> dataRequestOutputQueues_;
   std::map<dataformats::GeoID, std::string> m_map_geoid_queues;
   // Worker(s)
-  std::unique_ptr<TriggerDecisionForwarder> trigger_decision_forwarder_;
+  std::unique_ptr<TriggerDecisionForwarder> m_trigger_decision_forwarder;
 };
 } // namespace dfmodules
 } // namespace dunedaq
