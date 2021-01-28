@@ -427,7 +427,7 @@ FragmentReceiver::SendTriggerRecord(const TriggerId& id , trigger_record_sink_t 
     }
   } // push while loop
   
-  return true ;
+  return wasSentSuccessfully ;
 
 }
 
