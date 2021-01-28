@@ -64,8 +64,8 @@ struct TriggerId
 {
 
   explicit TriggerId(const dfmessages::TriggerDecision& td)
-    : trigger_number(td.trigger_number)
-    , run_number(td.run_number)
+    : trigger_number(td.m_trigger_number)
+    , run_number(td.m_run_number)
   {
     ;
   }

@@ -127,7 +127,7 @@ FakeReqGen::do_work(std::atomic<bool>& running_flag)
       triggerDecisionInputQueue_->pop(trigDecision, queueTimeout_);
       ++receivedCount;
       TLOG(TLVL_WORK_STEPS) << get_name() << ": Popped the TriggerDecision for trigger number "
-                            << trigDecision.trigger_number << " off the input queue";
+                            << trigDecision.m_trigger_number << " off the input queue";
     } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
       // it is perfectly reasonable that there might be no data in the queue
       // some fraction of the times that we check, so we just continue on and try again
@@ -137,7 +137,7 @@ FakeReqGen::do_work(std::atomic<bool>& running_flag)
     bool wasSentSuccessfully = false;
     while (!wasSentSuccessfully && running_flag.load()) {
       TLOG(TLVL_WORK_STEPS) << get_name() << ": Pushing the TriggerDecision for trigger number "
-                            << trigDecision.trigger_number << " onto the output queue";
+                            << trigDecision.m_trigger_number << " onto the output queue";
       try {
         triggerDecisionOutputQueue_->push(trigDecision, queueTimeout_);
         wasSentSuccessfully = true;
@@ -154,24 +154,25 @@ FakeReqGen::do_work(std::atomic<bool>& running_flag)
 
     for (auto& dataReqQueue : dataRequestOutputQueues_) {
       dfmessages::DataRequest dataReq;
-      dataReq.trigger_number = trigDecision.trigger_number;
-      dataReq.run_number = trigDecision.run_number;
-      dataReq.trigger_timestamp = trigDecision.trigger_timestamp;
+      dataReq.m_trigger_number = trigDecision.m_trigger_number;
+      dataReq.m_run_number = trigDecision.m_run_number;
+      dataReq.m_trigger_timestamp = trigDecision.m_trigger_timestamp;
 
       // hack: only use the request window from one of the components
-      auto first_map_element = trigDecision.components.begin();
-      if (first_map_element != trigDecision.components.end()) {
+      auto first_map_element = trigDecision.m_components.begin();
+      if (first_map_element != trigDecision.m_components.end()) {
         dataformats::ComponentRequest comp_req = first_map_element->second;
-        dataReq.window_offset = comp_req.window_offset;
-        dataReq.window_width = comp_req.window_width;
+        dataReq.m_window_offset = comp_req.m_window_offset;
+        dataReq.m_window_width = comp_req.m_window_width;
       } else {
-        dataReq.window_offset = 0x123456789abcdef0; // placeholder
-        dataReq.window_width = 0x123456789abcdef0;  // placeholder
+        dataReq.m_window_offset = 0x123456789abcdef0; // placeholder
+        dataReq.m_window_width = 0x123456789abcdef0;  // placeholder
       }
 
       wasSentSuccessfully = false;
       while (!wasSentSuccessfully && running_flag.load()) {
-        TLOG(TLVL_WORK_STEPS) << get_name() << ": Pushing the DataRequest for trigger number " << dataReq.trigger_number
+        TLOG(TLVL_WORK_STEPS) << get_name() << ": Pushing the DataRequest for trigger number "
+                              << dataReq.m_trigger_number
                               << " onto an output queue";
         try {
           dataReqQueue->push(dataReq, queueTimeout_);

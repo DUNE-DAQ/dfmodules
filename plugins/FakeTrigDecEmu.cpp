@@ -101,13 +101,13 @@ FakeTrigDecEmu::do_work(std::atomic<bool>& running_flag)
     auto start_time = std::chrono::steady_clock::now();
     ++triggerCount;
     dfmessages::TriggerDecision trigDecision;
-    trigDecision.trigger_number = triggerCount;
-    trigDecision.trigger_timestamp = 0x123456789abcdef0; // placeholder
+    trigDecision.m_trigger_number = triggerCount;
+    trigDecision.m_trigger_timestamp = 0x123456789abcdef0; // placeholder
 
     bool wasSentSuccessfully = false;
     while (!wasSentSuccessfully && running_flag.load()) {
       TLOG(TLVL_WORK_STEPS) << get_name() << ": Pushing the TriggerDecision for trigger number "
-                            << trigDecision.trigger_number << " onto the output queue";
+                            << trigDecision.m_trigger_number << " onto the output queue";
       try {
         triggerDecisionOutputQueue_->push(trigDecision, queueTimeout_);
         wasSentSuccessfully = true;
@@ -133,7 +133,7 @@ FakeTrigDecEmu::do_work(std::atomic<bool>& running_flag)
         ++inhibit_message_count;
         got_inh_msg = true;
         TLOG(TLVL_WORK_STEPS) << get_name() << ": Popped a TriggerInhibit message with busy state set to \""
-                              << trig_inhibit_msg.busy << "\" off the inhibit input queue";
+                              << trig_inhibit_msg.m_busy << "\" off the inhibit input queue";
 
         // for now, we just throw these on the floor...
       } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {

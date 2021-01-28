@@ -122,17 +122,17 @@ FakeDataProd::do_work(std::atomic<bool>& running_flag)
     dummy_ints[1] = 4;
     dummy_ints[2] = 5;
     std::unique_ptr<dataformats::Fragment> dataFragPtr(new dataformats::Fragment(&dummy_ints[0], sizeof(dummy_ints)));
-    dataFragPtr->set_trigger_number(dataReq.trigger_number);
+    dataFragPtr->set_trigger_number(dataReq.m_trigger_number);
     dataFragPtr->set_run_number(run_number_);
     dunedaq::dataformats::GeoID geo_location;
-    geo_location.apa_number = 1;
-    geo_location.link_number = fake_link_number_;
+    geo_location.m_apa_number = 1;
+    geo_location.m_link_number = fake_link_number_;
     dataFragPtr->set_link_id(geo_location);
     dataFragPtr->set_error_bits(0);
     dataFragPtr->set_type(0x123); // placeholder
-    dataFragPtr->set_trigger_timestamp(dataReq.trigger_timestamp);
-    dataFragPtr->set_window_offset(dataReq.window_offset);
-    dataFragPtr->set_window_width(dataReq.window_width);
+    dataFragPtr->set_trigger_timestamp(dataReq.m_trigger_timestamp);
+    dataFragPtr->set_window_offset(dataReq.m_window_offset);
+    dataFragPtr->set_window_width(dataReq.m_window_width);
 
     // to-do?  add config parameter for artificial delay?
     // if ((dataReq.trigger_number % 7) == 0) {

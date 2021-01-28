@@ -171,7 +171,7 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
         continue;
       }
 
-      current_time = temp_dec.trigger_timestamp;
+      current_time = temp_dec.m_trigger_timestamp;
 
       TriggerId temp_id(temp_dec);
       trigger_decisions_[temp_id] = temp_dec;
@@ -220,7 +220,7 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
       message << "Trigger Decisions: ";
 
       for (const auto& d : trigger_decisions_) {
-        message << d.first << " with " << d.second.components.size() << " components, ";
+        message << d.first << " with " << d.second.m_components.size() << " components, ";
       }
       TLOG(TLVL_BOOKKEEPING) << message.str();
       message.str("");
@@ -245,12 +245,12 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
 
         if (frag_it != fragments_.end()) {
 
-          if (frag_it->second.size() >= it->second.components.size()) {
+          if (frag_it->second.size() >= it->second.m_components.size()) {
             complete.push_back(it->first);
           } else {
             // std::ostringstream message ;
             TLOG(TLVL_WORK_STEPS) << "Trigger decision " << it->first << " status: " << frag_it->second.size() << " / "
-                                  << it->second.components.size() << " Fragments";
+                                  << it->second.m_components.size() << " Fragments";
 
             // ers::error(ProgressUpdate(ERS_HERE, get_name(), message.str()));
           }
@@ -327,15 +327,15 @@ FragmentReceiver::BuildTriggerRecord(const TriggerId& id)
 
   // Create a trigger decision components vector
   std::vector<dunedaq::dataformats::ComponentRequest> trig_dec_comp;
-  for (auto elem : trig_dec.components) {
+  for (auto elem : trig_dec.m_components) {
     trig_dec_comp.push_back(elem.second);
   }
 
   dataformats::TriggerRecord* trig_rec_ptr = new dataformats::TriggerRecord(trig_dec_comp);
 
-  trig_rec_ptr->get_header().set_trigger_number(trig_dec.trigger_number);
-  trig_rec_ptr->get_header().set_run_number(trig_dec.run_number);
-  trig_rec_ptr->get_header().set_trigger_timestamp(trig_dec.trigger_timestamp);
+  trig_rec_ptr->header_ref().set_trigger_number(trig_dec.m_trigger_number);
+  trig_rec_ptr->header_ref().set_run_number(trig_dec.m_run_number);
+  trig_rec_ptr->header_ref().set_trigger_timestamp(trig_dec.m_trigger_timestamp);
 
   auto frags_it = fragments_.find(id);
   auto& frags = frags_it->second;

@@ -95,8 +95,8 @@ RequestGenerator::do_conf(const data_t& payload)
 
   for (auto const& entry : parsed_conf.map) {
     dataformats::GeoID key;
-    key.apa_number = entry.apa;
-    key.link_number = entry.link;
+    key.m_apa_number = entry.apa;
+    key.m_link_number = entry.link;
     m_map_geoid_queues[key] = entry.queueinstance;
   }
 
@@ -141,7 +141,7 @@ RequestGenerator::do_work(std::atomic<bool>& running_flag)
       triggerDecisionInputQueue_->pop(trigDecision, queueTimeout_);
       ++receivedCount;
       TLOG(TLVL_WORK_STEPS) << get_name() << ": Popped the TriggerDecision for trigger number "
-                            << trigDecision.trigger_number << " off the input queue";
+                            << trigDecision.m_trigger_number << " off the input queue";
     } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
       // it is perfectly reasonable that there might be no data in the queue
       // some fraction of the times that we check, so we just continue on and try again
@@ -151,7 +151,7 @@ RequestGenerator::do_work(std::atomic<bool>& running_flag)
     bool wasSentSuccessfully = false;
     while (!wasSentSuccessfully && running_flag.load()) {
       TLOG(TLVL_WORK_STEPS) << get_name() << ": Pushing the TriggerDecision for trigger number "
-                            << trigDecision.trigger_number << " onto the output queue";
+                            << trigDecision.m_trigger_number << " onto the output queue";
       try {
         triggerDecisionOutputQueue_->push(trigDecision, queueTimeout_);
         wasSentSuccessfully = true;
@@ -170,31 +170,31 @@ RequestGenerator::do_work(std::atomic<bool>& running_flag)
     // Loop over trigger decision components
     // Spawn each component_data_request to the corresponding link_data_handler_queue
     //----------------------------------------
-    for (auto it = trigDecision.components.begin(); it != trigDecision.components.end(); it++) {
-      TLOG(TLVL_WORK_STEPS) << get_name() << ": trigDecision.components.size :" << trigDecision.components.size();
+    for (auto it = trigDecision.m_components.begin(); it != trigDecision.m_components.end(); it++) {
+      TLOG(TLVL_WORK_STEPS) << get_name() << ": trigDecision.components.size :" << trigDecision.m_components.size();
       dfmessages::DataRequest dataReq;
-      dataReq.trigger_number = trigDecision.trigger_number;
-      dataReq.run_number = trigDecision.run_number;
-      dataReq.trigger_timestamp = trigDecision.trigger_timestamp;
+      dataReq.m_trigger_number = trigDecision.m_trigger_number;
+      dataReq.m_run_number = trigDecision.m_run_number;
+      dataReq.m_trigger_timestamp = trigDecision.m_trigger_timestamp;
 
-      TLOG(TLVL_WORK_STEPS) << get_name() << ": trig_number " << dataReq.trigger_number << ": run_number "
-                            << dataReq.run_number << ": trig_timestamp " << dataReq.trigger_timestamp;
+      TLOG(TLVL_WORK_STEPS) << get_name() << ": trig_number " << dataReq.m_trigger_number << ": run_number "
+                            << dataReq.m_run_number << ": trig_timestamp " << dataReq.m_trigger_timestamp;
 
       dataformats::ComponentRequest comp_req = it->second;
       dataformats::GeoID geoid_req = it->first;
-      dataReq.window_offset = comp_req.window_offset;
-      dataReq.window_width = comp_req.window_width;
+      dataReq.m_window_offset = comp_req.m_window_offset;
+      dataReq.m_window_width = comp_req.m_window_width;
 
-      TLOG(TLVL_WORK_STEPS) << get_name() << ": apa_number " << geoid_req.apa_number << ": link_number "
-                            << geoid_req.link_number << ": window_offset " << comp_req.window_offset
-                            << ": window_width " << comp_req.window_width;
+      TLOG(TLVL_WORK_STEPS) << get_name() << ": apa_number " << geoid_req.m_apa_number << ": link_number "
+                            << geoid_req.m_link_number << ": window_offset " << comp_req.m_window_offset
+                            << ": window_width " << comp_req.m_window_width;
 
       // find the queue for geoid_req in the map
       auto it_req = map.find(geoid_req);
       if (it_req == map.end()) {
         // if geoid request is not valid. then trhow error and continue
         ers::error(dunedaq::dfmodules::UnknownGeoID(
-          ERS_HERE, dataReq.trigger_number, dataReq.run_number, geoid_req.apa_number, geoid_req.link_number));
+          ERS_HERE, dataReq.m_trigger_number, dataReq.m_run_number, geoid_req.m_apa_number, geoid_req.m_link_number));
         continue;
       }
 
@@ -205,7 +205,7 @@ RequestGenerator::do_work(std::atomic<bool>& running_flag)
       while (!wasSentSuccessfully && running_flag.load()) {
 
         TLOG(TLVL_WORK_STEPS) << get_name() << ": Pushing the DataRequest from trigger number "
-                              << dataReq.trigger_number << " onto output queue :" << queue->get_name();
+                              << dataReq.m_trigger_number << " onto output queue :" << queue->get_name();
 
         // push data request into the corresponding queue
         try {
