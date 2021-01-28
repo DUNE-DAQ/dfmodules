@@ -87,21 +87,21 @@ BOOST_AUTO_TEST_CASE(KeyFromString)
 
   std::string path1 = "1/2";
   key = HDF5KeyTranslator::get_key_from_string(path1, 1);
-  BOOST_REQUIRE_EQUAL(key.getEventID(), 1);
-  BOOST_REQUIRE_EQUAL(key.getDetectorID(), StorageKey::s_invalid_detector_id);
-  BOOST_REQUIRE_EQUAL(key.getGeoLocation(), 2);
+  BOOST_REQUIRE_EQUAL(key.get_event_id(), 1);
+  BOOST_REQUIRE_EQUAL(key.get_detector_id(), StorageKey::s_invalid_detector_id);
+  BOOST_REQUIRE_EQUAL(key.get_geo_location(), 2);
 
   std::string path2 = "0003/004";
   key = HDF5KeyTranslator::get_key_from_string(path2, 1);
-  BOOST_REQUIRE_EQUAL(key.getEventID(), 3);
-  BOOST_REQUIRE_EQUAL(key.getDetectorID(), StorageKey::s_invalid_detector_id);
-  BOOST_REQUIRE_EQUAL(key.getGeoLocation(), 4);
+  BOOST_REQUIRE_EQUAL(key.get_event_id(), 3);
+  BOOST_REQUIRE_EQUAL(key.get_detector_id(), StorageKey::s_invalid_detector_id);
+  BOOST_REQUIRE_EQUAL(key.get_geo_location(), 4);
 
   std::string path3 = "12345/6789";
   key = HDF5KeyTranslator::get_key_from_string(path3, 1);
-  BOOST_REQUIRE_EQUAL(key.getEventID(), 12345);
-  BOOST_REQUIRE_EQUAL(key.getDetectorID(), StorageKey::s_invalid_detector_id);
-  BOOST_REQUIRE_EQUAL(key.getGeoLocation(), 6789);
+  BOOST_REQUIRE_EQUAL(key.get_event_id(), 12345);
+  BOOST_REQUIRE_EQUAL(key.get_detector_id(), StorageKey::s_invalid_detector_id);
+  BOOST_REQUIRE_EQUAL(key.get_geo_location(), 6789);
 }
 
 BOOST_AUTO_TEST_CASE(KeyFromList)
@@ -110,9 +110,9 @@ BOOST_AUTO_TEST_CASE(KeyFromList)
 
   std::vector<std::string> list1 = { "8", "9" };
   key = HDF5KeyTranslator::get_key_from_list(list1, 1);
-  BOOST_REQUIRE_EQUAL(key.getEventID(), 8);
-  BOOST_REQUIRE_EQUAL(key.getDetectorID(), StorageKey::s_invalid_detector_id);
-  BOOST_REQUIRE_EQUAL(key.getGeoLocation(), 9);
+  BOOST_REQUIRE_EQUAL(key.get_event_id(), 8);
+  BOOST_REQUIRE_EQUAL(key.get_detector_id(), StorageKey::s_invalid_detector_id);
+  BOOST_REQUIRE_EQUAL(key.get_geo_location(), 9);
 }
 #endif
 

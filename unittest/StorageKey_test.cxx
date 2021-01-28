@@ -19,10 +19,10 @@
 
 namespace {
 
-constexpr int eventID = 111;
-const std::string detectorID("LARTPC");
-constexpr int geoLocation = 333;
-dunedaq::dfmodules::StorageKey stk(eventID, detectorID, geoLocation); ///< StorageKey instance for the test
+constexpr int event_id = 111;
+const std::string detector_id("LARTPC");
+constexpr int geo_location = 333;
+dunedaq::dfmodules::StorageKey stk(event_id, detector_id, geo_location); ///< StorageKey instance for the test
 
 } // namespace ""
 
@@ -30,48 +30,48 @@ BOOST_AUTO_TEST_SUITE(StorageKey_test)
 
 BOOST_AUTO_TEST_CASE(sanity_checks)
 {
-  int m_eventID = -999;
-  std::string m_detectorID = "XXXXX";
-  int m_geoLocation = -999;
-  BOOST_TEST_MESSAGE("Attempted StorageKey sanity checks for Key::eventID,detectorID,geoLocation");
-  m_eventID = stk.getEventID();
-  m_detectorID = stk.getDetectorID();
-  m_geoLocation = stk.getGeoLocation();
+  int m_event_id = -999;
+  std::string m_detector_id = "XXXXX";
+  int m_geo_location = -999;
+  BOOST_TEST_MESSAGE("Attempted StorageKey sanity checks for Key::event_id,detector_id,geo_location");
+  m_event_id = stk.get_event_id();
+  m_detector_id = stk.get_detector_id();
+  m_geo_location = stk.get_geo_location();
 
-  BOOST_CHECK_EQUAL(m_eventID, eventID);
-  BOOST_CHECK_EQUAL(m_detectorID, detectorID);
-  BOOST_CHECK_EQUAL(m_geoLocation, geoLocation);
+  BOOST_CHECK_EQUAL(m_event_id, event_id);
+  BOOST_CHECK_EQUAL(m_detector_id, detector_id);
+  BOOST_CHECK_EQUAL(m_geo_location, geo_location);
 }
 
 using namespace dunedaq::dfmodules;
 
 BOOST_AUTO_TEST_CASE(check_placeholder_values)
 {
-  const int SAMPLE_EVENTID = 1234;
-  const std::string SAMPLE_DETECTORID = "FELIX";
-  const int SAMPLE_GEOLOCATION = 0;
+  const int sample_event_id = 1234;
+  const std::string sample_detector_id = "FELIX";
+  const int sample_geo_location = 0;
 
   // Something would have to be very wrong for this test to fail...
   StorageKey key1(StorageKey::s_invalid_event_id, StorageKey::s_invalid_detector_id, StorageKey::s_invalid_geo_location);
-  BOOST_CHECK_EQUAL(key1.getEventID(), StorageKey::s_invalid_event_id);
-  BOOST_CHECK_EQUAL(key1.getDetectorID(), StorageKey::s_invalid_detector_id);
-  BOOST_CHECK_EQUAL(key1.getGeoLocation(), StorageKey::s_invalid_geo_location);
+  BOOST_CHECK_EQUAL(key1.get_event_id(), StorageKey::s_invalid_event_id);
+  BOOST_CHECK_EQUAL(key1.get_detector_id(), StorageKey::s_invalid_detector_id);
+  BOOST_CHECK_EQUAL(key1.get_geo_location(), StorageKey::s_invalid_geo_location);
 
   // check for some sort of weird cross-talk
-  StorageKey key2(SAMPLE_EVENTID, StorageKey::s_invalid_detector_id, StorageKey::s_invalid_geo_location);
-  BOOST_CHECK_EQUAL(key2.getEventID(), SAMPLE_EVENTID);
-  BOOST_CHECK_EQUAL(key2.getDetectorID(), StorageKey::s_invalid_detector_id);
-  BOOST_CHECK_EQUAL(key2.getGeoLocation(), StorageKey::s_invalid_geo_location);
+  StorageKey key2(sample_event_id, StorageKey::s_invalid_detector_id, StorageKey::s_invalid_geo_location);
+  BOOST_CHECK_EQUAL(key2.get_event_id(), sample_event_id);
+  BOOST_CHECK_EQUAL(key2.get_detector_id(), StorageKey::s_invalid_detector_id);
+  BOOST_CHECK_EQUAL(key2.get_geo_location(), StorageKey::s_invalid_geo_location);
 
-  StorageKey key3(StorageKey::s_invalid_event_id, SAMPLE_DETECTORID, StorageKey::s_invalid_geo_location);
-  BOOST_CHECK_EQUAL(key3.getEventID(), StorageKey::s_invalid_event_id);
-  BOOST_CHECK_EQUAL(key3.getDetectorID(), SAMPLE_DETECTORID);
-  BOOST_CHECK_EQUAL(key3.getGeoLocation(), StorageKey::s_invalid_geo_location);
+  StorageKey key3(StorageKey::s_invalid_event_id, sample_detector_id, StorageKey::s_invalid_geo_location);
+  BOOST_CHECK_EQUAL(key3.get_event_id(), StorageKey::s_invalid_event_id);
+  BOOST_CHECK_EQUAL(key3.get_detector_id(), sample_detector_id);
+  BOOST_CHECK_EQUAL(key3.get_geo_location(), StorageKey::s_invalid_geo_location);
 
-  StorageKey key4(StorageKey::s_invalid_event_id, StorageKey::s_invalid_detector_id, SAMPLE_GEOLOCATION);
-  BOOST_CHECK_EQUAL(key4.getEventID(), StorageKey::s_invalid_event_id);
-  BOOST_CHECK_EQUAL(key4.getDetectorID(), StorageKey::s_invalid_detector_id);
-  BOOST_CHECK_EQUAL(key4.getGeoLocation(), SAMPLE_GEOLOCATION);
+  StorageKey key4(StorageKey::s_invalid_event_id, StorageKey::s_invalid_detector_id, sample_geo_location);
+  BOOST_CHECK_EQUAL(key4.get_event_id(), StorageKey::s_invalid_event_id);
+  BOOST_CHECK_EQUAL(key4.get_detector_id(), StorageKey::s_invalid_detector_id);
+  BOOST_CHECK_EQUAL(key4.get_geo_location(), sample_geo_location);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

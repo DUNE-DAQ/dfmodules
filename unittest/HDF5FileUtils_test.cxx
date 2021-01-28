@@ -25,18 +25,18 @@
 using namespace dunedaq::dfmodules;
 
 std::vector<std::string>
-deleteFilesMatchingPattern(const std::string& path, const std::string& pattern)
+delete_files_matching_pattern(const std::string& path, const std::string& pattern)
 {
-  std::regex regexSearchPattern(pattern);
-  std::vector<std::string> fileList;
+  std::regex regex_search_pattern(pattern);
+  std::vector<std::string> file_list;
   for (const auto& entry : std::filesystem::directory_iterator(path)) {
-    if (std::regex_match(entry.path().filename().string(), regexSearchPattern)) {
+    if (std::regex_match(entry.path().filename().string(), regex_search_pattern)) {
       if (std::filesystem::remove(entry.path())) {
-        fileList.push_back(entry.path());
+        file_list.push_back(entry.path());
       }
     }
   }
-  return fileList;
+  return file_list;
 }
 
 void
@@ -51,30 +51,30 @@ BOOST_AUTO_TEST_SUITE(HDF5FileUtils_test)
 
 BOOST_AUTO_TEST_CASE(GetFileList)
 {
-  std::string filePath(std::filesystem::temp_directory_path());
-  std::string filePrefix = "kurt";
-  std::string fileExtension = ".tmp";
+  std::string file_path(std::filesystem::temp_directory_path());
+  std::string file_prefix = "kurt";
+  std::string file_extension = ".tmp";
   std::string pid = std::to_string(getpid());
 
   // delete any pre-existing files so that we start with a clean slate
-  std::string deletePattern = filePrefix + ".*" + pid + ".*" + fileExtension;
-  deleteFilesMatchingPattern(filePath, deletePattern);
+  std::string delete_pattern = file_prefix + ".*" + pid + ".*" + file_extension;
+  delete_files_matching_pattern(file_path, delete_pattern);
 
   // create a few test files
   std::string fullPath;
-  fullPath = filePath + "/" + filePrefix + "_1_" + pid + fileExtension;
+  fullPath = file_path + "/" + file_prefix + "_1_" + pid + file_extension;
   touchFile(fullPath);
-  fullPath = filePath + "/" + filePrefix + "_2_" + pid + fileExtension;
+  fullPath = file_path + "/" + file_prefix + "_2_" + pid + file_extension;
   touchFile(fullPath);
-  fullPath = filePath + "/" + filePrefix + "_3_" + pid + fileExtension;
+  fullPath = file_path + "/" + file_prefix + "_3_" + pid + file_extension;
   touchFile(fullPath);
 
-  std::string searchPattern = filePrefix + ".*" + pid + ".*" + fileExtension;
-  std::vector<std::string> fileList = HDF5FileUtils::get_files_matching_pattern(filePath, searchPattern);
-  BOOST_REQUIRE_EQUAL(fileList.size(), 3);
+  std::string search_pattern = file_prefix + ".*" + pid + ".*" + file_extension;
+  std::vector<std::string> file_list = HDF5FileUtils::get_files_matching_pattern(file_path, search_pattern);
+  BOOST_REQUIRE_EQUAL(file_list.size(), 3);
 
-  fileList = deleteFilesMatchingPattern(filePath, deletePattern);
-  BOOST_REQUIRE_EQUAL(fileList.size(), 3);
+  file_list = delete_files_matching_pattern(file_path, delete_pattern);
+  BOOST_REQUIRE_EQUAL(file_list.size(), 3);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

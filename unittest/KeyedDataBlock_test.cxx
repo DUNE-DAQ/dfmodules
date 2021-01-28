@@ -24,47 +24,47 @@ BOOST_AUTO_TEST_SUITE(KeyedDataBlock_test)
 
 BOOST_AUTO_TEST_CASE(SimpleLocalBuffer)
 {
-  const int BUFFER_SIZE = 100;
-  StorageKey sampleKey(1, "2", 3);
-  void* buff_ptr = malloc(BUFFER_SIZE);
-  memset(buff_ptr, 'X', BUFFER_SIZE);
+  const int buffer_size = 100;
+  StorageKey sample_key(1, "2", 3);
+  void* buff_ptr = malloc(buffer_size);
+  memset(buff_ptr, 'X', buffer_size);
 
-  KeyedDataBlock dataBlock(sampleKey);
-  dataBlock.unowned_data_start = buff_ptr;
-  dataBlock.data_size = BUFFER_SIZE;
+  KeyedDataBlock data_block(sample_key);
+  data_block.unowned_data_start = buff_ptr;
+  data_block.data_size = buffer_size;
 
   // this test simply checks that we get back the same pointer that
   // we passed into the KeyedDataBlock instance.
-  BOOST_REQUIRE_EQUAL(dataBlock.getDataStart(), buff_ptr);
+  BOOST_REQUIRE_EQUAL(data_block.get_data_start(), buff_ptr);
 
   // also the buffer size
-  BOOST_REQUIRE_EQUAL(dataBlock.getDataSizeBytes(), BUFFER_SIZE);
+  BOOST_REQUIRE_EQUAL(data_block.get_data_size_bytes(), buffer_size);
 
   // also the key
-  BOOST_REQUIRE_EQUAL(dataBlock.data_key.getEventID(), sampleKey.getEventID());
-  BOOST_REQUIRE_EQUAL(dataBlock.data_key.getGeoLocation(), sampleKey.getGeoLocation());
+  BOOST_REQUIRE_EQUAL(data_block.data_key.get_event_id(), sample_key.get_event_id());
+  BOOST_REQUIRE_EQUAL(data_block.data_key.get_geo_location(), sample_key.get_geo_location());
 
   free(buff_ptr);
 }
 
 BOOST_AUTO_TEST_CASE(LocalBufferOwnership)
 {
-  const int BUFFER_SIZE = 100;
-  StorageKey sampleKey(1, "2", 3);
-  void* buff_ptr = malloc(BUFFER_SIZE);
-  memset(buff_ptr, 'X', BUFFER_SIZE);
+  const int buffer_size = 100;
+  StorageKey sample_key(1, "2", 3);
+  void* buff_ptr = malloc(buffer_size);
+  memset(buff_ptr, 'X', buffer_size);
 
   {
     // the main purpose of this block is to construct a KeyedDataBlock object
     // and then have it go out of scope so that it gets destructed.
-    KeyedDataBlock dataBlock(sampleKey);
-    dataBlock.unowned_data_start = buff_ptr;
-    dataBlock.data_size = BUFFER_SIZE;
+    KeyedDataBlock data_block(sample_key);
+    data_block.unowned_data_start = buff_ptr;
+    data_block.data_size = buffer_size;
 
-    BOOST_REQUIRE_EQUAL(dataBlock.getDataStart(), buff_ptr);
-    BOOST_REQUIRE_EQUAL(dataBlock.getDataSizeBytes(), BUFFER_SIZE);
-    BOOST_REQUIRE_EQUAL(dataBlock.data_key.getEventID(), sampleKey.getEventID());
-    BOOST_REQUIRE_EQUAL(dataBlock.data_key.getGeoLocation(), sampleKey.getGeoLocation());
+    BOOST_REQUIRE_EQUAL(data_block.get_data_start(), buff_ptr);
+    BOOST_REQUIRE_EQUAL(data_block.get_data_size_bytes(), buffer_size);
+    BOOST_REQUIRE_EQUAL(data_block.data_key.get_event_id(), sample_key.get_event_id());
+    BOOST_REQUIRE_EQUAL(data_block.data_key.get_geo_location(), sample_key.get_geo_location());
   }
 
   // the following statements should *not* cause the test program to crash
@@ -77,22 +77,22 @@ BOOST_AUTO_TEST_CASE(LocalBufferOwnership)
 
 BOOST_AUTO_TEST_CASE(TransferredBufferOwnership)
 {
-  const int BUFFER_SIZE = 100;
-  StorageKey sampleKey(1, "2", 3);
-  char* buff_ptr = new char[BUFFER_SIZE];
-  memset(buff_ptr, 'X', BUFFER_SIZE);
-  std::unique_ptr<char> bufferPtr(buff_ptr);
+  const int buffer_size = 100;
+  StorageKey sample_key(1, "2", 3);
+  char* buff_ptr = new char[buffer_size];
+  memset(buff_ptr, 'X', buffer_size);
+  std::unique_ptr<char> buffer_ptr(buff_ptr);
   BOOST_REQUIRE(buff_ptr[0] == 'X');
 
   {
     // the main purpose of this block is to construct a KeyedDataBlock object
     // and then have it go out of scope so that it gets destructed.
-    KeyedDataBlock dataBlock(sampleKey);
-    dataBlock.owned_data_start = std::move(bufferPtr);
-    dataBlock.data_size = BUFFER_SIZE;
+    KeyedDataBlock data_block(sample_key);
+    data_block.owned_data_start = std::move(buffer_ptr);
+    data_block.data_size = buffer_size;
 
     // check that the bare pointer that we get back is what we expect
-    BOOST_REQUIRE_EQUAL(dataBlock.getDataStart(), buff_ptr);
+    BOOST_REQUIRE_EQUAL(data_block.get_data_start(), buff_ptr);
   }
 
   // The goal of the following statement is to confirm that the memory created above
