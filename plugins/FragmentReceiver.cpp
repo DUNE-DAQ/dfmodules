@@ -268,7 +268,7 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
 
       for (const auto& id : complete) {
 
-	SendTriggerRecord( id, record_sink ) ;
+	SendTriggerRecord( id, record_sink, & running_flag ) ;
 	
       }   // loop over compled trigger id
 
@@ -403,12 +403,16 @@ FragmentReceiver::BuildTriggerRecord(const TriggerId& id)
 
 
 bool
-FragmentReceiver::SendTriggerRecord(const TriggerId& id , trigger_record_sink_t & sink ) {
+FragmentReceiver::SendTriggerRecord(const TriggerId& id , trigger_record_sink_t & sink,
+				    std::atomic<bool> * const ctrl ) {
   
   std::unique_ptr<dataformats::TriggerRecord> temp_record(BuildTriggerRecord(id));
     
   bool wasSentSuccessfully = false;
   while (!wasSentSuccessfully) {
+    if ( ctrl ) {
+      if ( ! ctrl -> load() ) break ;
+    }
     try {
       sink.push(std::move(temp_record), m_queue_timeout);
       wasSentSuccessfully = true;

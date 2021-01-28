@@ -39,8 +39,8 @@ RequestGenerator::RequestGenerator(const std::string& name)
   : dunedaq::appfwk::DAQModule(name)
   , m_thread(std::bind(&RequestGenerator::do_work, this, std::placeholders::_1))
   , m_queue_timeout(100)
-  , m_trigger_decision_input_queue_(nullptr)
-  , m_trigger_decision_output_queue_(nullptr)
+  , m_trigger_decision_input_queue(nullptr)
+  , m_trigger_decision_output_queue(nullptr)
 {
   register_command("conf", &RequestGenerator::do_conf);
   register_command("start", &RequestGenerator::do_start);
@@ -55,19 +55,19 @@ RequestGenerator::init(const data_t& init_data)
     init_data,
     { "trigger_decision_input_queue", "trigger_decision_for_event_building", "trigger_decision_for_inhibit" });
   try {
-    triggerDecisionInputQueue_.reset(new trigdecsource_t(qilist["trigger_decision_input_queue"].inst));
+    m_trigger_decision_input_queue.reset(new trigdecsource_t(qilist["trigger_decision_input_queue"].inst));
   } catch (const ers::Issue& excpt) {
     throw InvalidQueueFatalError(ERS_HERE, get_name(), "trigger_decision_input_queue", excpt);
   }
   try {
-    triggerDecisionOutputQueue_.reset(new trigdecsink_t(qilist["trigger_decision_for_event_building"].inst));
+    m_trigger_decision_output_queue.reset(new trigdecsink_t(qilist["trigger_decision_for_event_building"].inst));
   } catch (const ers::Issue& excpt) {
     throw InvalidQueueFatalError(ERS_HERE, get_name(), "trigger_decision_for_event_building", excpt);
   }
   try {
     std::unique_ptr<trigdecsink_t> trig_dec_queue_for_inh;
     trig_dec_queue_for_inh.reset(new trigdecsink_t(qilist["trigger_decision_for_inhibit"].inst));
-    trigger_decision_forwarder_.reset(new TriggerDecisionForwarder(get_name(), std::move(trig_dec_queue_for_inh)));
+    m_trigger_decision_forwarder.reset(new TriggerDecisionForwarder(get_name(), std::move(trig_dec_queue_for_inh)));
   } catch (const ers::Issue& excpt) {
     throw InvalidQueueFatalError(ERS_HERE, get_name(), "trigger_decision_for_inhibit", excpt);
   }
@@ -138,7 +138,7 @@ RequestGenerator::do_work(std::atomic<bool>& running_flag)
   while (running_flag.load()) {
     dfmessages::TriggerDecision trigDecision;
     try {
-      m_triggerDecisionInputQueue->pop(trigDecision, m_queue_timeout );
+      m_trigger_decision_input_queue->pop(trigDecision, m_queue_timeout );
       ++receivedCount;
       TLOG(TLVL_WORK_STEPS) << get_name() << ": Popped the TriggerDecision for trigger number "
                             << trigDecision.trigger_number << " off the input queue";
@@ -228,7 +228,104 @@ RequestGenerator::do_work(std::atomic<bool>& running_flag)
     // TLOG(TLVL_WORK_STEPS) << get_name() << ": Start of sleep while waiting for run Stop";
     // std::this_thread::sleep_for(std::chrono::milliseconds(sleepMsecWhileRunning_));
     // TLOG(TLVL_WORK_STEPS) << get_name() << ": End of sleep while waiting for run Stop";
+  } // running loop
+
+
+  TLOG(TLVL_WORK_STEPS) << get_name() << ": Stope received. Draining queues" ; 
+
+  while ( m_trigger_decision_input_queue->can_pop() ) { 
+
+    dfmessages::TriggerDecision trigDecision;
+    try {
+      
+      m_trigger_decision_input_queue->pop(trigDecision, m_queue_timeout );
+      ++receivedCount;
+      TLOG(TLVL_WORK_STEPS) << get_name() << ": Popped the TriggerDecision for trigger number "
+			    << trigDecision.trigger_number << " off the input queue";
+    } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
+      // it is perfectly reasonable that there might be no data in the queue
+      // some fraction of the times that we check, so we just continue on and try again
+      continue;
+    }
+  
+    bool wasSentSuccessfully = false;
+    while (!wasSentSuccessfully) {
+      TLOG(TLVL_WORK_STEPS) << get_name() << ": Pushing the TriggerDecision for trigger number "
+                            << trigDecision.trigger_number << " onto the output queue";
+      try {
+        m_trigger_decision_output_queue->push(trigDecision, m_queue_timeout);
+        wasSentSuccessfully = true;
+      } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
+        std::ostringstream oss_warn;
+        oss_warn << "push to output queue \"" << m_trigger_decision_output_queue->get_name() << "\"";
+        ers::warning(dunedaq::appfwk::QueueTimeoutExpired(
+          ERS_HERE,
+          get_name(),
+          oss_warn.str(),
+          std::chrono::duration_cast<std::chrono::milliseconds>(m_queue_timeout).count()));
+      }
+    }
+    
+    for (auto it = trigDecision.components.begin(); it != trigDecision.components.end(); it++) {
+      TLOG(TLVL_WORK_STEPS) << get_name() << ": trigDecision.components.size :" << trigDecision.components.size();
+      dfmessages::DataRequest dataReq;
+      dataReq.trigger_number = trigDecision.trigger_number;
+      dataReq.run_number = trigDecision.run_number;
+      dataReq.trigger_timestamp = trigDecision.trigger_timestamp;
+      
+      TLOG(TLVL_WORK_STEPS) << get_name() << ": trig_number " << dataReq.trigger_number << ": run_number "
+                            << dataReq.run_number << ": trig_timestamp " << dataReq.trigger_timestamp;
+      
+      dataformats::ComponentRequest comp_req = it->second;
+      dataformats::GeoID geoid_req = it->first;
+      dataReq.window_offset = comp_req.window_offset;
+      dataReq.window_width = comp_req.window_width;
+      
+      TLOG(TLVL_WORK_STEPS) << get_name() << ": apa_number " << geoid_req.apa_number << ": link_number "
+                            << geoid_req.link_number << ": window_offset " << comp_req.window_offset
+                            << ": window_width " << comp_req.window_width;
+      
+      // find the queue for geoid_req in the map
+      auto it_req = map.find(geoid_req);
+      if (it_req == map.end()) {
+        // if geoid request is not valid. then trhow error and continue
+        ers::error(dunedaq::dfmodules::UnknownGeoID( ERS_HERE, 
+						     dataReq.trigger_number, 
+						     dataReq.run_number, 
+						     geoid_req.apa_number, 
+						     geoid_req.link_number));
+        continue;
+      }
+
+      // get the queue from map element
+      auto& queue = it_req->second;
+      
+      wasSentSuccessfully = false;
+      while (!wasSentSuccessfully) {
+
+        TLOG(TLVL_WORK_STEPS) << get_name() << ": Pushing the DataRequest from trigger number "
+                              << dataReq.trigger_number << " onto output queue :" << queue->get_name();
+	
+        // push data request into the corresponding queue
+        try {
+          queue->push(dataReq, m_queue_timeout);
+          wasSentSuccessfully = true;
+        } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
+          std::ostringstream oss_warn;
+          oss_warn << "push to output queue \"" << queue->get_name() << "\"";
+          ers::warning(dunedaq::appfwk::QueueTimeoutExpired(
+							    ERS_HERE,
+							    get_name(),
+							    oss_warn.str(),
+							    std::chrono::duration_cast<std::chrono::milliseconds>(m_queue_timeout).count()));
+        }
+      }
+    }
+    
+    m_trigger_decision_forwarder->set_latest_trigger_decision(trigDecision);
+    
   }
+  
 
   std::ostringstream oss_summ;
   oss_summ << ": Exiting the do_work() method, received Fake trigger decision messages for " << receivedCount

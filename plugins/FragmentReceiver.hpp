@@ -126,7 +126,8 @@ protected:
   dataformats::TriggerRecord* BuildTriggerRecord(const TriggerId&);
   // Plese note that the method will destroy the memory saved in the bookkeeping map
 
-  bool SendTriggerRecord( const TriggerId&, trigger_record_sink_t & ) ;
+  bool SendTriggerRecord( const TriggerId&, trigger_record_sink_t &, 
+			  std::atomic<bool> * const ctrl = nullptr ) ;
   // this creates a trigger record and send it
 
 private:
