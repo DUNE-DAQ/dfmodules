@@ -268,7 +268,7 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
 
       for (const auto& id : complete) {
 
-	SendTriggerRecord( id, record_sink, running_flag ) ;
+	send_trigger_record( id, record_sink, running_flag ) ;
 	
       }   // loop over compled trigger id
 
@@ -352,7 +352,7 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
 
   // create the trigger record and send it
   for ( const auto & t : triggers ) {
-    SendTriggerRecord( t, record_sink, running_flag ) ;
+    send_trigger_record( t, record_sink, running_flag ) ;
   }
 
   
@@ -364,7 +364,7 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
 }
 
 dataformats::TriggerRecord*
-FragmentReceiver::BuildTriggerRecord(const TriggerId& id)
+FragmentReceiver::build_trigger_record(const TriggerId& id)
 {
 
   auto trig_dec_it = m_trigger_decisions.find(id);
@@ -403,10 +403,10 @@ FragmentReceiver::BuildTriggerRecord(const TriggerId& id)
 
 
 bool
-FragmentReceiver::SendTriggerRecord(const TriggerId& id , trigger_record_sink_t & sink,
-				    std::atomic<bool> & running ) {
+FragmentReceiver::send_trigger_record(const TriggerId& id , trigger_record_sink_t & sink,
+				      std::atomic<bool> & running ) {
   
-  std::unique_ptr<dataformats::TriggerRecord> temp_record(BuildTriggerRecord(id));
+  std::unique_ptr<dataformats::TriggerRecord> temp_record(build_trigger_record(id));
     
   bool wasSentSuccessfully = false;
   while (!wasSentSuccessfully) {

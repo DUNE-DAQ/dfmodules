@@ -123,11 +123,11 @@ protected:
   using fragment_source_t = dunedaq::appfwk::DAQSource<std::unique_ptr<dataformats::Fragment>>;
   using trigger_record_sink_t = appfwk::DAQSink<std::unique_ptr<dataformats::TriggerRecord>>;
   
-  dataformats::TriggerRecord* BuildTriggerRecord(const TriggerId&);
+  dataformats::TriggerRecord* build_trigger_record(const TriggerId&);
   // Plese note that the method will destroy the memory saved in the bookkeeping map
 
-  bool SendTriggerRecord( const TriggerId&, trigger_record_sink_t &, 
-			  std::atomic<bool> & running ) ;
+  bool send_trigger_record( const TriggerId&, trigger_record_sink_t &, 
+			    std::atomic<bool> & running ) ;
   // this creates a trigger record and send it
   
 private:
