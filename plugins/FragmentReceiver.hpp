@@ -121,7 +121,12 @@ protected:
   
   using trigger_decision_source_t = dunedaq::appfwk::DAQSource<dfmessages::TriggerDecision>;
   using fragment_source_t = dunedaq::appfwk::DAQSource<std::unique_ptr<dataformats::Fragment>>;
+  using fragment_sources_t = std::vector<std::unique_ptr<fragment_source_t>>;
   using trigger_record_sink_t = appfwk::DAQSink<std::unique_ptr<dataformats::TriggerRecord>>;
+
+  bool read_queues( trigger_decision_source_t & , 
+		    fragment_sources_t &, 
+		    bool drain = false ) ;
   
   dataformats::TriggerRecord* build_trigger_record(const TriggerId&);
   // Plese note that the method will destroy the memory saved in the bookkeeping map
@@ -140,7 +145,6 @@ private:
   dunedaq::appfwk::ThreadHelper m_thread;
   void do_work(std::atomic<bool>&);
 
-
   // Configuration
   // size_t sleepMsecWhileRunning_;
   std::chrono::milliseconds m_queue_timeout;
@@ -157,6 +161,8 @@ private:
   std::map<TriggerId, dfmessages::TriggerDecision> m_trigger_decisions;
 
   dataformats::timestamp_diff_t m_max_time_difference;
+  dataformats::timestamp_t m_current_time = 0;
+
 };
 } // namespace dfmodules
 } // namespace dunedaq

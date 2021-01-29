@@ -151,62 +151,9 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
     frag_sources.push_back(std::unique_ptr<fragment_source_t>(new fragment_source_t(m_fragment_source_names[i])));
   }
 
-  dataformats::timestamp_t current_time = 0;
-
-  // temp memory allocations
-  dfmessages::TriggerDecision temp_dec;
-  std::unique_ptr<dataformats::Fragment> temp_fragment;
-
   while (running_flag.load()) {
 
-    bool book_updates = false;
-
-    //-------------------------------------------------
-    // Try to get a trigger decision of trigger decisions
-    //--------------------------------------------------
-
-    if (decision_source.can_pop()) {
-
-      try {
-        decision_source.pop(temp_dec, m_queue_timeout);
-      } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
-        // it is perfectly reasonable that there might be no data in the queue
-        // some fraction of the times that we check, so we just continue on and try again
-        continue;
-      }
-
-      current_time = temp_dec.trigger_timestamp;
-
-      TriggerId temp_id(temp_dec);
-      m_trigger_decisions[temp_id] = temp_dec;
-
-      book_updates = true;
-    } // if decisions has something to be read
-
-    //-------------------------------------------------
-    // Try to get Fragments from every queue
-    //--------------------------------------------------
-
-    for (unsigned int j = 0; j < frag_sources.size(); ++j) {
-
-      if (frag_sources[j]->can_pop()) {
-
-        try {
-          frag_sources[j]->pop(temp_fragment, m_queue_timeout);
-
-        } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
-          // it is perfectly reasonable that there might be no data in the queue
-          // some fraction of the times that we check, so we just continue on and try again
-          continue;
-        }
-
-        TriggerId temp_id(*temp_fragment);
-        m_fragments[temp_id].push_back(std::move(temp_fragment));
-
-        book_updates = true;
-      }
-
-    } // queue loop
+    bool book_updates =  read_queues( decision_source, frag_sources ) ;
 
     // TLOG(TLVL_WORK_STEPS) << "Decision size: " << m_trigger_decisions.size() ;
     // TLOG(TLVL_WORK_STEPS) << "Frag size: " << m_fragments.size() ;
@@ -267,11 +214,11 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
       //-----------------------------------------------
 
       for (const auto& id : complete) {
-
+	
 	send_trigger_record( id, record_sink, running_flag ) ;
 	
       }   // loop over compled trigger id
-
+      
       //-------------------------------------------------
       // Check if some fragments are obsolete
       //--------------------------------------------------
@@ -280,13 +227,13 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
 
         for (auto frag_it = it->second.begin(); frag_it != it->second.end(); ++frag_it) {
 
-          if (current_time > m_max_time_difference + (*frag_it)->get_trigger_timestamp()) {
+          if ( m_current_time > m_max_time_difference + (*frag_it)->get_trigger_timestamp()) {
 
             ers::error(FragmentObsolete(ERS_HERE,
                                         (*frag_it)->get_trigger_number(),
                                         (*frag_it)->get_fragment_type(),
                                         (*frag_it)->get_trigger_timestamp(),
-                                        current_time));
+                                        m_current_time));
             // it = m_trigger_decisions.erase( it ) ;
 
             // note that if we reached this point it means there is no corresponding trigger decision for this id
@@ -300,48 +247,13 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
 
   } // working loop
 
+  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Starting draining phase ";
+  std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+
   //-------------------------------------------------
   // Here we drain what has been left from the running condition
   //--------------------------------------------------
-
-
-  // Drain input queues
-  while( decision_source.can_pop() ) {
-
-    try {
-      decision_source.pop(temp_dec, m_queue_timeout);
-    } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
-      // it is perfectly reasonable that there might be no data in the queue                                        
-      // some fraction of the times that we check, so we just continue on and try again                             
-      continue;
-    }
-    
-    TriggerId temp_id(temp_dec);
-    m_trigger_decisions[temp_id] = temp_dec;
-    
-  }  // draining loop for decisions
-
-  
-  for (unsigned int j = 0; j < frag_sources.size(); ++j) {
-  
-    while (frag_sources[j]->can_pop()) {
-      
-      try {
-	frag_sources[j]->pop(temp_fragment, m_queue_timeout);
-	
-      } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
-	// it is perfectly reasonable that there might be no data in the queue
-	// some fraction of the times that we check, so we just continue on and try again
-	continue;
-      }
-      
-      TriggerId temp_id(*temp_fragment);
-      m_fragments[temp_id].push_back(std::move(temp_fragment));
-      
-    } // draining loop on the j-th queue 
-    
-  } // queue loop
-  
+  read_queues( decision_source, frag_sources, true ) ; 
     
 
   // create all possible trigger record
@@ -356,12 +268,87 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
   }
 
   
+  std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+
+  std::chrono::duration<double> time_span = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1);
+
   std::ostringstream oss_summ;
   oss_summ << ": Exiting the do_work() method, " << m_trigger_decisions.size() << " reminaing Trigger Decision and "
-           << m_fragments.size() << " remaining fragment stashes";
+           << m_fragments.size() << " remaining fragment stashes" << std::endl 
+	   << "Draining took : " << time_span.count() << " s" ;
   ers::log(ProgressUpdate(ERS_HERE, get_name(), oss_summ.str()));
+  
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_work() method";
 }
+
+bool 
+FragmentReceiver::read_queues( trigger_decision_source_t &  decision_source,  
+			       fragment_sources_t & frag_sources,  
+			       bool drain ) {
+
+  bool book_updates = false ;
+
+  // temp memory allocations
+  dfmessages::TriggerDecision temp_dec;
+
+  //-------------------------------------------------
+  // Try to get a trigger decision of trigger decisions
+  //--------------------------------------------------
+  
+  while ( decision_source.can_pop() ) {
+
+    try {
+      decision_source.pop(temp_dec, m_queue_timeout);
+    } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
+      // it is perfectly reasonable that there might be no data in the queue
+      // some fraction of the times that we check, so we just continue on and try again
+      continue;
+    }
+    
+    m_current_time = temp_dec.trigger_timestamp;
+    
+    TriggerId temp_id(temp_dec);
+    m_trigger_decisions[temp_id] = temp_dec;
+    
+    book_updates = true;
+
+    if ( ! drain ) break ;
+    
+  } // while decisions loop
+  
+    //-------------------------------------------------
+    // Try to get Fragments from every queue
+    //--------------------------------------------------
+  
+  for (unsigned int j = 0; j < frag_sources.size(); ++j) {
+    
+    while ( frag_sources[j]->can_pop() ) {
+
+      std::unique_ptr<dataformats::Fragment> temp_fragment;
+      
+      try {
+	frag_sources[j]->pop(temp_fragment, m_queue_timeout);
+	
+      } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
+	// it is perfectly reasonable that there might be no data in the queue
+	// some fraction of the times that we check, so we just continue on and try again
+	continue;
+      }
+      
+      TriggerId temp_id(*temp_fragment);
+      m_fragments[temp_id].push_back(std::move(temp_fragment));
+      
+      book_updates = true;
+      
+      if ( ! drain ) break ;
+      
+    } // while loop over the j-th queue
+
+  } // queue loop
+
+  return book_updates ;
+}
+
 
 dataformats::TriggerRecord*
 FragmentReceiver::build_trigger_record(const TriggerId& id)
