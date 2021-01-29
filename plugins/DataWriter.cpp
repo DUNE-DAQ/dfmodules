@@ -278,7 +278,8 @@ DataWriter::write_to_store( const std::unique_ptr<dataformats::TriggerRecord> & 
     // data_block.trh_size =
     m_data_writer->write(data_block);
   }
-  
+
+  return true ;
 }
 
 
