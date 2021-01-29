@@ -15,9 +15,9 @@
 #include "dfmodules/CommonIssues.hpp"
 #include "dfmodules/DataStore.hpp"
 
-#include <appfwk/DAQModule.hpp>
-#include <appfwk/ThreadHelper.hpp>
-#include <ers/Issue.h>
+#include "appfwk/DAQModule.hpp"
+#include "appfwk/ThreadHelper.hpp"
+#include "ers/Issue.h"
 
 #include <memory>
 #include <string>
@@ -53,18 +53,18 @@ private:
   void do_unconfigure(const data_t&);
 
   // Threading
-  dunedaq::appfwk::ThreadHelper thread_;
+  dunedaq::appfwk::ThreadHelper m_thread;
   void do_work(std::atomic<bool>&);
 
   // Configuration defaults
   const size_t REASONABLE_DEFAULT_SLEEPMSECWHILERUNNING = 1000;
 
   // Configuration
-  size_t sleepMsecWhileRunning_ = REASONABLE_DEFAULT_SLEEPMSECWHILERUNNING;
+  size_t m_sleep_msec_wile_running = REASONABLE_DEFAULT_SLEEPMSECWHILERUNNING;
 
   // Workers
-  std::unique_ptr<DataStore> inputDataStore_;
-  std::unique_ptr<DataStore> outputDataStore_;
+  std::unique_ptr<DataStore> m_input_data_store;
+  std::unique_ptr<DataStore> m_output_data_store;
 };
 } // namespace dfmodules
 

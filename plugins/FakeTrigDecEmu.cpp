@@ -8,11 +8,10 @@
 
 #include "FakeTrigDecEmu.hpp"
 #include "dfmodules/CommonIssues.hpp"
-
-#include "appfwk/DAQModuleHelper.hpp"
 #include "dfmodules/faketrigdecemu/Nljs.hpp"
 
 #include "TRACE/trace.h"
+#include "appfwk/DAQModuleHelper.hpp"
 #include "ers/ers.h"
 
 #include <chrono>
@@ -33,10 +32,10 @@ namespace dfmodules {
 
 FakeTrigDecEmu::FakeTrigDecEmu(const std::string& name)
   : dunedaq::appfwk::DAQModule(name)
-  , thread_(std::bind(&FakeTrigDecEmu::do_work, this, std::placeholders::_1))
-  , queueTimeout_(100)
-  , triggerDecisionOutputQueue_(nullptr)
-  , triggerInhibitInputQueue_(nullptr)
+  , m_thread(std::bind(&FakeTrigDecEmu::do_work, this, std::placeholders::_1))
+  , m_queue_timeout(100)
+  , m_trigger_decision_output_queue(nullptr)
+  , m_trigger_inhibit_input_queue(nullptr)
 {
   register_command("conf", &FakeTrigDecEmu::do_conf);
   register_command("start", &FakeTrigDecEmu::do_start);
@@ -49,12 +48,12 @@ FakeTrigDecEmu::init(const data_t& init_data)
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
   auto qi = appfwk::qindex(init_data, { "trigger_decision_sink", "trigger_inhibit_source" });
   try {
-    triggerDecisionOutputQueue_.reset(new trigdecsink_t(qi["trigger_decision_sink"].inst));
+    m_trigger_decision_output_queue.reset(new trigdecsink_t(qi["trigger_decision_sink"].inst));
   } catch (const ers::Issue& excpt) {
     throw InvalidQueueFatalError(ERS_HERE, get_name(), "trigger_decision_sink", excpt);
   }
   try {
-    triggerInhibitInputQueue_.reset(new triginhsource_t(qi["trigger_inhibit_source"].inst));
+    m_trigger_inhibit_input_queue.reset(new triginhsource_t(qi["trigger_inhibit_source"].inst));
   } catch (const ers::Issue& excpt) {
     throw InvalidQueueFatalError(ERS_HERE, get_name(), "trigger_inhibit_source", excpt);
   }
@@ -67,7 +66,7 @@ FakeTrigDecEmu::do_conf(const data_t& payload)
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
 
   faketrigdecemu::Conf tmpConfig = payload.get<faketrigdecemu::Conf>();
-  sleepMsecWhileRunning_ = tmpConfig.sleep_msec_while_running;
+  m_sleep_msec_while_running = tmpConfig.sleep_msec_while_running;
 
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
 }
@@ -76,7 +75,7 @@ void
 FakeTrigDecEmu::do_start(const data_t& /*args*/)
 {
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_start() method";
-  thread_.start_working_thread();
+  m_thread.start_working_thread();
   ERS_LOG(get_name() << " successfully started");
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
 }
@@ -85,7 +84,7 @@ void
 FakeTrigDecEmu::do_stop(const data_t& /*args*/)
 {
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_stop() method";
-  thread_.stop_working_thread();
+  m_thread.stop_working_thread();
   ERS_LOG(get_name() << " successfully stopped");
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_stop() method";
 }
@@ -109,16 +108,16 @@ FakeTrigDecEmu::do_work(std::atomic<bool>& running_flag)
       TLOG(TLVL_WORK_STEPS) << get_name() << ": Pushing the TriggerDecision for trigger number "
                             << trigDecision.m_trigger_number << " onto the output queue";
       try {
-        triggerDecisionOutputQueue_->push(trigDecision, queueTimeout_);
+        m_trigger_decision_output_queue->push(trigDecision, m_queue_timeout);
         wasSentSuccessfully = true;
       } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
         std::ostringstream oss_warn;
-        oss_warn << "push to output queue \"" << triggerDecisionOutputQueue_->get_name() << "\"";
+        oss_warn << "push to output queue \"" << m_trigger_decision_output_queue->get_name() << "\"";
         ers::warning(dunedaq::appfwk::QueueTimeoutExpired(
           ERS_HERE,
           get_name(),
           oss_warn.str(),
-          std::chrono::duration_cast<std::chrono::milliseconds>(queueTimeout_).count()));
+          std::chrono::duration_cast<std::chrono::milliseconds>(m_queue_timeout).count()));
       }
     }
 
@@ -129,7 +128,7 @@ FakeTrigDecEmu::do_work(std::atomic<bool>& running_flag)
     while (got_inh_msg) {
       try {
         dfmessages::TriggerInhibit trig_inhibit_msg;
-        triggerInhibitInputQueue_->pop(trig_inhibit_msg, (queueTimeout_ / 10));
+        m_trigger_inhibit_input_queue->pop(trig_inhibit_msg, (m_queue_timeout / 10));
         ++inhibit_message_count;
         got_inh_msg = true;
         TLOG(TLVL_WORK_STEPS) << get_name() << ": Popped a TriggerInhibit message with busy state set to \""
@@ -144,7 +143,7 @@ FakeTrigDecEmu::do_work(std::atomic<bool>& running_flag)
     }
 
     auto time_to_wait =
-      (start_time + std::chrono::milliseconds(sleepMsecWhileRunning_)) - std::chrono::steady_clock::now();
+      (start_time + std::chrono::milliseconds(m_sleep_msec_while_running)) - std::chrono::steady_clock::now();
     TLOG(TLVL_WORK_STEPS) << get_name() << ": Start of sleep between fake triggers";
     std::this_thread::sleep_for(time_to_wait);
     TLOG(TLVL_WORK_STEPS) << get_name() << ": End of sleep between fake triggers";

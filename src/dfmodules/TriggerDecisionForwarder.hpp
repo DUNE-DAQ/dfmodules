@@ -55,26 +55,26 @@ public:
 
   void set_latest_trigger_decision(const dfmessages::TriggerDecision& trig_dec)
   {
-    std::lock_guard<std::mutex> lk(data_mutex_);
-    latest_trigger_decision_ = trig_dec;
-    trig_dec_has_been_sent_ = false;
+    std::lock_guard<std::mutex> lk(m_data_mutex);
+    m_latest_trigger_decision = trig_dec;
+    m_trig_dec_has_been_sent = false;
   }
 
 private:
   // Threading
-  dunedaq::appfwk::ThreadHelper thread_;
+  dunedaq::appfwk::ThreadHelper m_thread;
   void do_work(std::atomic<bool>&);
 
   // Configuration
-  std::chrono::milliseconds queueTimeout_;
+  std::chrono::milliseconds m_queue_timeout;
 
   // Queue(s)
-  std::unique_ptr<trigdecsink_t> trigger_decision_sink_;
+  std::unique_ptr<trigdecsink_t> m_trigger_decision_sink;
 
   // Internal data
-  std::mutex data_mutex_;
-  dfmessages::TriggerDecision latest_trigger_decision_;
-  bool trig_dec_has_been_sent_;
+  std::mutex m_data_mutex;
+  dfmessages::TriggerDecision m_latest_trigger_decision;
+  bool m_trig_dec_has_been_sent;
 };
 } // namespace dfmodules
 } // namespace dunedaq
