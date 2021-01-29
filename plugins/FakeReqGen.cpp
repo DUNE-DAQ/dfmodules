@@ -50,7 +50,7 @@ void
 FakeReqGen::init(const data_t& init_data)
 {
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
-  auto qilist = appfwk::qindex(
+  auto qilist = appfwk::queue_index(
     init_data,
     { "trigger_decision_input_queue", "trigger_decision_for_event_building", "trigger_decision_for_inhibit" });
   try {

@@ -51,7 +51,7 @@ void
 FakeDataProd::init(const data_t& init_data)
 {
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
-  auto qi = appfwk::qindex(init_data, { "data_request_input_queue", "data_fragment_output_queue" });
+  auto qi = appfwk::queue_index(init_data, { "data_request_input_queue", "data_fragment_output_queue" });
   try {
     m_data_request_input_queue.reset(new datareqsource_t(qi["data_request_input_queue"].inst));
   } catch (const ers::Issue& excpt) {

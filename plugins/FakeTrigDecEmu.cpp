@@ -46,7 +46,7 @@ void
 FakeTrigDecEmu::init(const data_t& init_data)
 {
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
-  auto qi = appfwk::qindex(init_data, { "trigger_decision_sink", "trigger_inhibit_source" });
+  auto qi = appfwk::queue_index(init_data, { "trigger_decision_sink", "trigger_inhibit_source" });
   try {
     m_trigger_decision_output_queue.reset(new trigdecsink_t(qi["trigger_decision_sink"].inst));
   } catch (const ers::Issue& excpt) {

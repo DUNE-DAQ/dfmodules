@@ -56,7 +56,7 @@ FragmentReceiver::init(const data_t& init_data)
   // Get single queues
   //---------------------------------
 
-  auto qi = appfwk::qindex(init_data, { "trigger_decision_input_queue", "trigger_record_output_queue" });
+  auto qi = appfwk::queue_index(init_data, { "trigger_decision_input_queue", "trigger_record_output_queue" });
   // data request input queue
   try {
     auto temp_info = qi["trigger_decision_input_queue"];

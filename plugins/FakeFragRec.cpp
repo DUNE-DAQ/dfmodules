@@ -50,7 +50,7 @@ void
 FakeFragRec::init(const data_t& init_data)
 {
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
-  auto qilist = appfwk::qindex(init_data, { "trigger_decision_input_queue", "trigger_record_output_queue" });
+  auto qilist = appfwk::queue_index(init_data, { "trigger_decision_input_queue", "trigger_record_output_queue" });
   try {
     m_trigger_decision_input_queue.reset(new trigdecsource_t(qilist["trigger_decision_input_queue"].inst));
   } catch (const ers::Issue& excpt) {
