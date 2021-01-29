@@ -135,11 +135,11 @@ FakeFragRec::do_work(std::atomic<bool>& running_flag)
       bool got_fragment = false;
       while (!got_fragment && running_flag.load()) {
         try {
-          std::unique_ptr<dataformats::Fragment> dataFragPtr;
-          dataFragQueue->pop(dataFragPtr, m_queue_timeout);
+          std::unique_ptr<dataformats::Fragment> data_fragment_ptr;
+          dataFragQueue->pop(data_fragment_ptr, m_queue_timeout);
           got_fragment = true;
           ++receivedFragmentCount;
-          frag_ptr_vector.emplace_back(std::move(dataFragPtr));
+          frag_ptr_vector.emplace_back(std::move(data_fragment_ptr));
         } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
           // simply try again (forever); this is clearly a bad idea...
         }
