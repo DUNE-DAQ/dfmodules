@@ -43,6 +43,12 @@ public:
 
   void init(const data_t&) override;
 
+
+protected:
+
+  bool write_to_store( const std::unique_ptr<dataformats::TriggerRecord> & ) ;
+
+
 private:
   // Commands
   void do_conf(const data_t&);
