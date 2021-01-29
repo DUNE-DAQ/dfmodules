@@ -171,8 +171,7 @@ FakeReqGen::do_work(std::atomic<bool>& running_flag)
       wasSentSuccessfully = false;
       while (!wasSentSuccessfully && running_flag.load()) {
         TLOG(TLVL_WORK_STEPS) << get_name() << ": Pushing the DataRequest for trigger number "
-                              << dataReq.m_trigger_number
-                              << " onto an output queue";
+                              << dataReq.m_trigger_number << " onto an output queue";
         try {
           dataReqQueue->push(dataReq, m_queue_timeout);
           wasSentSuccessfully = true;

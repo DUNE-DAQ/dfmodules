@@ -120,7 +120,8 @@ FakeDataProd::do_work(std::atomic<bool>& running_flag)
     dummy_ints[0] = 3;
     dummy_ints[1] = 4;
     dummy_ints[2] = 5;
-    std::unique_ptr<dataformats::Fragment> data_fragment_ptr(new dataformats::Fragment(&dummy_ints[0], sizeof(dummy_ints)));
+    std::unique_ptr<dataformats::Fragment> data_fragment_ptr(
+      new dataformats::Fragment(&dummy_ints[0], sizeof(dummy_ints)));
     data_fragment_ptr->set_trigger_number(dataReq.m_trigger_number);
     data_fragment_ptr->set_run_number(m_run_number);
     dunedaq::dataformats::GeoID geo_location;

@@ -204,7 +204,8 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
       }
 
       // write each Fragment to the DataStore
-      // //StorageKey fragment_skey(trigger_record_ptr->get_run_number(), trigger_record_ptr->get_trigger_number, "FELIX",
+      // //StorageKey fragment_skey(trigger_record_ptr->get_run_number(), trigger_record_ptr->get_trigger_number,
+      // "FELIX",
       StorageKey fragment_skey(frag_ptr->get_run_number(),
                                frag_ptr->get_trigger_number(),
                                "FELIX",
@@ -222,8 +223,8 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
     // progress updates
     if ((received_count % 3) == 0) {
       std::ostringstream oss_prog;
-      oss_prog << ": Processing trigger number " << trigger_record_ptr->header_ref().get_trigger_number() << ", this is one of "
-               << received_count << " trigger records received so far.";
+      oss_prog << ": Processing trigger number " << trigger_record_ptr->header_ref().get_trigger_number()
+               << ", this is one of " << received_count << " trigger records received so far.";
       ers::log(ProgressUpdate(ERS_HERE, get_name(), oss_prog.str()));
     }
 
