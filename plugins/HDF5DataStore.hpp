@@ -208,10 +208,10 @@ public:
     std::vector<std::string> fileList = get_all_files();
 
     for (auto& filename : fileList) {
-      std::unique_ptr<HighFive::File> localFilePtr(new HighFive::File(filename, HighFive::File::ReadOnly));
+      std::unique_ptr<HighFive::File> local_file_ptr(new HighFive::File(filename, HighFive::File::ReadOnly));
       TLOG(TLVL_DEBUG) << get_name() << ": Opened HDF5 file " << filename;
 
-      std::vector<std::string> pathList = HDF5FileUtils::get_all_dataset_paths(*localFilePtr);
+      std::vector<std::string> pathList = HDF5FileUtils::get_all_dataset_paths(*local_file_ptr);
       TLOG(TLVL_DEBUG) << get_name() << ": Path list has element count: " << pathList.size();
 
       for (auto& path : pathList) {
@@ -220,7 +220,7 @@ public:
         keyList.push_back(thisKey);
       }
 
-      localFilePtr.reset(); // explicit destruction
+      local_file_ptr.reset(); // explicit destruction
     }
 
     return keyList;
