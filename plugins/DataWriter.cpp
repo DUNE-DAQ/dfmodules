@@ -150,7 +150,7 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
       m_trigger_record_input_queue->pop(trigger_record_ptr, m_queue_timeout);
       ++received_count;
       TLOG(TLVL_WORK_STEPS) << get_name() << ": Popped the TriggerRecord for trigger number "
-                            << trigger_record_ptr->header_ref().get_trigger_number() << " off the input queue";
+                            << trigger_record_ptr->get_header_ref().get_trigger_number() << " off the input queue";
     } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
       // it is perfectly reasonable that there might be no data in the queue
       // some fraction of the times that we check, so we just continue on and try again
@@ -160,12 +160,12 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
     // if we received a TriggerRecord, print out some debug information, if requested
 
     // First store the trigger record header
-    const void* trh_ptr = trigger_record_ptr->header_ref().get_storage_location();
-    size_t trh_size = trigger_record_ptr->header_ref().get_total_size_bytes();
+    const void* trh_ptr = trigger_record_ptr->get_header_ref().get_storage_location();
+    size_t trh_size = trigger_record_ptr->get_header_ref().get_total_size_bytes();
     // Apa number and link number in trh_key
     // are not taken into account for the Trigger
-    StorageKey trh_key(trigger_record_ptr->header_ref().get_run_number(),
-                       trigger_record_ptr->header_ref().get_trigger_number(),
+    StorageKey trh_key(trigger_record_ptr->get_header_ref().get_run_number(),
+                       trigger_record_ptr->get_header_ref().get_trigger_number(),
                        "TriggerRecordHeader",
                        1,
                        1);
@@ -175,7 +175,7 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
     m_data_writer->write(trh_block);
 
     // Write the fragments
-    const auto& frag_vec = trigger_record_ptr->fragments_ref();
+    const auto& frag_vec = trigger_record_ptr->get_fragments_ref();
     for (const auto& frag_ptr : frag_vec) {
       TLOG(TLVL_FRAGMENT_HEADER_DUMP) << get_name() << ": Partial(?) contents of the Fragment from link "
                                       << frag_ptr->get_link_id().m_link_number;
@@ -223,14 +223,14 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
     // progress updates
     if ((received_count % 3) == 0) {
       std::ostringstream oss_prog;
-      oss_prog << ": Processing trigger number " << trigger_record_ptr->header_ref().get_trigger_number()
+      oss_prog << ": Processing trigger number " << trigger_record_ptr->get_header_ref().get_trigger_number()
                << ", this is one of " << received_count << " trigger records received so far.";
       ers::log(ProgressUpdate(ERS_HERE, get_name(), oss_prog.str()));
     }
 
     // tell the TriggerInhibitAgent the trigger_number of this TriggerRecord so that
     // it can check whether an Inhibit needs to be asserted or cleared.
-    m_trigger_inhibit_agent->set_latest_trigger_number(trigger_record_ptr->header_ref().get_trigger_number());
+    m_trigger_inhibit_agent->set_latest_trigger_number(trigger_record_ptr->get_header_ref().get_trigger_number());
   }
 
   std::ostringstream oss_summ;

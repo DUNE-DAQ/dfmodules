@@ -118,6 +118,7 @@ public:
   void init(const data_t&) override;
 
 protected:
+  // BuildTriggerRecord will allocate memory and then orphan it to the caller via the returned pointer
   dataformats::TriggerRecord* BuildTriggerRecord(const TriggerId&);
   // Plese note that the method will destroy the memory saved in the bookkeeping map
 

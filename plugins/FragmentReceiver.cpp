@@ -332,9 +332,9 @@ FragmentReceiver::BuildTriggerRecord(const TriggerId& id)
 
   dataformats::TriggerRecord* trig_rec_ptr = new dataformats::TriggerRecord(trig_dec_comp);
 
-  trig_rec_ptr->header_ref().set_trigger_number(trig_dec.m_trigger_number);
-  trig_rec_ptr->header_ref().set_run_number(trig_dec.m_run_number);
-  trig_rec_ptr->header_ref().set_trigger_timestamp(trig_dec.m_trigger_timestamp);
+  trig_rec_ptr->get_header_ref().set_trigger_number(trig_dec.m_trigger_number);
+  trig_rec_ptr->get_header_ref().set_run_number(trig_dec.m_run_number);
+  trig_rec_ptr->get_header_ref().set_trigger_timestamp(trig_dec.m_trigger_timestamp);
 
   auto frags_it = m_fragments.find(id);
   auto& frags = frags_it->second;
