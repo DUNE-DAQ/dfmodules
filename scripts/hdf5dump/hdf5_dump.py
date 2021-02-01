@@ -49,16 +49,12 @@ def traverse_datasets(hdf_file, reqTrigRecords, isTRH):
     for key in hdf5_group.keys():
       item = hdf5_group[key]
       path = f'{prefix}/{key}'
-      if isTRH:
-        if isinstance(item, h5py.Dataset) and key == "TriggerRecordHeader": # test for dataset
-          yield (path, item)
-      elif isinstance(item, h5py.Group): # test for group (go down)
-         yield from h5py_dataset_iterator(item, path) 
+      if isinstance(item, h5py.Group): # test for group (go down)
+        yield from h5py_dataset_iterator(item, path) 
       else:
-        if isinstance(item, h5py.Dataset) and key != "TriggerRecordHeader": # test for dataset
-          yield (path, item)
-        elif isinstance(item, h5py.Group): # test for group (go down)
-         yield from h5py_dataset_iterator(item, path) 
+        if isinstance(item, h5py.Dataset):
+          if (key == "TriggerRecordHeader" and isTRH) or  (key != "TriggerRecordHeader" and isTRH != True):
+            yield (path, item)
 
   counter = 0
   for path, _ in h5py_dataset_iterator(hdf_file):
