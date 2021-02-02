@@ -50,20 +50,20 @@ private:
   void do_stop(const data_t&);
 
   // Threading
-  dunedaq::appfwk::ThreadHelper thread_;
+  dunedaq::appfwk::ThreadHelper m_thread;
   void do_work(std::atomic<bool>&);
 
   // Configuration
-  // size_t sleepMsecWhileRunning_;
-  std::chrono::milliseconds queueTimeout_;
-  dunedaq::dataformats::run_number_t run_number_;
-  uint32_t fake_link_number_; // NOLINT
+  // size_t m_sleep_msec_while_running;
+  std::chrono::milliseconds m_queue_timeout;
+  dunedaq::dataformats::run_number_t m_run_number;
+  uint32_t m_fake_link_number; // NOLINT
 
   // Queue(s)
   using datareqsource_t = dunedaq::appfwk::DAQSource<dfmessages::DataRequest>;
-  std::unique_ptr<datareqsource_t> dataRequestInputQueue_;
+  std::unique_ptr<datareqsource_t> m_data_request_input_queue;
   using datafragsink_t = dunedaq::appfwk::DAQSink<std::unique_ptr<dataformats::Fragment>>;
-  std::unique_ptr<datafragsink_t> dataFragmentOutputQueue_;
+  std::unique_ptr<datafragsink_t> m_data_fragment_output_queue;
 };
 } // namespace dfmodules
 } // namespace dunedaq

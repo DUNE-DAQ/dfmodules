@@ -14,7 +14,7 @@
 
 #define BOOST_TEST_MODULE HDF5Combiner_test // NOLINT
 
-#include <boost/test/unit_test.hpp>
+#include "boost/test/unit_test.hpp"
 
 #include <filesystem>
 #include <fstream>
@@ -27,130 +27,130 @@
 using namespace dunedaq::dfmodules;
 
 std::vector<std::string>
-getFilesMatchingPattern(const std::string& path, const std::string& pattern)
+get_files_matching_pattern(const std::string& path, const std::string& pattern)
 {
-  std::regex regexSearchPattern(pattern);
-  std::vector<std::string> fileList;
+  std::regex regex_search_pattern(pattern);
+  std::vector<std::string> file_list;
   for (const auto& entry : std::filesystem::directory_iterator(path)) {
-    if (std::regex_match(entry.path().filename().string(), regexSearchPattern)) {
-      fileList.push_back(entry.path());
+    if (std::regex_match(entry.path().filename().string(), regex_search_pattern)) {
+      file_list.push_back(entry.path());
     }
   }
-  return fileList;
+  return file_list;
 }
 
 std::vector<std::string>
-deleteFilesMatchingPattern(const std::string& path, const std::string& pattern)
+delete_files_matching_pattern(const std::string& path, const std::string& pattern)
 {
-  std::regex regexSearchPattern(pattern);
-  std::vector<std::string> fileList;
+  std::regex regex_search_pattern(pattern);
+  std::vector<std::string> file_list;
   for (const auto& entry : std::filesystem::directory_iterator(path)) {
-    if (std::regex_match(entry.path().filename().string(), regexSearchPattern)) {
+    if (std::regex_match(entry.path().filename().string(), regex_search_pattern)) {
       if (std::filesystem::remove(entry.path())) {
-        fileList.push_back(entry.path());
+        file_list.push_back(entry.path());
       }
     }
   }
-  return fileList;
+  return file_list;
 }
 
 BOOST_AUTO_TEST_SUITE(HDF5Combiner_test)
 
 BOOST_AUTO_TEST_CASE(CombineFragmentsIntoEvents)
 {
-  std::string filePath(std::filesystem::temp_directory_path());
-  std::string filePrefix = "demo" + std::to_string(getpid());
-  const int EVENT_COUNT = 5;
-  const int GEOLOC_COUNT = 10;
-  const int DUMMYDATA_SIZE = 4096;
+  std::string file_path(std::filesystem::temp_directory_path());
+  std::string file_prefix = "demo" + std::to_string(getpid());
+  const int events_to_generate = 5;
+  const int links_to_generate = 10;
+  const int dummydata_size = 4096;
 
   // delete any pre-existing files so that we start with a clean slate
-  std::string deletePattern = filePrefix + ".*.hdf5";
-  deleteFilesMatchingPattern(filePath, deletePattern);
+  std::string delete_pattern = file_prefix + ".*.hdf5";
+  delete_files_matching_pattern(file_path, delete_pattern);
 
   // create an initial DataStore instance for writing the fragment files
   nlohmann::json conf;
   conf["name"] = "hdfDataStore";
-  conf["filename_prefix"] = filePrefix;
-  conf["directory_path"] = filePath;
+  conf["filename_prefix"] = file_prefix;
+  conf["directory_path"] = file_path;
   conf["mode"] = "one-fragment-per-file";
-  std::unique_ptr<HDF5DataStore> dsPtr(new HDF5DataStore(conf));
+  std::unique_ptr<HDF5DataStore> data_store_ptr(new HDF5DataStore(conf));
 
   // write several events, each with several fragments
-  char dummyData[DUMMYDATA_SIZE];
-  for (int eventID = 1; eventID <= EVENT_COUNT; ++eventID) {
-    for (int geoLoc = 0; geoLoc < GEOLOC_COUNT; ++geoLoc) {
-      StorageKey key(eventID, StorageKey::INVALID_DETECTORID, geoLoc);
-      KeyedDataBlock dataBlock(key);
-      dataBlock.unowned_data_start = static_cast<void*>(&dummyData[0]);
-      dataBlock.data_size = DUMMYDATA_SIZE;
-      dsPtr->write(dataBlock);
+  char dummy_data[dummydata_size];
+  for (int event_id = 1; event_id <= events_to_generate; ++event_id) {
+    for (int geo_location = 0; geo_location < links_to_generate; ++geo_location) {
+      StorageKey key(event_id, StorageKey::s_invalid_detector_id, geo_location);
+      KeyedDataBlock data_block(key);
+      data_block.unowned_data_start = static_cast<void*>(&dummy_data[0]);
+      data_block.data_size = dummydata_size;
+      data_store_ptr->write(data_block);
     }
   }
-  dsPtr.reset(); // explicit destruction
+  data_store_ptr.reset(); // explicit destruction
 
   // check that the expected number of fragment-based files was created
-  std::string searchPattern = filePrefix + "_event_\\d+_geoID_\\d+.hdf5";
-  std::vector<std::string> fileList = getFilesMatchingPattern(filePath, searchPattern);
-  BOOST_REQUIRE_EQUAL(fileList.size(), (EVENT_COUNT * GEOLOC_COUNT));
+  std::string search_pattern = file_prefix + "_event_\\d+_geoID_\\d+.hdf5";
+  std::vector<std::string> file_list = get_files_matching_pattern(file_path, search_pattern);
+  BOOST_REQUIRE_EQUAL(file_list.size(), (events_to_generate * links_to_generate));
 
   // now create two DataStore instances, one to read the fragment files and one to write event files
   conf["name"] = "hdfReader";
-  conf["filename_prefix"] = filePrefix;
-  conf["directory_path"] = filePath;
+  conf["filename_prefix"] = file_prefix;
+  conf["directory_path"] = file_path;
   conf["mode"] = "one-fragment-per-file";
-  std::unique_ptr<HDF5DataStore> inputPtr(new HDF5DataStore(conf));
+  std::unique_ptr<HDF5DataStore> input_ptr(new HDF5DataStore(conf));
   conf["name"] = "hdfWriter";
-  conf["filename_prefix"] = filePrefix;
-  conf["directory_path"] = filePath;
+  conf["filename_prefix"] = file_prefix;
+  conf["directory_path"] = file_path;
   conf["mode"] = "one-event-per-file";
-  std::unique_ptr<HDF5DataStore> outputPtr(new HDF5DataStore(conf));
+  std::unique_ptr<HDF5DataStore> output_ptr(new HDF5DataStore(conf));
 
   // fetch all of the keys that exist in the input DataStore
-  std::vector<StorageKey> keyList = inputPtr->getAllExistingKeys();
-  BOOST_REQUIRE_EQUAL(keyList.size(), (EVENT_COUNT * GEOLOC_COUNT));
+  std::vector<StorageKey> key_list = input_ptr->get_all_existing_keys();
+  BOOST_REQUIRE_EQUAL(key_list.size(), (events_to_generate * links_to_generate));
 
   // copy each of the fragments (data blocks) from the input to the output
-  for (auto& key : keyList) {
-    KeyedDataBlock dataBlock = inputPtr->read(key);
-    outputPtr->write(dataBlock);
+  for (auto& key : key_list) {
+    KeyedDataBlock data_block = input_ptr->read(key);
+    output_ptr->write(data_block);
   }
-  inputPtr.reset();  // explicit destruction
-  outputPtr.reset(); // explicit destruction
+  input_ptr.reset();  // explicit destruction
+  output_ptr.reset(); // explicit destruction
 
   // check that the expected number of event-based files was created
-  searchPattern = filePrefix + "_event_\\d+.hdf5";
-  fileList = getFilesMatchingPattern(filePath, searchPattern);
-  BOOST_REQUIRE_EQUAL(fileList.size(), EVENT_COUNT);
+  search_pattern = file_prefix + "_event_\\d+.hdf5";
+  file_list = get_files_matching_pattern(file_path, search_pattern);
+  BOOST_REQUIRE_EQUAL(file_list.size(), events_to_generate);
 
   // now create two DataStore instances, one to read the event files and one to write a single file
   conf["name"] = "hdfReader";
-  conf["filename_prefix"] = filePrefix;
-  conf["directory_path"] = filePath;
+  conf["filename_prefix"] = file_prefix;
+  conf["directory_path"] = file_path;
   conf["mode"] = "one-event-per-file";
-  inputPtr.reset(new HDF5DataStore(conf));
+  input_ptr.reset(new HDF5DataStore(conf));
   conf["name"] = "hdfWriter";
-  conf["filename_prefix"] = filePrefix;
-  conf["directory_path"] = filePath;
+  conf["filename_prefix"] = file_prefix;
+  conf["directory_path"] = file_path;
   conf["mode"] = "all-per-file";
-  outputPtr.reset(new HDF5DataStore(conf));
+  output_ptr.reset(new HDF5DataStore(conf));
 
   // fetch all of the keys that exist in the input DataStore
-  keyList = inputPtr->getAllExistingKeys();
-  BOOST_REQUIRE_EQUAL(keyList.size(), (EVENT_COUNT * GEOLOC_COUNT));
+  key_list = input_ptr->get_all_existing_keys();
+  BOOST_REQUIRE_EQUAL(key_list.size(), (events_to_generate * links_to_generate));
 
   // copy each of the fragments (data blocks) from the input to the output
-  for (auto& key : keyList) {
-    KeyedDataBlock dataBlock = inputPtr->read(key);
-    outputPtr->write(dataBlock);
+  for (auto& key : key_list) {
+    KeyedDataBlock data_block = input_ptr->read(key);
+    output_ptr->write(data_block);
   }
-  inputPtr.reset();  // explicit destruction
-  outputPtr.reset(); // explicit destruction
+  input_ptr.reset();  // explicit destruction
+  output_ptr.reset(); // explicit destruction
 
   // check that the expected single file was created
-  searchPattern = filePrefix + "_all_events.hdf5";
-  fileList = getFilesMatchingPattern(filePath, searchPattern);
-  BOOST_REQUIRE_EQUAL(fileList.size(), 1);
+  search_pattern = file_prefix + "_all_events.hdf5";
+  file_list = get_files_matching_pattern(file_path, search_pattern);
+  BOOST_REQUIRE_EQUAL(file_list.size(), 1);
 
   // check that the size of the single file is reasonable
   //
@@ -160,12 +160,12 @@ BOOST_AUTO_TEST_CASE(CombineFragmentsIntoEvents)
   // the sum of the fragment sizes, because of the additional information that the
   // HDF5 format adds.  The HDF5 addition seems to be about 12%, so we allow for a 15%
   // difference, which is represented with the 0.15 in the third argument of the test call.)
-  size_t singleFileSize = std::filesystem::file_size(fileList[0]);
+  size_t single_file_size = std::filesystem::file_size(file_list[0]);
   BOOST_REQUIRE_CLOSE_FRACTION(
-    static_cast<float>(singleFileSize), static_cast<float>(EVENT_COUNT * GEOLOC_COUNT * DUMMYDATA_SIZE), 0.15);
+    static_cast<float>(single_file_size), static_cast<float>(events_to_generate * links_to_generate * dummydata_size), 0.15);
 
   // clean up all of the files that were created
-  fileList = deleteFilesMatchingPattern(filePath, deletePattern);
+  file_list = delete_files_matching_pattern(file_path, delete_pattern);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

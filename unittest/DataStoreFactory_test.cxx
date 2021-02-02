@@ -13,7 +13,7 @@
 
 #define BOOST_TEST_MODULE DataStoreFactory_test // NOLINT
 
-#include <boost/test/unit_test.hpp>
+#include "boost/test/unit_test.hpp"
 
 #include <memory>
 
@@ -25,11 +25,11 @@ BOOST_AUTO_TEST_CASE(invalid_request)
 {
 
   // we want to pass an invalid DataStore type and see if we get an exception
-  BOOST_CHECK_THROW(makeDataStore("dummy", nlohmann::json{}), std::exception);
+  BOOST_CHECK_THROW(make_data_store("dummy", nlohmann::json{}), std::exception);
 
   // we want to ask for a DataStore configuring absolutely nothing, not even its type
   // and check if we get an exception
-  BOOST_CHECK_THROW(makeDataStore(nlohmann::json{}), std::exception);
+  BOOST_CHECK_THROW(make_data_store(nlohmann::json{}), std::exception);
 }
 
 /*
@@ -40,7 +40,7 @@ BOOST_AUTO_TEST_CASE(valid_request)
   conf["name"] = "test" ;
 
   // we want to ask for a valid Data Store type
-  auto ds = makeDataStore( "TrashCanDataStore", conf ) ;
+  auto ds = make_data_store( "TrashCanDataStore", conf ) ;
 
   // and we want to check if we created something valid
   BOOST_TEST( ds.get() ) ;

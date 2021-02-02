@@ -51,20 +51,20 @@ private:
   void do_scrap(const data_t&);
 
   // Threading
-  dunedaq::appfwk::ThreadHelper thread_;
+  dunedaq::appfwk::ThreadHelper m_thread;
   void do_work(std::atomic<bool>&);
 
   // Configuration
-  // size_t sleepMsecWhileRunning_;
-  std::chrono::milliseconds queueTimeout_;
+  // size_t m_sleep_msec_while_running;
+  std::chrono::milliseconds m_queue_timeout;
 
   // Queue(s)
   using trigrecsource_t = dunedaq::appfwk::DAQSource<std::unique_ptr<dataformats::TriggerRecord>>;
-  std::unique_ptr<trigrecsource_t> triggerRecordInputQueue_;
+  std::unique_ptr<trigrecsource_t> m_trigger_record_input_queue;
 
   // Worker(s)
-  std::unique_ptr<DataStore> data_writer_;
-  std::unique_ptr<TriggerInhibitAgent> trigger_inhibit_agent_;
+  std::unique_ptr<DataStore> m_data_writer;
+  std::unique_ptr<TriggerInhibitAgent> m_trigger_inhibit_agent;
 };
 } // namespace dfmodules
 

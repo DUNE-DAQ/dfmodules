@@ -24,40 +24,25 @@ struct KeyedDataBlock
 {
 public:
   // These data members will be made private, at some point in time.
-  StorageKey data_key;
-  size_t data_size;
-  const void* unowned_data_start;
-  std::unique_ptr<char> owned_data_start;
-
-  // size_t trh_size;
-  // const void* unowned_trigger_record_header;
-  // std::unique_ptr<char> owned_trigger_record_header;
+  StorageKey m_data_key;
+  size_t m_data_size;
+  const void* m_unowned_data_start;
+  std::unique_ptr<char> m_owned_data_start;
 
   explicit KeyedDataBlock(const StorageKey& theKey)
-    : data_key(theKey)
+    : m_data_key(theKey)
   {}
 
-  const void* getDataStart() const
+  const void* get_data_start() const
   {
-    if (owned_data_start.get() != nullptr) {
-      return static_cast<const void*>(owned_data_start.get());
+    if (m_owned_data_start.get() != nullptr) {
+      return static_cast<const void*>(m_owned_data_start.get());
     } else {
-      return unowned_data_start;
+      return m_unowned_data_start;
     }
   }
 
-  //
-  //  const void* getTriggerRecordHeader() const
-  //  {
-  //    if (owned_trigger_record_header.get() != nullptr) {
-  //      return static_cast<const void*>(owned_trigger_record_header.get());
-  //    } else {
-  //      return unowned_trigger_record_header;
-  //    }
-  //  }
-
-  size_t getDataSizeBytes() const { return data_size; }
-  // size_t getTriggerRecordHeaderSizeBytes() const {return trh_size}
+  size_t get_data_size_bytes() const { return m_data_size; }
 };
 
 } // namespace dfmodules

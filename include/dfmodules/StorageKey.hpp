@@ -11,6 +11,7 @@
  * received with this code.
  */
 
+#include <limits>
 #include <string>
 
 namespace dunedaq {
@@ -41,31 +42,22 @@ class StorageKey
 {
 
 public:
-  static const int INVALID_RUNNUMBER;
-  static const int INVALID_TRIGGERNUMBER;
-  inline static const std::string INVALID_DETECTORTYPE = "Invalid";
-  static const int INVALID_APANUMBER;
-  static const int INVALID_LINKNUMBER;
-
-  // StorageKey(int eventID, std::string detectorID, int geoLocation)
-  //: m_key(eventID, eventID, detectorID, geoLocation, geoLocation)
-  //{}
+  static constexpr int s_invalid_run_number = std::numeric_limits<int>::max();
+  static constexpr int s_invalid_trigger_number = std::numeric_limits<int>::max();
+  inline static const std::string s_invalid_detector_type = "Invalid";
+  static constexpr int s_invalid_apa_number = std::numeric_limits<int>::max();
+  static constexpr int s_invalid_link_number = std::numeric_limits<int>::max();
 
   StorageKey(int run_number, int trigger_number, std::string detector_type, int apa_number, int link_number)
     : m_key(run_number, trigger_number, detector_type, apa_number, link_number)
   {}
   ~StorageKey() {} // NOLINT
 
-  int getRunNumber() const;
-  int getTriggerNumber() const;
-  std::string getDetectorType() const;
-  int getApaNumber() const;
-  int getLinkNumber() const;
-
-  // AAA: TODO delete
-  // int getEventID() const;
-  // std::string getDetectorID() const;
-  // int getGeoLocation() const;
+  int get_run_number() const;
+  int get_trigger_number() const;
+  std::string get_detector_type() const;
+  int get_apa_number() const;
+  int get_link_number() const;
 
 private:
   Key m_key;

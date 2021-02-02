@@ -51,20 +51,20 @@ private:
   void do_stop(const data_t&);
 
   // Threading
-  dunedaq::appfwk::ThreadHelper thread_;
+  dunedaq::appfwk::ThreadHelper m_thread;
   void do_work(std::atomic<bool>&);
 
   // Configuration
-  // size_t sleepMsecWhileRunning_;
-  std::chrono::milliseconds queueTimeout_;
+  // size_t m_sleep_msec_while_running;
+  std::chrono::milliseconds m_queue_timeout;
 
   // Queue(s)
   using trigdecsource_t = dunedaq::appfwk::DAQSource<dfmessages::TriggerDecision>;
-  std::unique_ptr<trigdecsource_t> triggerDecisionInputQueue_;
+  std::unique_ptr<trigdecsource_t> m_trigger_decision_input_queue;
   using datafragsource_t = dunedaq::appfwk::DAQSource<std::unique_ptr<dataformats::Fragment>>;
-  std::vector<std::unique_ptr<datafragsource_t>> dataFragmentInputQueues_;
+  std::vector<std::unique_ptr<datafragsource_t>> m_data_fragment_input_queues;
   using trigrecsink_t = dunedaq::appfwk::DAQSink<std::unique_ptr<dataformats::TriggerRecord>>;
-  std::unique_ptr<trigrecsink_t> triggerRecordOutputQueue_;
+  std::unique_ptr<trigrecsink_t> m_trigger_record_output_queue;
 };
 } // namespace dfmodules
 } // namespace dunedaq

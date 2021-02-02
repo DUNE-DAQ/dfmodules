@@ -29,17 +29,17 @@ namespace dfmodules {
 TriggerDecisionForwarder::TriggerDecisionForwarder(const std::string& parent_name,
                                                    std::unique_ptr<trigdecsink_t> our_output)
   : NamedObject(parent_name + "::TriggerDecisionForwarder")
-  , thread_(std::bind(&TriggerDecisionForwarder::do_work, this, std::placeholders::_1))
-  , queueTimeout_(100)
-  , trigger_decision_sink_(std::move(our_output))
-  , trig_dec_has_been_sent_(true)
+  , m_thread(std::bind(&TriggerDecisionForwarder::do_work, this, std::placeholders::_1))
+  , m_queue_timeout(100)
+  , m_trigger_decision_sink(std::move(our_output))
+  , m_trig_dec_has_been_sent(true)
 {}
 
 void
 TriggerDecisionForwarder::start_forwarding()
 {
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering start_forwarding() method";
-  thread_.start_working_thread();
+  m_thread.start_working_thread();
   ERS_LOG(get_name() << " successfully started");
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting start_forwarding() method";
 }
@@ -48,7 +48,7 @@ void
 TriggerDecisionForwarder::stop_forwarding()
 {
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering stop_forwarding() method";
-  thread_.stop_working_thread();
+  m_thread.stop_working_thread();
   ERS_LOG(get_name() << " successfully stopped");
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting stop_forwarding() method";
 }
@@ -67,13 +67,13 @@ TriggerDecisionForwarder::do_work(std::atomic<bool>& running_flag)
   while (running_flag.load()) {
 
     // send the latest TriggerDecision, if needed
-    std::unique_lock<std::mutex> lk(data_mutex_);
-    if (!trig_dec_has_been_sent_) {
+    std::unique_lock<std::mutex> lk(m_data_mutex);
+    if (!m_trig_dec_has_been_sent) {
       TLOG(TLVL_WORK_STEPS) << get_name() << ": Pushing the TriggerDecision for trigger number "
-                            << latest_trigger_decision_.trigger_number << " onto the output queue.";
+                            << m_latest_trigger_decision.m_trigger_number << " onto the output queue.";
       try {
-        trigger_decision_sink_->push(latest_trigger_decision_, queueTimeout_ / 2);
-        trig_dec_has_been_sent_ = true;
+        m_trigger_decision_sink->push(m_latest_trigger_decision, m_queue_timeout / 2);
+        m_trig_dec_has_been_sent = true;
         ++sent_message_count;
       } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
         // It is not ideal if we fail to send the TriggerDecision message out, but rather than
@@ -84,10 +84,10 @@ TriggerDecisionForwarder::do_work(std::atomic<bool>& running_flag)
 
       // this sleep is intended to allow updates to the latest TriggerDecision to happen in parallel
       lk.unlock();
-      std::this_thread::sleep_for(std::chrono::milliseconds(queueTimeout_ / 2));
+      std::this_thread::sleep_for(std::chrono::milliseconds(m_queue_timeout / 2));
     } else {
       lk.unlock();
-      std::this_thread::sleep_for(std::chrono::milliseconds(queueTimeout_));
+      std::this_thread::sleep_for(std::chrono::milliseconds(m_queue_timeout));
     }
   }
 
