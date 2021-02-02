@@ -44,6 +44,7 @@ DataWriter::DataWriter(const std::string& name)
   : dunedaq::appfwk::DAQModule(name)
   , m_thread(std::bind(&DataWriter::do_work, this, std::placeholders::_1))
   , m_queue_timeout(100)
+  , m_data_storage_is_enabled(true)
   , m_trigger_record_input_queue(nullptr)
 {
   register_command("conf", &DataWriter::do_conf);
@@ -101,11 +102,16 @@ DataWriter::do_conf(const data_t& payload)
 }
 
 void
-DataWriter::do_start(const data_t& /*args*/)
+DataWriter::do_start(const data_t& payload)
 {
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_start() method";
+
+  datawriter::StartParams start_params = payload.get<datawriter::StartParams>();
+  m_data_storage_is_enabled = (! start_params.disable_data_storage);
+
   m_trigger_inhibit_agent->start_checking();
   m_thread.start_working_thread();
+
   ERS_LOG(get_name() << " successfully started");
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
 }
@@ -172,7 +178,9 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
     KeyedDataBlock trh_block(trh_key);
     trh_block.m_unowned_data_start = trh_ptr;
     trh_block.m_data_size = trh_size;
-    m_data_writer->write(trh_block);
+    if (m_data_storage_is_enabled) {
+      m_data_writer->write(trh_block);
+    }
 
     // Write the fragments
     const auto& frag_vec = trigger_record_ptr->get_fragments_ref();
@@ -217,7 +225,9 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
 
       // data_block.unowned_trigger_record_header =
       // data_block.trh_size =
-      m_data_writer->write(data_block);
+      if (m_data_storage_is_enabled) {
+        m_data_writer->write(data_block);
+      }
     }
 
     // progress updates

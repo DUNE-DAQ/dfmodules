@@ -101,8 +101,6 @@ public:
     }
   }
 
-  virtual void setup(const size_t eventId) { ERS_INFO("Setup ... " << eventId); }
-
   virtual KeyedDataBlock read(const StorageKey& key)
   {
     TLOG(TLVL_DEBUG) << get_name() << ": going to read data block from triggerNumber/detectorType/apaNumber/linkNumber "

@@ -76,12 +76,6 @@ public:
   {}
 
   /**
-   * @brief Setup the DataStore for reading/writign.
-   * @param directory path and filename.
-   */
-  virtual void setup(const size_t eventId) = 0;
-
-  /**
    * @brief Writes the specified data payload into the DataStore.
    * @param dataBlock Data block to write.
    */
