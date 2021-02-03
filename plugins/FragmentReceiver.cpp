@@ -304,7 +304,7 @@ FragmentReceiver::read_queues( trigger_decision_source_t &  decision_source,
       continue;
     }
     
-    m_current_time = temp_dec.trigger_timestamp;
+    m_current_time = temp_dec.m_trigger_timestamp;
     
     TriggerId temp_id(temp_dec);
     m_trigger_decisions[temp_id] = temp_dec;
@@ -364,16 +364,16 @@ FragmentReceiver::build_trigger_record(const TriggerId& id)
 
   dataformats::TriggerRecord* trig_rec_ptr = new dataformats::TriggerRecord(trig_dec_comp);
 
-  trig_rec_ptr->get_header().set_trigger_number(trig_dec.trigger_number);
-  trig_rec_ptr->get_header().set_run_number(trig_dec.run_number);
-  trig_rec_ptr->get_header().set_trigger_timestamp(trig_dec.trigger_timestamp);
-  trig_rec_ptr->get_header().set_trigger_type( trig_dec.trigger_type ) ;
+  trig_rec_ptr->get_header_ref().set_trigger_number(trig_dec.m_trigger_number);
+  trig_rec_ptr->get_header_ref().set_run_number(trig_dec.m_run_number);
+  trig_rec_ptr->get_header_ref().set_trigger_timestamp(trig_dec.m_trigger_timestamp);
+  trig_rec_ptr->get_header_ref().set_trigger_type( trig_dec.m_trigger_type ) ;
   
   auto frags_it = m_fragments.find(id);
   auto& frags = frags_it->second;
 
   // if ( trig_dec_comp.size() != frags.size() ) {
-  //   trig_rec_ptr->get_header().set_error_bit(size_t bit, bool value)
+  //   trig_rec_ptr->get_header_ref().set_error_bit(size_t bit, bool value)
   // }
 
   while (frags.size() > 0) {
