@@ -12,8 +12,8 @@
 #include "dfmodules/DataStore.hpp"
 #include "dfmodules/KeyedDataBlock.hpp"
 
-#include <TRACE/trace.h>
-#include <ers/ers.h>
+#include "TRACE/trace.h"
+#include "ers/ers.h"
 
 #include <chrono>
 #include <cstdlib>
@@ -33,7 +33,7 @@ namespace dfmodules {
 
 DataTransferModule::DataTransferModule(const std::string& name)
   : dunedaq::appfwk::DAQModule(name)
-  , thread_(std::bind(&DataTransferModule::do_work, this, std::placeholders::_1))
+  , m_thread(std::bind(&DataTransferModule::do_work, this, std::placeholders::_1))
 {
   register_command("conf", &DataTransferModule::do_conf);
   register_command("start", &DataTransferModule::do_start);
@@ -57,9 +57,9 @@ DataTransferModule::do_conf(const data_t& payload)
 
   m_sleep_msec_wile_running = tmpConfig.sleep_msec_while_running;
 
-  m_input_data_store = makeDataStore(payload["input_data_store_parameters"]);
+  m_input_data_store = make_data_store(payload["input_data_store_parameters"]);
 
-  m_output_data_store = makeDataStore(payload["output_data_store_parameters"]);
+  m_output_data_store = make_data_store(payload["output_data_store_parameters"]);
 
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
 }
@@ -68,7 +68,7 @@ void
 DataTransferModule::do_start(const data_t& /*args*/)
 {
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_start() method";
-  thread_.start_working_thread();
+  m_thread.start_working_thread();
   ERS_LOG(get_name() << " successfully started");
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
 }
@@ -77,7 +77,7 @@ void
 DataTransferModule::do_stop(const data_t& /*args*/)
 {
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_stop() method";
-  thread_.stop_working_thread();
+  m_thread.stop_working_thread();
   ERS_LOG(get_name() << " successfully stopped");
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_stop() method";
 }
@@ -103,7 +103,7 @@ DataTransferModule::do_work(std::atomic<bool>& running_flag)
     throw InvalidDataStoreError(ERS_HERE, get_name(), "writing");
   }
 
-  std::vector<StorageKey> keyList = m_input_data_store->getAllExistingKeys();
+  std::vector<StorageKey> keyList = m_input_data_store->get_all_existing_keys();
   for (auto& key : keyList) {
     KeyedDataBlock data_block = m_input_data_store->read(key);
     m_output_data_store->write(data_block);

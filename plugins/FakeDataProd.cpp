@@ -10,9 +10,8 @@
 #include "dfmodules/CommonIssues.hpp"
 #include "dfmodules/fakedataprod/Nljs.hpp"
 
-#include "appfwk/DAQModuleHelper.hpp"
-
 #include "TRACE/trace.h"
+#include "appfwk/DAQModuleHelper.hpp"
 #include "ers/ers.h"
 
 #include <chrono>
@@ -52,7 +51,7 @@ void
 FakeDataProd::init(const data_t& init_data)
 {
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
-  auto qi = appfwk::qindex(init_data, { "data_request_input_queue", "data_fragment_output_queue" });
+  auto qi = appfwk::queue_index(init_data, { "data_request_input_queue", "data_fragment_output_queue" });
   try {
     m_data_request_input_queue.reset(new datareqsource_t(qi["data_request_input_queue"].inst));
   } catch (const ers::Issue& excpt) {
@@ -121,18 +120,19 @@ FakeDataProd::do_work(std::atomic<bool>& running_flag)
     dummy_ints[0] = 3;
     dummy_ints[1] = 4;
     dummy_ints[2] = 5;
-    std::unique_ptr<dataformats::Fragment> dataFragPtr(new dataformats::Fragment(&dummy_ints[0], sizeof(dummy_ints)));
-    dataFragPtr->set_trigger_number(dataReq.trigger_number);
-    dataFragPtr->set_run_number(m_run_number);
+    std::unique_ptr<dataformats::Fragment> data_fragment_ptr(
+      new dataformats::Fragment(&dummy_ints[0], sizeof(dummy_ints)));
+    data_fragment_ptr->set_trigger_number(dataReq.m_trigger_number);
+    data_fragment_ptr->set_run_number(m_run_number);
     dunedaq::dataformats::GeoID geo_location;
-    geo_location.apa_number = 1;
-    geo_location.link_number = m_fake_link_number;
-    dataFragPtr->set_link_id(geo_location);
-    dataFragPtr->set_error_bits(0);
-    dataFragPtr->set_type(0x123); // placeholder
-    dataFragPtr->set_trigger_timestamp(dataReq.trigger_timestamp);
-    dataFragPtr->set_window_offset(dataReq.window_offset);
-    dataFragPtr->set_window_width(dataReq.window_width);
+    geo_location.m_apa_number = 1;
+    geo_location.m_link_number = m_fake_link_number;
+    data_fragment_ptr->set_link_id(geo_location);
+    data_fragment_ptr->set_error_bits(0);
+    data_fragment_ptr->set_type(0x123); // placeholder
+    data_fragment_ptr->set_trigger_timestamp(dataReq.m_trigger_timestamp);
+    data_fragment_ptr->set_window_offset(dataReq.m_window_offset);
+    data_fragment_ptr->set_window_width(dataReq.m_window_width);
 
     // to-do?  add config parameter for artificial delay?
     // if ((dataReq.trigger_number % 7) == 0) {
@@ -142,9 +142,9 @@ FakeDataProd::do_work(std::atomic<bool>& running_flag)
     bool wasSentSuccessfully = false;
     while (!wasSentSuccessfully && running_flag.load()) {
       TLOG(TLVL_WORK_STEPS) << get_name() << ": Pushing the Data Fragment for trigger number "
-                            << dataFragPtr->get_trigger_number() << " onto the output queue";
+                            << data_fragment_ptr->get_trigger_number() << " onto the output queue";
       try {
-        m_data_fragment_output_queue->push(std::move(dataFragPtr), m_queue_timeout);
+        m_data_fragment_output_queue->push(std::move(data_fragment_ptr), m_queue_timeout);
         wasSentSuccessfully = true;
       } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
         std::ostringstream oss_warn;
@@ -158,7 +158,7 @@ FakeDataProd::do_work(std::atomic<bool>& running_flag)
     }
 
     // TLOG(TLVL_WORK_STEPS) << get_name() << ": Start of sleep while waiting for run Stop";
-    // std::this_thread::sleep_for(std::chrono::milliseconds(sleepMsecWhileRunning_));
+    // std::this_thread::sleep_for(std::chrono::milliseconds(m_sleep_msec_while_running));
     // TLOG(TLVL_WORK_STEPS) << get_name() << ": End of sleep while waiting for run Stop";
   }
 

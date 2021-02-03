@@ -8,12 +8,11 @@
 
 #include "FakeFragRec.hpp"
 #include "dfmodules/CommonIssues.hpp"
-
-#include "appfwk/DAQModuleHelper.hpp"
-#include "appfwk/cmd/Nljs.hpp"
 //#include "dfmodules/fakefragrec/Nljs.hpp"
 
 #include "TRACE/trace.h"
+#include "appfwk/DAQModuleHelper.hpp"
+#include "appfwk/cmd/Nljs.hpp"
 #include "ers/ers.h"
 
 #include <chrono>
@@ -51,7 +50,7 @@ void
 FakeFragRec::init(const data_t& init_data)
 {
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
-  auto qilist = appfwk::qindex(init_data, { "trigger_decision_input_queue", "trigger_record_output_queue" });
+  auto qilist = appfwk::queue_index(init_data, { "trigger_decision_input_queue", "trigger_record_output_queue" });
   try {
     m_trigger_decision_input_queue.reset(new trigdecsource_t(qilist["trigger_decision_input_queue"].inst));
   } catch (const ers::Issue& excpt) {
@@ -82,7 +81,7 @@ FakeFragRec::do_conf(const data_t& /*payload*/)
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
 
   // fakefragrec::Conf tmpConfig = payload.get<fakefragrec::Conf>();
-  // sleepMsecWhileRunning_ = tmpConfig.sleep_msec_while_running;
+  // m_sleep_msec_while_running = tmpConfig.sleep_msec_while_running;
 
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
 }
@@ -136,11 +135,11 @@ FakeFragRec::do_work(std::atomic<bool>& running_flag)
       bool got_fragment = false;
       while (!got_fragment && running_flag.load()) {
         try {
-          std::unique_ptr<dataformats::Fragment> dataFragPtr;
-          dataFragQueue->pop(dataFragPtr, m_queue_timeout);
+          std::unique_ptr<dataformats::Fragment> data_fragment_ptr;
+          dataFragQueue->pop(data_fragment_ptr, m_queue_timeout);
           got_fragment = true;
           ++receivedFragmentCount;
-          frag_ptr_vector.emplace_back(std::move(dataFragPtr));
+          frag_ptr_vector.emplace_back(std::move(data_fragment_ptr));
         } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
           // simply try again (forever); this is clearly a bad idea...
         }
@@ -172,7 +171,7 @@ FakeFragRec::do_work(std::atomic<bool>& running_flag)
     }
 
     // TLOG(TLVL_WORK_STEPS) << get_name() << ": Start of sleep while waiting for run Stop";
-    // std::this_thread::sleep_for(std::chrono::milliseconds(sleepMsecWhileRunning_));
+    // std::this_thread::sleep_for(std::chrono::milliseconds(m_sleep_msec_while_running));
     // TLOG(TLVL_WORK_STEPS) << get_name() << ": End of sleep while waiting for run Stop";
   }
 

@@ -17,7 +17,7 @@
 #include "dfmodules/hdf5datastore/Nljs.hpp"
 #include "dfmodules/hdf5datastore/Structs.hpp"
 
-#include <boost/algorithm/string.hpp>
+#include "boost/algorithm/string.hpp"
 
 #include <iomanip>
 #include <sstream>
@@ -67,8 +67,8 @@ public:
     // first, we take care of the trigger number
     std::ostringstream trigger_number_string;
     trigger_number_string << layout_params.trigger_record_name_prefix
-                        << std::setw(layout_params.digits_for_trigger_number) << std::setfill('0')
-                        << data_key.get_trigger_number();
+                          << std::setw(layout_params.digits_for_trigger_number) << std::setfill('0')
+                          << data_key.get_trigger_number();
     element_list.push_back(trigger_number_string.str());
 
     if (data_key.get_detector_type() != "TriggerRecordHeader") {
@@ -78,13 +78,13 @@ public:
       // next, we translate the APA number location
       std::ostringstream apa_number_string;
       apa_number_string << layout_params.apa_name_prefix << std::setw(layout_params.digits_for_apa_number)
-                      << std::setfill('0') << data_key.get_apa_number();
+                        << std::setfill('0') << data_key.get_apa_number();
       element_list.push_back(apa_number_string.str());
 
       // Finally, add link number
       std::ostringstream link_number_string;
       link_number_string << layout_params.link_name_prefix << std::setw(layout_params.digits_for_link_number)
-                       << std::setfill('0') << data_key.get_link_number();
+                         << std::setfill('0') << data_key.get_link_number();
       element_list.push_back(link_number_string.str());
     } else {
       // Add TriggerRecordHeader instead of detector type
@@ -99,30 +99,30 @@ public:
    * returned by this class. This is independent of the translations from HDF5 paths
    * to StorageKeys (that translation may support multiple versions).
    */
-  static int getCurrentVersion() { return current_version; }
+  static int get_current_version() { return current_version; }
 
   /**
    * @brief Translates the specified HDF5 'path' into the appropriate StorageKey.
    */
-  static StorageKey getKeyFromString(const std::string& path, int translation_version = current_version)
+  static StorageKey get_key_from_string(const std::string& path, int translation_version = current_version)
   {
     std::vector<std::string> element_list;
     boost::split(element_list, path, boost::is_any_of(path_separator));
-    return getKeyFromList(element_list, translation_version);
+    return get_key_from_list(element_list, translation_version);
   }
 
   /**
    * @brief Translates the specified HDF5 'path' elements into the appropriate StorageKey.
    */
-  static StorageKey getKeyFromList(const std::vector<std::string>& path_elements,
-                                   int translation_version = current_version)
+  static StorageKey get_key_from_list(const std::vector<std::string>& path_elements,
+                                      int translation_version = current_version)
   {
     if (translation_version == 1) {
-      int run_number = StorageKey::INVALID_RUNNUMBER;
-      int trigger_number = StorageKey::INVALID_TRIGGERNUMBER;
-      std::string detector_type = StorageKey::INVALID_DETECTORTYPE;
-      int apa_number = StorageKey::INVALID_APANUMBER;
-      int link_number = StorageKey::INVALID_LINKNUMBER;
+      int run_number = StorageKey::s_invalid_run_number;
+      int trigger_number = StorageKey::s_invalid_trigger_number;
+      std::string detector_type = StorageKey::s_invalid_detector_type;
+      int apa_number = StorageKey::s_invalid_apa_number;
+      int link_number = StorageKey::s_invalid_link_number;
 
       if (path_elements.size() >= 1) {
         std::stringstream runNumber(path_elements[0]);
@@ -151,11 +151,11 @@ public:
       return StorageKey(run_number, trigger_number, detector_type, apa_number, link_number);
 
     } else {
-      StorageKey emptyKey(StorageKey::INVALID_RUNNUMBER,
-                          StorageKey::INVALID_TRIGGERNUMBER,
-                          StorageKey::INVALID_DETECTORTYPE,
-                          StorageKey::INVALID_APANUMBER,
-                          StorageKey::INVALID_LINKNUMBER);
+      StorageKey emptyKey(StorageKey::s_invalid_run_number,
+                          StorageKey::s_invalid_trigger_number,
+                          StorageKey::s_invalid_detector_type,
+                          StorageKey::s_invalid_apa_number,
+                          StorageKey::s_invalid_link_number);
       return emptyKey;
     }
   }

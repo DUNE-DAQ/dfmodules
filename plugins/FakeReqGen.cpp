@@ -8,12 +8,11 @@
 
 #include "FakeReqGen.hpp"
 #include "dfmodules/CommonIssues.hpp"
-
-#include "appfwk/DAQModuleHelper.hpp"
-#include "appfwk/cmd/Nljs.hpp"
 //#include "dfmodules/fakereqgen/Nljs.hpp"
 
 #include "TRACE/trace.h"
+#include "appfwk/DAQModuleHelper.hpp"
+#include "appfwk/cmd/Nljs.hpp"
 #include "ers/ers.h"
 
 #include <chrono>
@@ -51,7 +50,7 @@ void
 FakeReqGen::init(const data_t& init_data)
 {
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
-  auto qilist = appfwk::qindex(
+  auto qilist = appfwk::queue_index(
     init_data,
     { "trigger_decision_input_queue", "trigger_decision_for_event_building", "trigger_decision_for_inhibit" });
   try {
@@ -90,7 +89,7 @@ FakeReqGen::do_conf(const data_t& /*payload*/)
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
 
   // fakereqgen::Conf tmpConfig = payload.get<fakereqgen::Conf>();
-  // sleepMsecWhileRunning_ = tmpConfig.sleep_msec_while_running;
+  // m_sleep_msec_while_running = tmpConfig.sleep_msec_while_running;
 
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
 }
@@ -127,7 +126,7 @@ FakeReqGen::do_work(std::atomic<bool>& running_flag)
       m_trigger_decision_input_queue->pop(trigDecision, m_queue_timeout);
       ++receivedCount;
       TLOG(TLVL_WORK_STEPS) << get_name() << ": Popped the TriggerDecision for trigger number "
-                            << trigDecision.trigger_number << " off the input queue";
+                            << trigDecision.m_trigger_number << " off the input queue";
     } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
       // it is perfectly reasonable that there might be no data in the queue
       // some fraction of the times that we check, so we just continue on and try again
@@ -137,7 +136,7 @@ FakeReqGen::do_work(std::atomic<bool>& running_flag)
     bool wasSentSuccessfully = false;
     while (!wasSentSuccessfully && running_flag.load()) {
       TLOG(TLVL_WORK_STEPS) << get_name() << ": Pushing the TriggerDecision for trigger number "
-                            << trigDecision.trigger_number << " onto the output queue";
+                            << trigDecision.m_trigger_number << " onto the output queue";
       try {
         m_trigger_decision_output_queue->push(trigDecision, m_queue_timeout);
         wasSentSuccessfully = true;
@@ -154,25 +153,25 @@ FakeReqGen::do_work(std::atomic<bool>& running_flag)
 
     for (auto& dataReqQueue : m_data_request_output_queues) {
       dfmessages::DataRequest dataReq;
-      dataReq.trigger_number = trigDecision.trigger_number;
-      dataReq.run_number = trigDecision.run_number;
-      dataReq.trigger_timestamp = trigDecision.trigger_timestamp;
+      dataReq.m_trigger_number = trigDecision.m_trigger_number;
+      dataReq.m_run_number = trigDecision.m_run_number;
+      dataReq.m_trigger_timestamp = trigDecision.m_trigger_timestamp;
 
       // hack: only use the request window from one of the components
-      auto first_map_element = trigDecision.components.begin();
-      if (first_map_element != trigDecision.components.end()) {
+      auto first_map_element = trigDecision.m_components.begin();
+      if (first_map_element != trigDecision.m_components.end()) {
         dataformats::ComponentRequest comp_req = first_map_element->second;
-        dataReq.window_offset = comp_req.window_offset;
-        dataReq.window_width = comp_req.window_width;
+        dataReq.m_window_offset = comp_req.m_window_offset;
+        dataReq.m_window_width = comp_req.m_window_width;
       } else {
-        dataReq.window_offset = 0x123456789abcdef0; // placeholder
-        dataReq.window_width = 0x123456789abcdef0;  // placeholder
+        dataReq.m_window_offset = 0x123456789abcdef0; // placeholder
+        dataReq.m_window_width = 0x123456789abcdef0;  // placeholder
       }
 
       wasSentSuccessfully = false;
       while (!wasSentSuccessfully && running_flag.load()) {
-        TLOG(TLVL_WORK_STEPS) << get_name() << ": Pushing the DataRequest for trigger number " << dataReq.trigger_number
-                              << " onto an output queue";
+        TLOG(TLVL_WORK_STEPS) << get_name() << ": Pushing the DataRequest for trigger number "
+                              << dataReq.m_trigger_number << " onto an output queue";
         try {
           dataReqQueue->push(dataReq, m_queue_timeout);
           wasSentSuccessfully = true;
@@ -191,7 +190,7 @@ FakeReqGen::do_work(std::atomic<bool>& running_flag)
     m_trigger_decision_forwarder->set_latest_trigger_decision(trigDecision);
 
     // TLOG(TLVL_WORK_STEPS) << get_name() << ": Start of sleep while waiting for run Stop";
-    // std::this_thread::sleep_for(std::chrono::milliseconds(sleepMsecWhileRunning_));
+    // std::this_thread::sleep_for(std::chrono::milliseconds(m_sleep_msec_while_running));
     // TLOG(TLVL_WORK_STEPS) << get_name() << ": End of sleep while waiting for run Stop";
   }
 

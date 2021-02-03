@@ -6,14 +6,13 @@
  * received with this code.
  */
 
-#include "dfmodules/datagenerator/Nljs.hpp"
-
 #include "DataGenerator.hpp"
 #include "dfmodules/DataStore.hpp"
 #include "dfmodules/KeyedDataBlock.hpp"
+#include "dfmodules/datagenerator/Nljs.hpp"
 
-#include <TRACE/trace.h>
-#include <ers/ers.h>
+#include "TRACE/trace.h"
+#include "ers/ers.h"
 
 #include <chrono>
 #include <cstdlib>
@@ -65,7 +64,7 @@ DataGenerator::do_conf(const data_t& payload)
     payload.value<size_t>("sleep_msec_while_running", static_cast<size_t>(m_reasonable_default_sleep_msec));
 
   // Create the DataStore instance
-  m_data_writer = makeDataStore(payload["data_store_parameters"]);
+  m_data_writer = make_data_store(payload["data_store_parameters"]);
 
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
 }

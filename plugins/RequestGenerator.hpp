@@ -24,8 +24,8 @@
 #include <vector>
 
 namespace dunedaq {
-using apatype = decltype(dataformats::GeoID::apa_number);
-using linktype = decltype(dataformats::GeoID::link_number);
+using apatype = decltype(dataformats::GeoID::m_apa_number);
+using linktype = decltype(dataformats::GeoID::m_link_number);
 
 ERS_DECLARE_ISSUE(dfmodules,    ///< Namespace
                   UnknownGeoID, ///< Issue class name
@@ -70,16 +70,19 @@ private:
   void do_work(std::atomic<bool>&);
 
   // Configuration
-  // size_t sleepMsecWhileRunning_;
+  // size_t m_sleep_msec_while_running;
+
   std::chrono::milliseconds m_queue_timeout;
 
   // Queue(s)
   using trigdecsource_t = dunedaq::appfwk::DAQSource<dfmessages::TriggerDecision>;
   std::unique_ptr<trigdecsource_t> m_trigger_decision_input_queue;
   using trigdecsink_t = dunedaq::appfwk::DAQSink<dfmessages::TriggerDecision>;
+
   std::unique_ptr<trigdecsink_t> m_trigger_decision_output_queue ;
   using datareqsink_t = dunedaq::appfwk::DAQSink<dfmessages::DataRequest>;
   std::map<dataformats::GeoID, std::string> m_map_geoid_queues;
+  
   // Worker(s)
   std::unique_ptr<TriggerDecisionForwarder> m_trigger_decision_forwarder;
 };

@@ -9,12 +9,11 @@
 #include "FragmentReceiver.hpp"
 #include "dfmodules/CommonIssues.hpp"
 
+#include "TRACE/trace.h"
 #include "appfwk/DAQModuleHelper.hpp"
 #include "appfwk/cmd/Nljs.hpp"
 #include "dfmodules/fragmentreceiver/Nljs.hpp"
 #include "dfmodules/fragmentreceiver/Structs.hpp"
-
-#include "TRACE/trace.h"
 #include "ers/ers.h"
 
 #include <chrono>
@@ -57,7 +56,7 @@ FragmentReceiver::init(const data_t& init_data)
   // Get single queues
   //---------------------------------
 
-  auto qi = appfwk::qindex(init_data, { "trigger_decision_input_queue", "trigger_record_output_queue" });
+  auto qi = appfwk::queue_index(init_data, { "trigger_decision_input_queue", "trigger_record_output_queue" });
   // data request input queue
   try {
     auto temp_info = qi["trigger_decision_input_queue"];
@@ -171,7 +170,7 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
       message << "Trigger Decisions: ";
 
       for (const auto& d : m_trigger_decisions) {
-        message << d.first << " with " << d.second.components.size() << " components, ";
+        message << d.first << " with " << d.second.m_components.size() << " components, ";
       }
       TLOG(TLVL_BOOKKEEPING) << message.str();
       message.str("");
@@ -196,12 +195,12 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
 
         if (frag_it != m_fragments.end()) {
 
-          if (frag_it->second.size() >= it->second.components.size()) {
+          if (frag_it->second.size() >= it->second.m_components.size()) {
             complete.push_back(it->first);
           } else {
             // std::ostringstream message ;
             TLOG(TLVL_WORK_STEPS) << "Trigger decision " << it->first << " status: " << frag_it->second.size() << " / "
-                                  << it->second.components.size() << " Fragments";
+                                  << it->second.m_components.size() << " Fragments";
 
             // ers::error(ProgressUpdate(ERS_HERE, get_name(), message.str()));
           }
@@ -359,7 +358,7 @@ FragmentReceiver::build_trigger_record(const TriggerId& id)
 
   // Create a trigger decision components vector
   std::vector<dunedaq::dataformats::ComponentRequest> trig_dec_comp;
-  for (auto elem : trig_dec.components) {
+  for (auto elem : trig_dec.m_components) {
     trig_dec_comp.push_back(elem.second);
   }
 

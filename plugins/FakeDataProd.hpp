@@ -54,7 +54,7 @@ private:
   void do_work(std::atomic<bool>&);
 
   // Configuration
-  // size_t sleepMsecWhileRunning_;
+  // size_t m_sleep_msec_while_running;
   std::chrono::milliseconds m_queue_timeout;
   dunedaq::dataformats::run_number_t m_run_number;
   uint32_t m_fake_link_number; // NOLINT

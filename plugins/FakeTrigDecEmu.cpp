@@ -8,11 +8,10 @@
 
 #include "FakeTrigDecEmu.hpp"
 #include "dfmodules/CommonIssues.hpp"
-
-#include "appfwk/DAQModuleHelper.hpp"
 #include "dfmodules/faketrigdecemu/Nljs.hpp"
 
 #include "TRACE/trace.h"
+#include "appfwk/DAQModuleHelper.hpp"
 #include "ers/ers.h"
 
 #include <chrono>
@@ -47,7 +46,7 @@ void
 FakeTrigDecEmu::init(const data_t& init_data)
 {
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
-  auto qi = appfwk::qindex(init_data, { "trigger_decision_sink", "trigger_inhibit_source" });
+  auto qi = appfwk::queue_index(init_data, { "trigger_decision_sink", "trigger_inhibit_source" });
   try {
     m_trigger_decision_output_queue.reset(new trigdecsink_t(qi["trigger_decision_sink"].inst));
   } catch (const ers::Issue& excpt) {
@@ -101,13 +100,13 @@ FakeTrigDecEmu::do_work(std::atomic<bool>& running_flag)
     auto start_time = std::chrono::steady_clock::now();
     ++triggerCount;
     dfmessages::TriggerDecision trigDecision;
-    trigDecision.trigger_number = triggerCount;
-    trigDecision.trigger_timestamp = 0x123456789abcdef0; // placeholder
+    trigDecision.m_trigger_number = triggerCount;
+    trigDecision.m_trigger_timestamp = 0x123456789abcdef0; // placeholder
 
     bool wasSentSuccessfully = false;
     while (!wasSentSuccessfully && running_flag.load()) {
       TLOG(TLVL_WORK_STEPS) << get_name() << ": Pushing the TriggerDecision for trigger number "
-                            << trigDecision.trigger_number << " onto the output queue";
+                            << trigDecision.m_trigger_number << " onto the output queue";
       try {
         m_trigger_decision_output_queue->push(trigDecision, m_queue_timeout);
         wasSentSuccessfully = true;
@@ -133,7 +132,7 @@ FakeTrigDecEmu::do_work(std::atomic<bool>& running_flag)
         ++inhibit_message_count;
         got_inh_msg = true;
         TLOG(TLVL_WORK_STEPS) << get_name() << ": Popped a TriggerInhibit message with busy state set to \""
-                              << trig_inhibit_msg.busy << "\" off the inhibit input queue";
+                              << trig_inhibit_msg.m_busy << "\" off the inhibit input queue";
 
         // for now, we just throw these on the floor...
       } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {

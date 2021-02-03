@@ -16,12 +16,14 @@
 #define DFMODULES_INCLUDE_DFMODULES_DATASTORE_HPP_
 
 #include "dfmodules/KeyedDataBlock.hpp"
-#include "ers/ers.h"
-#include <appfwk/NamedObject.hpp>
-#include <nlohmann/json.hpp>
 
-#include <cetlib/BasicPluginFactory.h>
-#include <cetlib/compiler_macros.h>
+#include "appfwk/NamedObject.hpp"
+#include "cetlib/BasicPluginFactory.h"
+#include "cetlib/compiler_macros.h"
+#include "ers/ers.h"
+
+#include "nlohmann/json.hpp"
+
 #include <chrono>
 #include <cstddef>
 #include <memory>
@@ -89,7 +91,7 @@ public:
    * @brief Returns the list of all keys that currently existing in the DataStore
    * @return list of StorageKeys
    */
-  virtual std::vector<StorageKey> getAllExistingKeys() const = 0;
+  virtual std::vector<StorageKey> get_all_existing_keys() const = 0;
 
   // Ideas for future work...
   // virtual void write(const std::vector<KeyedDataBlock>& dataBlockList) = 0;
@@ -111,7 +113,7 @@ private:
  * @return unique_ptr to created DataStore instance
  */
 inline std::unique_ptr<DataStore>
-makeDataStore(const std::string& type, const nlohmann::json& conf)
+make_data_store(const std::string& type, const nlohmann::json& conf)
 {
   static cet::BasicPluginFactory bpf("duneDataStore", "make"); // NOLINT
 
@@ -132,9 +134,9 @@ makeDataStore(const std::string& type, const nlohmann::json& conf)
  * @return unique_ptr to created DataStore instance
  */
 inline std::unique_ptr<DataStore>
-makeDataStore(const nlohmann::json& conf)
+make_data_store(const nlohmann::json& conf)
 {
-  return makeDataStore(conf["type"].get<std::string>(), conf);
+  return make_data_store(conf["type"].get<std::string>(), conf);
 }
 
 } // namespace dfmodules

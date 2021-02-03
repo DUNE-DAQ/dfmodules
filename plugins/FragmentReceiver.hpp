@@ -64,8 +64,8 @@ struct TriggerId
 {
 
   explicit TriggerId(const dfmessages::TriggerDecision& td)
-    : trigger_number(td.trigger_number)
-    , run_number(td.run_number)
+    : trigger_number(td.m_trigger_number)
+    , run_number(td.m_run_number)
   {
     ;
   }
@@ -129,6 +129,7 @@ protected:
 		    bool drain = false ) ;
   
   dataformats::TriggerRecord* build_trigger_record(const TriggerId&);
+  // build_trigger_record will allocate memory and then orphan it to the caller via the returned pointer
   // Plese note that the method will destroy the memory saved in the bookkeeping map
 
   bool send_trigger_record( const TriggerId&, trigger_record_sink_t &, 
@@ -146,7 +147,7 @@ private:
   void do_work(std::atomic<bool>&);
 
   // Configuration
-  // size_t sleepMsecWhileRunning_;
+  // size_t m_sleep_msec_while_running;
   std::chrono::milliseconds m_queue_timeout;
 
   // Input Queues

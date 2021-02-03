@@ -12,12 +12,11 @@
 #include "dfmodules/StorageKey.hpp"
 #include "dfmodules/datawriter/Nljs.hpp"
 
+#include "TRACE/trace.h"
 #include "appfwk/DAQModuleHelper.hpp"
 #include "dataformats/Fragment.hpp"
 #include "dfmessages/TriggerDecision.hpp"
 #include "dfmessages/TriggerInhibit.hpp"
-
-#include "TRACE/trace.h"
 #include "ers/ers.h"
 
 #include <algorithm>
@@ -57,7 +56,7 @@ void
 DataWriter::init(const data_t& init_data)
 {
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
-  auto qi = appfwk::qindex(
+  auto qi = appfwk::queue_index(
     init_data, { "trigger_record_input_queue", "trigger_decision_for_inhibit", "trigger_inhibit_output_queue" });
   try {
     m_trigger_record_input_queue.reset(new trigrecsource_t(qi["trigger_record_input_queue"].inst));
@@ -96,7 +95,7 @@ DataWriter::do_conf(const data_t& payload)
   TLOG(TLVL_CONFIG) << get_name() << ": data_store_parameters are " << conf_params.data_store_parameters;
 
   // create the DataStore instance here
-  m_data_writer = makeDataStore(payload["data_store_parameters"]);
+  m_data_writer = make_data_store(payload["data_store_parameters"]);
 
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
 }
@@ -144,14 +143,14 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
   }
 
   while (running_flag.load()) {
-    std::unique_ptr<dataformats::TriggerRecord> trigRecPtr;
+    std::unique_ptr<dataformats::TriggerRecord> trigger_record_ptr;
 
     // receive the next TriggerRecord
     try {
-      m_trigger_record_input_queue->pop(trigRecPtr, m_queue_timeout);
+      m_trigger_record_input_queue->pop(trigger_record_ptr, m_queue_timeout);
       ++received_count;
       TLOG(TLVL_WORK_STEPS) << get_name() << ": Popped the TriggerRecord for trigger number "
-                            << trigRecPtr->get_header().get_trigger_number() << " off the input queue";
+                            << trigger_record_ptr->get_header_ref().get_trigger_number() << " off the input queue";
     } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
       // it is perfectly reasonable that there might be no data in the queue
       // some fraction of the times that we check, so we just continue on and try again
@@ -196,15 +195,14 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
     // progress updates
     if ((received_count % 3) == 0) {
       std::ostringstream oss_prog;
-      oss_prog << ": Processing trigger number " << trigRecPtr->get_header().get_trigger_number() << ", this is one of "
-               << received_count << " trigger records received so far.";
+      oss_prog << ": Processing trigger number " << trigger_record_ptr->get_header_ref().get_trigger_number()
+               << ", this is one of " << received_count << " trigger records received so far.";
       ers::log(ProgressUpdate(ERS_HERE, get_name(), oss_prog.str()));
     }
     
     // tell the TriggerInhibitAgent the trigger_number of this TriggerRecord so that
     // it can check whether an Inhibit needs to be asserted or cleared.
     m_trigger_inhibit_agent->set_latest_trigger_number(trigRecPtr->get_header().get_trigger_number());
-    
     
   }   // draining loop
 
