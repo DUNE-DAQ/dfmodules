@@ -108,6 +108,7 @@ DataWriter::do_start(const data_t& payload)
 
   datawriter::StartParams start_params = payload.get<datawriter::StartParams>();
   m_data_storage_is_enabled = (! start_params.disable_data_storage);
+  m_data_storage_prescale = start_params.data_storage_prescale;
 
   m_trigger_inhibit_agent->start_checking();
   m_thread.start_working_thread();
@@ -163,7 +164,14 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
       continue;
     }
 
-    // if we received a TriggerRecord, print out some debug information, if requested
+    // 03-Feb-2021, KAB: adding support for a data-storage prescale.
+    // At the moment, it seems reasonable to simply skip the rest of the contents
+    // of this 'while' loop when the prescale is active and not satisfied. However, at
+    // some point, we may need to change the logic to skip only a part of what follows from here.
+    // In this "if" statement, I deliberately compare the result of (N mod prescale) to 1,
+    // instead of zero, since I think that it would be nice to always get the first event
+    // written out.
+    if (m_data_storage_prescale > 1 && ((received_count % m_data_storage_prescale) != 1)) {continue;}
 
     // First store the trigger record header
     const void* trh_ptr = trigger_record_ptr->get_header_ref().get_storage_location();
@@ -185,6 +193,8 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
     // Write the fragments
     const auto& frag_vec = trigger_record_ptr->get_fragments_ref();
     for (const auto& frag_ptr : frag_vec) {
+
+      // print out some debug information, if requested
       TLOG(TLVL_FRAGMENT_HEADER_DUMP) << get_name() << ": Partial(?) contents of the Fragment from link "
                                       << frag_ptr->get_link_id().m_link_number;
       const size_t number_of_32bit_values_per_row = 5;

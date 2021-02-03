@@ -58,6 +58,7 @@ private:
   // size_t m_sleep_msec_while_running;
   std::chrono::milliseconds m_queue_timeout;
   bool m_data_storage_is_enabled;
+  int m_data_storage_prescale;
 
   // Queue(s)
   using trigrecsource_t = dunedaq::appfwk::DAQSource<std::unique_ptr<dataformats::TriggerRecord>>;
