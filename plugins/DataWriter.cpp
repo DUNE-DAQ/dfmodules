@@ -109,6 +109,13 @@ DataWriter::do_start(const data_t& payload)
   datawriter::StartParams start_params = payload.get<datawriter::StartParams>();
   m_data_storage_is_enabled = (! start_params.disable_data_storage);
   m_data_storage_prescale = start_params.data_storage_prescale;
+  m_run_number = start_params.run;
+
+  // 04-Feb-2021, KAB: added this call to allow DataStore to prepare for the run.
+  // I've put this call fairly early in this method because it could throw an
+  // exception and abort the run start.  And, it seems sensible to avoid starting
+  // threads, etc. if we throw an exception.
+  m_data_writer->prepare_for_run(m_run_number);
 
   m_trigger_inhibit_agent->start_checking();
   m_thread.start_working_thread();
@@ -121,8 +128,15 @@ void
 DataWriter::do_stop(const data_t& /*args*/)
 {
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_stop() method";
+
   m_trigger_inhibit_agent->stop_checking();
   m_thread.stop_working_thread();
+
+  // 04-Feb-2021, KAB: added this call to allow DataStore to finish up with this run.
+  // I've put this call fairly late in this method so that any draining of queues
+  // (or whatever) can take place before we finalize things in the DataStore.
+  m_data_writer->finish_with_run(m_run_number);
+
   ERS_LOG(get_name() << " successfully stopped");
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_stop() method";
 }

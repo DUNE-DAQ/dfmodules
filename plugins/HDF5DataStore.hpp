@@ -18,15 +18,16 @@
 #include "dfmodules/hdf5datastore/Nljs.hpp"
 #include "dfmodules/hdf5datastore/Structs.hpp"
 
-#include <TRACE/trace.h>
-#include <appfwk/DAQModule.hpp>
-#include <ers/Issue.h>
+#include "TRACE/trace.h"
+#include "appfwk/DAQModule.hpp"
+#include "ers/Issue.h"
 
-#include <boost/lexical_cast.hpp>
-#include <highfive/H5File.hpp>
+#include "boost/lexical_cast.hpp"
+#include "highfive/H5File.hpp"
 
 #include <memory>
 #include <string>
+#include <sys/statvfs.h>
 #include <utility>
 #include <vector>
 
@@ -55,6 +56,23 @@ ERS_DECLARE_ISSUE_BASE(dfmodules,
                          << data_set << "\", exception message is \"" << msgText << "\"",
                        ((std::string)name),
                        ((std::string)data_set)((std::string)msgText))
+
+ERS_DECLARE_ISSUE_BASE(dfmodules,
+                       InvalidOutputPath,
+                       appfwk::GeneralDAQModuleIssue,
+                       "The specified output destination, \"" << output_path
+                                                              << "\", is not a valid file system path on this server.",
+                       ((std::string)name),
+                       ((std::string)output_path))
+
+ERS_DECLARE_ISSUE_BASE(dfmodules,
+                       InsufficientDiskSpace,
+                       appfwk::GeneralDAQModuleIssue,
+                       "There is insufficient free space on the disk associated with output file path \""
+                         << output_path << "\". There are " << free_bytes
+                         << " bytes free, and a single output file can take up to " << max_file_size_bytes << " bytes.",
+                       ((std::string)name),
+                       ((std::string)output_path)((size_t)free_bytes)((size_t)max_file_size_bytes))
 
 namespace dfmodules {
 
@@ -110,7 +128,7 @@ public:
     // opening the file from Storage Key + m_path + m_filename_prefix + m_operation_mode
     std::string full_filename = HDF5KeyTranslator::get_file_name(key, m_config_params, m_file_count);
 
-    // file_ptr will be the handle to the Opened-File after a call to open_file_if_needed()
+    // m_file_ptr will be the handle to the Opened-File after a call to open_file_if_needed()
     open_file_if_needed(full_filename, HighFive::File::ReadOnly);
 
     std::vector<std::string> group_and_dataset_path_elements =
@@ -121,7 +139,7 @@ public:
 
     KeyedDataBlock data_block(key);
 
-    HighFive::Group hdf5_group = HDF5FileUtils::get_subgroup(file_ptr, group_and_dataset_path_elements, false);
+    HighFive::Group hdf5_group = HDF5FileUtils::get_subgroup(m_file_ptr, group_and_dataset_path_elements, false);
 
     try { // to determine if the dataset exists in the group and copy it to membuffer
       HighFive::DataSet data_set = hdf5_group.getDataSet(dataset_name);
@@ -150,7 +168,7 @@ public:
     // opening the file from Storage Key + m_path + m_filename_prefix + m_operation_mode
     std::string full_filename = HDF5KeyTranslator::get_file_name(data_block.m_data_key, m_config_params, m_file_count);
 
-    // file_ptr will be the handle to the Opened-File after a call to open_file_if_needed()
+    // m_file_ptr will be the handle to the Opened-File after a call to open_file_if_needed()
     open_file_if_needed(full_filename, HighFive::File::OpenOrCreate);
 
     TLOG(TLVL_DEBUG) << get_name() << ": Writing data with run number " << data_block.m_data_key.get_run_number()
@@ -163,7 +181,7 @@ public:
 
     const std::string dataset_name = group_and_dataset_path_elements.back();
 
-    HighFive::Group sub_group = HDF5FileUtils::get_subgroup(file_ptr, group_and_dataset_path_elements, true);
+    HighFive::Group sub_group = HDF5FileUtils::get_subgroup(m_file_ptr, group_and_dataset_path_elements, true);
 
     // Create dataset
     HighFive::DataSpace data_space = HighFive::DataSpace({ data_block.m_data_size, 1 });
@@ -176,7 +194,7 @@ public:
       if (data_set.isValid()) {
         data_set.write_raw(static_cast<const char*>(data_block.get_data_start()));
       } else {
-        throw InvalidHDF5Dataset(ERS_HERE, get_name(), dataset_name, file_ptr->getName());
+        throw InvalidHDF5Dataset(ERS_HERE, get_name(), dataset_name, m_file_ptr->getName());
       }
     } catch (HighFive::DataSetException const& excpt) {
       ers::error(HDF5DataSetError(ERS_HERE, get_name(), dataset_name, excpt.what()));
@@ -184,7 +202,7 @@ public:
       ERS_LOG("Exception: " << excpt.what());
     }
 
-    file_ptr->flush();
+    m_file_ptr->flush();
     m_recorded_size += data_block.m_data_size;
 
     // 13-Jan-2021, KAB: disable the file size checking, for now.
@@ -224,13 +242,56 @@ public:
     return keyList;
   }
 
+  /**
+   * @brief Informs the HDF5DataStore that writes or reads of data blocks
+   * associated with the specified run number will soon be requested.
+   * This allows the DataStore to test that the output file path is valid
+   * and any other checks that are useful in advance of the first data
+   * blocks being written or read.
+   *
+   * This method may throw an exception if it finds a problem.
+   */
+  void prepare_for_run(dataformats::run_number_t /*run_number*/)
+  {
+    struct statvfs vfs_results;
+    TLOG(TLVL_DEBUG) << get_name() << ": Preparing to get the statvfs results for path: \"" << m_path << "\"";
+
+    int retval = statvfs(m_path.c_str(), &vfs_results);
+    TLOG(TLVL_DEBUG) << get_name() << ": statvfs return code is " << retval;
+    if (retval != 0) {
+      throw InvalidOutputPath(ERS_HERE, get_name(), m_path);
+    }
+
+    size_t free_space = vfs_results.f_bsize * vfs_results.f_bavail;
+    TLOG(TLVL_DEBUG) << get_name() << ": Free space on disk with path \"" << m_path << "\" is " << free_space
+                     << " bytes.";
+    if (free_space < m_max_file_size) {
+      throw InsufficientDiskSpace(ERS_HERE, get_name(), m_path, free_space, m_max_file_size);
+    }
+  }
+
+  /**
+   * @brief Informs the HD5DataStore that writes or reads of data blocks
+   * associated with the specified run number have finished, for now.
+   * This allows the DataStore to close open files and do any other
+   * cleanup or shutdown operations that are useful once the writes or
+   * reads for a given run number have finished.
+   */
+  void finish_with_run(dataformats::run_number_t /*run_number*/)
+  {
+    if (m_file_ptr.get() != nullptr) {
+      m_file_ptr->flush();
+      m_file_ptr.reset();
+    }
+  }
+
 private:
   HDF5DataStore(const HDF5DataStore&) = delete;
   HDF5DataStore& operator=(const HDF5DataStore&) = delete;
   HDF5DataStore(HDF5DataStore&&) = delete;
   HDF5DataStore& operator=(HDF5DataStore&&) = delete;
 
-  std::unique_ptr<HighFive::File> file_ptr;
+  std::unique_ptr<HighFive::File> m_file_ptr;
 
   std::string m_path;
   std::string m_filename_prefix;
@@ -273,7 +334,7 @@ private:
                        << std::to_string(open_flags);
       m_full_name_of_open_file = fileName;
       m_open_flags_of_open_file = open_flags;
-      file_ptr.reset(new HighFive::File(fileName, open_flags));
+      m_file_ptr.reset(new HighFive::File(fileName, open_flags));
       TLOG(TLVL_DEBUG) << get_name() << "Created HDF5 file.";
 
     } else {
