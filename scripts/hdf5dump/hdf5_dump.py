@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 # Version 0.1
-# Last modified: January 13, 2021
+# Last modified: January 23, 2021
 
 # USAGE: python3 hdf5_dump.py -f sample.hdf5 -TRH  
 
@@ -13,6 +13,7 @@ import re
 
 import h5py
 import binascii
+import datetime
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Python script to parse DUNE-DAQ HDF5 output files.')
@@ -33,42 +34,37 @@ def parse_args():
                        help='Print the TriggerRecordheader only; data is displayed',
                        action='store_true')   
 
+    parser.add_argument('-num', '--num_req_trig_records',
+                       help='Select number of trigger records to be parsed',
+                       default=None)   
+
     parser.add_argument('-v', '--version', action='version')
     return parser.parse_args()
 
 
-# Tools
          
 ## Recursive function to get all the information         
 ## for a given HDF5 file_name
-def traverse_datasets(hdf_file):
+def traverse_datasets(hdf_file, reqTrigRecords, isTRH):
   def h5py_dataset_iterator(hdf5_group, prefix=''):
     for key in hdf5_group.keys():
       item = hdf5_group[key]
       path = f'{prefix}/{key}'
-      if isinstance(item, h5py.Dataset) and key != "TriggerRecordHeader": # test for dataset
-        yield (path, item)
-      elif isinstance(item, h5py.Group): # test for group (go down)
-       yield from h5py_dataset_iterator(item, path) 
+      if isinstance(item, h5py.Group): # test for group (go down)
+        yield from h5py_dataset_iterator(item, path) 
+      else:
+        if isinstance(item, h5py.Dataset):
+          if (key == "TriggerRecordHeader" and isTRH) or  (key != "TriggerRecordHeader" and isTRH != True):
+            yield (path, item)
 
+  counter = 0
   for path, _ in h5py_dataset_iterator(hdf_file):
-    yield path
+    if reqTrigRecords == None:
+      yield path
+    elif counter < int(reqTrigRecords):
+      counter += 1
+      yield path
 
-
-## Recursive function to get only 
-## the trigger record headers
-def traverse_TRH_datasets(hdf_file):
-  def h5py_dataset_iterator(hdf5_group, prefix=''):
-    for key in hdf5_group.keys():
-      item = hdf5_group[key]
-      path = f'{prefix}/{key}'
-      if isinstance(item, h5py.Dataset) and key == "TriggerRecordHeader": # test for dataset
-        yield (path, item)
-      elif isinstance(item, h5py.Group): # test for group (go down)
-       yield from h5py_dataset_iterator(item, path) 
-
-  for path, _ in h5py_dataset_iterator(hdf_file):
-    yield path
 
 
 def bytes_to_int(bytes):
@@ -93,7 +89,8 @@ def print_frag_header(data_array):
   print("Version:\t\t", bytes_to_int((version)[::-1]))
   print("Frag size:\t\t", bytes_to_int((fragment_size)[::-1]))
   print("Trig number:\t\t", bytes_to_int((trigger_number)[::-1]))
-  print("Trig timestamp:\t\t", bytes_to_int((trigger_timestamp)[::-1]))
+  print("Trig timestamp:\t\t", bytes_to_int((trigger_timestamp)[::-1]),
+        "("+str(datetime.datetime.fromtimestamp(bytes_to_int((trigger_timestamp)[::-1])/50000000))+")")
   print("Window offset:\t\t", bytes_to_int((window_offset)[::-1]))
   print("Window width:\t\t", bytes_to_int((window_width)[::-1]))
   print("Run number:\t\t", bytes_to_int((run_number)[::-1]))
@@ -120,7 +117,8 @@ def print_trh(data_array):
   #print("Trigger number: ", binascii.hexlify(trigger_number)[::-1])
   print("Version:\t\t", bytes_to_int((version)[::-1]))
   print("Trig number:\t\t", bytes_to_int((trigger_number)[::-1]))
-  print("Trig timestamp:\t\t", bytes_to_int((trigger_timestamp)[::-1]))
+  print("Trig timestamp:\t\t", bytes_to_int((trigger_timestamp)[::-1]),
+        "("+str(datetime.datetime.fromtimestamp(bytes_to_int((trigger_timestamp)[::-1])/50000000))+")")
   print("Num req comp:\t\t", bytes_to_int((numb_req_comp)[::-1]))
   print("Run number:\t\t", bytes_to_int((run_number)[::-1]))
   print("Error bits:\t\t", bytes_to_int((error_bits)[::-1]))
@@ -133,9 +131,9 @@ def print_trh(data_array):
 
 
 ## Parse the TriggerRecordHeader data 
-def get_trigger_record_headers(file_name):
+def get_trigger_record_headers(file_name, requested_trigger_records, isTRH):
   with h5py.File(file_name, 'r') as f:
-    for dset in traverse_TRH_datasets(f):
+    for dset in traverse_datasets(f, requested_trigger_records, isTRH):
       print('Path:', dset)
       print('Size:', f[dset].shape)
       print('Data type:', f[dset].dtype)
@@ -147,9 +145,9 @@ def get_trigger_record_headers(file_name):
 
 ## Dump the contents of the HDF5 file
 ## Similar to the h5dump tool
-def dump_file(file_name):
+def dump_file(file_name, requested_trigger_records, isTRH):
   with h5py.File(file_name, 'r') as f:
-    for dset in traverse_datasets(f):
+    for dset in traverse_datasets(f, requested_trigger_records, isTRH):
       print('Path:', dset)
       print('Size:', f[dset].shape)
       print('Data type:', f[dset].dtype)
@@ -165,15 +163,15 @@ def main():
     input_path = args.path
     input_file_name = args.file_name
     full_path = input_path + input_file_name  
- 
     print("Reading file", full_path ) 
+ 
+    requested_trigger_records = args.num_req_trig_records
+
     if args.header_only:
-      dump_file(full_path)
+      dump_file(full_path, requested_trigger_records, False)
 
     if args.TRH_only:
-      get_trigger_record_headers(full_path)
+      get_trigger_record_headers(full_path, requested_trigger_records, True)
 
 if __name__ == "__main__":
     main()
-
-
