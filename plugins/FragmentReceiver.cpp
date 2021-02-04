@@ -35,6 +35,9 @@
 namespace dunedaq {
 namespace dfmodules {
 
+  using dataformats::TriggerRecordErrorBits ;
+
+
 FragmentReceiver::FragmentReceiver(const std::string& name)
   : dunedaq::appfwk::DAQModule(name)
   , m_thread(std::bind(&FragmentReceiver::do_work, this, std::placeholders::_1))
@@ -372,9 +375,9 @@ FragmentReceiver::build_trigger_record(const TriggerId& id)
   auto frags_it = m_fragments.find(id);
   auto& frags = frags_it->second;
 
-  // if ( trig_dec_comp.size() != frags.size() ) {
-  //   trig_rec_ptr->get_header_ref().set_error_bit(size_t bit, bool value)
-  // }
+  if ( trig_dec_comp.size() != frags.size() ) {
+    trig_rec_ptr->get_header_ref().set_error_bit( TriggerRecordErrorBits::kIncomplete, true) ;
+  }
 
   while (frags.size() > 0) {
     trig_rec_ptr->add_fragment(std::move(frags.back()));
