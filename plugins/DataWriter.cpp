@@ -107,7 +107,7 @@ DataWriter::do_start(const data_t& payload)
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_start() method";
 
   datawriter::StartParams start_params = payload.get<datawriter::StartParams>();
-  m_data_storage_is_enabled = (! start_params.disable_data_storage);
+  m_data_storage_is_enabled = (!start_params.disable_data_storage);
   m_data_storage_prescale = start_params.data_storage_prescale;
   m_run_number = start_params.run;
 
@@ -115,7 +115,11 @@ DataWriter::do_start(const data_t& payload)
   // I've put this call fairly early in this method because it could throw an
   // exception and abort the run start.  And, it seems sensible to avoid starting
   // threads, etc. if we throw an exception.
-  m_data_writer->prepare_for_run(m_run_number);
+  try {
+    m_data_writer->prepare_for_run(m_run_number);
+  } catch (const ers::Issue& excpt) {
+    throw UnableToStart(ERS_HERE, get_name(), m_run_number, excpt);
+  }
 
   m_trigger_inhibit_agent->start_checking();
   m_thread.start_working_thread();
@@ -185,7 +189,9 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
     // In this "if" statement, I deliberately compare the result of (N mod prescale) to 1,
     // instead of zero, since I think that it would be nice to always get the first event
     // written out.
-    if (m_data_storage_prescale > 1 && ((received_count % m_data_storage_prescale) != 1)) {continue;}
+    if (m_data_storage_prescale > 1 && ((received_count % m_data_storage_prescale) != 1)) {
+      continue;
+    }
 
     // First store the trigger record header
     const void* trh_ptr = trigger_record_ptr->get_header_ref().get_storage_location();

@@ -147,6 +147,7 @@ def generate(
                                 directory_path = OUTPUT_PATH, # default
                                 # mode = "all-per-file", # default
                                 max_file_size_bytes = 1073741834,
+                                disable_unique_filename_suffix = False,
                                 filename_parameters = hdf5ds.HDF5DataStoreFileNameParams(
                                     overall_prefix = "fake_minidaqapp",
                                     # digits_for_run_number = 6, #default

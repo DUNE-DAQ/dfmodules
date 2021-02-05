@@ -23,6 +23,8 @@ local types = {
 
     detname: s.string("DetectorName", doc="String used to specify a detector type"),
 
+    disable: s.boolean("Disable", doc="Parameter that can be used to disable functionality"),
+
     hdf5_filename_params: s.record("HDF5DataStoreFileNameParams", [
         s.field("overall_prefix", self.fnprefix, "fake_minidaqapp",
                 doc="Prefix for the overall filename for the files on disk"),
@@ -64,6 +66,8 @@ local types = {
                 doc="Path of directory where files are located"),
         s.field("max_file_size_bytes", self.size, 1048576,
                 doc="Maximum number of bytes in each raw data file"),
+        s.field("disable_unique_filename_suffix", self.disable, "false",
+                doc="Flag to disable the addition of a unique suffix to the output filenames"),
         s.field("filename_parameters", self.hdf5_filename_params,
                 doc="Parameters that are use for the filenames of the HDF5 files"),
         s.field("file_layout_parameters", self.hdf5_file_layout_params,
