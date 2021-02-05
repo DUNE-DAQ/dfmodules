@@ -7,7 +7,7 @@ local types = {
 
     dsparams: s.any("DataStoreParams", doc="Parameters that configure a data store"),
 
-    disable: s.boolean("Disable", doc="Parameter that can be used to disable functionality"),
+    flag: s.boolean("Flag", doc="Parameter that can be used to enable or disable functionality"),
 
     run_number: s.number("RunNumber", dtype="u8", doc="Run Number"),
 
@@ -19,7 +19,7 @@ local types = {
     ], doc="DataWriter configuration parameters"),
 
     start: s.record("StartParams", [
-        s.field("disable_data_storage", self.disable, "false",
+        s.field("disable_data_storage", self.flag, 0,
                 doc="Flag to disable the storage of data"),
         s.field("data_storage_prescale", self.count, "1",
                 doc="Prescale value for writing TriggerRecords to storage"),
