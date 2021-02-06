@@ -115,10 +115,12 @@ DataWriter::do_start(const data_t& payload)
   // I've put this call fairly early in this method because it could throw an
   // exception and abort the run start.  And, it seems sensible to avoid starting
   // threads, etc. if we throw an exception.
-  try {
-    m_data_writer->prepare_for_run(m_run_number);
-  } catch (const ers::Issue& excpt) {
-    throw UnableToStart(ERS_HERE, get_name(), m_run_number, excpt);
+  if (m_data_storage_is_enabled) {
+    try {
+      m_data_writer->prepare_for_run(m_run_number);
+    } catch (const ers::Issue& excpt) {
+      throw UnableToStart(ERS_HERE, get_name(), m_run_number, excpt);
+    }
   }
 
   m_trigger_inhibit_agent->start_checking();
@@ -139,7 +141,9 @@ DataWriter::do_stop(const data_t& /*args*/)
   // 04-Feb-2021, KAB: added this call to allow DataStore to finish up with this run.
   // I've put this call fairly late in this method so that any draining of queues
   // (or whatever) can take place before we finalize things in the DataStore.
-  m_data_writer->finish_with_run(m_run_number);
+  if (m_data_storage_is_enabled) {
+    m_data_writer->finish_with_run(m_run_number);
+  }
 
   ERS_LOG(get_name() << " successfully stopped");
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_stop() method";
