@@ -12,6 +12,7 @@ find_package(dfmessages REQUIRED)
 
 ##############################################################################
 daq_add_library( StorageKey.cpp TriggerDecisionForwarder.cpp TriggerInhibitAgent.cpp
+                 HDF5KeyTranslator
                  LINK_LIBRARIES 
                  ers::ers HighFive appfwk::appfwk stdc++fs dfmessages::dfmessages )
 
