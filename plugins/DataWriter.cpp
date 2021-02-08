@@ -96,6 +96,11 @@ DataWriter::do_conf(const data_t& payload)
 
   // create the DataStore instance here
   m_data_writer = make_data_store(payload["data_store_parameters"]);
+  
+  // ensure that we have a valid dataWriter instance
+  if (m_data_writer.get() == nullptr) {
+    throw InvalidDataWriterError(ERS_HERE, get_name());
+  }
 
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
 }
@@ -136,11 +141,6 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
 {
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() method";
   int32_t received_count = 0;
-
-  // ensure that we have a valid dataWriter instance
-  if (m_data_writer.get() == nullptr) {
-    throw InvalidDataWriterError(ERS_HERE, get_name());
-  }
 
   while (running_flag.load()) {
     std::unique_ptr<dataformats::TriggerRecord> trigger_record_ptr;
