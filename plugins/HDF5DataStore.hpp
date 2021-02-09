@@ -269,7 +269,8 @@ public:
 
     size_t free_space = vfs_results.f_bsize * vfs_results.f_bavail;
     TLOG(TLVL_DEBUG) << get_name() << ": Free space on disk with path \"" << m_path << "\" is " << free_space
-                     << " bytes.";
+                     << " bytes. This will be compared with the maximum size of a single file (" << m_max_file_size
+                     << ") as a simple test to see if there is enough free space.";
     if (free_space < m_max_file_size) {
       throw InsufficientDiskSpace(ERS_HERE, get_name(), m_path, free_space, m_max_file_size);
     }
