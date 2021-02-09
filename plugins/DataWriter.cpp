@@ -142,23 +142,18 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
     throw InvalidDataWriterError(ERS_HERE, get_name());
   }
 
-  unsigned int number_of_empty_pop_calls = 0;
-
-  while (running_flag.load() || number_of_empty_pop_calls < 2 ) {
+  while (running_flag.load() || m_trigger_record_input_queue->can_pop()) {
     std::unique_ptr<dataformats::TriggerRecord> trigger_record_ptr;
 
     // receive the next TriggerRecord
     try {
       m_trigger_record_input_queue->pop(trigger_record_ptr, m_queue_timeout);
       ++received_count;
-      number_of_empty_pop_calls = 0 ;
       TLOG(TLVL_WORK_STEPS) << get_name() << ": Popped the TriggerRecord for trigger number "
                             << trigger_record_ptr->get_header_ref().get_trigger_number() << " off the input queue";
     } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
       // it is perfectly reasonable that there might be no data in the queue
       // some fraction of the times that we check, so we just continue on and try again
-      ++ number_of_empty_pop_calls ;
-
       continue;
     }
 

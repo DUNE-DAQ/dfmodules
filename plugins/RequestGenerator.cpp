@@ -134,25 +134,21 @@ RequestGenerator::do_work(std::atomic<bool>& running_flag)
     map[entry.first] = std::unique_ptr<datareqsink_t>(new datareqsink_t(entry.second));
   }
 
-  unsigned int number_of_empty_pop_calls = 0 ; 
-
-  while (running_flag.load() || number_of_empty_pop_calls < 2 ) {
+  while (running_flag.load() || m_trigger_decision_input_queue->can_pop()) {
     dfmessages::TriggerDecision trigDecision;
     try {
       m_trigger_decision_input_queue->pop(trigDecision, m_queue_timeout);
       ++receivedCount;
-      number_of_empty_pop_calls = 0 ;
       TLOG(TLVL_WORK_STEPS) << get_name() << ": Popped the TriggerDecision for trigger number "
                             << trigDecision.m_trigger_number << " off the input queue";
     } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
       // it is perfectly reasonable that there might be no data in the queue
       // some fraction of the times that we check, so we just continue on and try again
-      ++number_of_empty_pop_calls;
       continue;
     }
 
     bool wasSentSuccessfully = false;
-    do { 
+    do {
       TLOG(TLVL_WORK_STEPS) << get_name() << ": Pushing the TriggerDecision for trigger number "
                             << trigDecision.m_trigger_number << " onto the output queue";
       try {
@@ -167,8 +163,8 @@ RequestGenerator::do_work(std::atomic<bool>& running_flag)
           oss_warn.str(),
           std::chrono::duration_cast<std::chrono::milliseconds>(m_queue_timeout).count()));
       }
-    } while ( !wasSentSuccessfully && running_flag.load() ) ;
- 
+    } while (!wasSentSuccessfully && running_flag.load());
+
     //-----------------------------------------
     // Loop over trigger decision components
     // Spawn each component_data_request to the corresponding link_data_handler_queue
@@ -179,37 +175,33 @@ RequestGenerator::do_work(std::atomic<bool>& running_flag)
       dataReq.m_trigger_number = trigDecision.m_trigger_number;
       dataReq.m_run_number = trigDecision.m_run_number;
       dataReq.m_trigger_timestamp = trigDecision.m_trigger_timestamp;
-      
+
       TLOG(TLVL_WORK_STEPS) << get_name() << ": trig_number " << dataReq.m_trigger_number << ": run_number "
                             << dataReq.m_run_number << ": trig_timestamp " << dataReq.m_trigger_timestamp;
-      
+
       dataformats::ComponentRequest comp_req = it->second;
       dataformats::GeoID geoid_req = it->first;
       dataReq.m_window_offset = comp_req.m_window_offset;
       dataReq.m_window_width = comp_req.m_window_width;
-      
+
       TLOG(TLVL_WORK_STEPS) << get_name() << ": apa_number " << geoid_req.m_apa_number << ": link_number "
                             << geoid_req.m_link_number << ": window_offset " << comp_req.m_window_offset
                             << ": window_width " << comp_req.m_window_width;
-      
+
       // find the queue for geoid_req in the map
       auto it_req = map.find(geoid_req);
       if (it_req == map.end()) {
         // if geoid request is not valid. then trhow error and continue
-        ers::error(dunedaq::dfmodules::UnknownGeoID( ERS_HERE, 
-						     dataReq.m_trigger_number, 
-						     dataReq.m_run_number, 
-						     geoid_req.m_apa_number, 
-						     geoid_req.m_link_number) );
+        ers::error(dunedaq::dfmodules::UnknownGeoID(
+          ERS_HERE, dataReq.m_trigger_number, dataReq.m_run_number, geoid_req.m_apa_number, geoid_req.m_link_number));
         continue;
       }
-      
+
       // get the queue from map element
       auto& queue = it_req->second;
-      
+
       wasSentSuccessfully = false;
-      do { 
-	
+      do {
         TLOG(TLVL_WORK_STEPS) << get_name() << ": Pushing the DataRequest from trigger number "
                               << dataReq.m_trigger_number << " onto output queue :" << queue->get_name();
 
@@ -226,7 +218,7 @@ RequestGenerator::do_work(std::atomic<bool>& running_flag)
             oss_warn.str(),
             std::chrono::duration_cast<std::chrono::milliseconds>(m_queue_timeout).count()));
         }
-      } while (!wasSentSuccessfully && running_flag.load() ) ; 
+      } while (!wasSentSuccessfully && running_flag.load());
     }
 
     m_trigger_decision_forwarder->set_latest_trigger_decision(trigDecision);
