@@ -13,8 +13,8 @@ moo.otypes.load_types('dfmodules-FragmentReceiver-schema.jsonnet')
 moo.otypes.load_types('dfmodules-DataWriter-schema.jsonnet')
 moo.otypes.load_types('dfmodules-HDF5DataStore-schema.jsonnet')
 moo.otypes.load_types('dfmodules-FakeDataProd-schema.jsonnet')
-moo.otypes.load_types('networkqueue-QueueToNetworkAdapterDAQModule-schema.jsonnet')
-moo.otypes.load_types('networkqueue-NetworkToQueueAdapterDAQModule-schema.jsonnet')
+moo.otypes.load_types('networkqueue-QueueToNetwork-schema.jsonnet')
+moo.otypes.load_types('networkqueue-NetworkToQueue-schema.jsonnet')
 moo.otypes.load_types('serialization-NetworkObjectReceiver-schema.jsonnet')
 moo.otypes.load_types('serialization-NetworkObjectSender-schema.jsonnet')
 
@@ -27,8 +27,8 @@ import dunedaq.dfmodules.fragmentreceiver as ffr
 import dunedaq.dfmodules.datawriter as dw
 import dunedaq.dfmodules.hdf5datastore as hdf5ds
 import dunedaq.dfmodules.fakedataprod as fdp
-import dunedaq.networkqueue.networktoqueueadapterdaqmodule as ntoq
-import dunedaq.networkqueue.queuetonetworkadapterdaqmodule as qton
+import dunedaq.networkqueue.networktoqueue as ntoq
+import dunedaq.networkqueue.queuetonetwork as qton
 import dunedaq.serialization.networkobjectreceiver as nor
 import dunedaq.serialization.networkobjectsender as nos
 
@@ -96,27 +96,27 @@ def generate(
 
 
     mod_specs = [
-        mspec("ntoq_trigdec", "NetworkToQueueAdapterDAQModule", [
+        mspec("ntoq_trigdec", "NetworkToQueue", [
                         cmd.QueueInfo(name="output", inst="trigger_decision_from_netq", dir="output")
                     ]),
 
-        mspec("qton_trigdec", "QueueToNetworkAdapterDAQModule", [
+        mspec("qton_trigdec", "QueueToNetwork", [
                         cmd.QueueInfo(name="input", inst="trigger_decision_to_netq", dir="input")
                     ]),
 
-        mspec("ntoq_triginh", "NetworkToQueueAdapterDAQModule", [
+        mspec("ntoq_triginh", "NetworkToQueue", [
                         cmd.QueueInfo(name="output", inst="trigger_inhibit_from_netq", dir="output")
                     ]),
 
-        mspec("qton_triginh", "QueueToNetworkAdapterDAQModule", [
+        mspec("qton_triginh", "QueueToNetwork", [
                         cmd.QueueInfo(name="input", inst="trigger_inhibit_to_netq", dir="input")
                     ]),
 
-        mspec("ntoq_timesync", "NetworkToQueueAdapterDAQModule", [
+        mspec("ntoq_timesync", "NetworkToQueue", [
                         cmd.QueueInfo(name="output", inst="time_sync_from_netq", dir="output")
                     ]),
 
-        mspec("qton_timesync", "QueueToNetworkAdapterDAQModule", [
+        mspec("qton_timesync", "QueueToNetwork", [
                         cmd.QueueInfo(name="input", inst="time_sync_to_netq", dir="input")
                     ]),
 
