@@ -153,9 +153,11 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
     frag_sources.push_back(std::unique_ptr<fragment_source_t>(new fragment_source_t(m_fragment_source_names[i])));
   }
 
-  while (running_flag.load()) {
+  bool book_updates = false ; 
+  
+  while (running_flag.load() || book_updates ) {
 
-    bool book_updates =  read_queues( decision_source, frag_sources ) ;
+    book_updates =  read_queues( decision_source, frag_sources ) ;
 
     // TLOG(TLVL_WORK_STEPS) << "Decision size: " << m_trigger_decisions.size() ;
     // TLOG(TLVL_WORK_STEPS) << "Frag size: " << m_fragments.size() ;
@@ -252,10 +254,10 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Starting draining phase ";
   std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
 
-  //-------------------------------------------------
-  // Here we drain what has been left from the running condition
-  //--------------------------------------------------
-  read_queues( decision_source, frag_sources, true ) ; 
+  // //-------------------------------------------------
+  // // Here we drain what has been left from the running condition
+  // //--------------------------------------------------
+  // read_queues( decision_source, frag_sources, true ) ; 
     
 
   // create all possible trigger record
