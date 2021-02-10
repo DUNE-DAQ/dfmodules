@@ -36,9 +36,16 @@ ERS_DECLARE_ISSUE_BASE(dfmodules,
 ERS_DECLARE_ISSUE_BASE(dfmodules,
                        InvalidHDF5Group,
                        appfwk::GeneralDAQModuleIssue,
-                       "The HDF5 Group associated with name \"" << group_name << "\" is invalid. ",
+                       "The HDF5 Group associated with name \"" << group_name << "\" is invalid.",
                        ((std::string)name),
                        ((std::string)group_name))
+
+ERS_DECLARE_ISSUE_BASE(dfmodules,
+                       UnableToStart,
+                       appfwk::GeneralDAQModuleIssue,
+                       "Unable to start run " << run_number << ".",
+                       ((std::string)name),
+                       ((size_t)run_number))
 
 } // namespace dunedaq
 
