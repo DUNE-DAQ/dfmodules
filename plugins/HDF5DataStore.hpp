@@ -349,7 +349,8 @@ private:
   void open_file_if_needed(const std::string& file_name, unsigned open_flags = HighFive::File::ReadOnly)
   {
 
-    if (m_basic_name_of_open_file.compare(file_name) || m_open_flags_of_open_file != open_flags) {
+    if (m_file_ptr.get() == nullptr || m_basic_name_of_open_file.compare(file_name) ||
+        m_open_flags_of_open_file != open_flags) {
 
       // 04-Feb-2021, KAB: adding unique substrings to the filename
       std::string unique_filename = file_name;
