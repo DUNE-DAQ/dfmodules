@@ -171,7 +171,7 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
     throw InvalidDataWriterError(ERS_HERE, get_name());
   }
 
-  while (running_flag.load()) {
+  while (running_flag.load() || m_trigger_record_input_queue->can_pop()) {
     std::unique_ptr<dataformats::TriggerRecord> trigger_record_ptr;
 
     // receive the next TriggerRecord
