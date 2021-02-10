@@ -118,10 +118,24 @@ public:
   void init(const data_t&) override;
 
 protected:
-  // BuildTriggerRecord will allocate memory and then orphan it to the caller via the returned pointer
-  dataformats::TriggerRecord* BuildTriggerRecord(const TriggerId&);
+  
+  using trigger_decision_source_t = dunedaq::appfwk::DAQSource<dfmessages::TriggerDecision>;
+  using fragment_source_t = dunedaq::appfwk::DAQSource<std::unique_ptr<dataformats::Fragment>>;
+  using fragment_sources_t = std::vector<std::unique_ptr<fragment_source_t>>;
+  using trigger_record_sink_t = appfwk::DAQSink<std::unique_ptr<dataformats::TriggerRecord>>;
+
+  bool read_queues( trigger_decision_source_t & , 
+		    fragment_sources_t &, 
+		    bool drain = false ) ;
+  
+  dataformats::TriggerRecord* build_trigger_record(const TriggerId&);
+  // build_trigger_record will allocate memory and then orphan it to the caller via the returned pointer
   // Plese note that the method will destroy the memory saved in the bookkeeping map
 
+  bool send_trigger_record( const TriggerId&, trigger_record_sink_t &, 
+			    std::atomic<bool> & running ) ;
+  // this creates a trigger record and send it
+  
 private:
   // Commands
   void do_conf(const data_t&);
@@ -137,14 +151,10 @@ private:
   std::chrono::milliseconds m_queue_timeout;
 
   // Input Queues
-  using trigger_decision_source_t = dunedaq::appfwk::DAQSource<dfmessages::TriggerDecision>;
-  using fragment_source_t = dunedaq::appfwk::DAQSource<std::unique_ptr<dataformats::Fragment>>;
-
   std::string m_trigger_decision_source_name;
   std::vector<std::string> m_fragment_source_names;
 
   // Output queues
-  using trigger_record_sink_t = appfwk::DAQSink<std::unique_ptr<dataformats::TriggerRecord>>;
   std::string m_trigger_record_sink_name;
 
   // bookeeping
@@ -152,6 +162,8 @@ private:
   std::map<TriggerId, dfmessages::TriggerDecision> m_trigger_decisions;
 
   dataformats::timestamp_diff_t m_max_time_difference;
+  dataformats::timestamp_t m_current_time = 0;
+
 };
 } // namespace dfmodules
 } // namespace dunedaq

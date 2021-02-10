@@ -20,6 +20,7 @@
 #include "appfwk/NamedObject.hpp"
 #include "cetlib/BasicPluginFactory.h"
 #include "cetlib/compiler_macros.h"
+#include "dataformats/Types.hpp"
 #include "ers/ers.h"
 
 #include "nlohmann/json.hpp"
@@ -76,12 +77,6 @@ public:
   {}
 
   /**
-   * @brief Setup the DataStore for reading/writign.
-   * @param directory path and filename.
-   */
-  virtual void setup(const size_t eventId) = 0;
-
-  /**
    * @brief Writes the specified data payload into the DataStore.
    * @param dataBlock Data block to write.
    */
@@ -97,6 +92,22 @@ public:
   // virtual void write(const std::vector<KeyedDataBlock>& dataBlockList) = 0;
   virtual KeyedDataBlock read(const StorageKey& key) = 0;
   // virtual std::vector<KeyedDataBlock> read(const std::vector<StorageKey>& key) = 0;
+
+  /**
+   * @brief Informs the DataStore that writes or reads of data blocks associated
+   * with the specified run number will soon be requested.
+   * This allows DataStore instances to make any preparations that will be
+   * beneficial in advance of the first data blocks being written or read.
+   */
+  virtual void prepare_for_run(dataformats::run_number_t run_number) = 0;
+
+  /**
+   * @brief Informs the DataStore that writes or reads of data blocks associated
+   * with the specified run number have finished, for now.
+   * This allows DataStore instances to do any cleanup or shutdown operations
+   * that are useful once the writes or reads for a given run number have finished.
+   */
+  virtual void finish_with_run(dataformats::run_number_t run_number) = 0;
 
 private:
   DataStore(const DataStore&) = delete;

@@ -134,7 +134,7 @@ RequestGenerator::do_work(std::atomic<bool>& running_flag)
     map[entry.first] = std::unique_ptr<datareqsink_t>(new datareqsink_t(entry.second));
   }
 
-  while (running_flag.load()) {
+  while (running_flag.load() || m_trigger_decision_input_queue->can_pop()) {
     dfmessages::TriggerDecision trigDecision;
     try {
       m_trigger_decision_input_queue->pop(trigDecision, m_queue_timeout);
@@ -148,7 +148,7 @@ RequestGenerator::do_work(std::atomic<bool>& running_flag)
     }
 
     bool wasSentSuccessfully = false;
-    while (!wasSentSuccessfully && running_flag.load()) {
+    do {
       TLOG(TLVL_WORK_STEPS) << get_name() << ": Pushing the TriggerDecision for trigger number "
                             << trigDecision.m_trigger_number << " onto the output queue";
       try {
@@ -163,7 +163,7 @@ RequestGenerator::do_work(std::atomic<bool>& running_flag)
           oss_warn.str(),
           std::chrono::duration_cast<std::chrono::milliseconds>(m_queue_timeout).count()));
       }
-    }
+    } while (!wasSentSuccessfully && running_flag.load());
 
     //-----------------------------------------
     // Loop over trigger decision components
@@ -201,8 +201,7 @@ RequestGenerator::do_work(std::atomic<bool>& running_flag)
       auto& queue = it_req->second;
 
       wasSentSuccessfully = false;
-      while (!wasSentSuccessfully && running_flag.load()) {
-
+      do {
         TLOG(TLVL_WORK_STEPS) << get_name() << ": Pushing the DataRequest from trigger number "
                               << dataReq.m_trigger_number << " onto output queue :" << queue->get_name();
 
@@ -219,7 +218,7 @@ RequestGenerator::do_work(std::atomic<bool>& running_flag)
             oss_warn.str(),
             std::chrono::duration_cast<std::chrono::milliseconds>(m_queue_timeout).count()));
         }
-      }
+      } while (!wasSentSuccessfully && running_flag.load());
     }
 
     m_trigger_decision_forwarder->set_latest_trigger_decision(trigDecision);
