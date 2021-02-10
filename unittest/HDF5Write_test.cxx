@@ -84,13 +84,15 @@ BOOST_AUTO_TEST_CASE(WriteFragmentFiles)
 
   // create the DataStore
   nlohmann::json conf;
+  conf["type"] = "HDF5DataStore";
   conf["name"] = "tempWriter";
   conf["directory_path"] = file_path;
   conf["mode"] = "one-fragment-per-file";
   nlohmann::json subconf;
   subconf["overall_prefix"] = file_prefix;
   conf["filename_parameters"] = subconf;
-  std::unique_ptr<HDF5DataStore> data_store_ptr(new HDF5DataStore(conf));
+  // std::unique_ptr<HDF5DataStore> data_store_ptr(new HDF5DataStore(conf));
+  std::unique_ptr<HDF5DataStore> data_store_ptr(static_cast<HDF5DataStore *>(make_data_store(conf).release()));
 
   // write several events, each with several fragments
   char dummy_data[dummydata_size];
@@ -145,13 +147,15 @@ BOOST_AUTO_TEST_CASE(WriteEventFiles)
 
   // create the DataStore
   nlohmann::json conf;
+  conf["type"] = "HDF5DataStore";
   conf["name"] = "tempWriter";
   conf["directory_path"] = file_path;
   conf["mode"] = "one-event-per-file";
   nlohmann::json subconf;
   subconf["overall_prefix"] = file_prefix;
   conf["filename_parameters"] = subconf;
-  std::unique_ptr<HDF5DataStore> data_store_ptr(new HDF5DataStore(conf));
+  // std::unique_ptr<HDF5DataStore> data_store_ptr(new HDF5DataStore(conf));
+  std::unique_ptr<HDF5DataStore> data_store_ptr(static_cast<HDF5DataStore *>(make_data_store(conf).release()));
 
   // write several events, each with several fragments
   char dummy_data[dummydata_size];
@@ -197,13 +201,15 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
 
   // create the DataStore
   nlohmann::json conf;
+  conf["type"] = "HDF5DataStore";
   conf["name"] = "tempWriter";
   conf["directory_path"] = file_path;
   conf["mode"] = "all-per-file";
   nlohmann::json subconf;
   subconf["overall_prefix"] = file_prefix;
   conf["filename_parameters"] = subconf;
-  std::unique_ptr<HDF5DataStore> data_store_ptr(new HDF5DataStore(conf));
+  // std::unique_ptr<HDF5DataStore> data_store_ptr(new HDF5DataStore(conf));
+  std::unique_ptr<HDF5DataStore> data_store_ptr(static_cast<HDF5DataStore *>(make_data_store(conf).release()));
 #if 0
   hdf5datastore::ConfParams config_params;
   config_params.name = "tempWriter";

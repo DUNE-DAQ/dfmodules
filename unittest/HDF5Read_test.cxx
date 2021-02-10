@@ -195,13 +195,15 @@ BOOST_AUTO_TEST_CASE(ReadSingleFile)
 
   // create the DataStore instance for writing
   nlohmann::json conf;
+  conf["type"] = "HDF5DataStore";
   conf["name"] = "tempWriter";
   conf["directory_path"] = file_path;
   conf["mode"] = "all-per-file";
   nlohmann::json subconf;
   subconf["overall_prefix"] = file_prefix;
   conf["filename_parameters"] = subconf;
-  std::unique_ptr<HDF5DataStore> data_store_ptr(new HDF5DataStore(conf));
+  // std::unique_ptr<HDF5DataStore> data_store_ptr(new HDF5DataStore(conf));
+  std::unique_ptr<HDF5DataStore> data_store_ptr(static_cast<HDF5DataStore *>(make_data_store(conf).release()));
 
   int initialized_checksum = 0;
   // write several events, each with several fragments
@@ -228,13 +230,15 @@ BOOST_AUTO_TEST_CASE(ReadSingleFile)
 
   // create a new DataStore instance to read back the data that was written
   nlohmann::json read_conf;
+  read_conf["type"] = "HDF5DataStore";
   read_conf["name"] = "tempReader";
   read_conf["directory_path"] = file_path;
   read_conf["mode"] = "all-per-file";
   nlohmann::json read_subconf;
   read_subconf["overall_prefix"] = file_prefix;
   read_conf["filename_parameters"] = read_subconf;
-  std::unique_ptr<HDF5DataStore> data_store_ptr2(new HDF5DataStore(read_conf));
+  // std::unique_ptr<HDF5DataStore> data_store_ptr2(new HDF5DataStore(read_conf));
+  std::unique_ptr<HDF5DataStore> data_store_ptr2(static_cast<HDF5DataStore*>(make_data_store(conf).release()));
 
   // loop over all of the keys to read in the data
   for (size_t kdx = 0; kdx < key_list.size(); ++kdx) {
