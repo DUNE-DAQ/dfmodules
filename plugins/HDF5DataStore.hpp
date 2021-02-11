@@ -109,7 +109,7 @@ public:
     m_max_file_size = m_config_params.max_file_size_bytes;
     m_disable_unique_suffix = m_config_params.disable_unique_filename_suffix;
 
-    m_file_count = 0;
+    m_file_index = 0;
     m_recorded_size = 0;
 
     if (m_operation_mode != "one-event-per-file" && m_operation_mode != "one-fragment-per-file" &&
@@ -128,10 +128,10 @@ public:
   {
     TLOG(TLVL_DEBUG) << get_name() << ": going to read data block from triggerNumber/detectorType/apaNumber/linkNumber "
                      << HDF5KeyTranslator::get_path_string(key, m_config_params.file_layout_parameters) << " from file "
-                     << HDF5KeyTranslator::get_file_name(key, m_config_params, m_file_count);
+                     << HDF5KeyTranslator::get_file_name(key, m_config_params, m_file_index);
 
     // opening the file from Storage Key + configuration parameters
-    std::string full_filename = HDF5KeyTranslator::get_file_name(key, m_config_params, m_file_count);
+    std::string full_filename = HDF5KeyTranslator::get_file_name(key, m_config_params, m_file_index);
 
     // m_file_ptr will be the handle to the Opened-File after a call to open_file_if_needed()
     open_file_if_needed(full_filename, HighFive::File::ReadOnly);
@@ -170,8 +170,14 @@ public:
    */
   virtual void write(const KeyedDataBlock& data_block)
   {
+    // check if a new file should be opened for this data block
+    if ((m_recorded_size + data_block.m_data_size) > m_max_file_size) {
+      ++m_file_index;
+      m_recorded_size = 0;
+    }
+
     // opening the file from Storage Key + configuration parameters
-    std::string full_filename = HDF5KeyTranslator::get_file_name(data_block.m_data_key, m_config_params, m_file_count);
+    std::string full_filename = HDF5KeyTranslator::get_file_name(data_block.m_data_key, m_config_params, m_file_index);
 
     // m_file_ptr will be the handle to the Opened-File after a call to open_file_if_needed()
     open_file_if_needed(full_filename, HighFive::File::OpenOrCreate);
@@ -209,12 +215,30 @@ public:
 
     m_file_ptr->flush();
     m_recorded_size += data_block.m_data_size;
+  }
 
-    // 13-Jan-2021, KAB: disable the file size checking, for now.
-    // AAA: be careful on the units, maybe force it somehow?
-    // if (m_recorded_size > m_max_file_size) {
-    //  m_file_count++;
-    //}
+  /**
+   * @brief Writes the specified set of data blocks into the DataStore.
+   * @param data_block_list List of data blocks to write.
+   */
+  virtual void write(const std::vector<KeyedDataBlock>& data_block_list)
+  {
+    // check if a new file should be opened for this set of data blocks
+    size_t sum_of_sizes = 0;
+    for (auto& data_block : data_block_list) {
+      sum_of_sizes += data_block.m_data_size;
+    }
+    TLOG(TLVL_DEBUG+5) << get_name() << ": Checking file size, recorded=" << m_recorded_size << ", additional="
+                       << sum_of_sizes << ", max=" << m_max_file_size;
+    if ((m_recorded_size + sum_of_sizes) > (0.96 * m_max_file_size)) {
+      ++m_file_index;
+      m_recorded_size = 0;
+    }
+
+    // write each data block
+    for (auto& data_block : data_block_list) {
+      write(data_block);
+    }
   }
 
   /**
@@ -286,6 +310,9 @@ public:
     std::ostringstream oss_hex;
     oss_hex << std::hex << string_hasher(work_string);
     m_hashed_timeuser_substring_for_filename = "_" + oss_hex.str();
+
+    m_file_index = 0;
+    m_recorded_size = 0;
   }
 
   /**
@@ -318,7 +345,7 @@ private:
   std::string m_hashed_timeuser_substring_for_filename;
 
   // Total number of generated files
-  size_t m_file_count;
+  size_t m_file_index;
 
   // Total size of data being written
   size_t m_recorded_size;
