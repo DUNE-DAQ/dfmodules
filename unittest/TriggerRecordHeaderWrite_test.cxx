@@ -1,5 +1,5 @@
 /**
- * @file HDF5Write_test.cxx Application that tests and demonstrates
+ * @file TriggerRecordHeaderWrite_test.cxx Application that tests and demonstrates
  * the write functionality of the HDF5DataStore class.
  *
  * This is part of the DUNE DAQ Application Framework, copyright 2020.
@@ -14,7 +14,7 @@
 
 #include "ers/ers.h"
 
-#define BOOST_TEST_MODULE HDF5RecordHeaderTest_test // NOLINT
+#define BOOST_TEST_MODULE TriggerRecordHeaderWrite_test // NOLINT
 
 #include "boost/test/unit_test.hpp"
 
@@ -56,7 +56,7 @@ delete_files_matching_pattern(const std::string& path, const std::string& patter
   return file_list;
 }
 
-BOOST_AUTO_TEST_SUITE(TriggerRecordHeader_test)
+BOOST_AUTO_TEST_SUITE(TriggerRecordHeaderWrite_test)
 
 BOOST_AUTO_TEST_CASE(WriteOneFile)
 {
