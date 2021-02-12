@@ -20,7 +20,6 @@
 #include "ers/ers.h"
 
 #include <algorithm>
-#include <chrono>
 #include <cstdlib>
 #include <memory>
 #include <string>
@@ -172,7 +171,6 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
     throw InvalidDataWriterError(ERS_HERE, get_name());
   }
 
-  std::chrono::seconds progress_report_interval(3);
   std::chrono::steady_clock::time_point progress_report_time = std::chrono::steady_clock::now();
   while (running_flag.load() || m_trigger_record_input_queue->can_pop()) {
     std::unique_ptr<dataformats::TriggerRecord> trigger_record_ptr;
@@ -266,12 +264,12 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
 
     // progress updates
     std::chrono::steady_clock::time_point current_time = std::chrono::steady_clock::now();
-    if ((current_time - progress_report_time) >= progress_report_interval) {
+    if (GetElapsedTime(progress_report_time, current_time) >= 3.0) {
       progress_report_time = current_time;
       std::ostringstream oss_prog;
       oss_prog << ": Processing trigger number " << trigger_record_ptr->get_header_ref().get_trigger_number()
-               << ", this is one of " << received_count << " trigger records received so far. "
-               << written_count << " trigger records have been written to the data store.";
+               << ", this is one of " << received_count << " trigger records received so far. " << written_count
+               << " trigger records have been written to the data store.";
       ers::log(ProgressUpdate(ERS_HERE, get_name(), oss_prog.str()));
     }
 
