@@ -1,3 +1,15 @@
+# testapp_noreadout_networkqueue_confgen.py
+
+# This python configuration provides a MiniDAQApp v1-style
+# single-application configuration, with connections to and from the
+# TriggerDecisionEmulator going via pairs of QueueToNetwork and
+# NetworkToQueue modules. Since everything is in one application, the
+# only purpose this serves is to test the QueueToNetwork and
+# NetworkToQueue functionality. As with testapp_noreadout_confgen.py
+# in this directory, no modules from the readout package are used: the
+# fragments are provided by the FakeDataProd module from dfmodules
+
+
 # Set moo schema search path
 from dunedaq.env import get_moo_model_path
 import moo.io

@@ -1,3 +1,17 @@
+# testapp_noreadout_two_process.py
+
+# This python configuration produces *two* json configuration files
+# that together form a MiniDAQApp with the same functionality as
+# MiniDAQApp v1, but in two processes. One process contains the
+# TriggerDecisionEmulator, while the other process contains everything
+# else. The network communication is done with the QueueToNetwork and
+# NetworkToQueue modules from the networkqueue package.
+#
+# As with testapp_noreadout_confgen.py
+# in this directory, no modules from the readout package are used: the
+# fragments are provided by the FakeDataProd module from dfmodules
+
+
 # Set moo schema search path
 from dunedaq.env import get_moo_model_path
 import moo.io
