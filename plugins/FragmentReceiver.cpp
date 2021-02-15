@@ -9,12 +9,13 @@
 #include "FragmentReceiver.hpp"
 #include "dfmodules/CommonIssues.hpp"
 
-#include "TRACE/trace.h"
 #include "appfwk/DAQModuleHelper.hpp"
 #include "appfwk/cmd/Nljs.hpp"
 #include "dfmodules/fragmentreceiver/Nljs.hpp"
 #include "dfmodules/fragmentreceiver/Structs.hpp"
-#include "ers/ers.h"
+//#include "TRACE/trace.h"
+//#include "ers/ers.h"
+#include "logging/Logging.hpp"
 
 #include <chrono>
 #include <cstdlib>
@@ -28,9 +29,9 @@
  * @brief Name used by TRACE TLOG calls from this source file
  */
 #define TRACE_NAME "FragmentReceiver"          // NOLINT
-#define TLVL_ENTER_EXIT_METHODS TLVL_DEBUG + 5 // NOLINT
-#define TLVL_WORK_STEPS TLVL_DEBUG + 10        // NOLINT
-#define TLVL_BOOKKEEPING TLVL_DEBUG + 15       // NOLINT
+#define TLVL_ENTER_EXIT_METHODS 5			   // NOLINT
+#define TLVL_WORK_STEPS 10					   // NOLINT
+#define TLVL_BOOKKEEPING 15					   // NOLINT
 
 namespace dunedaq {
 namespace dfmodules {
@@ -53,7 +54,7 @@ void
 FragmentReceiver::init(const data_t& init_data)
 {
 
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
 
   //--------------------------------
   // Get single queues
@@ -100,13 +101,13 @@ FragmentReceiver::init(const data_t& init_data)
     }
   }
 
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
 
 void
 FragmentReceiver::do_conf(const data_t& payload)
 {
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
 
   fragmentreceiver::ConfParams parsed_conf = payload.get<fragmentreceiver::ConfParams>();
 
@@ -114,31 +115,31 @@ FragmentReceiver::do_conf(const data_t& payload)
 
   m_queue_timeout = std::chrono::milliseconds(parsed_conf.general_queue_timeout);
 
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
 }
 
 void
 FragmentReceiver::do_start(const data_t& /*args*/)
 {
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_start() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_start() method";
   m_thread.start_working_thread();
-  ERS_LOG(get_name() << " successfully started");
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
+  TLOG() << get_name() << " successfully started";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
 }
 
 void
 FragmentReceiver::do_stop(const data_t& /*args*/)
 {
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_stop() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_stop() method";
   m_thread.stop_working_thread();
-  ERS_LOG(get_name() << " successfully stopped");
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_stop() method";
+  TLOG() << get_name() << " successfully stopped";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_stop() method";
 }
 
 void
 FragmentReceiver::do_work(std::atomic<bool>& running_flag)
 {
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() method";
   // uint32_t receivedCount = 0;
   
   // clean books from possible previous memory
@@ -159,8 +160,8 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
 
     book_updates =  read_queues( decision_source, frag_sources ) ;
 
-    // TLOG(TLVL_WORK_STEPS) << "Decision size: " << m_trigger_decisions.size() ;
-    // TLOG(TLVL_WORK_STEPS) << "Frag size: " << m_fragments.size() ;
+    // TLOG_DEBUG(TLVL_WORK_STEPS) << "Decision size: " << m_trigger_decisions.size() ;
+    // TLOG_DEBUG(TLVL_WORK_STEPS) << "Frag size: " << m_fragments.size() ;
 
     //-------------------------------------------------
     // Check if some decisions are complete or timedout
@@ -170,21 +171,21 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
     if (book_updates) {
 
       std::ostringstream message;
-      TLOG(TLVL_BOOKKEEPING) << "Bookeeping status: " << m_trigger_decisions.size() << " decisions and "
+      TLOG_DEBUG(TLVL_BOOKKEEPING) << "Bookeeping status: " << m_trigger_decisions.size() << " decisions and "
                              << m_fragments.size() << " Fragment stashes";
       message << "Trigger Decisions: ";
 
       for (const auto& d : m_trigger_decisions) {
         message << d.first << " with " << d.second.m_components.size() << " components, ";
       }
-      TLOG(TLVL_BOOKKEEPING) << message.str();
+      TLOG_DEBUG(TLVL_BOOKKEEPING) << message.str();
       message.str("");
       message << "Fragments: ";
       for (const auto& f : m_fragments) {
         message << f.first << " with " << f.second.size() << " fragments, ";
       }
 
-      TLOG(TLVL_BOOKKEEPING) << message.str();
+      TLOG_DEBUG(TLVL_BOOKKEEPING) << message.str();
       // ers::info(ProgressUpdate(ERS_HERE, get_name(), message.str()));
 
       std::vector<TriggerId> complete;
@@ -204,7 +205,7 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
             complete.push_back(it->first);
           } else {
             // std::ostringstream message ;
-            TLOG(TLVL_WORK_STEPS) << "Trigger decision " << it->first << " status: " << frag_it->second.size() << " / "
+            TLOG_DEBUG(TLVL_WORK_STEPS) << "Trigger decision " << it->first << " status: " << frag_it->second.size() << " / "
                                   << it->second.m_components.size() << " Fragments";
 
             // ers::error(ProgressUpdate(ERS_HERE, get_name(), message.str()));
@@ -251,7 +252,7 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
 
   } // working loop
 
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Starting draining phase ";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Starting draining phase ";
   std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
 
   // //-------------------------------------------------
@@ -282,7 +283,7 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
 	   << "Draining took : " << time_span.count() << " s" ;
   ers::log(ProgressUpdate(ERS_HERE, get_name(), oss_summ.str()));
   
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_work() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_work() method";
 }
 
 bool 

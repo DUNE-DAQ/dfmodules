@@ -13,7 +13,8 @@
 #include "TRACE/trace.h"
 #include "appfwk/DAQModuleHelper.hpp"
 #include "appfwk/cmd/Nljs.hpp"
-#include "ers/ers.h"
+//#include "ers/ers.h"
+#include "logging/Logging.hpp"
 
 #include <chrono>
 #include <cstdlib>
@@ -26,9 +27,11 @@
 /**
  * @brief Name used by TRACE TLOG calls from this source file
  */
-#define TRACE_NAME "FakeReqGen"                // NOLINT
-#define TLVL_ENTER_EXIT_METHODS TLVL_DEBUG + 5 // NOLINT
-#define TLVL_WORK_STEPS TLVL_DEBUG + 10        // NOLINT
+//#define TRACE_NAME "FakeReqGen"                // NOLINT
+enum {
+	TLVL_ENTER_EXIT_METHODS=5,
+	TLVL_WORK_STEPS=10
+};
 
 namespace dunedaq {
 namespace dfmodules {
@@ -49,7 +52,7 @@ FakeReqGen::FakeReqGen(const std::string& name)
 void
 FakeReqGen::init(const data_t& init_data)
 {
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
   auto qilist = appfwk::queue_index(
     init_data,
     { "trigger_decision_input_queue", "trigger_decision_for_event_building", "trigger_decision_for_inhibit" });
@@ -86,38 +89,38 @@ FakeReqGen::init(const data_t& init_data)
 void
 FakeReqGen::do_conf(const data_t& /*payload*/)
 {
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
 
   // fakereqgen::Conf tmpConfig = payload.get<fakereqgen::Conf>();
   // m_sleep_msec_while_running = tmpConfig.sleep_msec_while_running;
 
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
 }
 
 void
 FakeReqGen::do_start(const data_t& /*args*/)
 {
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_start() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_start() method";
   m_trigger_decision_forwarder->start_forwarding();
   m_thread.start_working_thread();
-  ERS_LOG(get_name() << " successfully started");
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
+  TLOG() << get_name() << " successfully started";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
 }
 
 void
 FakeReqGen::do_stop(const data_t& /*args*/)
 {
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_stop() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_stop() method";
   m_trigger_decision_forwarder->stop_forwarding();
   m_thread.stop_working_thread();
-  ERS_LOG(get_name() << " successfully stopped");
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_stop() method";
+  TLOG() << get_name() << " successfully stopped";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_stop() method";
 }
 
 void
 FakeReqGen::do_work(std::atomic<bool>& running_flag)
 {
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() method";
   int32_t receivedCount = 0;
 
   while (running_flag.load()) {
@@ -125,7 +128,7 @@ FakeReqGen::do_work(std::atomic<bool>& running_flag)
     try {
       m_trigger_decision_input_queue->pop(trigDecision, m_queue_timeout);
       ++receivedCount;
-      TLOG(TLVL_WORK_STEPS) << get_name() << ": Popped the TriggerDecision for trigger number "
+      TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Popped the TriggerDecision for trigger number "
                             << trigDecision.m_trigger_number << " off the input queue";
     } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
       // it is perfectly reasonable that there might be no data in the queue
@@ -135,7 +138,7 @@ FakeReqGen::do_work(std::atomic<bool>& running_flag)
 
     bool wasSentSuccessfully = false;
     while (!wasSentSuccessfully && running_flag.load()) {
-      TLOG(TLVL_WORK_STEPS) << get_name() << ": Pushing the TriggerDecision for trigger number "
+      TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Pushing the TriggerDecision for trigger number "
                             << trigDecision.m_trigger_number << " onto the output queue";
       try {
         m_trigger_decision_output_queue->push(trigDecision, m_queue_timeout);
@@ -170,7 +173,7 @@ FakeReqGen::do_work(std::atomic<bool>& running_flag)
 
       wasSentSuccessfully = false;
       while (!wasSentSuccessfully && running_flag.load()) {
-        TLOG(TLVL_WORK_STEPS) << get_name() << ": Pushing the DataRequest for trigger number "
+        TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Pushing the DataRequest for trigger number "
                               << dataReq.m_trigger_number << " onto an output queue";
         try {
           dataReqQueue->push(dataReq, m_queue_timeout);
@@ -189,16 +192,16 @@ FakeReqGen::do_work(std::atomic<bool>& running_flag)
 
     m_trigger_decision_forwarder->set_latest_trigger_decision(trigDecision);
 
-    // TLOG(TLVL_WORK_STEPS) << get_name() << ": Start of sleep while waiting for run Stop";
+    // TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Start of sleep while waiting for run Stop";
     // std::this_thread::sleep_for(std::chrono::milliseconds(m_sleep_msec_while_running));
-    // TLOG(TLVL_WORK_STEPS) << get_name() << ": End of sleep while waiting for run Stop";
+    // TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": End of sleep while waiting for run Stop";
   }
 
   std::ostringstream oss_summ;
   oss_summ << ": Exiting the do_work() method, received Fake trigger decision messages for " << receivedCount
            << " triggers.";
-  ers::log(ProgressUpdate(ERS_HERE, get_name(), oss_summ.str()));
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_work() method";
+  TLOG() << ProgressUpdate(ERS_HERE, get_name(), oss_summ.str());
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_work() method";
 }
 
 } // namespace dfmodules

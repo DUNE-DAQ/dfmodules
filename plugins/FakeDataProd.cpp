@@ -10,9 +10,10 @@
 #include "dfmodules/CommonIssues.hpp"
 #include "dfmodules/fakedataprod/Nljs.hpp"
 
-#include "TRACE/trace.h"
 #include "appfwk/DAQModuleHelper.hpp"
-#include "ers/ers.h"
+//#include "TRACE/trace.h"
+//#include "ers/ers.h"
+#include "logging/Logging.hpp"
 
 #include <chrono>
 #include <cstdlib>
@@ -26,9 +27,11 @@
  * @brief Name used by TRACE TLOG calls from this source file
  */
 #define TRACE_NAME "FakeDataProd"              // NOLINT
-#define TLVL_ENTER_EXIT_METHODS TLVL_DEBUG + 5 // NOLINT
-#define TLVL_CONFIG TLVL_DEBUG + 7             // NOLINT
-#define TLVL_WORK_STEPS TLVL_DEBUG + 10        // NOLINT
+enum {
+	TLVL_ENTER_EXIT_METHODS=5,
+	TLVL_CONFIG=7,
+	TLVL_WORK_STEPS=10
+};
 
 namespace dunedaq {
 namespace dfmodules {
@@ -50,7 +53,7 @@ FakeDataProd::FakeDataProd(const std::string& name)
 void
 FakeDataProd::init(const data_t& init_data)
 {
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
   auto qi = appfwk::queue_index(init_data, { "data_request_input_queue", "data_fragment_output_queue" });
   try {
     m_data_request_input_queue.reset(new datareqsource_t(qi["data_request_input_queue"].inst));
@@ -62,44 +65,44 @@ FakeDataProd::init(const data_t& init_data)
   } catch (const ers::Issue& excpt) {
     throw InvalidQueueFatalError(ERS_HERE, get_name(), "data_fragment_output_queue", excpt);
   }
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
 
 void
 FakeDataProd::do_conf(const data_t& payload)
 {
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
 
   fakedataprod::ConfParams tmpConfig = payload.get<fakedataprod::ConfParams>();
   m_fake_link_number = tmpConfig.temporarily_hacked_link_number;
-  TLOG(TLVL_CONFIG) << get_name() << ": configured for link number " << m_fake_link_number;
+  TLOG_DEBUG(TLVL_CONFIG) << get_name() << ": configured for link number " << m_fake_link_number;
 
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
 }
 
 void
 FakeDataProd::do_start(const data_t& payload)
 {
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_start() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_start() method";
   m_run_number = payload.value<dunedaq::dataformats::run_number_t>("run", 0);
   m_thread.start_working_thread();
-  ERS_LOG(get_name() << " successfully started for run number " << m_run_number);
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
+  TLOG() << get_name() << " successfully started for run number " << m_run_number;
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
 }
 
 void
 FakeDataProd::do_stop(const data_t& /*args*/)
 {
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_stop() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_stop() method";
   m_thread.stop_working_thread();
-  ERS_LOG(get_name() << " successfully stopped");
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_stop() method";
+  TLOG() << get_name() << " successfully stopped";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_stop() method";
 }
 
 void
 FakeDataProd::do_work(std::atomic<bool>& running_flag)
 {
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() method";
   int32_t receivedCount = 0;
 
   while (running_flag.load()) {
@@ -141,7 +144,7 @@ FakeDataProd::do_work(std::atomic<bool>& running_flag)
 
     bool wasSentSuccessfully = false;
     while (!wasSentSuccessfully && running_flag.load()) {
-      TLOG(TLVL_WORK_STEPS) << get_name() << ": Pushing the Data Fragment for trigger number "
+      TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Pushing the Data Fragment for trigger number "
                             << data_fragment_ptr->get_trigger_number() << " onto the output queue";
       try {
         m_data_fragment_output_queue->push(std::move(data_fragment_ptr), m_queue_timeout);
@@ -157,16 +160,16 @@ FakeDataProd::do_work(std::atomic<bool>& running_flag)
       }
     }
 
-    // TLOG(TLVL_WORK_STEPS) << get_name() << ": Start of sleep while waiting for run Stop";
+    // TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Start of sleep while waiting for run Stop";
     // std::this_thread::sleep_for(std::chrono::milliseconds(m_sleep_msec_while_running));
-    // TLOG(TLVL_WORK_STEPS) << get_name() << ": End of sleep while waiting for run Stop";
+    // TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": End of sleep while waiting for run Stop";
   }
 
   std::ostringstream oss_summ;
   oss_summ << ": Exiting the do_work() method, received Fake trigger decision messages for " << receivedCount
            << " triggers.";
   ers::log(ProgressUpdate(ERS_HERE, get_name(), oss_summ.str()));
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_work() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_work() method";
 }
 
 } // namespace dfmodules
