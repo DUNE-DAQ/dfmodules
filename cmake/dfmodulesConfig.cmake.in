@@ -8,7 +8,8 @@ include(CMakeFindDependencyMacro)
 # find_package calls in your package's CMakeLists.txt file
 
 find_dependency(HighFive)
-find_dependency(AppFwk)
+find_dependency(appfwk)
+find_dependency(dfmessages)
 
 # Figure out whether or not this dependency is an installed package or
 # in repo form
