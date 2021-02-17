@@ -9,6 +9,7 @@
 #ifndef DFMODULES_PLUGINS_FAKETRIGDECEMU_HPP_
 #define DFMODULES_PLUGINS_FAKETRIGDECEMU_HPP_
 
+#include "dfmessages/BufferToken.hpp"
 #include "dfmessages/TriggerDecision.hpp"
 #include "dfmessages/TriggerInhibit.hpp"
 
@@ -62,6 +63,9 @@ private:
   std::unique_ptr<trigdecsink_t> m_trigger_decision_output_queue;
   using triginhsource_t = dunedaq::appfwk::DAQSource<dfmessages::TriggerInhibit>;
   std::unique_ptr<triginhsource_t> m_trigger_inhibit_input_queue;
+  using tokensource_t = dunedaq::appfwk::DAQSource<dfmessages::BufferToken>;
+  std::unique_ptr<tokensource_t> m_buffer_token_input_queue;
+
 };
 } // namespace dfmodules
 } // namespace dunedaq

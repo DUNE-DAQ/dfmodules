@@ -46,6 +46,7 @@ DataWriter::DataWriter(const std::string& name)
   , m_queue_timeout(100)
   , m_data_storage_is_enabled(true)
   , m_trigger_record_input_queue(nullptr)
+  , m_buffer_token_output_queue(nullptr)
 {
   register_command("conf", &DataWriter::do_conf);
   register_command("start", &DataWriter::do_start);
@@ -82,6 +83,11 @@ DataWriter::init(const data_t& init_data)
   m_trigger_inhibit_agent.reset(
     new TriggerInhibitAgent(get_name(), std::move(trig_dec_queue_for_inh), std::move(trig_inh_output_queue)));
 
+  try {
+    m_buffer_token_output_queue.reset(new tokensink_t(qi["buffer_token_output_queue"].inst));
+  } catch (const ers::Issue& excpt) {
+    throw InvalidQueueFatalError(ERS_HERE, get_name(), "buffer_token_output_queue", excpt);
+  }
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
 
@@ -92,6 +98,7 @@ DataWriter::do_conf(const data_t& payload)
 
   datawriter::ConfParams conf_params = payload.get<datawriter::ConfParams>();
   m_trigger_inhibit_agent->set_threshold_for_inhibit(conf_params.threshold_for_inhibit);
+  m_initial_tokens = conf_params.threshold_for_inhibit; // TODO ELF 2/17/2021: Maybe use a different parameter?
   TLOG(TLVL_CONFIG) << get_name() << ": threshold_for_inhibit is " << conf_params.threshold_for_inhibit;
   TLOG(TLVL_CONFIG) << get_name() << ": data_store_parameters are " << conf_params.data_store_parameters;
 
@@ -120,6 +127,14 @@ DataWriter::do_start(const data_t& payload)
       m_data_writer->prepare_for_run(m_run_number);
     } catch (const ers::Issue& excpt) {
       throw UnableToStart(ERS_HERE, get_name(), m_run_number, excpt);
+    }
+  }
+
+  if (m_buffer_token_output_queue != nullptr) {
+    for (int ii = 0; ii < m_initial_tokens; ++ii) {
+      dfmessages::BufferToken token;
+      token.run_number = m_run_number;
+      m_buffer_token_output_queue->push(std::move(token));
     }
   }
 
@@ -271,6 +286,11 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
     // tell the TriggerInhibitAgent the trigger_number of this TriggerRecord so that
     // it can check whether an Inhibit needs to be asserted or cleared.
     m_trigger_inhibit_agent->set_latest_trigger_number(trigger_record_ptr->get_header_ref().get_trigger_number());
+    if (m_buffer_token_output_queue != nullptr) {
+      dfmessages::BufferToken token;
+      token.run_number = m_run_number;
+      m_buffer_token_output_queue->push(std::move(token));
+    }
   }
 
   std::ostringstream oss_summ;

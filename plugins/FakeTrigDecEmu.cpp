@@ -36,6 +36,7 @@ FakeTrigDecEmu::FakeTrigDecEmu(const std::string& name)
   , m_queue_timeout(100)
   , m_trigger_decision_output_queue(nullptr)
   , m_trigger_inhibit_input_queue(nullptr)
+  , m_buffer_token_input_queue(nullptr)
 {
   register_command("conf", &FakeTrigDecEmu::do_conf);
   register_command("start", &FakeTrigDecEmu::do_start);
@@ -56,6 +57,11 @@ FakeTrigDecEmu::init(const data_t& init_data)
     m_trigger_inhibit_input_queue.reset(new triginhsource_t(qi["trigger_inhibit_source"].inst));
   } catch (const ers::Issue& excpt) {
     throw InvalidQueueFatalError(ERS_HERE, get_name(), "trigger_inhibit_source", excpt);
+  }
+  try {
+    m_buffer_token_input_queue.reset(new tokensource_t(qi["buffer_token_source"].inst));
+  } catch (const ers::Issue& excpt) {
+    throw InvalidQueueFatalError(ERS_HERE, get_name(), "buffer_token_source", excpt);
   }
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
@@ -95,6 +101,7 @@ FakeTrigDecEmu::do_work(std::atomic<bool>& running_flag)
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() method";
   int32_t triggerCount = 0;
   int32_t inhibit_message_count = 0;
+  int32_t token_count = 0;
 
   while (running_flag.load()) {
     auto start_time = std::chrono::steady_clock::now();
@@ -121,6 +128,8 @@ FakeTrigDecEmu::do_work(std::atomic<bool>& running_flag)
       }
     }
 
+    if (m_trigger_inhibit_input_queue != nullptr) {
+    
     // receive any/all Inhibit messages that are waiting
     // (This really needs to be done in a separate thread, but we'll trust the
     // official TriggerDecisionEmulator to take care of things like that.)
@@ -141,6 +150,23 @@ FakeTrigDecEmu::do_work(std::atomic<bool>& running_flag)
         got_inh_msg = false;
       }
     }
+    }
+
+    if (m_buffer_token_input_queue != nullptr) {
+
+      // receive any/all Token messages that are waiting
+      // (This really needs to be done in a separate thread, but we'll trust the
+      // official TriggerDecisionEmulator to take care of things like that.)
+
+      while (m_buffer_token_input_queue->can_pop()) {
+          dfmessages::BufferToken buf_token_msg;
+        m_buffer_token_input_queue->pop(buf_token_msg);
+          token_count++;
+          TLOG(TLVL_WORK_STEPS) << get_name() << ": Popped a BufferToken message with run number \""
+                                << buf_token_msg.run_number << "\" off the token input queue";
+
+      }
+    }
 
     auto time_to_wait =
       (start_time + std::chrono::milliseconds(m_sleep_msec_while_running)) - std::chrono::steady_clock::now();
@@ -151,7 +177,7 @@ FakeTrigDecEmu::do_work(std::atomic<bool>& running_flag)
 
   std::ostringstream oss_summ;
   oss_summ << ": Exiting the do_work() method, generated " << triggerCount << " Fake TriggerDecision messages "
-           << "and received " << inhibit_message_count << " TriggerInhbit messages of all types (both Busy and Free).";
+           << "and received " << token_count << " BufferToken messages and " << inhibit_message_count << " TriggerInhbit messages of all types (both Busy and Free).";
   ers::log(ProgressUpdate(ERS_HERE, get_name(), oss_summ.str()));
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_work() method";
 }
