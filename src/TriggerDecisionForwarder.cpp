@@ -70,7 +70,7 @@ TriggerDecisionForwarder::do_work(std::atomic<bool>& running_flag)
     std::unique_lock<std::mutex> lk(m_data_mutex);
     if (!m_trig_dec_has_been_sent) {
       TLOG(TLVL_WORK_STEPS) << get_name() << ": Pushing the TriggerDecision for trigger number "
-                            << m_latest_trigger_decision.m_trigger_number << " onto the output queue.";
+                            << m_latest_trigger_decision.trigger_number << " onto the output queue.";
       try {
         m_trigger_decision_sink->push(m_latest_trigger_decision, m_queue_timeout / 2);
         m_trig_dec_has_been_sent = true;
