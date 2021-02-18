@@ -247,7 +247,7 @@ if __name__ == '__main__':
     @click.option('-d', '--data-file', type=click.Path(), default='./frames.bin')
     @click.option('-o', '--output-path', type=click.Path(), default='.')
     @click.option('--disable-data-storage', is_flag=True)
-    @click.argument('json_file', type=click.Path(), default='minidaq-app-fake-readout.json')
+    @click.argument('json_file', type=click.Path(), default='testapp_noreadout.json')
     def cli(number_of_data_producers, data_rate_slowdown_factor, run_number, trigger_rate_hz, data_file, output_path, disable_data_storage, json_file):
         """
           JSON_FILE: Input raw data file.

@@ -63,6 +63,7 @@ def generate_df(
         TRIGGER_RATE_HZ = 1.0,
         DATA_FILE="./frames.bin",
         OUTPUT_PATH=".",
+        DISABLE_OUTPUT=False
     ):
     """Generate the json configuration for the readout and DF process"""
    
@@ -180,6 +181,7 @@ def generate_df(
                                 directory_path = OUTPUT_PATH, # default
                                 # mode = "all-per-file", # default
                                 max_file_size_bytes = 1073741834,
+                                disable_unique_filename_suffix = False,
                                 filename_parameters = hdf5ds.HDF5DataStoreFileNameParams(
                                     overall_prefix = "fake_minidaqapp",
                                     # digits_for_run_number = 6, #default
@@ -206,7 +208,11 @@ def generate_df(
             ("ntoq_trigdec", startpars),
             ("qton_triginh", startpars),
             ("qton_timesync", startpars),
-            ("datawriter", startpars),
+            ("datawriter", dw.StartParams(
+                run=RUN_NUMBER,
+                disable_data_storage=DISABLE_OUTPUT,
+                data_storage_prescale=1
+              )),
             ("ffr", startpars),
             ("fakedataprod_.*", startpars),
             ("rqg", startpars),
@@ -381,8 +387,9 @@ if __name__ == '__main__':
     @click.option('-t', '--trigger-rate-hz', default=1.0)
     @click.option('-d', '--data-file', type=click.Path(), default='./frames.bin')
     @click.option('-o', '--output-path', type=click.Path(), default='.')
-    @click.argument('json_file_base', type=click.Path(), default='minidaq-app-fake-readout-two-process')
-    def cli(number_of_data_producers, data_rate_slowdown_factor, run_number, trigger_rate_hz, data_file, output_path, json_file_base):
+    @click.option('--disable-data-storage', is_flag=True)
+    @click.argument('json_file_base', type=click.Path(), default='testapp-noreadout-two-process')
+    def cli(number_of_data_producers, data_rate_slowdown_factor, run_number, trigger_rate_hz, data_file, output_path, disable_data_storage, json_file_base):
         """
           JSON_FILE: Input raw data file.
           JSON_FILE: Output json configuration file.
@@ -408,7 +415,8 @@ if __name__ == '__main__':
                     RUN_NUMBER = run_number, 
                     TRIGGER_RATE_HZ = trigger_rate_hz,
                     DATA_FILE = data_file,
-                    OUTPUT_PATH = output_path
+                    OUTPUT_PATH = output_path,
+                    DISABLE_OUTPUT = disable_data_storage
                 ))
 
     cli()
