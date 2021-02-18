@@ -264,7 +264,7 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
 
     // progress updates
     std::chrono::steady_clock::time_point current_time = std::chrono::steady_clock::now();
-    if (GetElapsedTime(progress_report_time, current_time) >= 3.0) {
+    if (elapsed_seconds(progress_report_time, current_time) >= 3.0) {
       progress_report_time = current_time;
       std::ostringstream oss_prog;
       oss_prog << ": Processing trigger number " << trigger_record_ptr->get_header_ref().get_trigger_number()

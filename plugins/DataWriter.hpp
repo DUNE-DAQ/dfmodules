@@ -70,8 +70,8 @@ private:
   std::unique_ptr<DataStore> m_data_writer;
   std::unique_ptr<TriggerInhibitAgent> m_trigger_inhibit_agent;
 
-  inline constexpr double GetElapsedTime(std::chrono::steady_clock::time_point then,
-                                         std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now())
+  inline double elapsed_seconds(std::chrono::steady_clock::time_point then,
+                                std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now()) const
   {
     return std::chrono::duration_cast<std::chrono::seconds>(now - then).count();
   }
