@@ -36,7 +36,7 @@ public:
   /**
    * @brief Translates the specified StorageKey into an HDF5 'path',
    * where the 'path' is string that has values from the StorageKey
-   * separated by slashes (e.g. "<eventID/geoLoc>", "0001/003", "0001/FELIX/003").
+   * separated by slashes (e.g. "<eventID/geoLoc>", "0001/003", "0001/TPC/003").
    * The intention of this path string is to specify the Group/DataSet
    * structure that should be used in the HDF5 files that are created by this library.
    */
