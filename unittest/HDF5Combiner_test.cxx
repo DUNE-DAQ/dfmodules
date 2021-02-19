@@ -10,7 +10,7 @@
 
 #include "HDF5DataStore.hpp"
 
-#include "ers/ers.h"
+#include "logging/Logging.hpp"
 
 #define BOOST_TEST_MODULE HDF5Combiner_test // NOLINT
 

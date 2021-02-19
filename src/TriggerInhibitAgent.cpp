@@ -9,8 +9,6 @@
 #include "dfmodules/TriggerInhibitAgent.hpp"
 #include "dfmodules/CommonIssues.hpp"
 
-//#include "TRACE/trace.h"
-//#include "ers/ers.h"
 #include "logging/Logging.hpp"
 
 #include <memory>
@@ -147,7 +145,7 @@ TriggerInhibitAgent::do_work(std::atomic<bool>& running_flag)
           std::ostringstream oss_sent;
           oss_sent << ": Successfully pushed a TriggerInhibit message with busy state set to " << inhibit_message.busy
                    << " onto the output queue";
-          ers::log(ProgressUpdate(ERS_HERE, get_name(), oss_sent.str()));
+          TLOG() << ProgressUpdate(ERS_HERE, get_name(), oss_sent.str());
 #endif
           // if we successfully pushed the message to the Sink, then we assume that the
           // receiver will get it, and we update our internal state accordingly
@@ -170,7 +168,7 @@ TriggerInhibitAgent::do_work(std::atomic<bool>& running_flag)
   oss_summ << ": Exiting the do_work() method, received " << received_message_count
            << " TriggerDecision messages and sent " << sent_message_count
            << " TriggerInhibit messages of all types (both Busy and Free).";
-  ers::log(ProgressUpdate(ERS_HERE, get_name(), oss_summ.str()));
+  TLOG() << ProgressUpdate(ERS_HERE, get_name(), oss_summ.str());
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_work() method";
 }
 

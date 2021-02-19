@@ -11,8 +11,6 @@
 #include "dfmodules/faketrigdecemu/Nljs.hpp"
 
 #include "appfwk/DAQModuleHelper.hpp"
-//#include "TRACE/trace.h"
-//#include "ers/ers.h"
 #include "logging/Logging.hpp"
 
 #include <chrono>
@@ -155,7 +153,7 @@ FakeTrigDecEmu::do_work(std::atomic<bool>& running_flag)
   std::ostringstream oss_summ;
   oss_summ << ": Exiting the do_work() method, generated " << triggerCount << " Fake TriggerDecision messages "
            << "and received " << inhibit_message_count << " TriggerInhbit messages of all types (both Busy and Free).";
-  ers::log(ProgressUpdate(ERS_HERE, get_name(), oss_summ.str()));
+  TLOG() << ProgressUpdate(ERS_HERE, get_name(), oss_summ.str());
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_work() method";
 }
 

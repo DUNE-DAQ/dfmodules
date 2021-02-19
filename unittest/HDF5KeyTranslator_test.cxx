@@ -10,7 +10,7 @@
 #include "HDF5KeyTranslator.hpp"
 #include "dfmodules/hdf5datastore/Structs.hpp"
 
-#include "ers/ers.h"
+#include "logging/Logging.hpp"
 
 #define BOOST_TEST_MODULE HDF5KeyTranslator_test // NOLINT
 

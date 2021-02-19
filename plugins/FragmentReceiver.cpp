@@ -13,8 +13,6 @@
 #include "appfwk/cmd/Nljs.hpp"
 #include "dfmodules/fragmentreceiver/Nljs.hpp"
 #include "dfmodules/fragmentreceiver/Structs.hpp"
-//#include "TRACE/trace.h"
-//#include "ers/ers.h"
 #include "logging/Logging.hpp"
 
 #include <chrono>
@@ -281,7 +279,7 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
   oss_summ << ": Exiting the do_work() method, " << m_trigger_decisions.size() << " reminaing Trigger Decision and "
            << m_fragments.size() << " remaining fragment stashes" << std::endl 
 	   << "Draining took : " << time_span.count() << " s" ;
-  ers::log(ProgressUpdate(ERS_HERE, get_name(), oss_summ.str()));
+  TLOG() << ProgressUpdate(ERS_HERE, get_name(), oss_summ.str());
   
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_work() method";
 }

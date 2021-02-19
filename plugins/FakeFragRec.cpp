@@ -12,8 +12,6 @@
 
 #include "appfwk/DAQModuleHelper.hpp"
 #include "appfwk/cmd/Nljs.hpp"
-//#include "TRACE/trace.h"
-//#include "ers/ers.h"
 #include "logging/Logging.hpp"
 
 #include <chrono>
@@ -179,7 +177,7 @@ FakeFragRec::do_work(std::atomic<bool>& running_flag)
   std::ostringstream oss_summ;
   oss_summ << ": Exiting the do_work() method, received " << receivedTriggerCount
            << " Fake trigger decision messages and " << receivedFragmentCount << " Fake data fragmentss.";
-  ers::log(ProgressUpdate(ERS_HERE, get_name(), oss_summ.str()));
+  TLOG() << ProgressUpdate(ERS_HERE, get_name(), oss_summ.str());
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_work() method";
 }
 

@@ -13,8 +13,6 @@
 #include "appfwk/cmd/Nljs.hpp"
 #include "dfmodules/requestgenerator/Nljs.hpp"
 #include "dfmodules/requestgenerator/Structs.hpp"
-//#include "TRACE/trace.h"
-//#include "ers/ers.h"
 #include "logging/Logging.hpp"
 
 #include <chrono>

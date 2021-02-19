@@ -16,8 +16,6 @@
 #include "dataformats/Fragment.hpp"
 #include "dfmessages/TriggerDecision.hpp"
 #include "dfmessages/TriggerInhibit.hpp"
-//#include "TRACE/trace.h"
-//#include "ers/ers.h"
 #include "logging/Logging.hpp"
 
 #include <algorithm>
@@ -273,7 +271,7 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
       oss_prog << ": Processing trigger number " << trigger_record_ptr->get_header_ref().get_trigger_number()
                << ", this is one of " << received_count << " trigger records received so far. " << written_count
                << " trigger records have been written to the data store.";
-      ers::log(ProgressUpdate(ERS_HERE, get_name(), oss_prog.str()));
+      TLOG() << ProgressUpdate(ERS_HERE, get_name(), oss_prog.str());
     }
 
     // tell the TriggerInhibitAgent the trigger_number of this TriggerRecord so that

@@ -12,8 +12,6 @@
 //#include "dfmodules/hdf5datastore/Structs.hpp"
 #include "HDF5DataStore.hpp"
 
-#include "ers/ers.h"
-
 #define BOOST_TEST_MODULE HDF5Write_test // NOLINT
 
 #include "boost/test/unit_test.hpp"

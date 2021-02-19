@@ -12,7 +12,7 @@
 //#include "dfmodules/hdf5datastore/Structs.hpp"
 #include "HDF5DataStore.hpp"
 
-#include "ers/ers.h"
+#include "logging/Logging.hpp"
 
 #define BOOST_TEST_MODULE TriggerRecordHeaderWrite_test // NOLINT
 

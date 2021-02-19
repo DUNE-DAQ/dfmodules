@@ -9,8 +9,6 @@
 #include "dfmodules/TriggerDecisionForwarder.hpp"
 #include "dfmodules/CommonIssues.hpp"
 
-//#include "TRACE/trace.h"
-//#include "ers/ers.h"
 #include "logging/Logging.hpp"
 
 #include <memory>
@@ -96,7 +94,7 @@ TriggerDecisionForwarder::do_work(std::atomic<bool>& running_flag)
 
   std::ostringstream oss_summ;
   oss_summ << ": Exiting the do_work() method, sent " << sent_message_count << " TriggerDecision messages.";
-  ers::log(ProgressUpdate(ERS_HERE, get_name(), oss_summ.str()));
+  TLOG() << ProgressUpdate(ERS_HERE, get_name(), oss_summ.str());
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_work() method";
 }
 

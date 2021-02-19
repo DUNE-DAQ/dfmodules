@@ -9,7 +9,7 @@
 
 #include "dfmodules/KeyedDataBlock.hpp"
 
-#include "ers/ers.h"
+#include "logging/Logging.hpp"
 
 #define BOOST_TEST_MODULE KeyedDataBlock_test // NOLINT
 
