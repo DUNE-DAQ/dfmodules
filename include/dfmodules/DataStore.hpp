@@ -78,9 +78,15 @@ public:
 
   /**
    * @brief Writes the specified data payload into the DataStore.
-   * @param dataBlock Data block to write.
+   * @param data_block Data block to write.
    */
-  virtual void write(const KeyedDataBlock& dataBlock) = 0;
+  virtual void write(const KeyedDataBlock& data_block) = 0;
+
+  /**
+   * @brief Writes the specified set of data blocks into the DataStore.
+   * @param data_block_list List of data blocks to write.
+   */
+  virtual void write(const std::vector<KeyedDataBlock>& data_block_list) = 0;
 
   /**
    * @brief Returns the list of all keys that currently existing in the DataStore
@@ -88,8 +94,6 @@ public:
    */
   virtual std::vector<StorageKey> get_all_existing_keys() const = 0;
 
-  // Ideas for future work...
-  // virtual void write(const std::vector<KeyedDataBlock>& dataBlockList) = 0;
   virtual KeyedDataBlock read(const StorageKey& key) = 0;
   // virtual std::vector<KeyedDataBlock> read(const std::vector<StorageKey>& key) = 0;
 

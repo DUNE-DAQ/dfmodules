@@ -3,8 +3,13 @@
 
 include(CMakeFindDependencyMacro)
 
+# Insert find_dependency() calls for your package's dependencies in
+# the place of this comment. Make sure they match up with the
+# find_package calls in your package's CMakeLists.txt file
+
 find_dependency(HighFive)
-find_dependency(AppFwk)
+find_dependency(appfwk)
+find_dependency(dfmessages)
 
 # Figure out whether or not this dependency is an installed package or
 # in repo form
@@ -12,7 +17,7 @@ find_dependency(AppFwk)
 if (EXISTS ${CMAKE_SOURCE_DIR}/@PROJECT_NAME@)
 
 message(STATUS "Project \"@PROJECT_NAME@\" will be treated as repo (found in ${CMAKE_SOURCE_DIR}/@PROJECT_NAME@)")
-add_library(appfwk::appfwk ALIAS appfwk)
+add_library(@PROJECT_NAME@::@PROJECT_NAME@ ALIAS @PROJECT_NAME@)
 
 else()
 
