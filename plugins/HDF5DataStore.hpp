@@ -227,8 +227,8 @@ public:
     for (auto& data_block : data_block_list) {
       sum_of_sizes += data_block.m_data_size;
     }
-    TLOG(TLVL_DEBUG+5) << get_name() << ": Checking file size, recorded=" << m_recorded_size << ", additional="
-                       << sum_of_sizes << ", max=" << m_max_file_size;
+    TLOG_DEBUG(5) << get_name() << ": Checking file size, recorded=" << m_recorded_size << ", additional="
+				  << sum_of_sizes << ", max=" << m_max_file_size;
     if ((m_recorded_size + sum_of_sizes) > (m_max_file_size)) {
       ++m_file_index;
       m_recorded_size = 0;
