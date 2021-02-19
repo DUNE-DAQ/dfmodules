@@ -16,7 +16,7 @@
 #include "appfwk/DAQSource.hpp"
 #include "appfwk/ThreadHelper.hpp"
 #include "dataformats/TriggerRecord.hpp"
-#include "dfmessages/BufferToken.hpp"
+#include "dfmessages/TriggerDecisionToken.hpp"
 
 #include <memory>
 #include <string>
@@ -66,8 +66,8 @@ private:
   // Queue(s)
   using trigrecsource_t = dunedaq::appfwk::DAQSource<std::unique_ptr<dataformats::TriggerRecord>>;
   std::unique_ptr<trigrecsource_t> m_trigger_record_input_queue;
-  using tokensink_t = dunedaq::appfwk::DAQSink<dfmessages::BufferToken>;
-  std::unique_ptr<tokensink_t> m_buffer_token_output_queue;
+  using tokensink_t = dunedaq::appfwk::DAQSink<dfmessages::TriggerDecisionToken>;
+  std::unique_ptr<tokensink_t> m_trigger_decision_token_output_queue;
 
   // Worker(s)
   std::unique_ptr<DataStore> m_data_writer;

@@ -46,7 +46,7 @@ DataWriter::DataWriter(const std::string& name)
   , m_queue_timeout(100)
   , m_data_storage_is_enabled(true)
   , m_trigger_record_input_queue(nullptr)
-  , m_buffer_token_output_queue(nullptr)
+  , m_trigger_decision_token_output_queue(nullptr)
 {
   register_command("conf", &DataWriter::do_conf);
   register_command("start", &DataWriter::do_start);
@@ -84,7 +84,7 @@ DataWriter::init(const data_t& init_data)
     new TriggerInhibitAgent(get_name(), std::move(trig_dec_queue_for_inh), std::move(trig_inh_output_queue)));
 
   try {
-    m_buffer_token_output_queue.reset(new tokensink_t(qi["buffer_token_output_queue"].inst));
+    m_trigger_decision_token_output_queue.reset(new tokensink_t(qi["buffer_token_output_queue"].inst));
   } catch (const ers::Issue& excpt) {
     throw InvalidQueueFatalError(ERS_HERE, get_name(), "buffer_token_output_queue", excpt);
   }
@@ -130,11 +130,11 @@ DataWriter::do_start(const data_t& payload)
     }
   }
 
-  if (m_buffer_token_output_queue != nullptr) {
+  if (m_trigger_decision_token_output_queue != nullptr) {
     for (int ii = 0; ii < m_initial_tokens; ++ii) {
-      dfmessages::BufferToken token;
+      dfmessages::TriggerDecisionToken token;
       token.run_number = m_run_number;
-      m_buffer_token_output_queue->push(std::move(token));
+      m_trigger_decision_token_output_queue->push(std::move(token));
     }
   }
 
@@ -286,10 +286,10 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
     // tell the TriggerInhibitAgent the trigger_number of this TriggerRecord so that
     // it can check whether an Inhibit needs to be asserted or cleared.
     m_trigger_inhibit_agent->set_latest_trigger_number(trigger_record_ptr->get_header_ref().get_trigger_number());
-    if (m_buffer_token_output_queue != nullptr) {
-      dfmessages::BufferToken token;
+    if (m_trigger_decision_token_output_queue != nullptr) {
+      dfmessages::TriggerDecisionToken token;
       token.run_number = m_run_number;
-      m_buffer_token_output_queue->push(std::move(token));
+      m_trigger_decision_token_output_queue->push(std::move(token));
     }
   }
 
