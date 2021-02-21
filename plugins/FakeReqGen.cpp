@@ -26,9 +26,10 @@
  * @brief Name used by TRACE TLOG calls from this source file
  */
 //#define TRACE_NAME "FakeReqGen"                // NOLINT
-enum {
-	TLVL_ENTER_EXIT_METHODS=5,
-	TLVL_WORK_STEPS=10
+enum
+{
+  TLVL_ENTER_EXIT_METHODS = 5,
+  TLVL_WORK_STEPS = 10
 };
 
 namespace dunedaq {
@@ -127,7 +128,7 @@ FakeReqGen::do_work(std::atomic<bool>& running_flag)
       m_trigger_decision_input_queue->pop(trigDecision, m_queue_timeout);
       ++receivedCount;
       TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Popped the TriggerDecision for trigger number "
-                            << trigDecision.m_trigger_number << " off the input queue";
+                                  << trigDecision.m_trigger_number << " off the input queue";
     } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
       // it is perfectly reasonable that there might be no data in the queue
       // some fraction of the times that we check, so we just continue on and try again
@@ -137,7 +138,7 @@ FakeReqGen::do_work(std::atomic<bool>& running_flag)
     bool wasSentSuccessfully = false;
     while (!wasSentSuccessfully && running_flag.load()) {
       TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Pushing the TriggerDecision for trigger number "
-                            << trigDecision.m_trigger_number << " onto the output queue";
+                                  << trigDecision.m_trigger_number << " onto the output queue";
       try {
         m_trigger_decision_output_queue->push(trigDecision, m_queue_timeout);
         wasSentSuccessfully = true;
@@ -172,7 +173,7 @@ FakeReqGen::do_work(std::atomic<bool>& running_flag)
       wasSentSuccessfully = false;
       while (!wasSentSuccessfully && running_flag.load()) {
         TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Pushing the DataRequest for trigger number "
-                              << dataReq.m_trigger_number << " onto an output queue";
+                                    << dataReq.m_trigger_number << " onto an output queue";
         try {
           dataReqQueue->push(dataReq, m_queue_timeout);
           wasSentSuccessfully = true;

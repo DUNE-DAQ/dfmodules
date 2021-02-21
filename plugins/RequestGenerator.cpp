@@ -27,9 +27,10 @@
  * @brief Name used by TRACE TLOG calls from this source file
  */
 //#define TRACE_NAME "RequestGenerator"          // NOLINT
-enum {
-	TLVL_ENTER_EXIT_METHODS=5,
-	TLVL_WORK_STEPS=10
+enum
+{
+  TLVL_ENTER_EXIT_METHODS = 5,
+  TLVL_WORK_STEPS = 10
 };
 
 namespace dunedaq {
@@ -141,7 +142,7 @@ RequestGenerator::do_work(std::atomic<bool>& running_flag)
       m_trigger_decision_input_queue->pop(trigDecision, m_queue_timeout);
       ++receivedCount;
       TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Popped the TriggerDecision for trigger number "
-                            << trigDecision.m_trigger_number << " off the input queue";
+                                  << trigDecision.m_trigger_number << " off the input queue";
     } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
       // it is perfectly reasonable that there might be no data in the queue
       // some fraction of the times that we check, so we just continue on and try again
@@ -151,7 +152,7 @@ RequestGenerator::do_work(std::atomic<bool>& running_flag)
     bool wasSentSuccessfully = false;
     do {
       TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Pushing the TriggerDecision for trigger number "
-                            << trigDecision.m_trigger_number << " onto the output queue";
+                                  << trigDecision.m_trigger_number << " onto the output queue";
       try {
         m_trigger_decision_output_queue->push(trigDecision, m_queue_timeout);
         wasSentSuccessfully = true;
@@ -171,14 +172,15 @@ RequestGenerator::do_work(std::atomic<bool>& running_flag)
     // Spawn each component_data_request to the corresponding link_data_handler_queue
     //----------------------------------------
     for (auto it = trigDecision.m_components.begin(); it != trigDecision.m_components.end(); it++) {
-      TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": trigDecision.components.size :" << trigDecision.m_components.size();
+      TLOG_DEBUG(TLVL_WORK_STEPS) << get_name()
+                                  << ": trigDecision.components.size :" << trigDecision.m_components.size();
       dfmessages::DataRequest dataReq;
       dataReq.m_trigger_number = trigDecision.m_trigger_number;
       dataReq.m_run_number = trigDecision.m_run_number;
       dataReq.m_trigger_timestamp = trigDecision.m_trigger_timestamp;
 
       TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": trig_number " << dataReq.m_trigger_number << ": run_number "
-                            << dataReq.m_run_number << ": trig_timestamp " << dataReq.m_trigger_timestamp;
+                                  << dataReq.m_run_number << ": trig_timestamp " << dataReq.m_trigger_timestamp;
 
       dataformats::ComponentRequest comp_req = it->second;
       dataformats::GeoID geoid_req = it->first;
@@ -186,8 +188,8 @@ RequestGenerator::do_work(std::atomic<bool>& running_flag)
       dataReq.m_window_width = comp_req.m_window_width;
 
       TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": apa_number " << geoid_req.m_apa_number << ": link_number "
-                            << geoid_req.m_link_number << ": window_offset " << comp_req.m_window_offset
-                            << ": window_width " << comp_req.m_window_width;
+                                  << geoid_req.m_link_number << ": window_offset " << comp_req.m_window_offset
+                                  << ": window_width " << comp_req.m_window_width;
 
       // find the queue for geoid_req in the map
       auto it_req = map.find(geoid_req);
@@ -204,7 +206,7 @@ RequestGenerator::do_work(std::atomic<bool>& running_flag)
       wasSentSuccessfully = false;
       do {
         TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Pushing the DataRequest from trigger number "
-                              << dataReq.m_trigger_number << " onto output queue :" << queue->get_name();
+                                    << dataReq.m_trigger_number << " onto output queue :" << queue->get_name();
 
         // push data request into the corresponding queue
         try {

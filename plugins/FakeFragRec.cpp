@@ -25,9 +25,9 @@
 /**
  * @brief Name used by TRACE TLOG calls from this source file
  */
-#define TRACE_NAME "FakeFragRec"               // NOLINT
-#define TLVL_ENTER_EXIT_METHODS 5			   // NOLINT
-#define TLVL_WORK_STEPS 10					   // NOLINT
+#define TRACE_NAME "FakeFragRec"  // NOLINT
+#define TLVL_ENTER_EXIT_METHODS 5 // NOLINT
+#define TLVL_WORK_STEPS 10        // NOLINT
 
 namespace dunedaq {
 namespace dfmodules {
@@ -116,7 +116,7 @@ FakeFragRec::do_work(std::atomic<bool>& running_flag)
       m_trigger_decision_input_queue->pop(trigDecision, m_queue_timeout);
       ++receivedTriggerCount;
       TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Popped the TriggerDecision for trigger number "
-                            << trigDecision.trigger_number << " off the input queue";
+                                  << trigDecision.trigger_number << " off the input queue";
     } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
       // it is perfectly reasonable that there might be no data in the queue
       // some fraction of the times that we check, so we just continue on and try again
@@ -154,7 +154,7 @@ FakeFragRec::do_work(std::atomic<bool>& running_flag)
     bool was_sent_successfully = false;
     while (!was_sent_successfully && running_flag.load()) {
       TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Pushing the Trigger Record for trigger number "
-                            << trig_rec_ptr->get_trigger_number() << " onto the output queue";
+                                  << trig_rec_ptr->get_trigger_number() << " onto the output queue";
       try {
         m_trigger_record_output_queue->push(std::move(trig_rec_ptr), m_queue_timeout);
         was_sent_successfully = true;

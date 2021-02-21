@@ -30,11 +30,12 @@
  * @brief Name used by TRACE TLOG calls from this source file
  */
 //#define TRACE_NAME "DataWriter"                   // NOLINT This is the default
-enum {
-	TLVL_ENTER_EXIT_METHODS=5,
-	TLVL_CONFIG=7,
-	TLVL_WORK_STEPS=10,
-	TLVL_FRAGMENT_HEADER_DUMP=17
+enum
+{
+  TLVL_ENTER_EXIT_METHODS = 5,
+  TLVL_CONFIG = 7,
+  TLVL_WORK_STEPS = 10,
+  TLVL_FRAGMENT_HEADER_DUMP = 17
 };
 
 namespace dunedaq {
@@ -181,7 +182,8 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
       m_trigger_record_input_queue->pop(trigger_record_ptr, m_queue_timeout);
       ++received_count;
       TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Popped the TriggerRecord for trigger number "
-                            << trigger_record_ptr->get_header_ref().get_trigger_number() << " off the input queue";
+                                  << trigger_record_ptr->get_header_ref().get_trigger_number()
+                                  << " off the input queue";
     } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
       // it is perfectly reasonable that there might be no data in the queue
       // some fraction of the times that we check, so we just continue on and try again
@@ -215,8 +217,8 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
       for (const auto& frag_ptr : frag_vec) {
 
         // print out some debug information, if requested
-        TLOG_DEBUG(TLVL_FRAGMENT_HEADER_DUMP) << get_name() << ": Partial(?) contents of the Fragment from link "
-                                        << frag_ptr->get_link_id().m_link_number;
+        TLOG_DEBUG(TLVL_FRAGMENT_HEADER_DUMP)
+          << get_name() << ": Partial(?) contents of the Fragment from link " << frag_ptr->get_link_id().m_link_number;
         const size_t number_of_32bit_values_per_row = 5;
         const size_t max_number_of_rows = 5;
         int number_of_32bit_values_to_print =

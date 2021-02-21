@@ -24,11 +24,12 @@
 /**
  * @brief Name used by TRACE TLOG calls from this source file
  */
-#define TRACE_NAME "FakeDataProd"              // NOLINT
-enum {
-	TLVL_ENTER_EXIT_METHODS=5,
-	TLVL_CONFIG=7,
-	TLVL_WORK_STEPS=10
+#define TRACE_NAME "FakeDataProd" // NOLINT
+enum
+{
+  TLVL_ENTER_EXIT_METHODS = 5,
+  TLVL_CONFIG = 7,
+  TLVL_WORK_STEPS = 10
 };
 
 namespace dunedaq {
@@ -143,7 +144,7 @@ FakeDataProd::do_work(std::atomic<bool>& running_flag)
     bool wasSentSuccessfully = false;
     while (!wasSentSuccessfully && running_flag.load()) {
       TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Pushing the Data Fragment for trigger number "
-                            << data_fragment_ptr->get_trigger_number() << " onto the output queue";
+                                  << data_fragment_ptr->get_trigger_number() << " onto the output queue";
       try {
         m_data_fragment_output_queue->push(std::move(data_fragment_ptr), m_queue_timeout);
         wasSentSuccessfully = true;

@@ -126,8 +126,8 @@ public:
   virtual KeyedDataBlock read(const StorageKey& key)
   {
     TLOG_DEBUG(0) << get_name() << ": going to read data block from triggerNumber/detectorType/apaNumber/linkNumber "
-                     << HDF5KeyTranslator::get_path_string(key, m_config_params.file_layout_parameters) << " from file "
-                     << HDF5KeyTranslator::get_file_name(key, m_config_params, m_file_index);
+                  << HDF5KeyTranslator::get_path_string(key, m_config_params.file_layout_parameters) << " from file "
+                  << HDF5KeyTranslator::get_file_name(key, m_config_params, m_file_index);
 
     // opening the file from Storage Key + configuration parameters
     std::string full_filename = HDF5KeyTranslator::get_file_name(key, m_config_params, m_file_index);
@@ -182,9 +182,9 @@ public:
     open_file_if_needed(full_filename, HighFive::File::OpenOrCreate);
 
     TLOG_DEBUG(0) << get_name() << ": Writing data with run number " << data_block.m_data_key.get_run_number()
-                     << " and trigger number " << data_block.m_data_key.get_trigger_number() << " and detector type "
-                     << data_block.m_data_key.get_detector_type() << " and apa/link number "
-                     << data_block.m_data_key.get_apa_number() << " / " << data_block.m_data_key.get_link_number();
+                  << " and trigger number " << data_block.m_data_key.get_trigger_number() << " and detector type "
+                  << data_block.m_data_key.get_detector_type() << " and apa/link number "
+                  << data_block.m_data_key.get_apa_number() << " / " << data_block.m_data_key.get_link_number();
 
     std::vector<std::string> group_and_dataset_path_elements =
       HDF5KeyTranslator::get_path_elements(data_block.m_data_key, m_config_params.file_layout_parameters);
@@ -227,8 +227,8 @@ public:
     for (auto& data_block : data_block_list) {
       sum_of_sizes += data_block.m_data_size;
     }
-    TLOG_DEBUG(5) << get_name() << ": Checking file size, recorded=" << m_recorded_size << ", additional="
-				  << sum_of_sizes << ", max=" << m_max_file_size;
+    TLOG_DEBUG(5) << get_name() << ": Checking file size, recorded=" << m_recorded_size
+                  << ", additional=" << sum_of_sizes << ", max=" << m_max_file_size;
     if ((m_recorded_size + sum_of_sizes) > (m_max_file_size)) {
       ++m_file_index;
       m_recorded_size = 0;
@@ -292,8 +292,8 @@ public:
 
     size_t free_space = vfs_results.f_bsize * vfs_results.f_bavail;
     TLOG_DEBUG(0) << get_name() << ": Free space on disk with path \"" << m_path << "\" is " << free_space
-                     << " bytes. This will be compared with the maximum size of a single file (" << m_max_file_size
-                     << ") as a simple test to see if there is enough free space.";
+                  << " bytes. This will be compared with the maximum size of a single file (" << m_max_file_size
+                  << ") as a simple test to see if there is enough free space.";
     if (free_space < m_max_file_size) {
       throw InsufficientDiskSpace(ERS_HERE, get_name(), m_path, free_space, m_max_file_size);
     }
@@ -404,7 +404,7 @@ private:
 
       // opening file for the first time OR something changed in the name or the way of opening the file
       TLOG_DEBUG(0) << get_name() << ": going to open file " << unique_filename << " with open_flags "
-                       << std::to_string(open_flags);
+                    << std::to_string(open_flags);
       m_basic_name_of_open_file = file_name;
       m_open_flags_of_open_file = open_flags;
       m_file_ptr.reset(new HighFive::File(unique_filename, open_flags));
@@ -413,7 +413,7 @@ private:
     } else {
 
       TLOG_DEBUG(0) << get_name() << ": Pointer file to  " << m_basic_name_of_open_file
-                       << " was already opened with open_flags " << std::to_string(m_open_flags_of_open_file);
+                    << " was already opened with open_flags " << std::to_string(m_open_flags_of_open_file);
     }
   }
 };

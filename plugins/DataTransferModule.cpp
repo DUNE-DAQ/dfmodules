@@ -23,10 +23,11 @@
 /**
  * @brief Name used by TRACE TLOG calls from this source file
  */
-#define TRACE_NAME "DataTransferModule"        // NOLINT
-enum {
-	TLVL_ENTER_EXIT_METHODS=5,
-	TLVL_WORK_STEPS=10
+#define TRACE_NAME "DataTransferModule" // NOLINT
+enum
+{
+  TLVL_ENTER_EXIT_METHODS = 5,
+  TLVL_WORK_STEPS = 10
 };
 
 namespace dunedaq {

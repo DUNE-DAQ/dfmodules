@@ -22,10 +22,11 @@
 /**
  * @brief Name used by TRACE TLOG calls from this source file
  */
-#define TRACE_NAME "FakeTrigDecEmu"            // NOLINT
-enum {
-	TLVL_ENTER_EXIT_METHODS=5,
-	TLVL_WORK_STEPS=10
+#define TRACE_NAME "FakeTrigDecEmu" // NOLINT
+enum
+{
+  TLVL_ENTER_EXIT_METHODS = 5,
+  TLVL_WORK_STEPS = 10
 };
 
 namespace dunedaq {
@@ -107,7 +108,7 @@ FakeTrigDecEmu::do_work(std::atomic<bool>& running_flag)
     bool wasSentSuccessfully = false;
     while (!wasSentSuccessfully && running_flag.load()) {
       TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Pushing the TriggerDecision for trigger number "
-                            << trigDecision.m_trigger_number << " onto the output queue";
+                                  << trigDecision.m_trigger_number << " onto the output queue";
       try {
         m_trigger_decision_output_queue->push(trigDecision, m_queue_timeout);
         wasSentSuccessfully = true;
@@ -133,7 +134,7 @@ FakeTrigDecEmu::do_work(std::atomic<bool>& running_flag)
         ++inhibit_message_count;
         got_inh_msg = true;
         TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Popped a TriggerInhibit message with busy state set to \""
-                              << trig_inhibit_msg.m_busy << "\" off the inhibit input queue";
+                                    << trig_inhibit_msg.m_busy << "\" off the inhibit input queue";
 
         // for now, we just throw these on the floor...
       } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {

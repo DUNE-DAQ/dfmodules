@@ -22,9 +22,9 @@
 /**
  * @brief Name used by TRACE TLOG calls from this source file
  */
-#define TRACE_NAME "DataGenerator"             // NOLINT
-#define TLVL_ENTER_EXIT_METHODS 5			   // NOLINT
-#define TLVL_WORK_STEPS 10					   // NOLINT
+#define TRACE_NAME "DataGenerator" // NOLINT
+#define TLVL_ENTER_EXIT_METHODS 5  // NOLINT
+#define TLVL_WORK_STEPS 10         // NOLINT
 
 namespace dunedaq {
 namespace dfmodules {
@@ -54,7 +54,7 @@ DataGenerator::do_conf(const data_t& payload)
 
   datagenerator::Conf temp_config = payload.get<datagenerator::Conf>();
   TLOG() << "Testing Conf creation. io_size is " << temp_config.io_size << ", and directory_path is \""
-		 << temp_config.data_store_parameters.directory_path << "\"";
+         << temp_config.data_store_parameters.directory_path << "\"";
 
   m_geo_loc_count =
     payload.value<size_t>("geo_location_count", static_cast<size_t>(m_reasonable_default_geo_loc_count));
