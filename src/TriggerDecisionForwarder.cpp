@@ -18,10 +18,11 @@
 /**
  * @brief Name used by TRACE TLOG calls from this source file
  */
-#define TRACE_NAME "TriggerDecisionForwarder"  // NOLINT
-enum {
-	TLVL_ENTER_EXIT_METHODS=5,
-	TLVL_WORK_STEPS=10
+#define TRACE_NAME "TriggerDecisionForwarder" // NOLINT
+enum
+{
+  TLVL_ENTER_EXIT_METHODS = 5,
+  TLVL_WORK_STEPS = 10
 };
 
 namespace dunedaq {
@@ -71,7 +72,7 @@ TriggerDecisionForwarder::do_work(std::atomic<bool>& running_flag)
     std::unique_lock<std::mutex> lk(m_data_mutex);
     if (!m_trig_dec_has_been_sent) {
       TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Pushing the TriggerDecision for trigger number "
-                            << m_latest_trigger_decision.m_trigger_number << " onto the output queue.";
+                                  << m_latest_trigger_decision.m_trigger_number << " onto the output queue.";
       try {
         m_trigger_decision_sink->push(m_latest_trigger_decision, m_queue_timeout / 2);
         m_trig_dec_has_been_sent = true;
@@ -80,7 +81,8 @@ TriggerDecisionForwarder::do_work(std::atomic<bool>& running_flag)
         // It is not ideal if we fail to send the TriggerDecision message out, but rather than
         // retrying some unknown number of times, we simply output a TRACE message and
         // go on.  This has the benefit of being responsive to updates to the latest TriggerDecision.
-        TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": TIMEOUT pushing a TriggerDecision message onto the output queue";
+        TLOG_DEBUG(TLVL_WORK_STEPS) << get_name()
+                                    << ": TIMEOUT pushing a TriggerDecision message onto the output queue";
       }
 
       // this sleep is intended to allow updates to the latest TriggerDecision to happen in parallel

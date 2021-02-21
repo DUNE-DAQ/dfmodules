@@ -12,9 +12,9 @@
 #ifndef DFMODULES_SRC_DFMODULES_COMMONISSUES_HPP_
 #define DFMODULES_SRC_DFMODULES_COMMONISSUES_HPP_
 
-#include "appfwk/DAQModule.hpp"	// should eventually include "logging/Logging.hpp"
+#include "appfwk/DAQModule.hpp" // should eventually include "logging/Logging.hpp"
 #include "ers/Issue.h"
-#include "logging/Logging.hpp"	// this should eventually be included in appfwk
+#include "logging/Logging.hpp" // this should eventually be included in appfwk
 
 #include <string>
 

@@ -18,10 +18,11 @@
 /**
  * @brief Name used by TRACE TLOG calls from this source file
  */
-#define TRACE_NAME "TriggerInhibitAgent"       // NOLINT
-enum {
-	TLVL_ENTER_EXIT_METHODS=5,
-	TLVL_WORK_STEPS=10
+#define TRACE_NAME "TriggerInhibitAgent" // NOLINT
+enum
+{
+  TLVL_ENTER_EXIT_METHODS = 5,
+  TLVL_WORK_STEPS = 10
 };
 
 namespace dunedaq {
@@ -96,7 +97,7 @@ TriggerInhibitAgent::do_work(std::atomic<bool>& running_flag)
       m_trigger_decision_source->pop(trig_dec, m_queue_timeout);
       ++received_message_count;
       TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Popped the TriggerDecision for trigger number "
-                            << trig_dec.m_trigger_number << " off the input queue";
+                                  << trig_dec.m_trigger_number << " off the input queue";
       m_trigger_number_at_start_of_processing_chain.store(trig_dec.m_trigger_number);
     } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
       // it is perfectly reasonable that there will be no data in the queue some
@@ -136,7 +137,7 @@ TriggerInhibitAgent::do_work(std::atomic<bool>& running_flag)
         }
 
         TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Pushing a TriggerInhibit message with busy state set to "
-                              << inhibit_message.m_busy << " onto the output queue";
+                                    << inhibit_message.m_busy << " onto the output queue";
         try {
           m_trigger_inhibit_sink->push(inhibit_message, m_queue_timeout);
           ++sent_message_count;
@@ -158,7 +159,8 @@ TriggerInhibitAgent::do_work(std::atomic<bool>& running_flag)
           // go on.  This has the benefit of being responsive with pulling TriggerDecision
           // messages off the input queue, and maybe our Busy/Free state will have changed
           // by the time that the receiver is ready to receive more messages.
-          TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": TIMEOUT pushing a TriggerInhibit message onto the output queue";
+          TLOG_DEBUG(TLVL_WORK_STEPS) << get_name()
+                                      << ": TIMEOUT pushing a TriggerInhibit message onto the output queue";
         }
       }
     }
