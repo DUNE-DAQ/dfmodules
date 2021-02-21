@@ -101,7 +101,7 @@ BOOST_AUTO_TEST_CASE(GetKeysFromFragmentFiles)
     {
       ++individual_key_count[event_id - 1][geo_location]; // NOLINT
     } else {
-		TLOG() << "Unexpected key found: event_id=" << event_id << ", geo_location=" << geo_location;
+      TLOG() << "Unexpected key found: event_id=" << event_id << ", geo_location=" << geo_location;
     }
   }
   int correctlyFoundKeyCount = 0;
@@ -111,7 +111,7 @@ BOOST_AUTO_TEST_CASE(GetKeysFromFragmentFiles)
         ++correctlyFoundKeyCount;
       } else {
         TLOG() << "Missing or duplicate key found:  event_id=" << (edx + 1) << ", geo_location=" << gdx
-			   << ", count=" << individual_key_count[edx][gdx];
+               << ", count=" << individual_key_count[edx][gdx];
       }
     }
   }
@@ -191,7 +191,7 @@ BOOST_AUTO_TEST_CASE(GetKeysFromEventFiles)
         ++correctlyFoundKeyCount;
       } else {
         TLOG() << "Missing or duplicate key found:  event_id=" << (edx + 1) << ", geo_location=" << gdx
-			   << ", count=" << individual_key_count[edx][gdx];
+               << ", count=" << individual_key_count[edx][gdx];
       }
     }
   }
@@ -271,7 +271,7 @@ BOOST_AUTO_TEST_CASE(GetKeysFromAllInOneFiles)
         ++correctlyFoundKeyCount;
       } else {
         TLOG() << "Missing or duplicate key found:  event_id=" << (edx + 1) << ", geo_location=" << gdx
-			   << ", count=" << individual_key_count[edx][gdx];
+               << ", count=" << individual_key_count[edx][gdx];
       }
     }
   }

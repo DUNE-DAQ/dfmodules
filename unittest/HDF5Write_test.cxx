@@ -100,9 +100,9 @@ BOOST_AUTO_TEST_CASE(WriteFragmentFiles)
         data_block.m_unowned_data_start = static_cast<void*>(&dummy_data[0]);
         data_block.m_data_size = dummydata_size;
         data_store_ptr->write(data_block);
-      }          // link number
-    }            // apa number
-  }              // trigger number
+      }                   // link number
+    }                     // apa number
+  }                       // trigger number
   data_store_ptr.reset(); // explicit destruction
 
   // check that the expected number of files was created
@@ -161,9 +161,9 @@ BOOST_AUTO_TEST_CASE(WriteEventFiles)
         data_block.m_unowned_data_start = static_cast<void*>(&dummy_data[0]);
         data_block.m_data_size = dummydata_size;
         data_store_ptr->write(data_block);
-      }          // link number
-    }            // apa number
-  }              // trigger number
+      }                   // link number
+    }                     // apa number
+  }                       // trigger number
   data_store_ptr.reset(); // explicit destruction
 
   // check that the expected number of files was created
@@ -225,9 +225,9 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
         data_block.m_unowned_data_start = static_cast<void*>(&dummy_data[0]);
         data_block.m_data_size = dummydata_size;
         data_store_ptr->write(data_block);
-      }          // link number
-    }            // apa number
-  }              // trigger number
+      }                   // link number
+    }                     // apa number
+  }                       // trigger number
   data_store_ptr.reset(); // explicit destruction
 
   // check that the expected number of files was created
@@ -291,9 +291,9 @@ BOOST_AUTO_TEST_CASE(FileSizeLimitResultsInMultipleFiles)
         data_block.m_unowned_data_start = static_cast<void*>(&dummy_data[0]);
         data_block.m_data_size = dummydata_size;
         data_store_ptr->write(data_block);
-      }          // link number
-    }            // apa number
-  }              // trigger number
+      }                   // link number
+    }                     // apa number
+  }                       // trigger number
   data_store_ptr.reset(); // explicit destruction
 
   // check that the expected number of files was created
