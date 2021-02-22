@@ -20,7 +20,6 @@
 #include "ers/ers.h"
 
 #include <algorithm>
-#include <chrono>
 #include <cstdlib>
 #include <memory>
 #include <string>
@@ -180,12 +179,14 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
 {
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() method";
   int32_t received_count = 0;
+  int32_t written_count = 0;
 
   // ensure that we have a valid dataWriter instance
   if (m_data_writer.get() == nullptr) {
     throw InvalidDataWriterError(ERS_HERE, get_name());
   }
 
+  std::chrono::steady_clock::time_point progress_report_time = std::chrono::steady_clock::now();
   while (running_flag.load() || m_trigger_record_input_queue->can_pop()) {
     std::unique_ptr<dataformats::TriggerRecord> trigger_record_ptr;
 
@@ -202,12 +203,13 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
     }
 
     // 03-Feb-2021, KAB: adding support for a data-storage prescale.
-    // In this "if" statement, I deliberately compare the result of (N mod prescale) to 1,
+    // In this "if" statement, I deliberately compare the result of (N mod prescale) to 1
     // instead of zero, since I think that it would be nice to always get the first event
     // written out.
     if (m_data_storage_prescale <= 1 || ((received_count % m_data_storage_prescale) == 1)) {
+      std::vector<KeyedDataBlock> data_block_list;
 
-      // First store the trigger record header
+      // First deal with the trigger record header
       const void* trh_ptr = trigger_record_ptr->get_header_ref().get_storage_location();
       size_t trh_size = trigger_record_ptr->get_header_ref().get_total_size_bytes();
       // Apa number and link number in trh_key
@@ -220,11 +222,9 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
       KeyedDataBlock trh_block(trh_key);
       trh_block.m_unowned_data_start = trh_ptr;
       trh_block.m_data_size = trh_size;
-      if (m_data_storage_is_enabled) {
-        m_data_writer->write(trh_block);
-      }
+      data_block_list.emplace_back(std::move(trh_block));
 
-      // Write the fragments
+      // Loop over the fragments
       const auto& frag_vec = trigger_record_ptr->get_fragments_ref();
       for (const auto& frag_ptr : frag_vec) {
 
@@ -255,7 +255,7 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
           TLOG(TLVL_FRAGMENT_HEADER_DUMP) << get_name() << ": " << oss_hexdump.str();
         }
 
-        // write each Fragment to the DataStore
+        // add information about each Fragment to the list of data blocks to be stored
         // //StorageKey fragment_skey(trigger_record_ptr->get_run_number(), trigger_record_ptr->get_trigger_number,
         // "FELIX",
         StorageKey fragment_skey(frag_ptr->get_run_number(),
@@ -267,19 +267,24 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
         data_block.m_unowned_data_start = frag_ptr->get_storage_location();
         data_block.m_data_size = frag_ptr->get_size();
 
-        // data_block.unowned_trigger_record_header =
-        // data_block.trh_size =
-        if (m_data_storage_is_enabled) {
-          m_data_writer->write(data_block);
-        }
+        data_block_list.emplace_back(std::move(data_block));
+      }
+
+      // write the TRH and the fragments as a set of data blocks
+      if (m_data_storage_is_enabled) {
+        m_data_writer->write(data_block_list);
+        ++written_count;
       }
     }
 
     // progress updates
-    if ((received_count % 3) == 0) {
+    std::chrono::steady_clock::time_point current_time = std::chrono::steady_clock::now();
+    if (elapsed_seconds(progress_report_time, current_time) >= 3.0) {
+      progress_report_time = current_time;
       std::ostringstream oss_prog;
       oss_prog << ": Processing trigger number " << trigger_record_ptr->get_header_ref().get_trigger_number()
-               << ", this is one of " << received_count << " trigger records received so far.";
+               << ", this is one of " << received_count << " trigger records received so far. " << written_count
+               << " trigger records have been written to the data store.";
       ers::log(ProgressUpdate(ERS_HERE, get_name(), oss_prog.str()));
     }
 
