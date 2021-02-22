@@ -6,7 +6,7 @@
       "user_module_type": "SimpleDiskReader",
       "sleep_msec_while_running": 1000,
       "event_id": 1,
-      "detector_id": "FELIX",
+      "detector_id": "TPC",
       "geolocation_id": 101,
 
       "data_store_parameters": {

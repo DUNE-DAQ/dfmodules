@@ -66,7 +66,7 @@ BOOST_AUTO_TEST_CASE(WriteFragmentFiles)
   const int dummydata_size = 7;
   const int run_number = 52;
   const int trigger_count = 5;
-  const std::string detector_name = "FELIX";
+  const std::string detector_name = "TPC";
   const int apa_count = 3;
   const int link_count = 1;
 
@@ -126,7 +126,7 @@ BOOST_AUTO_TEST_CASE(WriteEventFiles)
   const int dummydata_size = 7;
   const int run_number = 52;
   const int trigger_count = 5;
-  const std::string detector_name = "FELIX";
+  const std::string detector_name = "TPC";
   const int apa_count = 3;
   const int link_count = 1;
 
@@ -187,7 +187,7 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
   const int dummydata_size = 7;
   const int run_number = 52;
   const int trigger_count = 5;
-  const std::string detector_name = "FELIX";
+  const std::string detector_name = "TPC";
   const int apa_count = 3;
   const int link_count = 1;
 
@@ -250,7 +250,7 @@ BOOST_AUTO_TEST_CASE(FileSizeLimitResultsInMultipleFiles)
   const int dummydata_size = 10000;
   const int run_number = 52;
   const int trigger_count = 15;
-  const std::string detector_name = "FELIX";
+  const std::string detector_name = "TPC";
   const int apa_count = 5;
   const int link_count = 10;
 
