@@ -94,6 +94,7 @@ DataWriter::do_conf(const data_t& payload)
   TLOG(TLVL_CONFIG) << get_name() << ": threshold_for_inhibit is " << conf_params.threshold_for_inhibit;
   TLOG(TLVL_CONFIG) << get_name() << ": data_store_parameters are " << conf_params.data_store_parameters;
 
+
   // create the DataStore instance here
   m_data_writer = make_data_store(payload["data_store_parameters"]);
   
@@ -173,7 +174,9 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
 
   // ensure that we have a valid dataWriter instance
   if (m_data_writer.get() == nullptr) {
-    throw InvalidDataWriterError(ERS_HERE, get_name());
+    // this check is done essentially to notify the user 
+    // in case the "start" has been called before the "conf"
+    ers::fatal( InvalidDataWriterError(ERS_HERE, get_name()) ) ;
   }
 
   std::chrono::steady_clock::time_point progress_report_time = std::chrono::steady_clock::now();
