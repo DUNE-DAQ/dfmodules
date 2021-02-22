@@ -84,9 +84,9 @@ DataWriter::init(const data_t& init_data)
     new TriggerInhibitAgent(get_name(), std::move(trig_dec_queue_for_inh), std::move(trig_inh_output_queue)));
 
   try {
-    m_trigger_decision_token_output_queue.reset(new tokensink_t(qi["buffer_token_output_queue"].inst));
+    m_trigger_decision_token_output_queue.reset(new tokensink_t(qi["token_output_queue"].inst));
   } catch (const ers::Issue& excpt) {
-    throw InvalidQueueFatalError(ERS_HERE, get_name(), "buffer_token_output_queue", excpt);
+    throw InvalidQueueFatalError(ERS_HERE, get_name(), "token_output_queue", excpt);
   }
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
@@ -289,6 +289,7 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
     if (m_trigger_decision_token_output_queue != nullptr) {
       dfmessages::TriggerDecisionToken token;
       token.run_number = m_run_number;
+      token.trigger_number = trigger_record_ptr->get_header_ref().get_trigger_number();
       m_trigger_decision_token_output_queue->push(std::move(token));
     }
   }

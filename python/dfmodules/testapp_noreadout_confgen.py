@@ -49,7 +49,7 @@ def generate(
     queue_bare_specs = [
             cmd.QueueSpec(inst="time_sync_q", kind='FollyMPMCQueue', capacity=100),
             cmd.QueueSpec(inst="trigger_inhibit_q", kind='FollySPSCQueue', capacity=20),
-            cmd.QueueSpec(inst="buffer_token_q", kind='FollySPSCQueue', capacity=20),
+            cmd.QueueSpec(inst="token_q", kind='FollySPSCQueue', capacity=20),
             cmd.QueueSpec(inst="trigger_decision_q", kind='FollySPSCQueue', capacity=20),
             cmd.QueueSpec(inst="trigger_decision_copy_for_bookkeeping", kind='FollySPSCQueue', capacity=20),
             cmd.QueueSpec(inst="trigger_decision_copy_for_inhibit", kind='FollySPSCQueue', capacity=20),
@@ -69,7 +69,7 @@ def generate(
         mspec("tde", "TriggerDecisionEmulator", [
                         cmd.QueueInfo(name="time_sync_source", inst="time_sync_q", dir="input"),
                         cmd.QueueInfo(name="trigger_inhibit_source", inst="trigger_inhibit_q", dir="input"),
-                        cmd.QueueInfo(name="buffer_token_source", inst="buffer_token_q", dir="input"),
+                        cmd.QueueInfo(name="token_source", inst="token_q", dir="input"),
                         cmd.QueueInfo(name="trigger_decision_sink", inst="trigger_decision_q", dir="output"),
                     ]),
 
@@ -92,7 +92,7 @@ def generate(
                         cmd.QueueInfo(name="trigger_record_input_queue", inst="trigger_record_q", dir="input"),
                         cmd.QueueInfo(name="trigger_decision_for_inhibit", inst="trigger_decision_copy_for_inhibit", dir="input"),
                         cmd.QueueInfo(name="trigger_inhibit_output_queue", inst="trigger_inhibit_q", dir="output"),
-                    cmd.QueueInfo(name="buffer_token_output_queue", inst="buffer_token_q", dir="output"),
+                    cmd.QueueInfo(name="token_output_queue", inst="token_q", dir="output"),
                     ]),
 
         mspec("fake_timesync_source", "FakeTimeSyncSource", [
