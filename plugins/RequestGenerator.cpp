@@ -23,10 +23,10 @@
 #include <thread>
 #include <utility>
 #include <vector>
+
 /**
- * @brief Name used by TRACE TLOG calls from this source file
+ * @brief TRACE debug levels used in this source file
  */
-//#define TRACE_NAME "RequestGenerator"          // NOLINT
 enum
 {
   TLVL_ENTER_EXIT_METHODS = 5,
