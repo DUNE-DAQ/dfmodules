@@ -226,7 +226,7 @@ public:
     } catch (HighFive::Exception const& excpt) {
       throw HDF5Issue( ERS_HERE, excpt.what(), excpt );
     } catch (...) {
-      throw HDF5Issue( ERS_HERE, "Unknown excpetion thrown by HDF5" );
+      throw HDF5Issue( ERS_HERE, "Unknown exception thrown by HDF5" );
     }
 
     m_file_ptr->flush();
