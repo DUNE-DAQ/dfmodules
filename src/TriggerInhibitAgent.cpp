@@ -136,13 +136,8 @@ TriggerInhibitAgent::do_work(std::atomic<bool>& running_flag)
           inhibit_message.busy = false;
         }
 
-<<<<<<< HEAD
-        TLOG(TLVL_WORK_STEPS) << get_name() << ": Pushing a TriggerInhibit message with busy state set to "
-                              << inhibit_message.busy << " onto the output queue";
-=======
         TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Pushing a TriggerInhibit message with busy state set to "
-                                    << inhibit_message.m_busy << " onto the output queue";
->>>>>>> develop
+                                    << inhibit_message.busy << " onto the output queue";
         try {
           m_trigger_inhibit_sink->push(inhibit_message, m_queue_timeout);
           ++sent_message_count;
