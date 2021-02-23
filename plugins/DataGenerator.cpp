@@ -120,7 +120,7 @@ DataGenerator::do_work(std::atomic<bool>& running_flag)
   while (running_flag.load()) {
     for (size_t geo_id = 0; geo_id < m_geo_loc_count; ++geo_id) {
       // AAA: Component ID is fixed, to be changed later
-      StorageKey data_key(m_run_number, event_id, "FELIX", 0, geo_id);
+      StorageKey data_key(m_run_number, event_id, "TPC", 0, geo_id);
       KeyedDataBlock data_block(data_key);
       data_block.m_data_size = m_io_size;
 

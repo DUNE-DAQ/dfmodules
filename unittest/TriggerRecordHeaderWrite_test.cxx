@@ -64,7 +64,7 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
   const int dummydata_size = 7;
   const int run_number = 52;
   const int trigger_count = 1;
-  const std::string detector_name = "FELIX";
+  const std::string detector_name = "TPC";
   const int apa_count = 1;
   const int link_count = 1;
 

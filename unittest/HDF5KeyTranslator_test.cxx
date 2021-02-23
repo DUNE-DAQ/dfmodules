@@ -52,9 +52,9 @@ BOOST_AUTO_TEST_CASE(PathString)
   layout_params.link_name_prefix = "Link";
   layout_params.digits_for_link_number = 3;
 
-  StorageKey key4(101, 22, "FELIX", 33, 44);
+  StorageKey key4(101, 22, "TPC", 33, 44);
   path = HDF5KeyTranslator::get_path_string(key4, layout_params);
-  BOOST_REQUIRE_EQUAL(path, "TriggerRecord022/FELIX/APA33/Link044");
+  BOOST_REQUIRE_EQUAL(path, "TriggerRecord022/TPC/APA33/Link044");
 }
 
 BOOST_AUTO_TEST_CASE(PathElements)
