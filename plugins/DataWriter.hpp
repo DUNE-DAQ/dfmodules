@@ -12,8 +12,8 @@
 #include "dfmodules/DataStore.hpp"
 
 #include "appfwk/DAQModule.hpp"
-#include "appfwk/DAQSource.hpp"
 #include "appfwk/DAQSink.hpp"
+#include "appfwk/DAQSource.hpp"
 #include "appfwk/ThreadHelper.hpp"
 #include "dataformats/TriggerRecord.hpp"
 #include "dfmessages/TriggerDecisionToken.hpp"

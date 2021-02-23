@@ -131,27 +131,27 @@ FakeTrigDecEmu::do_work(std::atomic<bool>& running_flag)
     }
 
     if (m_trigger_inhibit_input_queue != nullptr) {
-    
-    // receive any/all Inhibit messages that are waiting
-    // (This really needs to be done in a separate thread, but we'll trust the
-    // official TriggerDecisionEmulator to take care of things like that.)
-    bool got_inh_msg = true;
-    while (got_inh_msg) {
-      try {
-        dfmessages::TriggerInhibit trig_inhibit_msg;
-        m_trigger_inhibit_input_queue->pop(trig_inhibit_msg, (m_queue_timeout / 10));
-        ++inhibit_message_count;
-        got_inh_msg = true;
-        TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Popped a TriggerInhibit message with busy state set to \""
-                                    << trig_inhibit_msg.m_busy << "\" off the inhibit input queue";
 
-        // for now, we just throw these on the floor...
-      } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
-        // it is perfectly reasonable that there might be no data in the queue
-        // some fraction of the times that we check, so we just continue
-        got_inh_msg = false;
+      // receive any/all Inhibit messages that are waiting
+      // (This really needs to be done in a separate thread, but we'll trust the
+      // official TriggerDecisionEmulator to take care of things like that.)
+      bool got_inh_msg = true;
+      while (got_inh_msg) {
+        try {
+          dfmessages::TriggerInhibit trig_inhibit_msg;
+          m_trigger_inhibit_input_queue->pop(trig_inhibit_msg, (m_queue_timeout / 10));
+          ++inhibit_message_count;
+          got_inh_msg = true;
+          TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Popped a TriggerInhibit message with busy state set to \""
+                                      << trig_inhibit_msg.m_busy << "\" off the inhibit input queue";
+
+          // for now, we just throw these on the floor...
+        } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
+          // it is perfectly reasonable that there might be no data in the queue
+          // some fraction of the times that we check, so we just continue
+          got_inh_msg = false;
+        }
       }
-    }
     }
 
     if (m_trigger_decision_token_input_queue != nullptr) {
@@ -161,12 +161,11 @@ FakeTrigDecEmu::do_work(std::atomic<bool>& running_flag)
       // official TriggerDecisionEmulator to take care of things like that.)
 
       while (m_trigger_decision_token_input_queue->can_pop()) {
-          dfmessages::TriggerDecisionToken td_token_msg;
+        dfmessages::TriggerDecisionToken td_token_msg;
         m_trigger_decision_token_input_queue->pop(td_token_msg);
-          token_count++;
-          TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Popped a TriggerDecisionToken message with run number \""
-                                << td_token_msg.run_number << "\" off the token input queue";
-
+        token_count++;
+        TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Popped a TriggerDecisionToken message with run number \""
+                                    << td_token_msg.run_number << "\" off the token input queue";
       }
     }
 
@@ -179,10 +178,10 @@ FakeTrigDecEmu::do_work(std::atomic<bool>& running_flag)
 
   std::ostringstream oss_summ;
   oss_summ << ": Exiting the do_work() method, generated " << triggerCount << " Fake TriggerDecision messages "
-           << "and received " << token_count << " TriggerDecisionToken messages and " << inhibit_message_count << " TriggerInhbit messages of all types (both Busy and Free).";
+           << "and received " << token_count << " TriggerDecisionToken messages and " << inhibit_message_count
+           << " TriggerInhbit messages of all types (both Busy and Free).";
   TLOG() << ProgressUpdate(ERS_HERE, get_name(), oss_summ.str());
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_work() method";
-
 }
 
 } // namespace dfmodules
