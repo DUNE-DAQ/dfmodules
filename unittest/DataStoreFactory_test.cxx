@@ -9,8 +9,6 @@
 
 #include "dfmodules/DataStore.hpp"
 
-#include "ers/ers.h"
-
 #define BOOST_TEST_MODULE DataStoreFactory_test // NOLINT
 
 #include "boost/test/unit_test.hpp"

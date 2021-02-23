@@ -9,8 +9,7 @@
 #include "dfmodules/TriggerInhibitAgent.hpp"
 #include "dfmodules/CommonIssues.hpp"
 
-#include "TRACE/trace.h"
-#include "ers/ers.h"
+#include "logging/Logging.hpp"
 
 #include <memory>
 #include <string>
@@ -19,9 +18,12 @@
 /**
  * @brief Name used by TRACE TLOG calls from this source file
  */
-#define TRACE_NAME "TriggerInhibitAgent"       // NOLINT
-#define TLVL_ENTER_EXIT_METHODS TLVL_DEBUG + 5 // NOLINT
-#define TLVL_WORK_STEPS TLVL_DEBUG + 10        // NOLINT
+#define TRACE_NAME "TriggerInhibitAgent" // NOLINT
+enum
+{
+  TLVL_ENTER_EXIT_METHODS = 5,
+  TLVL_WORK_STEPS = 10
+};
 
 namespace dunedaq {
 namespace dfmodules {
@@ -42,25 +44,25 @@ TriggerInhibitAgent::TriggerInhibitAgent(const std::string& parent_name,
 void
 TriggerInhibitAgent::start_checking()
 {
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering start_checking() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering start_checking() method";
   m_thread.start_working_thread();
-  ERS_LOG(get_name() << " successfully started");
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting start_checking() method";
+  TLOG() << get_name() << " successfully started";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting start_checking() method";
 }
 
 void
 TriggerInhibitAgent::stop_checking()
 {
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering stop_checking() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering stop_checking() method";
   m_thread.stop_working_thread();
-  ERS_LOG(get_name() << " successfully stopped");
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting stop_checking() method";
+  TLOG() << get_name() << " successfully stopped";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting stop_checking() method";
 }
 
 void
 TriggerInhibitAgent::do_work(std::atomic<bool>& running_flag)
 {
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() method";
 
   // configuration (hard-coded, for now; will be input from calling code later)
   int fake_busy_interval_sec = 0;
@@ -94,8 +96,8 @@ TriggerInhibitAgent::do_work(std::atomic<bool>& running_flag)
       dfmessages::TriggerDecision trig_dec;
       m_trigger_decision_source->pop(trig_dec, m_queue_timeout);
       ++received_message_count;
-      TLOG(TLVL_WORK_STEPS) << get_name() << ": Popped the TriggerDecision for trigger number "
-                            << trig_dec.trigger_number << " off the input queue";
+      TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Popped the TriggerDecision for trigger number "
+                                  << trig_dec.trigger_number << " off the input queue";
       m_trigger_number_at_start_of_processing_chain.store(trig_dec.trigger_number);
     } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
       // it is perfectly reasonable that there will be no data in the queue some
@@ -134,8 +136,13 @@ TriggerInhibitAgent::do_work(std::atomic<bool>& running_flag)
           inhibit_message.busy = false;
         }
 
+<<<<<<< HEAD
         TLOG(TLVL_WORK_STEPS) << get_name() << ": Pushing a TriggerInhibit message with busy state set to "
                               << inhibit_message.busy << " onto the output queue";
+=======
+        TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Pushing a TriggerInhibit message with busy state set to "
+                                    << inhibit_message.m_busy << " onto the output queue";
+>>>>>>> develop
         try {
           m_trigger_inhibit_sink->push(inhibit_message, m_queue_timeout);
           ++sent_message_count;
@@ -144,7 +151,7 @@ TriggerInhibitAgent::do_work(std::atomic<bool>& running_flag)
           std::ostringstream oss_sent;
           oss_sent << ": Successfully pushed a TriggerInhibit message with busy state set to " << inhibit_message.busy
                    << " onto the output queue";
-          ers::log(ProgressUpdate(ERS_HERE, get_name(), oss_sent.str()));
+          TLOG() << ProgressUpdate(ERS_HERE, get_name(), oss_sent.str());
 #endif
           // if we successfully pushed the message to the Sink, then we assume that the
           // receiver will get it, and we update our internal state accordingly
@@ -157,7 +164,8 @@ TriggerInhibitAgent::do_work(std::atomic<bool>& running_flag)
           // go on.  This has the benefit of being responsive with pulling TriggerDecision
           // messages off the input queue, and maybe our Busy/Free state will have changed
           // by the time that the receiver is ready to receive more messages.
-          TLOG(TLVL_WORK_STEPS) << get_name() << ": TIMEOUT pushing a TriggerInhibit message onto the output queue";
+          TLOG_DEBUG(TLVL_WORK_STEPS) << get_name()
+                                      << ": TIMEOUT pushing a TriggerInhibit message onto the output queue";
         }
       }
     }
@@ -167,8 +175,8 @@ TriggerInhibitAgent::do_work(std::atomic<bool>& running_flag)
   oss_summ << ": Exiting the do_work() method, received " << received_message_count
            << " TriggerDecision messages and sent " << sent_message_count
            << " TriggerInhibit messages of all types (both Busy and Free).";
-  ers::log(ProgressUpdate(ERS_HERE, get_name(), oss_summ.str()));
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_work() method";
+  TLOG() << ProgressUpdate(ERS_HERE, get_name(), oss_summ.str());
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_work() method";
 }
 
 } // namespace dfmodules
