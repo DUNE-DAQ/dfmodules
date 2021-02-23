@@ -271,7 +271,7 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
 	  ++written_count;
 	}
 	catch(const ers::Issue& excpt) {
-	  ers::error( DataStoreWritingFailed( ERS_HERE, m_data_writer->get_name(), except) ) ;
+	  ers::error( DataStoreWritingFailed( ERS_HERE, m_data_writer->get_name(), excpt) ) ;
 	}
       }
     }
