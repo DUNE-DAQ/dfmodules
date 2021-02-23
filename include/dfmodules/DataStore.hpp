@@ -60,6 +60,18 @@ ERS_DECLARE_ISSUE(dfmodules,               ///< Namespace
                   ((std::string)plugin_name)((nlohmann::json)conf) ///< Message parameters
 )
 
+
+/**
+ * @brief A generic ERS Issue for DataStore writing failure
+ */
+ERS_DECLARE_ISSUE(dfmodules,               ///< Namespace
+                  DataStoreWritingFailed,  ///< Type of the Issue
+                  "Failed to write data using  " << plugin_name,   ///< Log Message from the issue
+                  ((std::string)plugin_name)   ///< Message parameters
+)
+
+
+
 namespace dfmodules {
 
 /**

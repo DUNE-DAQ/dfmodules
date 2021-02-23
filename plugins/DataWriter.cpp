@@ -266,8 +266,13 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
 
       // write the TRH and the fragments as a set of data blocks
       if (m_data_storage_is_enabled) {
-        m_data_writer->write(data_block_list);
-        ++written_count;
+	try {
+	  m_data_writer->write(data_block_list);
+	  ++written_count;
+	}
+	catch( ) {
+	  ers::error( ) ;
+	}
       }
     }
 
