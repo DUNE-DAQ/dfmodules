@@ -12,12 +12,11 @@
 #include "dfmodules/StorageKey.hpp"
 #include "dfmodules/datawriter/Nljs.hpp"
 
-#include "TRACE/trace.h"
 #include "appfwk/DAQModuleHelper.hpp"
 #include "dataformats/Fragment.hpp"
 #include "dfmessages/TriggerDecision.hpp"
 #include "dfmessages/TriggerInhibit.hpp"
-#include "ers/ers.h"
+#include "logging/Logging.hpp"
 
 #include <algorithm>
 #include <cstdlib>
@@ -30,11 +29,14 @@
 /**
  * @brief Name used by TRACE TLOG calls from this source file
  */
-#define TRACE_NAME "DataWriter"                   // NOLINT
-#define TLVL_ENTER_EXIT_METHODS TLVL_DEBUG + 5    // NOLINT
-#define TLVL_CONFIG TLVL_DEBUG + 7                // NOLINT
-#define TLVL_WORK_STEPS TLVL_DEBUG + 10           // NOLINT
-#define TLVL_FRAGMENT_HEADER_DUMP TLVL_DEBUG + 17 // NOLINT
+//#define TRACE_NAME "DataWriter"                   // NOLINT This is the default
+enum
+{
+  TLVL_ENTER_EXIT_METHODS = 5,
+  TLVL_CONFIG = 7,
+  TLVL_WORK_STEPS = 10,
+  TLVL_FRAGMENT_HEADER_DUMP = 17
+};
 
 namespace dunedaq {
 namespace dfmodules {
@@ -55,7 +57,7 @@ DataWriter::DataWriter(const std::string& name)
 void
 DataWriter::init(const data_t& init_data)
 {
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
   auto qi = appfwk::queue_index(
     init_data, { "trigger_record_input_queue", "trigger_decision_for_inhibit", "trigger_inhibit_output_queue" });
   try {
@@ -81,18 +83,18 @@ DataWriter::init(const data_t& init_data)
   m_trigger_inhibit_agent.reset(
     new TriggerInhibitAgent(get_name(), std::move(trig_dec_queue_for_inh), std::move(trig_inh_output_queue)));
 
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
 
 void
 DataWriter::do_conf(const data_t& payload)
 {
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
 
   datawriter::ConfParams conf_params = payload.get<datawriter::ConfParams>();
   m_trigger_inhibit_agent->set_threshold_for_inhibit(conf_params.threshold_for_inhibit);
-  TLOG(TLVL_CONFIG) << get_name() << ": threshold_for_inhibit is " << conf_params.threshold_for_inhibit;
-  TLOG(TLVL_CONFIG) << get_name() << ": data_store_parameters are " << conf_params.data_store_parameters;
+  TLOG_DEBUG(TLVL_CONFIG) << get_name() << ": threshold_for_inhibit is " << conf_params.threshold_for_inhibit;
+  TLOG_DEBUG(TLVL_CONFIG) << get_name() << ": data_store_parameters are " << conf_params.data_store_parameters;
 
 
   // create the DataStore instance here
@@ -103,13 +105,13 @@ DataWriter::do_conf(const data_t& payload)
     throw InvalidDataWriterError(ERS_HERE, get_name());
   }
 
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
 }
 
 void
 DataWriter::do_start(const data_t& payload)
 {
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_start() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_start() method";
 
   datawriter::StartParams start_params = payload.get<datawriter::StartParams>();
   m_data_storage_is_enabled = (!start_params.disable_data_storage);
@@ -131,14 +133,14 @@ DataWriter::do_start(const data_t& payload)
   m_trigger_inhibit_agent->start_checking();
   m_thread.start_working_thread();
 
-  ERS_LOG(get_name() << " successfully started");
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
+  TLOG() << get_name() << " successfully started";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
 }
 
 void
 DataWriter::do_stop(const data_t& /*args*/)
 {
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_stop() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_stop() method";
 
   m_trigger_inhibit_agent->stop_checking();
   m_thread.stop_working_thread();
@@ -150,25 +152,25 @@ DataWriter::do_stop(const data_t& /*args*/)
     m_data_writer->finish_with_run(m_run_number);
   }
 
-  ERS_LOG(get_name() << " successfully stopped");
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_stop() method";
+  TLOG() << get_name() << " successfully stopped";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_stop() method";
 }
 
 void
 DataWriter::do_scrap(const data_t& /*payload*/)
 {
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_scrap() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_scrap() method";
 
   // clear/reset the DataStore instance here
   m_data_writer.reset();
 
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_scrap() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_scrap() method";
 }
 
 void
 DataWriter::do_work(std::atomic<bool>& running_flag)
 {
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() method";
   int32_t received_count = 0;
   int32_t written_count = 0;
 
@@ -188,8 +190,9 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
     try {
       m_trigger_record_input_queue->pop(trigger_record_ptr, m_queue_timeout);
       ++received_count;
-      TLOG(TLVL_WORK_STEPS) << get_name() << ": Popped the TriggerRecord for trigger number "
-                            << trigger_record_ptr->get_header_ref().get_trigger_number() << " off the input queue";
+      TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Popped the TriggerRecord for trigger number "
+                                  << trigger_record_ptr->get_header_ref().get_trigger_number()
+                                  << " off the input queue";
     } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
       // it is perfectly reasonable that there might be no data in the queue
       // some fraction of the times that we check, so we just continue on and try again
@@ -223,8 +226,8 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
       for (const auto& frag_ptr : frag_vec) {
 
         // print out some debug information, if requested
-        TLOG(TLVL_FRAGMENT_HEADER_DUMP) << get_name() << ": Partial(?) contents of the Fragment from link "
-                                        << frag_ptr->get_link_id().m_link_number;
+        TLOG_DEBUG(TLVL_FRAGMENT_HEADER_DUMP)
+          << get_name() << ": Partial(?) contents of the Fragment from link " << frag_ptr->get_link_id().m_link_number;
         const size_t number_of_32bit_values_per_row = 5;
         const size_t max_number_of_rows = 5;
         int number_of_32bit_values_to_print =
@@ -240,21 +243,21 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
           ++mem_ptr;
           if (((idx + 1) % number_of_32bit_values_per_row) == 0) {
             oss_hexdump << std::dec;
-            TLOG(TLVL_FRAGMENT_HEADER_DUMP) << get_name() << ": " << oss_hexdump.str();
+            TLOG_DEBUG(TLVL_FRAGMENT_HEADER_DUMP) << get_name() << ": " << oss_hexdump.str();
             oss_hexdump.str("");
             oss_hexdump.clear();
           }
         }
         if (oss_hexdump.str().length() > 0) {
-          TLOG(TLVL_FRAGMENT_HEADER_DUMP) << get_name() << ": " << oss_hexdump.str();
+          TLOG_DEBUG(TLVL_FRAGMENT_HEADER_DUMP) << get_name() << ": " << oss_hexdump.str();
         }
 
         // add information about each Fragment to the list of data blocks to be stored
         // //StorageKey fragment_skey(trigger_record_ptr->get_run_number(), trigger_record_ptr->get_trigger_number,
-        // "FELIX",
+        // "TPC",
         StorageKey fragment_skey(frag_ptr->get_run_number(),
                                  frag_ptr->get_trigger_number(),
-                                 "FELIX",
+                                 "TPC",
                                  frag_ptr->get_link_id().m_apa_number,
                                  frag_ptr->get_link_id().m_link_number);
         KeyedDataBlock data_block(fragment_skey);
@@ -284,7 +287,7 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
       oss_prog << ": Processing trigger number " << trigger_record_ptr->get_header_ref().get_trigger_number()
                << ", this is one of " << received_count << " trigger records received so far. " << written_count
                << " trigger records have been written to the data store.";
-      ers::log(ProgressUpdate(ERS_HERE, get_name(), oss_prog.str()));
+      TLOG() << ProgressUpdate(ERS_HERE, get_name(), oss_prog.str());
     }
 
     // tell the TriggerInhibitAgent the trigger_number of this TriggerRecord so that
@@ -294,8 +297,8 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
 
   std::ostringstream oss_summ;
   oss_summ << ": Exiting the do_work() method, received trigger record messages for " << received_count << " triggers.";
-  ers::log(ProgressUpdate(ERS_HERE, get_name(), oss_summ.str()));
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_work() method";
+  TLOG() << ProgressUpdate(ERS_HERE, get_name(), oss_summ.str());
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_work() method";
 }
 
 } // namespace dfmodules

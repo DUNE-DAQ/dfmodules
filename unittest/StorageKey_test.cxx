@@ -48,11 +48,12 @@ using namespace dunedaq::dfmodules;
 BOOST_AUTO_TEST_CASE(check_placeholder_values)
 {
   const int sample_event_id = 1234;
-  const std::string sample_detector_id = "FELIX";
+  const std::string sample_detector_id = "TPC";
   const int sample_geo_location = 0;
 
   // Something would have to be very wrong for this test to fail...
-  StorageKey key1(StorageKey::s_invalid_event_id, StorageKey::s_invalid_detector_id, StorageKey::s_invalid_geo_location);
+  StorageKey key1(
+    StorageKey::s_invalid_event_id, StorageKey::s_invalid_detector_id, StorageKey::s_invalid_geo_location);
   BOOST_CHECK_EQUAL(key1.get_event_id(), StorageKey::s_invalid_event_id);
   BOOST_CHECK_EQUAL(key1.get_detector_id(), StorageKey::s_invalid_detector_id);
   BOOST_CHECK_EQUAL(key1.get_geo_location(), StorageKey::s_invalid_geo_location);

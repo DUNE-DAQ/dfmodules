@@ -9,8 +9,6 @@
 
 #include "HDF5FileUtils.hpp"
 
-#include "ers/ers.h"
-
 #define BOOST_TEST_MODULE HDF5FileUtils_test // NOLINT
 
 #include "boost/test/unit_test.hpp"

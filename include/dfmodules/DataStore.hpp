@@ -21,7 +21,7 @@
 #include "cetlib/BasicPluginFactory.h"
 #include "cetlib/compiler_macros.h"
 #include "dataformats/Types.hpp"
-#include "ers/ers.h"
+#include "logging/Logging.hpp"
 
 #include "nlohmann/json.hpp"
 

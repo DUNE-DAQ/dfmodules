@@ -12,8 +12,6 @@
 //#include "dfmodules/hdf5datastore/Structs.hpp"
 #include "HDF5DataStore.hpp"
 
-#include "ers/ers.h"
-
 #define BOOST_TEST_MODULE HDF5Write_test // NOLINT
 
 #include "boost/test/unit_test.hpp"
@@ -66,7 +64,7 @@ BOOST_AUTO_TEST_CASE(WriteFragmentFiles)
   const int dummydata_size = 7;
   const int run_number = 52;
   const int trigger_count = 5;
-  const std::string detector_name = "FELIX";
+  const std::string detector_name = "TPC";
   const int apa_count = 3;
   const int link_count = 1;
 
@@ -102,9 +100,9 @@ BOOST_AUTO_TEST_CASE(WriteFragmentFiles)
         data_block.m_unowned_data_start = static_cast<void*>(&dummy_data[0]);
         data_block.m_data_size = dummydata_size;
         data_store_ptr->write(data_block);
-      }          // link number
-    }            // apa number
-  }              // trigger number
+      }                   // link number
+    }                     // apa number
+  }                       // trigger number
   data_store_ptr.reset(); // explicit destruction
 
   // check that the expected number of files was created
@@ -126,7 +124,7 @@ BOOST_AUTO_TEST_CASE(WriteEventFiles)
   const int dummydata_size = 7;
   const int run_number = 52;
   const int trigger_count = 5;
-  const std::string detector_name = "FELIX";
+  const std::string detector_name = "TPC";
   const int apa_count = 3;
   const int link_count = 1;
 
@@ -163,9 +161,9 @@ BOOST_AUTO_TEST_CASE(WriteEventFiles)
         data_block.m_unowned_data_start = static_cast<void*>(&dummy_data[0]);
         data_block.m_data_size = dummydata_size;
         data_store_ptr->write(data_block);
-      }          // link number
-    }            // apa number
-  }              // trigger number
+      }                   // link number
+    }                     // apa number
+  }                       // trigger number
   data_store_ptr.reset(); // explicit destruction
 
   // check that the expected number of files was created
@@ -187,7 +185,7 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
   const int dummydata_size = 7;
   const int run_number = 52;
   const int trigger_count = 5;
-  const std::string detector_name = "FELIX";
+  const std::string detector_name = "TPC";
   const int apa_count = 3;
   const int link_count = 1;
 
@@ -227,9 +225,9 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
         data_block.m_unowned_data_start = static_cast<void*>(&dummy_data[0]);
         data_block.m_data_size = dummydata_size;
         data_store_ptr->write(data_block);
-      }          // link number
-    }            // apa number
-  }              // trigger number
+      }                   // link number
+    }                     // apa number
+  }                       // trigger number
   data_store_ptr.reset(); // explicit destruction
 
   // check that the expected number of files was created
@@ -250,7 +248,7 @@ BOOST_AUTO_TEST_CASE(FileSizeLimitResultsInMultipleFiles)
   const int dummydata_size = 10000;
   const int run_number = 52;
   const int trigger_count = 15;
-  const std::string detector_name = "FELIX";
+  const std::string detector_name = "TPC";
   const int apa_count = 5;
   const int link_count = 10;
 
@@ -293,9 +291,9 @@ BOOST_AUTO_TEST_CASE(FileSizeLimitResultsInMultipleFiles)
         data_block.m_unowned_data_start = static_cast<void*>(&dummy_data[0]);
         data_block.m_data_size = dummydata_size;
         data_store_ptr->write(data_block);
-      }          // link number
-    }            // apa number
-  }              // trigger number
+      }                   // link number
+    }                     // apa number
+  }                       // trigger number
   data_store_ptr.reset(); // explicit destruction
 
   // check that the expected number of files was created

@@ -10,10 +10,9 @@
 #include "dfmodules/CommonIssues.hpp"
 //#include "dfmodules/fakefragrec/Nljs.hpp"
 
-#include "TRACE/trace.h"
 #include "appfwk/DAQModuleHelper.hpp"
 #include "appfwk/cmd/Nljs.hpp"
-#include "ers/ers.h"
+#include "logging/Logging.hpp"
 
 #include <chrono>
 #include <cstdlib>
@@ -24,11 +23,13 @@
 #include <vector>
 
 /**
- * @brief Name used by TRACE TLOG calls from this source file
+ * @brief TRACE debug levels used in this source file
  */
-#define TRACE_NAME "FakeFragRec"               // NOLINT
-#define TLVL_ENTER_EXIT_METHODS TLVL_DEBUG + 5 // NOLINT
-#define TLVL_WORK_STEPS TLVL_DEBUG + 10        // NOLINT
+enum
+{
+  TLVL_ENTER_EXIT_METHODS = 5,
+  TLVL_WORK_STEPS = 10
+};
 
 namespace dunedaq {
 namespace dfmodules {
@@ -49,7 +50,7 @@ FakeFragRec::FakeFragRec(const std::string& name)
 void
 FakeFragRec::init(const data_t& init_data)
 {
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
   auto qilist = appfwk::queue_index(init_data, { "trigger_decision_input_queue", "trigger_record_output_queue" });
   try {
     m_trigger_decision_input_queue.reset(new trigdecsource_t(qilist["trigger_decision_input_queue"].inst));
@@ -61,7 +62,7 @@ FakeFragRec::init(const data_t& init_data)
   } catch (const ers::Issue& excpt) {
     throw InvalidQueueFatalError(ERS_HERE, get_name(), "trigger_record_output_queue", excpt);
   }
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 
   auto ini = init_data.get<appfwk::cmd::ModInit>();
   for (const auto& qitem : ini.qinfos) {
@@ -78,36 +79,36 @@ FakeFragRec::init(const data_t& init_data)
 void
 FakeFragRec::do_conf(const data_t& /*payload*/)
 {
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
 
   // fakefragrec::Conf tmpConfig = payload.get<fakefragrec::Conf>();
   // m_sleep_msec_while_running = tmpConfig.sleep_msec_while_running;
 
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
 }
 
 void
 FakeFragRec::do_start(const data_t& /*args*/)
 {
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_start() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_start() method";
   m_thread.start_working_thread();
-  ERS_LOG(get_name() << " successfully started");
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
+  TLOG() << get_name() << " successfully started";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
 }
 
 void
 FakeFragRec::do_stop(const data_t& /*args*/)
 {
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_stop() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_stop() method";
   m_thread.stop_working_thread();
-  ERS_LOG(get_name() << " successfully stopped");
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_stop() method";
+  TLOG() << get_name() << " successfully stopped";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_stop() method";
 }
 
 void
 FakeFragRec::do_work(std::atomic<bool>& running_flag)
 {
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() method";
   int32_t receivedTriggerCount = 0;
   int32_t receivedFragmentCount = 0;
 
@@ -116,8 +117,8 @@ FakeFragRec::do_work(std::atomic<bool>& running_flag)
     try {
       m_trigger_decision_input_queue->pop(trigDecision, m_queue_timeout);
       ++receivedTriggerCount;
-      TLOG(TLVL_WORK_STEPS) << get_name() << ": Popped the TriggerDecision for trigger number "
-                            << trigDecision.trigger_number << " off the input queue";
+      TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Popped the TriggerDecision for trigger number "
+                                  << trigDecision.trigger_number << " off the input queue";
     } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
       // it is perfectly reasonable that there might be no data in the queue
       // some fraction of the times that we check, so we just continue on and try again
@@ -154,8 +155,8 @@ FakeFragRec::do_work(std::atomic<bool>& running_flag)
 
     bool was_sent_successfully = false;
     while (!was_sent_successfully && running_flag.load()) {
-      TLOG(TLVL_WORK_STEPS) << get_name() << ": Pushing the Trigger Record for trigger number "
-                            << trig_rec_ptr->get_trigger_number() << " onto the output queue";
+      TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Pushing the Trigger Record for trigger number "
+                                  << trig_rec_ptr->get_trigger_number() << " onto the output queue";
       try {
         m_trigger_record_output_queue->push(std::move(trig_rec_ptr), m_queue_timeout);
         was_sent_successfully = true;
@@ -170,16 +171,16 @@ FakeFragRec::do_work(std::atomic<bool>& running_flag)
       }
     }
 
-    // TLOG(TLVL_WORK_STEPS) << get_name() << ": Start of sleep while waiting for run Stop";
+    // TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Start of sleep while waiting for run Stop";
     // std::this_thread::sleep_for(std::chrono::milliseconds(m_sleep_msec_while_running));
-    // TLOG(TLVL_WORK_STEPS) << get_name() << ": End of sleep while waiting for run Stop";
+    // TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": End of sleep while waiting for run Stop";
   }
 
   std::ostringstream oss_summ;
   oss_summ << ": Exiting the do_work() method, received " << receivedTriggerCount
            << " Fake trigger decision messages and " << receivedFragmentCount << " Fake data fragmentss.";
-  ers::log(ProgressUpdate(ERS_HERE, get_name(), oss_summ.str()));
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_work() method";
+  TLOG() << ProgressUpdate(ERS_HERE, get_name(), oss_summ.str());
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_work() method";
 }
 
 } // namespace dfmodules
