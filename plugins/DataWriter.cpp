@@ -15,7 +15,6 @@
 #include "appfwk/DAQModuleHelper.hpp"
 #include "dataformats/Fragment.hpp"
 #include "dfmessages/TriggerDecision.hpp"
-#include "dfmessages/TriggerInhibit.hpp"
 #include "logging/Logging.hpp"
 
 #include <algorithm>
@@ -59,30 +58,12 @@ void
 DataWriter::init(const data_t& init_data)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
-  auto qi = appfwk::queue_index(
-    init_data, { "trigger_record_input_queue", "trigger_decision_for_inhibit", "trigger_inhibit_output_queue" });
+  auto qi = appfwk::queue_index(init_data, { "trigger_record_input_queue", "token_output_queue" });
   try {
     m_trigger_record_input_queue.reset(new trigrecsource_t(qi["trigger_record_input_queue"].inst));
   } catch (const ers::Issue& excpt) {
     throw InvalidQueueFatalError(ERS_HERE, get_name(), "trigger_record_input_queue", excpt);
   }
-
-  using trigdecsource_t = dunedaq::appfwk::DAQSource<dfmessages::TriggerDecision>;
-  std::unique_ptr<trigdecsource_t> trig_dec_queue_for_inh;
-  try {
-    trig_dec_queue_for_inh.reset(new trigdecsource_t(qi["trigger_decision_for_inhibit"].inst));
-  } catch (const ers::Issue& excpt) {
-    throw InvalidQueueFatalError(ERS_HERE, get_name(), "trigger_decision_for_inhibit", excpt);
-  }
-  using triginhsink_t = dunedaq::appfwk::DAQSink<dfmessages::TriggerInhibit>;
-  std::unique_ptr<triginhsink_t> trig_inh_output_queue;
-  try {
-    trig_inh_output_queue.reset(new triginhsink_t(qi["trigger_inhibit_output_queue"].inst));
-  } catch (const ers::Issue& excpt) {
-    throw InvalidQueueFatalError(ERS_HERE, get_name(), "trigger_inhibit_output_queue", excpt);
-  }
-  m_trigger_inhibit_agent.reset(
-    new TriggerInhibitAgent(get_name(), std::move(trig_dec_queue_for_inh), std::move(trig_inh_output_queue)));
 
   try {
     m_trigger_decision_token_output_queue.reset(new tokensink_t(qi["token_output_queue"].inst));
@@ -98,9 +79,8 @@ DataWriter::do_conf(const data_t& payload)
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
 
   datawriter::ConfParams conf_params = payload.get<datawriter::ConfParams>();
-  m_trigger_inhibit_agent->set_threshold_for_inhibit(conf_params.threshold_for_inhibit);
-  m_initial_tokens = conf_params.threshold_for_inhibit; // TODO ELF 2/17/2021: Maybe use a different parameter?
-  TLOG_DEBUG(TLVL_CONFIG) << get_name() << ": threshold_for_inhibit is " << conf_params.threshold_for_inhibit;
+  m_initial_tokens = conf_params.initial_token_count;
+  TLOG_DEBUG(TLVL_CONFIG) << get_name() << ": initial_token_count is " << conf_params.initial_token_count;
   TLOG_DEBUG(TLVL_CONFIG) << get_name() << ": data_store_parameters are " << conf_params.data_store_parameters;
 
   // create the DataStore instance here
@@ -131,15 +111,12 @@ DataWriter::do_start(const data_t& payload)
     }
   }
 
-  if (m_trigger_decision_token_output_queue != nullptr) {
-    for (int ii = 0; ii < m_initial_tokens; ++ii) {
-      dfmessages::TriggerDecisionToken token;
-      token.run_number = m_run_number;
-      m_trigger_decision_token_output_queue->push(std::move(token));
-    }
+  for (int ii = 0; ii < m_initial_tokens; ++ii) {
+    dfmessages::TriggerDecisionToken token;
+    token.run_number = m_run_number;
+    m_trigger_decision_token_output_queue->push(std::move(token));
   }
 
-  m_trigger_inhibit_agent->start_checking();
   m_thread.start_working_thread();
 
   TLOG() << get_name() << " successfully started";
@@ -151,7 +128,6 @@ DataWriter::do_stop(const data_t& /*args*/)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_stop() method";
 
-  m_trigger_inhibit_agent->stop_checking();
   m_thread.stop_working_thread();
 
   // 04-Feb-2021, KAB: added this call to allow DataStore to finish up with this run.
@@ -291,15 +267,10 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
       TLOG() << ProgressUpdate(ERS_HERE, get_name(), oss_prog.str());
     }
 
-    // tell the TriggerInhibitAgent the trigger_number of this TriggerRecord so that
-    // it can check whether an Inhibit needs to be asserted or cleared.
-    m_trigger_inhibit_agent->set_latest_trigger_number(trigger_record_ptr->get_header_ref().get_trigger_number());
-    if (m_trigger_decision_token_output_queue != nullptr) {
-      dfmessages::TriggerDecisionToken token;
-      token.run_number = m_run_number;
-      token.trigger_number = trigger_record_ptr->get_header_ref().get_trigger_number();
-      m_trigger_decision_token_output_queue->push(std::move(token));
-    }
+    dfmessages::TriggerDecisionToken token;
+    token.run_number = m_run_number;
+    token.trigger_number = trigger_record_ptr->get_header_ref().get_trigger_number();
+    m_trigger_decision_token_output_queue->push(std::move(token));
   }
 
   std::ostringstream oss_summ;

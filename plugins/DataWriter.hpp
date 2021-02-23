@@ -10,10 +10,10 @@
 #define DFMODULES_PLUGINS_DATAWRITER_HPP_
 
 #include "dfmodules/DataStore.hpp"
-#include "dfmodules/TriggerInhibitAgent.hpp"
 
 #include "appfwk/DAQModule.hpp"
 #include "appfwk/DAQSource.hpp"
+#include "appfwk/DAQSink.hpp"
 #include "appfwk/ThreadHelper.hpp"
 #include "dataformats/TriggerRecord.hpp"
 #include "dfmessages/TriggerDecisionToken.hpp"
@@ -72,7 +72,6 @@ private:
 
   // Worker(s)
   std::unique_ptr<DataStore> m_data_writer;
-  std::unique_ptr<TriggerInhibitAgent> m_trigger_inhibit_agent;
 
   inline double elapsed_seconds(std::chrono::steady_clock::time_point then,
                                 std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now()) const

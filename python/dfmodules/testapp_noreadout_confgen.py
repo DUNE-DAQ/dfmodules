@@ -40,7 +40,8 @@ def generate(
         TRIGGER_RATE_HZ = 1.0,
         DATA_FILE="./frames.bin",
         OUTPUT_PATH=".",
-        DISABLE_OUTPUT=False
+        DISABLE_OUTPUT=False,
+        TOKEN_COUNT=10
     ):
     
     trigger_interval_ticks = math.floor((1/TRIGGER_RATE_HZ) * CLOCK_SPEED_HZ/DATA_RATE_SLOWDOWN_FACTOR)
@@ -48,11 +49,9 @@ def generate(
     # Define modules and queues
     queue_bare_specs = [
             cmd.QueueSpec(inst="time_sync_q", kind='FollyMPMCQueue', capacity=100),
-            cmd.QueueSpec(inst="trigger_inhibit_q", kind='FollySPSCQueue', capacity=20),
             cmd.QueueSpec(inst="token_q", kind='FollySPSCQueue', capacity=20),
             cmd.QueueSpec(inst="trigger_decision_q", kind='FollySPSCQueue', capacity=20),
             cmd.QueueSpec(inst="trigger_decision_copy_for_bookkeeping", kind='FollySPSCQueue', capacity=20),
-            cmd.QueueSpec(inst="trigger_decision_copy_for_inhibit", kind='FollySPSCQueue', capacity=20),
             cmd.QueueSpec(inst="trigger_record_q", kind='FollySPSCQueue', capacity=20),
             cmd.QueueSpec(inst="data_fragments_q", kind='FollyMPMCQueue', capacity=100),
         ] + [
@@ -68,7 +67,6 @@ def generate(
     mod_specs = [
         mspec("tde", "TriggerDecisionEmulator", [
                         cmd.QueueInfo(name="time_sync_source", inst="time_sync_q", dir="input"),
-                        cmd.QueueInfo(name="trigger_inhibit_source", inst="trigger_inhibit_q", dir="input"),
                         cmd.QueueInfo(name="token_source", inst="token_q", dir="input"),
                         cmd.QueueInfo(name="trigger_decision_sink", inst="trigger_decision_q", dir="output"),
                     ]),
@@ -76,7 +74,6 @@ def generate(
         mspec("rqg", "RequestGenerator", [
                         cmd.QueueInfo(name="trigger_decision_input_queue", inst="trigger_decision_q", dir="input"),
                         cmd.QueueInfo(name="trigger_decision_for_event_building", inst="trigger_decision_copy_for_bookkeeping", dir="output"),
-                        cmd.QueueInfo(name="trigger_decision_for_inhibit", inst="trigger_decision_copy_for_inhibit", dir="output"),
                     ] + [
                         cmd.QueueInfo(name=f"data_request_{idx}_output_queue", inst=f"data_requests_{idx}", dir="output")
                             for idx in range(NUMBER_OF_DATA_PRODUCERS)
@@ -90,8 +87,6 @@ def generate(
 
         mspec("datawriter", "DataWriter", [
                         cmd.QueueInfo(name="trigger_record_input_queue", inst="trigger_record_q", dir="input"),
-                        cmd.QueueInfo(name="trigger_decision_for_inhibit", inst="trigger_decision_copy_for_inhibit", dir="input"),
-                        cmd.QueueInfo(name="trigger_inhibit_output_queue", inst="trigger_inhibit_q", dir="output"),
                     cmd.QueueInfo(name="token_output_queue", inst="token_q", dir="output"),
                     ]),
 
@@ -144,6 +139,7 @@ def generate(
                             general_queue_timeout=QUEUE_POP_WAIT_MS
                         )),
                 ("datawriter", dw.ConfParams(
+                            initial_token_count=TOKEN_COUNT,
                             data_store_parameters=hdf5ds.ConfParams(
                                 name="data_store",
                                 # type = "HDF5DataStore", # default
@@ -249,9 +245,10 @@ if __name__ == '__main__':
     @click.option('-t', '--trigger-rate-hz', default=1.0)
     @click.option('-d', '--data-file', type=click.Path(), default='./frames.bin')
     @click.option('-o', '--output-path', type=click.Path(), default='.')
+    @click.option('-c', '--token-count', default=10)
     @click.option('--disable-data-storage', is_flag=True)
     @click.argument('json_file', type=click.Path(), default='testapp_noreadout.json')
-    def cli(number_of_data_producers, data_rate_slowdown_factor, run_number, trigger_rate_hz, data_file, output_path, disable_data_storage, json_file):
+    def cli(number_of_data_producers, data_rate_slowdown_factor, run_number, trigger_rate_hz, data_file, output_path, token_count, disable_data_storage, json_file):
         """
           JSON_FILE: Input raw data file.
           JSON_FILE: Output json configuration file.
@@ -265,7 +262,8 @@ if __name__ == '__main__':
                     TRIGGER_RATE_HZ = trigger_rate_hz,
                     DATA_FILE = data_file,
                     OUTPUT_PATH = output_path,
-                    DISABLE_OUTPUT = disable_data_storage
+                    DISABLE_OUTPUT = disable_data_storage,
+                    TOKEN_COUNT = token_count
                 ))
 
         print(f"'{json_file}' generation completed.")

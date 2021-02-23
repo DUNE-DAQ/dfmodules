@@ -12,8 +12,8 @@ local types = {
     run_number: s.number("RunNumber", dtype="u8", doc="Run Number"),
 
     conf: s.record("ConfParams", [
-        s.field("threshold_for_inhibit", self.count, "5",
-                doc="Threshold (for number of triggers being processed) for generating a Trigger Inhibit"),
+        s.field("initial_token_count", self.count, "5",
+                doc="Number of tokens to send at the start of the run"),
         s.field("data_store_parameters", self.dsparams,
                 doc="Parameters that configure the DataStore associated with this DataWriter"),
     ], doc="DataWriter configuration parameters"),
