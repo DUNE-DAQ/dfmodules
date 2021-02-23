@@ -10,9 +10,8 @@
 #include "dfmodules/CommonIssues.hpp"
 #include "dfmodules/faketrigdecemu/Nljs.hpp"
 
-#include "TRACE/trace.h"
 #include "appfwk/DAQModuleHelper.hpp"
-#include "ers/ers.h"
+#include "logging/Logging.hpp"
 
 #include <chrono>
 #include <cstdlib>
@@ -23,9 +22,12 @@
 /**
  * @brief Name used by TRACE TLOG calls from this source file
  */
-#define TRACE_NAME "FakeTrigDecEmu"            // NOLINT
-#define TLVL_ENTER_EXIT_METHODS TLVL_DEBUG + 5 // NOLINT
-#define TLVL_WORK_STEPS TLVL_DEBUG + 10        // NOLINT
+#define TRACE_NAME "FakeTrigDecEmu" // NOLINT
+enum
+{
+  TLVL_ENTER_EXIT_METHODS = 5,
+  TLVL_WORK_STEPS = 10
+};
 
 namespace dunedaq {
 namespace dfmodules {
@@ -46,7 +48,7 @@ FakeTrigDecEmu::FakeTrigDecEmu(const std::string& name)
 void
 FakeTrigDecEmu::init(const data_t& init_data)
 {
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
   auto qi = appfwk::queue_index(init_data, { "trigger_decision_sink", "trigger_inhibit_source" });
   try {
     m_trigger_decision_output_queue.reset(new trigdecsink_t(qi["trigger_decision_sink"].inst));
@@ -63,42 +65,42 @@ FakeTrigDecEmu::init(const data_t& init_data)
   } catch (const ers::Issue& excpt) {
     throw InvalidQueueFatalError(ERS_HERE, get_name(), "buffer_token_source", excpt);
   }
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
 
 void
 FakeTrigDecEmu::do_conf(const data_t& payload)
 {
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
 
   faketrigdecemu::Conf tmpConfig = payload.get<faketrigdecemu::Conf>();
   m_sleep_msec_while_running = tmpConfig.sleep_msec_while_running;
 
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
 }
 
 void
 FakeTrigDecEmu::do_start(const data_t& /*args*/)
 {
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_start() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_start() method";
   m_thread.start_working_thread();
-  ERS_LOG(get_name() << " successfully started");
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
+  TLOG() << get_name() << " successfully started";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
 }
 
 void
 FakeTrigDecEmu::do_stop(const data_t& /*args*/)
 {
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_stop() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_stop() method";
   m_thread.stop_working_thread();
-  ERS_LOG(get_name() << " successfully stopped");
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_stop() method";
+  TLOG() << get_name() << " successfully stopped";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_stop() method";
 }
 
 void
 FakeTrigDecEmu::do_work(std::atomic<bool>& running_flag)
 {
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() method";
   int32_t triggerCount = 0;
   int32_t inhibit_message_count = 0;
   int32_t token_count = 0;
@@ -112,8 +114,8 @@ FakeTrigDecEmu::do_work(std::atomic<bool>& running_flag)
 
     bool wasSentSuccessfully = false;
     while (!wasSentSuccessfully && running_flag.load()) {
-      TLOG(TLVL_WORK_STEPS) << get_name() << ": Pushing the TriggerDecision for trigger number "
-                            << trigDecision.m_trigger_number << " onto the output queue";
+      TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Pushing the TriggerDecision for trigger number "
+                                  << trigDecision.m_trigger_number << " onto the output queue";
       try {
         m_trigger_decision_output_queue->push(trigDecision, m_queue_timeout);
         wasSentSuccessfully = true;
@@ -140,8 +142,8 @@ FakeTrigDecEmu::do_work(std::atomic<bool>& running_flag)
         m_trigger_inhibit_input_queue->pop(trig_inhibit_msg, (m_queue_timeout / 10));
         ++inhibit_message_count;
         got_inh_msg = true;
-        TLOG(TLVL_WORK_STEPS) << get_name() << ": Popped a TriggerInhibit message with busy state set to \""
-                              << trig_inhibit_msg.m_busy << "\" off the inhibit input queue";
+        TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Popped a TriggerInhibit message with busy state set to \""
+                                    << trig_inhibit_msg.m_busy << "\" off the inhibit input queue";
 
         // for now, we just throw these on the floor...
       } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
@@ -162,7 +164,7 @@ FakeTrigDecEmu::do_work(std::atomic<bool>& running_flag)
           dfmessages::TriggerDecisionToken td_token_msg;
         m_trigger_decision_token_input_queue->pop(td_token_msg);
           token_count++;
-          TLOG(TLVL_WORK_STEPS) << get_name() << ": Popped a TriggerDecisionToken message with run number \""
+          TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Popped a TriggerDecisionToken message with run number \""
                                 << td_token_msg.run_number << "\" off the token input queue";
 
       }
@@ -170,16 +172,17 @@ FakeTrigDecEmu::do_work(std::atomic<bool>& running_flag)
 
     auto time_to_wait =
       (start_time + std::chrono::milliseconds(m_sleep_msec_while_running)) - std::chrono::steady_clock::now();
-    TLOG(TLVL_WORK_STEPS) << get_name() << ": Start of sleep between fake triggers";
+    TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Start of sleep between fake triggers";
     std::this_thread::sleep_for(time_to_wait);
-    TLOG(TLVL_WORK_STEPS) << get_name() << ": End of sleep between fake triggers";
+    TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": End of sleep between fake triggers";
   }
 
   std::ostringstream oss_summ;
   oss_summ << ": Exiting the do_work() method, generated " << triggerCount << " Fake TriggerDecision messages "
            << "and received " << token_count << " TriggerDecisionToken messages and " << inhibit_message_count << " TriggerInhbit messages of all types (both Busy and Free).";
-  ers::log(ProgressUpdate(ERS_HERE, get_name(), oss_summ.str()));
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_work() method";
+  TLOG() << ProgressUpdate(ERS_HERE, get_name(), oss_summ.str());
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_work() method";
+
 }
 
 } // namespace dfmodules

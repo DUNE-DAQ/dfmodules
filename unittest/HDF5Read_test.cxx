@@ -9,8 +9,6 @@
 
 #include "HDF5DataStore.hpp"
 
-#include "ers/ers.h"
-
 #define BOOST_TEST_MODULE HDF5Read_test // NOLINT
 
 #include "boost/test/unit_test.hpp"
@@ -185,7 +183,7 @@ BOOST_AUTO_TEST_CASE(ReadSingleFile)
   const int dummydata_size = 7;
   const int run_number = 52;
   const int trigger_count = 5;
-  const std::string detector_name = "FELIX";
+  const std::string detector_name = "TPC";
   const int apa_count = 3;
   const int link_count = 1;
 
@@ -221,9 +219,9 @@ BOOST_AUTO_TEST_CASE(ReadSingleFile)
         data_block.m_data_size = dummydata_size;
         data_store_ptr->write(data_block);
         key_list.push_back(key);
-      }          // link number
-    }            // apa number
-  }              // trigger number
+      }                   // link number
+    }                     // apa number
+  }                       // trigger number
   data_store_ptr.reset(); // explicit destruction
 
   // create a new DataStore instance to read back the data that was written

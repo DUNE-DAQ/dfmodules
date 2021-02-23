@@ -10,8 +10,6 @@
 
 #include "HDF5DataStore.hpp"
 
-#include "ers/ers.h"
-
 #define BOOST_TEST_MODULE HDF5Combiner_test // NOLINT
 
 #include "boost/test/unit_test.hpp"
@@ -161,8 +159,9 @@ BOOST_AUTO_TEST_CASE(CombineFragmentsIntoEvents)
   // HDF5 format adds.  The HDF5 addition seems to be about 12%, so we allow for a 15%
   // difference, which is represented with the 0.15 in the third argument of the test call.)
   size_t single_file_size = std::filesystem::file_size(file_list[0]);
-  BOOST_REQUIRE_CLOSE_FRACTION(
-    static_cast<float>(single_file_size), static_cast<float>(events_to_generate * links_to_generate * dummydata_size), 0.15);
+  BOOST_REQUIRE_CLOSE_FRACTION(static_cast<float>(single_file_size),
+                               static_cast<float>(events_to_generate * links_to_generate * dummydata_size),
+                               0.15);
 
   // clean up all of the files that were created
   file_list = delete_files_matching_pattern(file_path, delete_pattern);

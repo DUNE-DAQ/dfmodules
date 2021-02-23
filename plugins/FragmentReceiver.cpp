@@ -9,12 +9,11 @@
 #include "FragmentReceiver.hpp"
 #include "dfmodules/CommonIssues.hpp"
 
-#include "TRACE/trace.h"
 #include "appfwk/DAQModuleHelper.hpp"
 #include "appfwk/cmd/Nljs.hpp"
 #include "dfmodules/fragmentreceiver/Nljs.hpp"
 #include "dfmodules/fragmentreceiver/Structs.hpp"
-#include "ers/ers.h"
+#include "logging/Logging.hpp"
 
 #include <chrono>
 #include <cstdlib>
@@ -25,18 +24,19 @@
 #include <vector>
 
 /**
- * @brief Name used by TRACE TLOG calls from this source file
+ * @brief TRACE debug levels used in this source file
  */
-#define TRACE_NAME "FragmentReceiver"          // NOLINT
-#define TLVL_ENTER_EXIT_METHODS TLVL_DEBUG + 5 // NOLINT
-#define TLVL_WORK_STEPS TLVL_DEBUG + 10        // NOLINT
-#define TLVL_BOOKKEEPING TLVL_DEBUG + 15       // NOLINT
+enum
+{
+  TLVL_ENTER_EXIT_METHODS = 5,
+  TLVL_WORK_STEPS = 10,
+  TLVL_BOOKKEEPING = 15
+};
 
 namespace dunedaq {
 namespace dfmodules {
 
-  using dataformats::TriggerRecordErrorBits ;
-
+using dataformats::TriggerRecordErrorBits;
 
 FragmentReceiver::FragmentReceiver(const std::string& name)
   : dunedaq::appfwk::DAQModule(name)
@@ -53,7 +53,7 @@ void
 FragmentReceiver::init(const data_t& init_data)
 {
 
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
 
   //--------------------------------
   // Get single queues
@@ -100,13 +100,13 @@ FragmentReceiver::init(const data_t& init_data)
     }
   }
 
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
 
 void
 FragmentReceiver::do_conf(const data_t& payload)
 {
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
 
   fragmentreceiver::ConfParams parsed_conf = payload.get<fragmentreceiver::ConfParams>();
 
@@ -114,36 +114,36 @@ FragmentReceiver::do_conf(const data_t& payload)
 
   m_queue_timeout = std::chrono::milliseconds(parsed_conf.general_queue_timeout);
 
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
 }
 
 void
 FragmentReceiver::do_start(const data_t& /*args*/)
 {
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_start() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_start() method";
   m_thread.start_working_thread();
-  ERS_LOG(get_name() << " successfully started");
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
+  TLOG() << get_name() << " successfully started";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
 }
 
 void
 FragmentReceiver::do_stop(const data_t& /*args*/)
 {
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_stop() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_stop() method";
   m_thread.stop_working_thread();
-  ERS_LOG(get_name() << " successfully stopped");
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_stop() method";
+  TLOG() << get_name() << " successfully stopped";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_stop() method";
 }
 
 void
 FragmentReceiver::do_work(std::atomic<bool>& running_flag)
 {
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() method";
   // uint32_t receivedCount = 0;
-  
+
   // clean books from possible previous memory
-  m_trigger_decisions.clear() ;
-  m_fragments.clear() ;
+  m_trigger_decisions.clear();
+  m_fragments.clear();
 
   // allocate queues
   trigger_decision_source_t decision_source(m_trigger_decision_source_name);
@@ -153,14 +153,14 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
     frag_sources.push_back(std::unique_ptr<fragment_source_t>(new fragment_source_t(m_fragment_source_names[i])));
   }
 
-  bool book_updates = false ; 
-  
-  while (running_flag.load() || book_updates ) {
+  bool book_updates = false;
 
-    book_updates =  read_queues( decision_source, frag_sources ) ;
+  while (running_flag.load() || book_updates) {
 
-    // TLOG(TLVL_WORK_STEPS) << "Decision size: " << m_trigger_decisions.size() ;
-    // TLOG(TLVL_WORK_STEPS) << "Frag size: " << m_fragments.size() ;
+    book_updates = read_queues(decision_source, frag_sources);
+
+    // TLOG_DEBUG(TLVL_WORK_STEPS) << "Decision size: " << m_trigger_decisions.size() ;
+    // TLOG_DEBUG(TLVL_WORK_STEPS) << "Frag size: " << m_fragments.size() ;
 
     //-------------------------------------------------
     // Check if some decisions are complete or timedout
@@ -170,21 +170,21 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
     if (book_updates) {
 
       std::ostringstream message;
-      TLOG(TLVL_BOOKKEEPING) << "Bookeeping status: " << m_trigger_decisions.size() << " decisions and "
-                             << m_fragments.size() << " Fragment stashes";
+      TLOG_DEBUG(TLVL_BOOKKEEPING) << "Bookeeping status: " << m_trigger_decisions.size() << " decisions and "
+                                   << m_fragments.size() << " Fragment stashes";
       message << "Trigger Decisions: ";
 
       for (const auto& d : m_trigger_decisions) {
         message << d.first << " with " << d.second.m_components.size() << " components, ";
       }
-      TLOG(TLVL_BOOKKEEPING) << message.str();
+      TLOG_DEBUG(TLVL_BOOKKEEPING) << message.str();
       message.str("");
       message << "Fragments: ";
       for (const auto& f : m_fragments) {
         message << f.first << " with " << f.second.size() << " fragments, ";
       }
 
-      TLOG(TLVL_BOOKKEEPING) << message.str();
+      TLOG_DEBUG(TLVL_BOOKKEEPING) << message.str();
       // ers::info(ProgressUpdate(ERS_HERE, get_name(), message.str()));
 
       std::vector<TriggerId> complete;
@@ -204,8 +204,8 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
             complete.push_back(it->first);
           } else {
             // std::ostringstream message ;
-            TLOG(TLVL_WORK_STEPS) << "Trigger decision " << it->first << " status: " << frag_it->second.size() << " / "
-                                  << it->second.m_components.size() << " Fragments";
+            TLOG_DEBUG(TLVL_WORK_STEPS) << "Trigger decision " << it->first << " status: " << frag_it->second.size()
+                                        << " / " << it->second.m_components.size() << " Fragments";
 
             // ers::error(ProgressUpdate(ERS_HERE, get_name(), message.str()));
           }
@@ -218,11 +218,11 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
       //-----------------------------------------------
 
       for (const auto& id : complete) {
-	
-	send_trigger_record( id, record_sink, running_flag ) ;
-	
-      }   // loop over compled trigger id
-      
+
+        send_trigger_record(id, record_sink, running_flag);
+
+      } // loop over compled trigger id
+
       //-------------------------------------------------
       // Check if some fragments are obsolete
       //--------------------------------------------------
@@ -231,7 +231,7 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
 
         for (auto frag_it = it->second.begin(); frag_it != it->second.end(); ++frag_it) {
 
-          if ( m_current_time > m_max_time_difference + (*frag_it)->get_trigger_timestamp()) {
+          if (m_current_time > m_max_time_difference + (*frag_it)->get_trigger_timestamp()) {
 
             ers::error(FragmentObsolete(ERS_HERE,
                                         (*frag_it)->get_trigger_number(),
@@ -251,46 +251,43 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
 
   } // working loop
 
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Starting draining phase ";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Starting draining phase ";
   std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
 
   // //-------------------------------------------------
   // // Here we drain what has been left from the running condition
   // //--------------------------------------------------
-  // read_queues( decision_source, frag_sources, true ) ; 
-    
+  // read_queues( decision_source, frag_sources, true ) ;
 
   // create all possible trigger record
-  std::vector<TriggerId> triggers ;
-  for ( const auto & entry : m_trigger_decisions ) {
-    triggers.push_back( entry.first ) ;
+  std::vector<TriggerId> triggers;
+  for (const auto& entry : m_trigger_decisions) {
+    triggers.push_back(entry.first);
   }
 
   // create the trigger record and send it
-  for ( const auto & t : triggers ) {
-    send_trigger_record( t, record_sink, running_flag ) ;
+  for (const auto& t : triggers) {
+    send_trigger_record(t, record_sink, running_flag);
   }
 
-  
   std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
 
   std::chrono::duration<double> time_span = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1);
 
   std::ostringstream oss_summ;
   oss_summ << ": Exiting the do_work() method, " << m_trigger_decisions.size() << " reminaing Trigger Decision and "
-           << m_fragments.size() << " remaining fragment stashes" << std::endl 
-	   << "Draining took : " << time_span.count() << " s" ;
-  ers::log(ProgressUpdate(ERS_HERE, get_name(), oss_summ.str()));
-  
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_work() method";
+           << m_fragments.size() << " remaining fragment stashes" << std::endl
+           << "Draining took : " << time_span.count() << " s";
+  TLOG() << ProgressUpdate(ERS_HERE, get_name(), oss_summ.str());
+
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_work() method";
 }
 
-bool 
-FragmentReceiver::read_queues( trigger_decision_source_t &  decision_source,  
-			       fragment_sources_t & frag_sources,  
-			       bool drain ) {
+bool
+FragmentReceiver::read_queues(trigger_decision_source_t& decision_source, fragment_sources_t& frag_sources, bool drain)
+{
 
-  bool book_updates = false ;
+  bool book_updates = false;
 
   // temp memory allocations
   dfmessages::TriggerDecision temp_dec;
@@ -298,8 +295,8 @@ FragmentReceiver::read_queues( trigger_decision_source_t &  decision_source,
   //-------------------------------------------------
   // Try to get a trigger decision of trigger decisions
   //--------------------------------------------------
-  
-  while ( decision_source.can_pop() ) {
+
+  while (decision_source.can_pop()) {
 
     try {
       decision_source.pop(temp_dec, m_queue_timeout);
@@ -308,51 +305,52 @@ FragmentReceiver::read_queues( trigger_decision_source_t &  decision_source,
       // some fraction of the times that we check, so we just continue on and try again
       continue;
     }
-    
+
     m_current_time = temp_dec.m_trigger_timestamp;
-    
+
     TriggerId temp_id(temp_dec);
     m_trigger_decisions[temp_id] = temp_dec;
-    
+
     book_updates = true;
 
-    if ( ! drain ) break ;
-    
+    if (!drain)
+      break;
+
   } // while decisions loop
-  
-    //-------------------------------------------------
-    // Try to get Fragments from every queue
-    //--------------------------------------------------
-  
+
+  //-------------------------------------------------
+  // Try to get Fragments from every queue
+  //--------------------------------------------------
+
   for (unsigned int j = 0; j < frag_sources.size(); ++j) {
-    
-    while ( frag_sources[j]->can_pop() ) {
+
+    while (frag_sources[j]->can_pop()) {
 
       std::unique_ptr<dataformats::Fragment> temp_fragment;
-      
+
       try {
-	frag_sources[j]->pop(temp_fragment, m_queue_timeout);
-	
+        frag_sources[j]->pop(temp_fragment, m_queue_timeout);
+
       } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
-	// it is perfectly reasonable that there might be no data in the queue
-	// some fraction of the times that we check, so we just continue on and try again
-	continue;
+        // it is perfectly reasonable that there might be no data in the queue
+        // some fraction of the times that we check, so we just continue on and try again
+        continue;
       }
-      
+
       TriggerId temp_id(*temp_fragment);
       m_fragments[temp_id].push_back(std::move(temp_fragment));
-      
+
       book_updates = true;
-      
-      if ( ! drain ) break ;
-      
+
+      if (!drain)
+        break;
+
     } // while loop over the j-th queue
 
   } // queue loop
 
-  return book_updates ;
+  return book_updates;
 }
-
 
 dataformats::TriggerRecord*
 FragmentReceiver::build_trigger_record(const TriggerId& id)
@@ -372,13 +370,13 @@ FragmentReceiver::build_trigger_record(const TriggerId& id)
   trig_rec_ptr->get_header_ref().set_trigger_number(trig_dec.m_trigger_number);
   trig_rec_ptr->get_header_ref().set_run_number(trig_dec.m_run_number);
   trig_rec_ptr->get_header_ref().set_trigger_timestamp(trig_dec.m_trigger_timestamp);
-  trig_rec_ptr->get_header_ref().set_trigger_type( trig_dec.m_trigger_type ) ;
-  
+  trig_rec_ptr->get_header_ref().set_trigger_type(trig_dec.m_trigger_type);
+
   auto frags_it = m_fragments.find(id);
   auto& frags = frags_it->second;
 
-  if ( trig_dec_comp.size() != frags.size() ) {
-    trig_rec_ptr->get_header_ref().set_error_bit( TriggerRecordErrorBits::kIncomplete, true) ;
+  if (trig_dec_comp.size() != frags.size()) {
+    trig_rec_ptr->get_header_ref().set_error_bit(TriggerRecordErrorBits::kIncomplete, true);
   }
 
   while (frags.size() > 0) {
@@ -392,13 +390,12 @@ FragmentReceiver::build_trigger_record(const TriggerId& id)
   return trig_rec_ptr;
 }
 
-
 bool
-FragmentReceiver::send_trigger_record(const TriggerId& id , trigger_record_sink_t & sink,
-				      std::atomic<bool> & running ) {
-  
+FragmentReceiver::send_trigger_record(const TriggerId& id, trigger_record_sink_t& sink, std::atomic<bool>& running)
+{
+
   std::unique_ptr<dataformats::TriggerRecord> temp_record(build_trigger_record(id));
-    
+
   bool wasSentSuccessfully = false;
   while (!wasSentSuccessfully) {
     try {
@@ -408,19 +405,18 @@ FragmentReceiver::send_trigger_record(const TriggerId& id , trigger_record_sink_
       std::ostringstream oss_warn;
       oss_warn << "push to output queue \"" << get_name() << "\"";
       ers::warning(dunedaq::appfwk::QueueTimeoutExpired(
-							ERS_HERE,
-							sink.get_name(),
-							oss_warn.str(),
-							std::chrono::duration_cast<std::chrono::milliseconds>(m_queue_timeout).count()));
+        ERS_HERE,
+        sink.get_name(),
+        oss_warn.str(),
+        std::chrono::duration_cast<std::chrono::milliseconds>(m_queue_timeout).count()));
     }
 
-    if ( ! running.load() ) break ;
+    if (!running.load())
+      break;
   } // push while loop
-  
-  return wasSentSuccessfully ;
 
+  return wasSentSuccessfully;
 }
-
 
 } // namespace dfmodules
 } // namespace dunedaq
