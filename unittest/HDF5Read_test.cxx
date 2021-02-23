@@ -9,8 +9,6 @@
 
 #include "HDF5DataStore.hpp"
 
-#include "ers/ers.h"
-
 #define BOOST_TEST_MODULE HDF5Read_test // NOLINT
 
 #include "boost/test/unit_test.hpp"
@@ -221,9 +219,9 @@ BOOST_AUTO_TEST_CASE(ReadSingleFile)
         data_block.m_data_size = dummydata_size;
         data_store_ptr->write(data_block);
         key_list.push_back(key);
-      }          // link number
-    }            // apa number
-  }              // trigger number
+      }                   // link number
+    }                     // apa number
+  }                       // trigger number
   data_store_ptr.reset(); // explicit destruction
 
   // create a new DataStore instance to read back the data that was written
