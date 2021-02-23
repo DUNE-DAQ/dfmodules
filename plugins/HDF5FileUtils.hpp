@@ -13,7 +13,6 @@
 #define DFMODULES_PLUGINS_HDF5FILEUTILS_HPP_
 
 #include "dfmodules/CommonIssues.hpp"
-#include "logging/Logging.hpp"
 
 #include "highfive/H5File.hpp"
 
@@ -114,7 +113,6 @@ get_all_dataset_paths(const HighFive::File& hdf_file)
   std::vector<std::string> top_level_names = hdf_file.listObjectNames();
   for (auto& top_level_name : top_level_names) {
     HighFive::ObjectType top_level_type = hdf_file.getObjectType(top_level_name);
-    // TLOG("HDF5FileUtils") << "Top level name and type: " << top_level_name << " " << ((int)top_level_type);
     if (top_level_type == HighFive::ObjectType::Dataset) {
       path_list.push_back(top_level_name);
     } else if (top_level_type == HighFive::ObjectType::Group) {
@@ -138,9 +136,7 @@ get_files_matching_pattern(const std::string& directory_path, const std::string&
   std::regex regexSearchPattern(filename_pattern);
   std::vector<std::string> file_list;
   for (const auto& entry : std::filesystem::directory_iterator(directory_path)) {
-    // TLOG("HDF5FileUtils") << "Directory element: " << entry.path().string();
     if (std::regex_match(entry.path().filename().string(), regexSearchPattern)) {
-      // TLOG("HDF5FileUtils") << "Matching directory element: " << entry.path().string();
       file_list.push_back(entry.path());
     }
   }
