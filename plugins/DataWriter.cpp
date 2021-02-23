@@ -62,7 +62,7 @@ DataWriter::init(const data_t& init_data)
     init_data, { "trigger_record_input_queue", "trigger_decision_for_inhibit", "trigger_inhibit_output_queue" });
   try {
     m_trigger_record_input_queue.reset(new trigrecsource_t(qi["trigger_record_input_queue"].inst));
-  } catch (const ers::Issue& excpt) {
+  } catch ( const ers::Issue& excpt) {
     throw InvalidQueueFatalError(ERS_HERE, get_name(), "trigger_record_input_queue", excpt);
   }
 
@@ -96,8 +96,14 @@ DataWriter::do_conf(const data_t& payload)
   TLOG_DEBUG(TLVL_CONFIG) << get_name() << ": threshold_for_inhibit is " << conf_params.threshold_for_inhibit;
   TLOG_DEBUG(TLVL_CONFIG) << get_name() << ": data_store_parameters are " << conf_params.data_store_parameters;
 
+
   // create the DataStore instance here
   m_data_writer = make_data_store(payload["data_store_parameters"]);
+  
+  // ensure that we have a valid dataWriter instance
+  if (m_data_writer.get() == nullptr) {
+    throw InvalidDataWriterError(ERS_HERE, get_name());
+  }
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
 }
@@ -170,11 +176,14 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
 
   // ensure that we have a valid dataWriter instance
   if (m_data_writer.get() == nullptr) {
-    throw InvalidDataWriterError(ERS_HERE, get_name());
+    // this check is done essentially to notify the user 
+    // in case the "start" has been called before the "conf"
+    ers::fatal( InvalidDataWriterError(ERS_HERE, get_name()) ) ;
   }
 
   std::chrono::steady_clock::time_point progress_report_time = std::chrono::steady_clock::now();
   while (running_flag.load() || m_trigger_record_input_queue->can_pop()) {
+
     std::unique_ptr<dataformats::TriggerRecord> trigger_record_ptr;
 
     // receive the next TriggerRecord
@@ -260,8 +269,13 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
 
       // write the TRH and the fragments as a set of data blocks
       if (m_data_storage_is_enabled) {
-        m_data_writer->write(data_block_list);
-        ++written_count;
+	try {
+	  m_data_writer->write(data_block_list);
+	  ++written_count;
+	}
+	catch(const ers::Issue& excpt) {
+	  ers::error( DataStoreWritingFailed( ERS_HERE, m_data_writer->get_name(), excpt) ) ;
+	}
       }
     }
 

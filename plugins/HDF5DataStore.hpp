@@ -35,6 +35,17 @@
 
 namespace dunedaq {
 
+
+/**
+ * @brief A ERS Issue to report an HDF5 exception
+ */
+ERS_DECLARE_ISSUE(dfmodules,          ///< Namespace
+                  HDF5Issue,          ///< Type of the Issue
+                  what,               ///< Log Message from the issue
+                  ((std::string)what) ///< Message parameters
+		  )
+
+
 ERS_DECLARE_ISSUE_BASE(dfmodules,
                        InvalidOperationMode,
                        appfwk::GeneralDAQModuleIssue,
@@ -75,6 +86,9 @@ ERS_DECLARE_ISSUE_BASE(dfmodules,
                          << " bytes free, and a single output file can take up to " << max_file_size_bytes << " bytes.",
                        ((std::string)name),
                        ((std::string)output_path)((size_t)free_bytes)((size_t)max_file_size_bytes))
+
+
+
 
 namespace dfmodules {
 
@@ -216,9 +230,11 @@ public:
         throw InvalidHDF5Dataset(ERS_HERE, get_name(), dataset_name, m_file_ptr->getName());
       }
     } catch (HighFive::DataSetException const& excpt) {
-      ers::error(HDF5DataSetError(ERS_HERE, get_name(), dataset_name, excpt.what()));
+      throw HDF5DataSetError(ERS_HERE, get_name(), dataset_name, excpt.what()) ;
     } catch (HighFive::Exception const& excpt) {
-      TLOG() << "Exception: " << excpt.what();
+      throw HDF5Issue( ERS_HERE, excpt.what(), excpt );
+    } catch (...) {
+      throw HDF5Issue( ERS_HERE, "Unknown exception thrown by HDF5" );
     }
 
     m_file_ptr->flush();
