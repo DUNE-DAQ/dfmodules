@@ -60,7 +60,7 @@ DataWriter::init(const data_t& init_data)
     init_data, { "trigger_record_input_queue", "trigger_decision_for_inhibit", "trigger_inhibit_output_queue" });
   try {
     m_trigger_record_input_queue.reset(new trigrecsource_t(qi["trigger_record_input_queue"].inst));
-  } catch (const ers::Issue& excpt) {
+  } catch ( const ers::Issue& excpt) {
     throw InvalidQueueFatalError(ERS_HERE, get_name(), "trigger_record_input_queue", excpt);
   }
 
@@ -270,8 +270,8 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
 	  m_data_writer->write(data_block_list);
 	  ++written_count;
 	}
-	catch( ) {
-	  ers::error( ) ;
+	catch(const ers::Issue& excpt) {
+	  ers::error( DataStoreWritingFailed( ERS_HERE, m_data_writer->get_name(), except) ) ;
 	}
       }
     }
