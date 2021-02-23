@@ -104,7 +104,6 @@ def generate_df(
         mspec("rqg", "RequestGenerator", [
                         cmd.QueueInfo(name="trigger_decision_input_queue", inst="trigger_decision_from_netq", dir="input"),
                         cmd.QueueInfo(name="trigger_decision_for_event_building", inst="trigger_decision_copy_for_bookkeeping", dir="output"),
-                        cmd.QueueInfo(name="trigger_decision_for_inhibit", inst="trigger_decision_copy_for_inhibit", dir="output"),
                     ] + [
                         cmd.QueueInfo(name=f"data_request_{idx}_output_queue", inst=f"data_requests_{idx}", dir="output")
                             for idx in range(NUMBER_OF_DATA_PRODUCERS)
@@ -118,8 +117,7 @@ def generate_df(
 
         mspec("datawriter", "DataWriter", [
                         cmd.QueueInfo(name="trigger_record_input_queue", inst="trigger_record_q", dir="input"),
-                        cmd.QueueInfo(name="trigger_decision_for_inhibit", inst="trigger_decision_copy_for_inhibit", dir="input"),
-                        cmd.QueueInfo(name="trigger_inhibit_output_queue", inst="token_to_netq", dir="output"),
+                        cmd.QueueInfo(name="token_output_queue", inst="token_to_netq", dir="output"),
                     ]),
 
         mspec("fake_timesync_source", "FakeTimeSyncSource", [
