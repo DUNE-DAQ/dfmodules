@@ -87,6 +87,12 @@ class HDF5DataStore : public DataStore
 {
 
 public:
+  enum
+  {
+    TLVL_BASIC = 2,
+    TLVL_FILE_SIZE = 5
+  };
+
   /**
    * @brief HDF5DataStore Constructor
    * @param name, path, filename, operationMode
@@ -100,7 +106,7 @@ public:
     , m_timestamp_substring_for_filename("_UnknownTime")
     , m_hashed_timeuser_substring_for_filename("_abcdef")
   {
-    TLOG_DEBUG(0) << get_name() << ": Configuration: " << conf;
+    TLOG_DEBUG(TLVL_BASIC) << get_name() << ": Configuration: " << conf;
 
     m_config_params = conf.get<hdf5datastore::ConfParams>();
     m_operation_mode = m_config_params.mode;
@@ -120,14 +126,16 @@ public:
     char* unp = getenv("USER");
     std::string tmp_string(unp);
     m_username_substring_for_filename = "_" + tmp_string;
-    TLOG_DEBUG(0) << get_name() << ": m_username_substring_for_filename: " << m_username_substring_for_filename;
+    TLOG_DEBUG(TLVL_BASIC) << get_name()
+                           << ": m_username_substring_for_filename: " << m_username_substring_for_filename;
   }
 
   virtual KeyedDataBlock read(const StorageKey& key)
   {
-    TLOG_DEBUG(0) << get_name() << ": going to read data block from triggerNumber/detectorType/apaNumber/linkNumber "
-                  << HDF5KeyTranslator::get_path_string(key, m_config_params.file_layout_parameters) << " from file "
-                  << HDF5KeyTranslator::get_file_name(key, m_config_params, m_file_index);
+    TLOG_DEBUG(TLVL_BASIC) << get_name()
+                           << ": going to read data block from triggerNumber/detectorType/apaNumber/linkNumber "
+                           << HDF5KeyTranslator::get_path_string(key, m_config_params.file_layout_parameters)
+                           << " from file " << HDF5KeyTranslator::get_file_name(key, m_config_params, m_file_index);
 
     // opening the file from Storage Key + configuration parameters
     std::string full_filename = HDF5KeyTranslator::get_file_name(key, m_config_params, m_file_index);
@@ -181,10 +189,11 @@ public:
     // m_file_ptr will be the handle to the Opened-File after a call to open_file_if_needed()
     open_file_if_needed(full_filename, HighFive::File::OpenOrCreate);
 
-    TLOG_DEBUG(0) << get_name() << ": Writing data with run number " << data_block.m_data_key.get_run_number()
-                  << " and trigger number " << data_block.m_data_key.get_trigger_number() << " and detector type "
-                  << data_block.m_data_key.get_detector_type() << " and apa/link number "
-                  << data_block.m_data_key.get_apa_number() << " / " << data_block.m_data_key.get_link_number();
+    TLOG_DEBUG(TLVL_BASIC) << get_name() << ": Writing data with run number " << data_block.m_data_key.get_run_number()
+                           << " and trigger number " << data_block.m_data_key.get_trigger_number()
+                           << " and detector type " << data_block.m_data_key.get_detector_type()
+                           << " and apa/link number " << data_block.m_data_key.get_apa_number() << " / "
+                           << data_block.m_data_key.get_link_number();
 
     std::vector<std::string> group_and_dataset_path_elements =
       HDF5KeyTranslator::get_path_elements(data_block.m_data_key, m_config_params.file_layout_parameters);
@@ -227,8 +236,8 @@ public:
     for (auto& data_block : data_block_list) {
       sum_of_sizes += data_block.m_data_size;
     }
-    TLOG_DEBUG(5) << get_name() << ": Checking file size, recorded=" << m_recorded_size
-                  << ", additional=" << sum_of_sizes << ", max=" << m_max_file_size;
+    TLOG_DEBUG(TLVL_FILE_SIZE) << get_name() << ": Checking file size, recorded=" << m_recorded_size
+                               << ", additional=" << sum_of_sizes << ", max=" << m_max_file_size;
     if ((m_recorded_size + sum_of_sizes) > (m_max_file_size)) {
       ++m_file_index;
       m_recorded_size = 0;
@@ -253,10 +262,10 @@ public:
 
     for (auto& filename : fileList) {
       std::unique_ptr<HighFive::File> local_file_ptr(new HighFive::File(filename, HighFive::File::ReadOnly));
-      TLOG_DEBUG(0) << get_name() << ": Opened HDF5 file " << filename;
+      TLOG_DEBUG(TLVL_BASIC) << get_name() << ": Opened HDF5 file " << filename;
 
       std::vector<std::string> pathList = HDF5FileUtils::get_all_dataset_paths(*local_file_ptr);
-      TLOG_DEBUG(0) << get_name() << ": Path list has element count: " << pathList.size();
+      TLOG_DEBUG(TLVL_BASIC) << get_name() << ": Path list has element count: " << pathList.size();
 
       for (auto& path : pathList) {
         StorageKey thisKey(0, 0, "", 0, 0);
@@ -282,18 +291,18 @@ public:
   void prepare_for_run(dataformats::run_number_t /*run_number*/)
   {
     struct statvfs vfs_results;
-    TLOG_DEBUG(0) << get_name() << ": Preparing to get the statvfs results for path: \"" << m_path << "\"";
+    TLOG_DEBUG(TLVL_BASIC) << get_name() << ": Preparing to get the statvfs results for path: \"" << m_path << "\"";
 
     int retval = statvfs(m_path.c_str(), &vfs_results);
-    TLOG_DEBUG(0) << get_name() << ": statvfs return code is " << retval;
+    TLOG_DEBUG(TLVL_BASIC) << get_name() << ": statvfs return code is " << retval;
     if (retval != 0) {
       throw InvalidOutputPath(ERS_HERE, get_name(), m_path);
     }
 
     size_t free_space = vfs_results.f_bsize * vfs_results.f_bavail;
-    TLOG_DEBUG(0) << get_name() << ": Free space on disk with path \"" << m_path << "\" is " << free_space
-                  << " bytes. This will be compared with the maximum size of a single file (" << m_max_file_size
-                  << ") as a simple test to see if there is enough free space.";
+    TLOG_DEBUG(TLVL_BASIC) << get_name() << ": Free space on disk with path \"" << m_path << "\" is " << free_space
+                           << " bytes. This will be compared with the maximum size of a single file ("
+                           << m_max_file_size << ") as a simple test to see if there is enough free space.";
     if (free_space < m_max_file_size) {
       throw InsufficientDiskSpace(ERS_HERE, get_name(), m_path, free_space, m_max_file_size);
     }
@@ -301,7 +310,8 @@ public:
     // create the timestamp substring that is part of unique-ifying the filename, for later use
     time_t now = time(0);
     m_timestamp_substring_for_filename = "_" + boost::posix_time::to_iso_string(boost::posix_time::from_time_t(now));
-    TLOG_DEBUG(0) << get_name() << ": m_timestamp_substring_for_filename: " << m_timestamp_substring_for_filename;
+    TLOG_DEBUG(TLVL_BASIC) << get_name()
+                           << ": m_timestamp_substring_for_filename: " << m_timestamp_substring_for_filename;
 
     // the following code demonstrates how we could create a unique hash for use in the filename
     std::string work_string = m_username_substring_for_filename + m_timestamp_substring_for_filename;
@@ -403,17 +413,17 @@ private:
       }
 
       // opening file for the first time OR something changed in the name or the way of opening the file
-      TLOG_DEBUG(0) << get_name() << ": going to open file " << unique_filename << " with open_flags "
-                    << std::to_string(open_flags);
+      TLOG_DEBUG(TLVL_BASIC) << get_name() << ": going to open file " << unique_filename << " with open_flags "
+                             << std::to_string(open_flags);
       m_basic_name_of_open_file = file_name;
       m_open_flags_of_open_file = open_flags;
       m_file_ptr.reset(new HighFive::File(unique_filename, open_flags));
-      TLOG_DEBUG(0) << get_name() << "Created HDF5 file.";
+      TLOG_DEBUG(TLVL_BASIC) << get_name() << "Created HDF5 file.";
 
     } else {
 
-      TLOG_DEBUG(0) << get_name() << ": Pointer file to  " << m_basic_name_of_open_file
-                    << " was already opened with open_flags " << std::to_string(m_open_flags_of_open_file);
+      TLOG_DEBUG(TLVL_BASIC) << get_name() << ": Pointer file to  " << m_basic_name_of_open_file
+                             << " was already opened with open_flags " << std::to_string(m_open_flags_of_open_file);
     }
   }
 };
