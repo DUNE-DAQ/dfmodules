@@ -23,7 +23,7 @@ namespace dfmodules {
  */
 struct Key
 {
-  Key(int run_number, int trigger_number, std::string detector_type, int apa_number, int link_number)
+  Key(int run_number, int trigger_number, std::string detector_type, int apa_number, int link_number) noexcept
     : m_run_number(run_number)
     , m_trigger_number(trigger_number)
     , m_detector_type(detector_type)
@@ -48,7 +48,7 @@ public:
   static constexpr int s_invalid_apa_number = std::numeric_limits<int>::max();
   static constexpr int s_invalid_link_number = std::numeric_limits<int>::max();
 
-  StorageKey(int run_number, int trigger_number, std::string detector_type, int apa_number, int link_number)
+  StorageKey(int run_number, int trigger_number, std::string detector_type, int apa_number, int link_number) noexcept
     : m_key(run_number, trigger_number, detector_type, apa_number, link_number)
   {}
   ~StorageKey() {} // NOLINT
