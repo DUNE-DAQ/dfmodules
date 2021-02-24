@@ -164,10 +164,10 @@ FakeReqGen::do_work(std::atomic<bool>& running_flag)
       auto first_map_element = trigDecision.components.begin();
       if (first_map_element != trigDecision.components.end()) {
         dataformats::ComponentRequest comp_req = *first_map_element;
-        dataReq.window_start = comp_req.window_start;
+        dataReq.window_begin = comp_req.window_begin;
         dataReq.window_end = comp_req.window_end;
       } else {
-        dataReq.window_start = 0x123456789abcdef0; // placeholder
+        dataReq.window_begin = 0x123456789abcdef0; // placeholder
         dataReq.window_end = 0x123456789abcdef0;   // placeholder
       }
 

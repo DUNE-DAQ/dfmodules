@@ -184,11 +184,11 @@ RequestGenerator::do_work(std::atomic<bool>& running_flag)
 
       dataformats::ComponentRequest comp_req = *it;
       dataformats::GeoID geoid_req = comp_req.component;
-      dataReq.window_start = comp_req.window_start;
+      dataReq.window_begin = comp_req.window_begin;
       dataReq.window_end = comp_req.window_end;
 
       TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": apa_number " << geoid_req.apa_number << ": link_number "
-                            << geoid_req.link_number << ": window_start " << comp_req.window_start
+                            << geoid_req.link_number << ": window_begin " << comp_req.window_begin
                             << ": window_end " << comp_req.window_end;
 
       // find the queue for geoid_req in the map

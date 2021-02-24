@@ -133,7 +133,7 @@ FakeDataProd::do_work(std::atomic<bool>& running_flag)
     data_fragment_ptr->set_error_bits(0);
     data_fragment_ptr->set_type(0x123); // placeholder
     data_fragment_ptr->set_trigger_timestamp(data_request.trigger_timestamp);
-    data_fragment_ptr->set_window_start(data_request.window_start);
+    data_fragment_ptr->set_window_begin(data_request.window_begin);
     data_fragment_ptr->set_window_end(data_request.window_end);
 
     // to-do?  add config parameter for artificial delay?
