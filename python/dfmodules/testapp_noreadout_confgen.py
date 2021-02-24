@@ -5,14 +5,14 @@ moo.io.default_load_path = get_moo_model_path()
 
 # Load configuration types
 import moo.otypes
-moo.otypes.load_types('appfwk-cmd-schema.jsonnet')
-moo.otypes.load_types('trigemu-TriggerDecisionEmulator-schema.jsonnet')
-moo.otypes.load_types('trigemu-FakeTimeSyncSource-schema.jsonnet')
-moo.otypes.load_types('dfmodules-RequestGenerator-schema.jsonnet')
-moo.otypes.load_types('dfmodules-FragmentReceiver-schema.jsonnet')
-moo.otypes.load_types('dfmodules-DataWriter-schema.jsonnet')
-moo.otypes.load_types('dfmodules-HDF5DataStore-schema.jsonnet')
-moo.otypes.load_types('dfmodules-FakeDataProd-schema.jsonnet')
+moo.otypes.load_types('appfwk/cmd.jsonnet')
+moo.otypes.load_types('trigemu/TriggerDecisionEmulator.jsonnet')
+moo.otypes.load_types('trigemu/FakeTimeSyncSource.jsonnet')
+moo.otypes.load_types('dfmodules/RequestGenerator.jsonnet')
+moo.otypes.load_types('dfmodules/FragmentReceiver.jsonnet')
+moo.otypes.load_types('dfmodules/DataWriter.jsonnet')
+moo.otypes.load_types('dfmodules/HDF5DataStore.jsonnet')
+moo.otypes.load_types('dfmodules/FakeDataProd.jsonnet')
 
 # Import new types
 import dunedaq.appfwk.cmd as cmd # AddressedCmd, 
