@@ -10,7 +10,7 @@
 #include "dfmodules/CommonIssues.hpp"
 
 #include "appfwk/DAQModuleHelper.hpp"
-#include "appfwk/cmd/Nljs.hpp"
+#include "appfwk/app/Nljs.hpp"
 #include "dfmodules/fragmentreceiver/Nljs.hpp"
 #include "dfmodules/fragmentreceiver/Structs.hpp"
 #include "logging/Logging.hpp"
@@ -85,7 +85,7 @@ FragmentReceiver::init(const data_t& init_data)
   //----------------------
 
   // set names for the
-  auto ini = init_data.get<appfwk::cmd::ModInit>();
+  auto ini = init_data.get<appfwk::app::ModInit>();
 
   // get the names for the fragment queues
   for (const auto& qitem : ini.qinfos) {
