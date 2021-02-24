@@ -13,8 +13,10 @@ local info = {
 
    info: s.record("Info", [
        s.field("class_name", self.cl, "datawriterinfo", doc="Info class name"),
-       s.field("records", self.uint8, 0, doc="Integral trigger records counter"), 
-       s.field("new_records", self.uint8, 0, doc="Incremental trigger records counter"), 
+       s.field("records_received", self.uint8, 0, doc="Integral trigger records received counter"), 
+       s.field("new_records_received", self.uint8, 0, doc="Incremental trigger records received counter"), 
+       s.field("records_written", self.uint8, 0, doc="Integral trigger records written counter"), 
+       s.field("new_records_written", self.uint8, 0, doc="Incremental trigger records written counter"), 
    ], doc="Data writer information")
 };
 

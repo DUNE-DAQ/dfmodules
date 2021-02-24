@@ -121,7 +121,7 @@ void
 FragmentReceiver::do_start(const data_t& /*args*/)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_start() method";
-  m_thread.start_working_thread();
+  m_thread.start_working_thread(get_name());
   TLOG() << get_name() << " successfully started";
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
 }
