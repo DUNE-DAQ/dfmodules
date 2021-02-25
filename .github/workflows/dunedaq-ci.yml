@@ -13,7 +13,7 @@ jobs:
     steps:
       - name: compile in sl7 container
         uses: actions/checkout@v2
-	with:
+        with:
           container: dunedaq/sl7-minimal:develop_ci
           id: compile_in_sl7_docker
           args:
