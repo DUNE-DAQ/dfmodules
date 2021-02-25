@@ -195,7 +195,6 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
     ers::fatal(InvalidDataWriterError(ERS_HERE, get_name()));
   }
 
-  std::chrono::steady_clock::time_point progress_report_time = std::chrono::steady_clock::now();
   while (running_flag.load() || m_trigger_record_input_queue->can_pop()) {
 
     std::unique_ptr<dataformats::TriggerRecord> trigger_record_ptr;
