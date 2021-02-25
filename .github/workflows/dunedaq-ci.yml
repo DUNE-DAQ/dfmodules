@@ -12,10 +12,8 @@ jobs:
 
     steps:
       - name: My first step
-        uses: monacorp/action-name@main
-        with:
-          entrypoint: /bin/echo
-          args: The ${{ github.event_name }} event triggered this step.
+        run: The ${{ github.event_name }} event triggered this step for ${{ github.repository }} repository.
+        shell: bash
 
       - name: compile in sl7 container
         uses: actions/checkout@v2
