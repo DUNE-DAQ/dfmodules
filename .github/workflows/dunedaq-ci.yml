@@ -11,9 +11,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
-
       - name: compile in sl7 container
+        uses: actions/checkout@v2
         container: dunedaq/sl7-minimal:develop_ci
         id: compile_in_sl7_docker
         args:
