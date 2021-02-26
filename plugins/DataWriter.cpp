@@ -11,6 +11,7 @@
 #include "dfmodules/KeyedDataBlock.hpp"
 #include "dfmodules/StorageKey.hpp"
 #include "dfmodules/datawriter/Nljs.hpp"
+#include "dfmodules/datawriterinfo/Nljs.hpp"
 
 #include "appfwk/DAQModuleHelper.hpp"
 #include "dataformats/Fragment.hpp"
@@ -74,6 +75,18 @@ DataWriter::init(const data_t& init_data)
 }
 
 void
+DataWriter::get_info(opmonlib::InfoCollector& ci, int /*level*/)
+{
+  datawriterinfo::Info dwi;
+
+  dwi.records_received = m_records_received_tot.load();
+  dwi.new_records_received = m_records_received.exchange(0);
+  dwi.records_written = m_records_written_tot.load();
+  dwi.new_records_written = m_records_written.exchange(0);
+
+  ci.add(dwi);
+}
+void
 DataWriter::do_conf(const data_t& payload)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
@@ -122,7 +135,7 @@ DataWriter::do_start(const data_t& payload)
     m_trigger_decision_token_output_queue->push(std::move(token));
   }
 
-  m_thread.start_working_thread();
+  m_thread.start_working_thread(get_name());
 
   TLOG() << get_name() << " successfully started";
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
@@ -161,8 +174,10 @@ void
 DataWriter::do_work(std::atomic<bool>& running_flag)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() method";
-  int32_t received_count = 0;
-  int32_t written_count = 0;
+  m_records_received = 0;
+  m_records_received_tot = 0;
+  m_records_written = 0;
+  m_records_written_tot = 0;
 
   // ensure that we have a valid dataWriter instance
   if (m_data_writer.get() == nullptr) {
@@ -171,7 +186,6 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
     ers::fatal(InvalidDataWriterError(ERS_HERE, get_name()));
   }
 
-  std::chrono::steady_clock::time_point progress_report_time = std::chrono::steady_clock::now();
   while (running_flag.load() || m_trigger_record_input_queue->can_pop()) {
 
     std::unique_ptr<dataformats::TriggerRecord> trigger_record_ptr;
@@ -179,7 +193,8 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
     // receive the next TriggerRecord
     try {
       m_trigger_record_input_queue->pop(trigger_record_ptr, m_queue_timeout);
-      ++received_count;
+      ++m_records_received;
+      ++m_records_received_tot;
       TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Popped the TriggerRecord for trigger number "
                                   << trigger_record_ptr->get_header_ref().get_trigger_number()
                                   << " off the input queue";
@@ -193,7 +208,7 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
     // In this "if" statement, I deliberately compare the result of (N mod prescale) to 1
     // instead of zero, since I think that it would be nice to always get the first event
     // written out.
-    if (m_data_storage_prescale <= 1 || ((received_count % m_data_storage_prescale) == 1)) {
+    if (m_data_storage_prescale <= 1 || ((m_records_received_tot.load() % m_data_storage_prescale) == 1)) {
       std::vector<KeyedDataBlock> data_block_list;
 
       // First deal with the trigger record header
@@ -261,22 +276,12 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
       if (m_data_storage_is_enabled) {
         try {
           m_data_writer->write(data_block_list);
-          ++written_count;
+          ++m_records_written;
+          ++m_records_written_tot;
         } catch (const ers::Issue& excpt) {
           ers::error(DataStoreWritingFailed(ERS_HERE, m_data_writer->get_name(), excpt));
         }
       }
-    }
-
-    // progress updates
-    std::chrono::steady_clock::time_point current_time = std::chrono::steady_clock::now();
-    if (elapsed_seconds(progress_report_time, current_time) >= 3.0) {
-      progress_report_time = current_time;
-      std::ostringstream oss_prog;
-      oss_prog << ": Processing trigger number " << trigger_record_ptr->get_header_ref().get_trigger_number()
-               << ", this is one of " << received_count << " trigger records received so far. " << written_count
-               << " trigger records have been written to the data store.";
-      TLOG() << ProgressUpdate(ERS_HERE, get_name(), oss_prog.str());
     }
 
     dfmessages::TriggerDecisionToken token;
@@ -285,9 +290,6 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
     m_trigger_decision_token_output_queue->push(std::move(token));
   }
 
-  std::ostringstream oss_summ;
-  oss_summ << ": Exiting the do_work() method, received trigger record messages for " << received_count << " triggers.";
-  TLOG() << ProgressUpdate(ERS_HERE, get_name(), oss_summ.str());
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_work() method";
 }
 

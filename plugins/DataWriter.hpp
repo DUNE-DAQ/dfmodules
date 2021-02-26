@@ -44,6 +44,7 @@ public:
   DataWriter& operator=(DataWriter&&) = delete;      ///< DataWriter is not move-assignable
 
   void init(const data_t&) override;
+  void get_info(opmonlib::InfoCollector& ci, int level) override;
 
 private:
   // Commands
@@ -72,6 +73,11 @@ private:
 
   // Worker(s)
   std::unique_ptr<DataStore> m_data_writer;
+
+  std::atomic<uint64_t> m_records_received = { 0 };
+  std::atomic<uint64_t> m_records_received_tot = { 0 };
+  std::atomic<uint64_t> m_records_written = { 0 };
+  std::atomic<uint64_t> m_records_written_tot = { 0 };
 
   inline double elapsed_seconds(std::chrono::steady_clock::time_point then,
                                 std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now()) const

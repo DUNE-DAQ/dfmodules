@@ -17,18 +17,18 @@ moo.io.default_load_path = get_moo_model_path()
 
 # Load configuration types
 import moo.otypes
-moo.otypes.load_types('appfwk-cmd-schema.jsonnet')
-moo.otypes.load_types('trigemu-TriggerDecisionEmulator-schema.jsonnet')
-moo.otypes.load_types('trigemu-FakeTimeSyncSource-schema.jsonnet')
-moo.otypes.load_types('dfmodules-RequestGenerator-schema.jsonnet')
-moo.otypes.load_types('dfmodules-FragmentReceiver-schema.jsonnet')
-moo.otypes.load_types('dfmodules-DataWriter-schema.jsonnet')
-moo.otypes.load_types('dfmodules-HDF5DataStore-schema.jsonnet')
-moo.otypes.load_types('dfmodules-FakeDataProd-schema.jsonnet')
-moo.otypes.load_types('nwqueueadapters-QueueToNetwork-schema.jsonnet')
-moo.otypes.load_types('nwqueueadapters-NetworkToQueue-schema.jsonnet')
-moo.otypes.load_types('serialization-NetworkObjectReceiver-schema.jsonnet')
-moo.otypes.load_types('serialization-NetworkObjectSender-schema.jsonnet')
+moo.otypes.load_types('appfwk/cmd.jsonnet')
+moo.otypes.load_types('trigemu/TriggerDecisionEmulator.jsonnet')
+moo.otypes.load_types('trigemu/FakeTimeSyncSource.jsonnet')
+moo.otypes.load_types('dfmodules/requestgenerator.jsonnet')
+moo.otypes.load_types('dfmodules/fragmentreceiver.jsonnet')
+moo.otypes.load_types('dfmodules/datawriter.jsonnet')
+moo.otypes.load_types('dfmodules/hdf5datastore.jsonnet')
+moo.otypes.load_types('dfmodules/fakedataprod.jsonnet')
+moo.otypes.load_types('nwqueueadapters/QueueToNetwork.jsonnet')
+moo.otypes.load_types('nwqueueadapters/NetworkToQueue.jsonnet')
+moo.otypes.load_types('serialization/NetworkObjectReceiver.jsonnet')
+moo.otypes.load_types('serialization/NetworkObjectSender.jsonnet')
 
 # Import new types
 import dunedaq.appfwk.cmd as cmd # AddressedCmd, 
