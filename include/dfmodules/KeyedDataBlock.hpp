@@ -29,7 +29,7 @@ public:
   const void* m_unowned_data_start;
   std::unique_ptr<char> m_owned_data_start;
 
-  explicit KeyedDataBlock(const StorageKey& theKey)
+  explicit KeyedDataBlock(const StorageKey& theKey) noexcept
     : m_data_key(theKey)
   {}
 

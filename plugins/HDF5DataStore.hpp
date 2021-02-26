@@ -35,6 +35,15 @@
 
 namespace dunedaq {
 
+/**
+ * @brief A ERS Issue to report an HDF5 exception
+ */
+ERS_DECLARE_ISSUE(dfmodules,          ///< Namespace
+                  HDF5Issue,          ///< Type of the Issue
+                  what,               ///< Log Message from the issue
+                  ((std::string)what) ///< Message parameters
+)
+
 ERS_DECLARE_ISSUE_BASE(dfmodules,
                        InvalidOperationMode,
                        appfwk::GeneralDAQModuleIssue,
@@ -141,7 +150,13 @@ public:
     std::string full_filename = HDF5KeyTranslator::get_file_name(key, m_config_params, m_file_index);
 
     // m_file_ptr will be the handle to the Opened-File after a call to open_file_if_needed()
-    open_file_if_needed(full_filename, HighFive::File::ReadOnly);
+    try {
+      open_file_if_needed(full_filename, HighFive::File::ReadOnly);
+    } catch (HighFive::Exception const& excpt) {
+      throw HDF5Issue(ERS_HERE, excpt.what(), excpt);
+    } catch (...) {
+      throw HDF5Issue(ERS_HERE, "Unknown exception thrown by HDF5");
+    }
 
     std::vector<std::string> group_and_dataset_path_elements =
       HDF5KeyTranslator::get_path_elements(key, m_config_params.file_layout_parameters);
@@ -187,7 +202,13 @@ public:
     std::string full_filename = HDF5KeyTranslator::get_file_name(data_block.m_data_key, m_config_params, m_file_index);
 
     // m_file_ptr will be the handle to the Opened-File after a call to open_file_if_needed()
-    open_file_if_needed(full_filename, HighFive::File::OpenOrCreate);
+    try {
+      open_file_if_needed(full_filename, HighFive::File::OpenOrCreate);
+    } catch (HighFive::Exception const& excpt) {
+      throw HDF5Issue(ERS_HERE, excpt.what(), excpt);
+    } catch (...) {
+      throw HDF5Issue(ERS_HERE, "Unknown exception thrown by HDF5");
+    }
 
     TLOG_DEBUG(TLVL_BASIC) << get_name() << ": Writing data with run number " << data_block.m_data_key.get_run_number()
                            << " and trigger number " << data_block.m_data_key.get_trigger_number()
@@ -216,9 +237,11 @@ public:
         throw InvalidHDF5Dataset(ERS_HERE, get_name(), dataset_name, m_file_ptr->getName());
       }
     } catch (HighFive::DataSetException const& excpt) {
-      ers::error(HDF5DataSetError(ERS_HERE, get_name(), dataset_name, excpt.what()));
+      throw HDF5DataSetError(ERS_HERE, get_name(), dataset_name, excpt.what());
     } catch (HighFive::Exception const& excpt) {
-      TLOG() << "Exception: " << excpt.what();
+      throw HDF5Issue(ERS_HERE, excpt.what(), excpt);
+    } catch (...) {
+      throw HDF5Issue(ERS_HERE, "Unknown exception thrown by HDF5");
     }
 
     m_file_ptr->flush();
