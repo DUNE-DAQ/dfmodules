@@ -241,7 +241,7 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
 
         // print out some debug information, if requested
         TLOG_DEBUG(TLVL_FRAGMENT_HEADER_DUMP)
-          << get_name() << ": Partial(?) contents of the Fragment from link " << frag_ptr->get_link_id().m_link_number;
+          << get_name() << ": Partial(?) contents of the Fragment from link " << frag_ptr->get_link_id().link_number;
         const size_t number_of_32bit_values_per_row = 5;
         const size_t max_number_of_rows = 5;
         int number_of_32bit_values_to_print =
@@ -272,8 +272,8 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
         StorageKey fragment_skey(frag_ptr->get_run_number(),
                                  frag_ptr->get_trigger_number(),
                                  "TPC",
-                                 frag_ptr->get_link_id().m_apa_number,
-                                 frag_ptr->get_link_id().m_link_number);
+                                 frag_ptr->get_link_id().apa_number,
+                                 frag_ptr->get_link_id().link_number);
         KeyedDataBlock data_block(fragment_skey);
         data_block.m_unowned_data_start = frag_ptr->get_storage_location();
         data_block.m_data_size = frag_ptr->get_size();

@@ -175,7 +175,7 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
       message << "Trigger Decisions: ";
 
       for (const auto& d : m_trigger_decisions) {
-        message << d.first << " with " << d.second.m_components.size() << " components, ";
+        message << d.first << " with " << d.second.components.size() << " components, ";
       }
       TLOG_DEBUG(TLVL_BOOKKEEPING) << message.str();
       message.str("");
@@ -200,13 +200,12 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
 
         if (frag_it != m_fragments.end()) {
 
-          if (frag_it->second.size() >= it->second.m_components.size()) {
+          if (frag_it->second.size() >= it->second.components.size()) {
             complete.push_back(it->first);
           } else {
             // std::ostringstream message ;
-            TLOG_DEBUG(TLVL_WORK_STEPS) << "Trigger decision " << it->first << " status: " << frag_it->second.size()
-                                        << " / " << it->second.m_components.size() << " Fragments";
-
+            TLOG_DEBUG(TLVL_WORK_STEPS) << "Trigger decision " << it->first << " status: " << frag_it->second.size() << " / "
+                                  << it->second.components.size() << " Fragments";
             // ers::error(ProgressUpdate(ERS_HERE, get_name(), message.str()));
           }
         }
@@ -305,9 +304,9 @@ FragmentReceiver::read_queues(trigger_decision_source_t& decision_source, fragme
       // some fraction of the times that we check, so we just continue on and try again
       continue;
     }
-
-    m_current_time = temp_dec.m_trigger_timestamp;
-
+    
+    m_current_time = temp_dec.trigger_timestamp;
+    
     TriggerId temp_id(temp_dec);
     m_trigger_decisions[temp_id] = temp_dec;
 
@@ -359,24 +358,19 @@ FragmentReceiver::build_trigger_record(const TriggerId& id)
   auto trig_dec_it = m_trigger_decisions.find(id);
   const dfmessages::TriggerDecision& trig_dec = trig_dec_it->second;
 
-  // Create a trigger decision components vector
-  std::vector<dunedaq::dataformats::ComponentRequest> trig_dec_comp;
-  for (auto elem : trig_dec.m_components) {
-    trig_dec_comp.push_back(elem.second);
-  }
+  dataformats::TriggerRecord* trig_rec_ptr = new dataformats::TriggerRecord(trig_dec.components);
 
-  dataformats::TriggerRecord* trig_rec_ptr = new dataformats::TriggerRecord(trig_dec_comp);
-
-  trig_rec_ptr->get_header_ref().set_trigger_number(trig_dec.m_trigger_number);
-  trig_rec_ptr->get_header_ref().set_run_number(trig_dec.m_run_number);
-  trig_rec_ptr->get_header_ref().set_trigger_timestamp(trig_dec.m_trigger_timestamp);
-  trig_rec_ptr->get_header_ref().set_trigger_type(trig_dec.m_trigger_type);
-
+  trig_rec_ptr->get_header_ref().set_trigger_number(trig_dec.trigger_number);
+  trig_rec_ptr->get_header_ref().set_run_number(trig_dec.run_number);
+  trig_rec_ptr->get_header_ref().set_trigger_timestamp(trig_dec.trigger_timestamp);
+  trig_rec_ptr->get_header_ref().set_trigger_type( trig_dec.trigger_type ) ;
+  
   auto frags_it = m_fragments.find(id);
   auto& frags = frags_it->second;
 
-  if (trig_dec_comp.size() != frags.size()) {
-    trig_rec_ptr->get_header_ref().set_error_bit(TriggerRecordErrorBits::kIncomplete, true);
+  if (trig_dec.components.size() != frags.size()) {
+    trig_rec_ptr->get_header_ref().set_error_bit( TriggerRecordErrorBits::kIncomplete, true) ;
+
   }
 
   while (frags.size() > 0) {
