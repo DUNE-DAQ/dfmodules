@@ -97,8 +97,8 @@ TriggerInhibitAgent::do_work(std::atomic<bool>& running_flag)
       m_trigger_decision_source->pop(trig_dec, m_queue_timeout);
       ++received_message_count;
       TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Popped the TriggerDecision for trigger number "
-                                  << trig_dec.m_trigger_number << " off the input queue";
-      m_trigger_number_at_start_of_processing_chain.store(trig_dec.m_trigger_number);
+                                  << trig_dec.trigger_number << " off the input queue";
+      m_trigger_number_at_start_of_processing_chain.store(trig_dec.trigger_number);
     } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
       // it is perfectly reasonable that there will be no data in the queue some
       // fraction of the times that we check, so we just continue on and try again later
@@ -131,13 +131,13 @@ TriggerInhibitAgent::do_work(std::atomic<bool>& running_flag)
       if ((std::chrono::steady_clock::now() - last_sent_time) >= chrono_min_interval_between_inhibit_messages) {
         dfmessages::TriggerInhibit inhibit_message;
         if (requested_state == busy_state) {
-          inhibit_message.m_busy = true;
+          inhibit_message.busy = true;
         } else {
-          inhibit_message.m_busy = false;
+          inhibit_message.busy = false;
         }
 
         TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Pushing a TriggerInhibit message with busy state set to "
-                                    << inhibit_message.m_busy << " onto the output queue";
+                                    << inhibit_message.busy << " onto the output queue";
         try {
           m_trigger_inhibit_sink->push(inhibit_message, m_queue_timeout);
           ++sent_message_count;
