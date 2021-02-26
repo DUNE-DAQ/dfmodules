@@ -8,11 +8,11 @@ import moo.otypes
 moo.otypes.load_types('appfwk/cmd.jsonnet')
 moo.otypes.load_types('trigemu/TriggerDecisionEmulator.jsonnet')
 moo.otypes.load_types('trigemu/FakeTimeSyncSource.jsonnet')
-moo.otypes.load_types('dfmodules/RequestGenerator.jsonnet')
-moo.otypes.load_types('dfmodules/FragmentReceiver.jsonnet')
-moo.otypes.load_types('dfmodules/DataWriter.jsonnet')
-moo.otypes.load_types('dfmodules/HDF5DataStore.jsonnet')
-moo.otypes.load_types('dfmodules/FakeDataProd.jsonnet')
+moo.otypes.load_types('dfmodules/requestgenerator.jsonnet')
+moo.otypes.load_types('dfmodules/fragmentreceiver.jsonnet')
+moo.otypes.load_types('dfmodules/datawriter.jsonnet')
+moo.otypes.load_types('dfmodules/hdf5datastore.jsonnet')
+moo.otypes.load_types('dfmodules/fakedataprod.jsonnet')
 
 # Import new types
 import dunedaq.appfwk.cmd as cmd # AddressedCmd, 
