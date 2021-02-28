@@ -79,10 +79,7 @@ private:
   using trigdecsink_t = dunedaq::appfwk::DAQSink<dfmessages::TriggerDecision>;
   std::unique_ptr<trigdecsink_t> m_trigger_decision_output_queue;
   using datareqsink_t = dunedaq::appfwk::DAQSink<dfmessages::DataRequest>;
-  //  std::vector<std::unique_ptr<datareqsink_t>> m_data_request_output_queues;
   std::map<dataformats::GeoID, std::string> m_map_geoid_queues;
-  // Worker(s)
-  std::unique_ptr<TriggerDecisionForwarder> m_trigger_decision_forwarder;
 };
 } // namespace dfmodules
 } // namespace dunedaq

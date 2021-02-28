@@ -52,9 +52,8 @@ void
 RequestGenerator::init(const data_t& init_data)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
-  auto qilist = appfwk::queue_index(
-    init_data,
-    { "trigger_decision_input_queue", "trigger_decision_for_event_building", "trigger_decision_for_inhibit" });
+  auto qilist =
+    appfwk::queue_index(init_data, { "trigger_decision_input_queue", "trigger_decision_for_event_building" });
   try {
     m_trigger_decision_input_queue.reset(new trigdecsource_t(qilist["trigger_decision_input_queue"].inst));
   } catch (const ers::Issue& excpt) {
@@ -64,13 +63,6 @@ RequestGenerator::init(const data_t& init_data)
     m_trigger_decision_output_queue.reset(new trigdecsink_t(qilist["trigger_decision_for_event_building"].inst));
   } catch (const ers::Issue& excpt) {
     throw InvalidQueueFatalError(ERS_HERE, get_name(), "trigger_decision_for_event_building", excpt);
-  }
-  try {
-    std::unique_ptr<trigdecsink_t> trig_dec_queue_for_inh;
-    trig_dec_queue_for_inh.reset(new trigdecsink_t(qilist["trigger_decision_for_inhibit"].inst));
-    m_trigger_decision_forwarder.reset(new TriggerDecisionForwarder(get_name(), std::move(trig_dec_queue_for_inh)));
-  } catch (const ers::Issue& excpt) {
-    throw InvalidQueueFatalError(ERS_HERE, get_name(), "trigger_decision_for_inhibit", excpt);
   }
 
   auto ini = init_data.get<appfwk::app::ModInit>();
@@ -108,7 +100,6 @@ void
 RequestGenerator::do_start(const data_t& /*args*/)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_start() method";
-  m_trigger_decision_forwarder->start_forwarding();
   m_thread.start_working_thread();
   TLOG() << get_name() << " successfully started";
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
@@ -118,7 +109,6 @@ void
 RequestGenerator::do_stop(const data_t& /*args*/)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_stop() method";
-  m_trigger_decision_forwarder->stop_forwarding();
   m_thread.stop_working_thread();
   TLOG() << get_name() << " successfully stopped";
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_stop() method";
@@ -172,15 +162,14 @@ RequestGenerator::do_work(std::atomic<bool>& running_flag)
     // Spawn each component_data_request to the corresponding link_data_handler_queue
     //----------------------------------------
     for (auto it = trigDecision.components.begin(); it != trigDecision.components.end(); it++) {
-      TLOG_DEBUG(TLVL_WORK_STEPS) << get_name()
-                                  << ": trigDecision.components.size :" << trigDecision.components.size();
+      TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": trigDecision.components.size :" << trigDecision.components.size();
       dfmessages::DataRequest dataReq;
       dataReq.trigger_number = trigDecision.trigger_number;
       dataReq.run_number = trigDecision.run_number;
       dataReq.trigger_timestamp = trigDecision.trigger_timestamp;
 
       TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": trig_number " << dataReq.trigger_number << ": run_number "
-                            << dataReq.run_number << ": trig_timestamp " << dataReq.trigger_timestamp;
+                                  << dataReq.run_number << ": trig_timestamp " << dataReq.trigger_timestamp;
 
       dataformats::ComponentRequest comp_req = *it;
       dataformats::GeoID geoid_req = comp_req.component;
@@ -188,8 +177,8 @@ RequestGenerator::do_work(std::atomic<bool>& running_flag)
       dataReq.window_end = comp_req.window_end;
 
       TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": apa_number " << geoid_req.apa_number << ": link_number "
-                            << geoid_req.link_number << ": window_begin " << comp_req.window_begin
-                            << ": window_end " << comp_req.window_end;
+                                  << geoid_req.link_number << ": window_begin " << comp_req.window_begin
+                                  << ": window_end " << comp_req.window_end;
 
       // find the queue for geoid_req in the map
       auto it_req = map.find(geoid_req);
@@ -206,7 +195,7 @@ RequestGenerator::do_work(std::atomic<bool>& running_flag)
       wasSentSuccessfully = false;
       do {
         TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Pushing the DataRequest from trigger number "
-                              << dataReq.trigger_number << " onto output queue :" << queue->get_name();
+                                    << dataReq.trigger_number << " onto output queue :" << queue->get_name();
 
         // push data request into the corresponding queue
         try {
@@ -223,8 +212,6 @@ RequestGenerator::do_work(std::atomic<bool>& running_flag)
         }
       } while (!wasSentSuccessfully && running_flag.load());
     }
-
-    m_trigger_decision_forwarder->set_latest_trigger_decision(trigDecision);
 
     // TLOG(TLVL_WORK_STEPS) << get_name() << ": Start of sleep while waiting for run Stop";
     // std::this_thread::sleep_for(std::chrono::milliseconds(m_sleep_msec_while_running));

@@ -90,7 +90,7 @@ def print_frag_header(data_array):
   print("Frag size:\t\t", bytes_to_int((fragment_size)[::-1]))
   print("Trig number:\t\t", bytes_to_int((trigger_number)[::-1]))
   print("Trig timestamp:\t\t", bytes_to_int((trigger_timestamp)[::-1]),
-        "("+str(datetime.datetime.fromtimestamp(bytes_to_int((trigger_timestamp)[::-1])/50000000))+")")
+        "("+str(datetime.datetime.fromtimestamp(float(bytes_to_int((trigger_timestamp)[::-1]))/50000000.0))+")")
   print("Window offset:\t\t", bytes_to_int((window_offset)[::-1]))
   print("Window width:\t\t", bytes_to_int((window_width)[::-1]))
   print("Run number:\t\t", bytes_to_int((run_number)[::-1]))
@@ -118,7 +118,7 @@ def print_trh(data_array):
   print("Version:\t\t", bytes_to_int((version)[::-1]))
   print("Trig number:\t\t", bytes_to_int((trigger_number)[::-1]))
   print("Trig timestamp:\t\t", bytes_to_int((trigger_timestamp)[::-1]),
-        "("+str(datetime.datetime.fromtimestamp(bytes_to_int((trigger_timestamp)[::-1])/50000000))+")")
+        "("+str(datetime.datetime.fromtimestamp(float(bytes_to_int((trigger_timestamp)[::-1]))/50000000.0))+")")
   print("Num req comp:\t\t", bytes_to_int((numb_req_comp)[::-1]))
   print("Run number:\t\t", bytes_to_int((run_number)[::-1]))
   print("Error bits:\t\t", bytes_to_int((error_bits)[::-1]))

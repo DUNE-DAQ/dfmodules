@@ -204,8 +204,8 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
             complete.push_back(it->first);
           } else {
             // std::ostringstream message ;
-            TLOG_DEBUG(TLVL_WORK_STEPS) << "Trigger decision " << it->first << " status: " << frag_it->second.size() << " / "
-                                  << it->second.components.size() << " Fragments";
+            TLOG_DEBUG(TLVL_WORK_STEPS) << "Trigger decision " << it->first << " status: " << frag_it->second.size()
+                                        << " / " << it->second.components.size() << " Fragments";
             // ers::error(ProgressUpdate(ERS_HERE, get_name(), message.str()));
           }
         }
@@ -304,9 +304,9 @@ FragmentReceiver::read_queues(trigger_decision_source_t& decision_source, fragme
       // some fraction of the times that we check, so we just continue on and try again
       continue;
     }
-    
+
     m_current_time = temp_dec.trigger_timestamp;
-    
+
     TriggerId temp_id(temp_dec);
     m_trigger_decisions[temp_id] = temp_dec;
 
@@ -363,14 +363,13 @@ FragmentReceiver::build_trigger_record(const TriggerId& id)
   trig_rec_ptr->get_header_ref().set_trigger_number(trig_dec.trigger_number);
   trig_rec_ptr->get_header_ref().set_run_number(trig_dec.run_number);
   trig_rec_ptr->get_header_ref().set_trigger_timestamp(trig_dec.trigger_timestamp);
-  trig_rec_ptr->get_header_ref().set_trigger_type( trig_dec.trigger_type ) ;
-  
+  trig_rec_ptr->get_header_ref().set_trigger_type(trig_dec.trigger_type);
+
   auto frags_it = m_fragments.find(id);
   auto& frags = frags_it->second;
 
   if (trig_dec.components.size() != frags.size()) {
-    trig_rec_ptr->get_header_ref().set_error_bit( TriggerRecordErrorBits::kIncomplete, true) ;
-
+    trig_rec_ptr->get_header_ref().set_error_bit(TriggerRecordErrorBits::kIncomplete, true);
   }
 
   while (frags.size() > 0) {

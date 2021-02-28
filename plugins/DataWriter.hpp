@@ -10,12 +10,13 @@
 #define DFMODULES_PLUGINS_DATAWRITER_HPP_
 
 #include "dfmodules/DataStore.hpp"
-#include "dfmodules/TriggerInhibitAgent.hpp"
 
 #include "appfwk/DAQModule.hpp"
+#include "appfwk/DAQSink.hpp"
 #include "appfwk/DAQSource.hpp"
 #include "appfwk/ThreadHelper.hpp"
 #include "dataformats/TriggerRecord.hpp"
+#include "dfmessages/TriggerDecisionToken.hpp"
 
 #include <chrono>
 #include <memory>
@@ -61,15 +62,17 @@ private:
   std::chrono::milliseconds m_queue_timeout;
   bool m_data_storage_is_enabled;
   int m_data_storage_prescale;
+  int m_initial_tokens;
   dataformats::run_number_t m_run_number;
 
   // Queue(s)
   using trigrecsource_t = dunedaq::appfwk::DAQSource<std::unique_ptr<dataformats::TriggerRecord>>;
   std::unique_ptr<trigrecsource_t> m_trigger_record_input_queue;
+  using tokensink_t = dunedaq::appfwk::DAQSink<dfmessages::TriggerDecisionToken>;
+  std::unique_ptr<tokensink_t> m_trigger_decision_token_output_queue;
 
   // Worker(s)
   std::unique_ptr<DataStore> m_data_writer;
-  std::unique_ptr<TriggerInhibitAgent> m_trigger_inhibit_agent;
 
   std::atomic<uint64_t> m_records_received = { 0 };
   std::atomic<uint64_t> m_records_received_tot = { 0 };

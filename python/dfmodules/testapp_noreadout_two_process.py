@@ -5,7 +5,7 @@
 # MiniDAQApp v1, but in two processes. One process contains the
 # TriggerDecisionEmulator, while the other process contains everything
 # else. The network communication is done with the QueueToNetwork and
-# NetworkToQueue modules from the networkqueue package.
+# NetworkToQueue modules from the nwqueueadapters package.
 #
 # As with testapp_noreadout_confgen.py
 # in this directory, no modules from the readout package are used: the
@@ -63,7 +63,8 @@ def generate_df(
         TRIGGER_RATE_HZ = 1.0,
         DATA_FILE="./frames.bin",
         OUTPUT_PATH=".",
-        DISABLE_OUTPUT=False
+        DISABLE_OUTPUT=False,
+        TOKEN_COUNT=10
     ):
     """Generate the json configuration for the readout and DF process"""
    
@@ -72,10 +73,9 @@ def generate_df(
     # Define modules and queues
     queue_bare_specs = [
             cmd.QueueSpec(inst="time_sync_to_netq", kind='FollyMPMCQueue', capacity=100),
-            cmd.QueueSpec(inst="trigger_inhibit_to_netq", kind='FollySPSCQueue', capacity=20),
+            cmd.QueueSpec(inst="token_to_netq", kind='FollySPSCQueue', capacity=20),
             cmd.QueueSpec(inst="trigger_decision_from_netq", kind='FollySPSCQueue', capacity=20),
             cmd.QueueSpec(inst="trigger_decision_copy_for_bookkeeping", kind='FollySPSCQueue', capacity=20),
-            cmd.QueueSpec(inst="trigger_decision_copy_for_inhibit", kind='FollySPSCQueue', capacity=20),
             cmd.QueueSpec(inst="trigger_record_q", kind='FollySPSCQueue', capacity=20),
             cmd.QueueSpec(inst="data_fragments_q", kind='FollyMPMCQueue', capacity=100),
         ] + [
@@ -93,8 +93,8 @@ def generate_df(
                         cmd.QueueInfo(name="output", inst="trigger_decision_from_netq", dir="output")
                     ]),
 
-        mspec("qton_triginh", "QueueToNetwork", [
-                        cmd.QueueInfo(name="input", inst="trigger_inhibit_to_netq", dir="input")
+        mspec("qton_token", "QueueToNetwork", [
+                        cmd.QueueInfo(name="input", inst="token_to_netq", dir="input")
                     ]),
 
         mspec("qton_timesync", "QueueToNetwork", [
@@ -104,7 +104,6 @@ def generate_df(
         mspec("rqg", "RequestGenerator", [
                         cmd.QueueInfo(name="trigger_decision_input_queue", inst="trigger_decision_from_netq", dir="input"),
                         cmd.QueueInfo(name="trigger_decision_for_event_building", inst="trigger_decision_copy_for_bookkeeping", dir="output"),
-                        cmd.QueueInfo(name="trigger_decision_for_inhibit", inst="trigger_decision_copy_for_inhibit", dir="output"),
                     ] + [
                         cmd.QueueInfo(name=f"data_request_{idx}_output_queue", inst=f"data_requests_{idx}", dir="output")
                             for idx in range(NUMBER_OF_DATA_PRODUCERS)
@@ -118,8 +117,7 @@ def generate_df(
 
         mspec("datawriter", "DataWriter", [
                         cmd.QueueInfo(name="trigger_record_input_queue", inst="trigger_record_q", dir="input"),
-                        cmd.QueueInfo(name="trigger_decision_for_inhibit", inst="trigger_decision_copy_for_inhibit", dir="input"),
-                        cmd.QueueInfo(name="trigger_inhibit_output_queue", inst="trigger_inhibit_to_netq", dir="output"),
+                        cmd.QueueInfo(name="token_output_queue", inst="token_to_netq", dir="output"),
                     ]),
 
         mspec("fake_timesync_source", "FakeTimeSyncSource", [
@@ -150,8 +148,8 @@ def generate_df(
                                            )
                  ),
 
-                ("qton_triginh", qton.Conf(msg_type="dunedaq::dfmessages::TriggerInhibit",
-                                           msg_module_name="TriggerInhibitNQ",
+                ("qton_token", qton.Conf(msg_type="dunedaq::dfmessages::TriggerDecisionToken",
+                                           msg_module_name="TriggerDecisionTokenNQ",
                                            sender_config=nos.Conf(ipm_plugin_type="ZmqSender",
                                                                   address= "tcp://127.0.0.1:12346",
                                                                   stype="msgpack")
@@ -175,6 +173,7 @@ def generate_df(
                             general_queue_timeout=QUEUE_POP_WAIT_MS
                         )),
                 ("datawriter", dw.ConfParams(
+                            initial_token_count=TOKEN_COUNT,
                             data_store_parameters=hdf5ds.ConfParams(
                                 name="data_store",
                                 # type = "HDF5DataStore", # default
@@ -206,7 +205,7 @@ def generate_df(
     startpars = cmd.StartParams(run=RUN_NUMBER)
     startcmd = mcmd("start", [
             ("ntoq_trigdec", startpars),
-            ("qton_triginh", startpars),
+            ("qton_token", startpars),
             ("qton_timesync", startpars),
             ("datawriter", dw.StartParams(
                 run=RUN_NUMBER,
@@ -224,7 +223,7 @@ def generate_df(
     stopcmd = mcmd("stop", [
             ("ntoq_trigdec", emptypars),
             ("qton_timesync", emptypars),
-            ("qton_triginh", emptypars),
+            ("qton_token", emptypars),
             ("fake_timesync_source", emptypars),
             ("rqg", emptypars),
             ("fakedataprod_.*", emptypars),
@@ -259,7 +258,7 @@ def generate_trigemu(
     # Define modules and queues
     queue_bare_specs = [
             cmd.QueueSpec(inst="time_sync_from_netq", kind='FollySPSCQueue', capacity=100),
-            cmd.QueueSpec(inst="trigger_inhibit_from_netq", kind='FollySPSCQueue', capacity=20),
+            cmd.QueueSpec(inst="token_from_netq", kind='FollySPSCQueue', capacity=20),
             cmd.QueueSpec(inst="trigger_decision_to_netq", kind='FollySPSCQueue', capacity=20),
         ]
 
@@ -272,8 +271,8 @@ def generate_trigemu(
                         cmd.QueueInfo(name="input", inst="trigger_decision_to_netq", dir="input")
                     ]),
 
-        mspec("ntoq_triginh", "NetworkToQueue", [
-                        cmd.QueueInfo(name="output", inst="trigger_inhibit_from_netq", dir="output")
+        mspec("ntoq_token", "NetworkToQueue", [
+                        cmd.QueueInfo(name="output", inst="token_from_netq", dir="output")
                     ]),
 
         mspec("ntoq_timesync", "NetworkToQueue", [
@@ -282,7 +281,7 @@ def generate_trigemu(
 
         mspec("tde", "TriggerDecisionEmulator", [
                         cmd.QueueInfo(name="time_sync_source", inst="time_sync_from_netq", dir="input"),
-                        cmd.QueueInfo(name="trigger_inhibit_source", inst="trigger_inhibit_from_netq", dir="input"),
+                        cmd.QueueInfo(name="token_source", inst="token_from_netq", dir="input"),
                         cmd.QueueInfo(name="trigger_decision_sink", inst="trigger_decision_to_netq", dir="output"),
                     ]),
         ]
@@ -304,8 +303,8 @@ def generate_trigemu(
                                            )
                  ),
 
-                 ("ntoq_triginh", ntoq.Conf(msg_type="dunedaq::dfmessages::TriggerInhibit",
-                                            msg_module_name="TriggerInhibitNQ",
+                 ("ntoq_token", ntoq.Conf(msg_type="dunedaq::dfmessages::TriggerDecisionToken",
+                                            msg_module_name="TriggerDecisionTokenNQ",
                                             receiver_config=nor.Conf(ipm_plugin_type="ZmqReceiver",
                                                                      address= "tcp://127.0.0.1:12346")
                                             )
@@ -339,7 +338,7 @@ def generate_trigemu(
     startpars = cmd.StartParams(run=RUN_NUMBER)
     startcmd = mcmd("start", [
             ("qton_trigdec", startpars),
-            ("ntoq_triginh", startpars),
+            ("ntoq_token", startpars),
             ("ntoq_timesync", startpars),
             ("tde", startpars),
         ])
@@ -349,7 +348,7 @@ def generate_trigemu(
     stopcmd = mcmd("stop", [
             ("qton_trigdec", emptypars),
             ("ntoq_timesync", emptypars),
-            ("ntoq_triginh", emptypars),
+            ("ntoq_token", emptypars),
             ("tde", emptypars),
         ])
 
@@ -388,8 +387,9 @@ if __name__ == '__main__':
     @click.option('-d', '--data-file', type=click.Path(), default='./frames.bin')
     @click.option('-o', '--output-path', type=click.Path(), default='.')
     @click.option('--disable-data-storage', is_flag=True)
+    @click.option('-c', '--token-count', default=10)
     @click.argument('json_file_base', type=click.Path(), default='testapp-noreadout-two-process')
-    def cli(number_of_data_producers, data_rate_slowdown_factor, run_number, trigger_rate_hz, data_file, output_path, disable_data_storage, json_file_base):
+    def cli(number_of_data_producers, data_rate_slowdown_factor, run_number, trigger_rate_hz, data_file, output_path, disable_data_storage, token_count, json_file_base):
         """
           JSON_FILE: Input raw data file.
           JSON_FILE: Output json configuration file.
@@ -416,7 +416,8 @@ if __name__ == '__main__':
                     TRIGGER_RATE_HZ = trigger_rate_hz,
                     DATA_FILE = data_file,
                     OUTPUT_PATH = output_path,
-                    DISABLE_OUTPUT = disable_data_storage
+                    DISABLE_OUTPUT = disable_data_storage,
+                    TOKEN_COUNT = token_count
                 ))
 
     cli()
