@@ -162,15 +162,14 @@ RequestGenerator::do_work(std::atomic<bool>& running_flag)
     // Spawn each component_data_request to the corresponding link_data_handler_queue
     //----------------------------------------
     for (auto it = trigDecision.components.begin(); it != trigDecision.components.end(); it++) {
-      TLOG_DEBUG(TLVL_WORK_STEPS) << get_name()
-                                  << ": trigDecision.components.size :" << trigDecision.components.size();
+      TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": trigDecision.components.size :" << trigDecision.components.size();
       dfmessages::DataRequest dataReq;
       dataReq.trigger_number = trigDecision.trigger_number;
       dataReq.run_number = trigDecision.run_number;
       dataReq.trigger_timestamp = trigDecision.trigger_timestamp;
 
       TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": trig_number " << dataReq.trigger_number << ": run_number "
-                            << dataReq.run_number << ": trig_timestamp " << dataReq.trigger_timestamp;
+                                  << dataReq.run_number << ": trig_timestamp " << dataReq.trigger_timestamp;
 
       dataformats::ComponentRequest comp_req = *it;
       dataformats::GeoID geoid_req = comp_req.component;
@@ -178,8 +177,8 @@ RequestGenerator::do_work(std::atomic<bool>& running_flag)
       dataReq.window_end = comp_req.window_end;
 
       TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": apa_number " << geoid_req.apa_number << ": link_number "
-                            << geoid_req.link_number << ": window_begin " << comp_req.window_begin
-                            << ": window_end " << comp_req.window_end;
+                                  << geoid_req.link_number << ": window_begin " << comp_req.window_begin
+                                  << ": window_end " << comp_req.window_end;
 
       // find the queue for geoid_req in the map
       auto it_req = map.find(geoid_req);
@@ -196,7 +195,7 @@ RequestGenerator::do_work(std::atomic<bool>& running_flag)
       wasSentSuccessfully = false;
       do {
         TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Pushing the DataRequest from trigger number "
-                              << dataReq.trigger_number << " onto output queue :" << queue->get_name();
+                                    << dataReq.trigger_number << " onto output queue :" << queue->get_name();
 
         // push data request into the corresponding queue
         try {
