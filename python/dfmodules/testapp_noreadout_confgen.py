@@ -180,13 +180,9 @@ def generate(
     jstr = json.dumps(confcmd.pod(), indent=4, sort_keys=True)
     print(jstr)
 
-    startpars = rccmd.StartParams(run=RUN_NUMBER)
+    startpars = rccmd.StartParams(run=RUN_NUMBER, disable_data_storage=DISABLE_OUTPUT)
     startcmd = mrccmd("start", "CONFIGURED", "RUNNING", [
-            ("datawriter", dw.StartParams(
-                run=RUN_NUMBER,
-                disable_data_storage=DISABLE_OUTPUT,
-                data_storage_prescale=1
-              )),
+            ("datawriter", startpars),
             ("ffr", startpars),
             ("fakedataprod_.*", startpars),
             ("rqg", startpars),
