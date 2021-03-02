@@ -55,9 +55,9 @@ DataTransferModule::do_conf(const data_t& payload)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
 
-  datatransfermodule::Conf tmpConfig = payload.get<datatransfermodule::Conf>();
+  datatransfermodule::ConfParams temp_config = payload.get<datatransfermodule::ConfParams>();
 
-  m_sleep_msec_wile_running = tmpConfig.sleep_msec_while_running;
+  m_sleep_msec_wile_running = temp_config.sleep_msec_while_running;
 
   m_input_data_store = make_data_store(payload["input_data_store_parameters"]);
 
