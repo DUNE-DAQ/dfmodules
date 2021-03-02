@@ -54,9 +54,8 @@ DataGenerator::do_conf(const data_t& payload)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
 
-  datagenerator::Conf temp_config = payload.get<datagenerator::Conf>();
-  TLOG() << "Testing Conf creation. io_size is " << temp_config.io_size << ", and directory_path is \""
-         << temp_config.data_store_parameters.directory_path << "\"";
+  datagenerator::ConfParams temp_config = payload.get<datagenerator::ConfParams>();
+  TLOG() << "Testing Conf creation. io_size is " << temp_config.io_size;
 
   m_geo_loc_count =
     payload.value<size_t>("geo_location_count", static_cast<size_t>(m_reasonable_default_geo_loc_count));
