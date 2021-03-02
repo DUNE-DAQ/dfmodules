@@ -131,7 +131,7 @@ FakeDataProd::do_work(std::atomic<bool>& running_flag)
     geo_location.link_number = m_fake_link_number;
     data_fragment_ptr->set_link_id(geo_location);
     data_fragment_ptr->set_error_bits(0);
-    data_fragment_ptr->set_type(static_cast<dataformats::FragmentType>(0x123)); // placeholder
+    data_fragment_ptr->set_type(dataformats::FragmentType::kFakeData);
     data_fragment_ptr->set_trigger_timestamp(data_request.trigger_timestamp);
     data_fragment_ptr->set_window_begin(data_request.window_begin);
     data_fragment_ptr->set_window_end(data_request.window_end);
