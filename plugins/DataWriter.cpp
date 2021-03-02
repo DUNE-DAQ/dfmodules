@@ -17,6 +17,7 @@
 #include "dataformats/Fragment.hpp"
 #include "dfmessages/TriggerDecision.hpp"
 #include "logging/Logging.hpp"
+#include "rcif/cmd/Nljs.hpp"
 
 #include <algorithm>
 #include <cstdlib>
@@ -93,7 +94,9 @@ DataWriter::do_conf(const data_t& payload)
 
   datawriter::ConfParams conf_params = payload.get<datawriter::ConfParams>();
   m_initial_tokens = conf_params.initial_token_count;
+  m_data_storage_prescale = conf_params.data_storage_prescale;
   TLOG_DEBUG(TLVL_CONFIG) << get_name() << ": initial_token_count is " << conf_params.initial_token_count;
+  TLOG_DEBUG(TLVL_CONFIG) << get_name() << ": data_storage_prescale is " << m_data_storage_prescale;
   TLOG_DEBUG(TLVL_CONFIG) << get_name() << ": data_store_parameters are " << conf_params.data_store_parameters;
 
   // create the DataStore instance here
@@ -112,9 +115,8 @@ DataWriter::do_start(const data_t& payload)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_start() method";
 
-  datawriter::StartParams start_params = payload.get<datawriter::StartParams>();
+  rcif::cmd::StartParams start_params = payload.get<rcif::cmd::StartParams>();
   m_data_storage_is_enabled = (!start_params.disable_data_storage);
-  m_data_storage_prescale = start_params.data_storage_prescale;
   m_run_number = start_params.run;
 
   // 04-Feb-2021, KAB: added this call to allow DataStore to prepare for the run.

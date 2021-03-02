@@ -5,7 +5,11 @@ moo.io.default_load_path = get_moo_model_path()
 
 # Load configuration types
 import moo.otypes
+
+moo.otypes.load_types('rcif/cmd.jsonnet')
 moo.otypes.load_types('appfwk/cmd.jsonnet')
+moo.otypes.load_types('appfwk/app.jsonnet')
+
 moo.otypes.load_types('trigemu/TriggerDecisionEmulator.jsonnet')
 moo.otypes.load_types('trigemu/FakeTimeSyncSource.jsonnet')
 moo.otypes.load_types('dfmodules/requestgenerator.jsonnet')
@@ -15,7 +19,10 @@ moo.otypes.load_types('dfmodules/hdf5datastore.jsonnet')
 moo.otypes.load_types('dfmodules/fakedataprod.jsonnet')
 
 # Import new types
+import dunedaq.cmdlib.cmd as basecmd # AddressedCmd, 
+import dunedaq.rcif.cmd as rccmd # AddressedCmd, 
 import dunedaq.appfwk.cmd as cmd # AddressedCmd, 
+import dunedaq.appfwk.app as app # AddressedCmd, 
 import dunedaq.trigemu.triggerdecisionemulator as tde
 import dunedaq.trigemu.faketimesyncsource as ftss
 import dunedaq.dfmodules.requestgenerator as rqg
@@ -24,7 +31,7 @@ import dunedaq.dfmodules.datawriter as dw
 import dunedaq.dfmodules.hdf5datastore as hdf5ds
 import dunedaq.dfmodules.fakedataprod as fdp
 
-from appfwk.utils import mcmd, mspec
+from appfwk.utils import mcmd, mrccmd, mspec
 
 import json
 import math
@@ -48,72 +55,74 @@ def generate(
 
     # Define modules and queues
     queue_bare_specs = [
-            cmd.QueueSpec(inst="time_sync_q", kind='FollyMPMCQueue', capacity=100),
-            cmd.QueueSpec(inst="token_q", kind='FollySPSCQueue', capacity=20),
-            cmd.QueueSpec(inst="trigger_decision_q", kind='FollySPSCQueue', capacity=20),
-            cmd.QueueSpec(inst="trigger_decision_copy_for_bookkeeping", kind='FollySPSCQueue', capacity=20),
-            cmd.QueueSpec(inst="trigger_record_q", kind='FollySPSCQueue', capacity=20),
-            cmd.QueueSpec(inst="data_fragments_q", kind='FollyMPMCQueue', capacity=100),
+            app.QueueSpec(inst="time_sync_q", kind='FollyMPMCQueue', capacity=100),
+            app.QueueSpec(inst="token_q", kind='FollySPSCQueue', capacity=20),
+            app.QueueSpec(inst="trigger_decision_q", kind='FollySPSCQueue', capacity=20),
+            app.QueueSpec(inst="trigger_decision_copy_for_bookkeeping", kind='FollySPSCQueue', capacity=20),
+            app.QueueSpec(inst="trigger_record_q", kind='FollySPSCQueue', capacity=20),
+            app.QueueSpec(inst="data_fragments_q", kind='FollyMPMCQueue', capacity=100),
         ] + [
-            cmd.QueueSpec(inst=f"data_requests_{idx}", kind='FollySPSCQueue', capacity=20)
+            app.QueueSpec(inst=f"data_requests_{idx}", kind='FollySPSCQueue', capacity=20)
                 for idx in range(NUMBER_OF_DATA_PRODUCERS)
         ]
     
 
     # Only needed to reproduce the same order as when using jsonnet
-    queue_specs = cmd.QueueSpecs(sorted(queue_bare_specs, key=lambda x: x.inst))
+    queue_specs = app.QueueSpecs(sorted(queue_bare_specs, key=lambda x: x.inst))
 
 
     mod_specs = [
         mspec("tde", "TriggerDecisionEmulator", [
-                        cmd.QueueInfo(name="time_sync_source", inst="time_sync_q", dir="input"),
-                        cmd.QueueInfo(name="token_source", inst="token_q", dir="input"),
-                        cmd.QueueInfo(name="trigger_decision_sink", inst="trigger_decision_q", dir="output"),
+                        app.QueueInfo(name="time_sync_source", inst="time_sync_q", dir="input"),
+                        app.QueueInfo(name="token_source", inst="token_q", dir="input"),
+                        app.QueueInfo(name="trigger_decision_sink", inst="trigger_decision_q", dir="output"),
                     ]),
 
         mspec("rqg", "RequestGenerator", [
-                        cmd.QueueInfo(name="trigger_decision_input_queue", inst="trigger_decision_q", dir="input"),
-                        cmd.QueueInfo(name="trigger_decision_for_event_building", inst="trigger_decision_copy_for_bookkeeping", dir="output"),
+                        app.QueueInfo(name="trigger_decision_input_queue", inst="trigger_decision_q", dir="input"),
+                        app.QueueInfo(name="trigger_decision_for_event_building", inst="trigger_decision_copy_for_bookkeeping", dir="output"),
                     ] + [
-                        cmd.QueueInfo(name=f"data_request_{idx}_output_queue", inst=f"data_requests_{idx}", dir="output")
+                        app.QueueInfo(name=f"data_request_{idx}_output_queue", inst=f"data_requests_{idx}", dir="output")
                             for idx in range(NUMBER_OF_DATA_PRODUCERS)
                     ]),
 
         mspec("ffr", "FragmentReceiver", [
-                        cmd.QueueInfo(name="trigger_decision_input_queue", inst="trigger_decision_copy_for_bookkeeping", dir="input"),
-                        cmd.QueueInfo(name="trigger_record_output_queue", inst="trigger_record_q", dir="output"),
-                        cmd.QueueInfo(name="data_fragment_input_queue", inst="data_fragments_q", dir="input"),
+                        app.QueueInfo(name="trigger_decision_input_queue", inst="trigger_decision_copy_for_bookkeeping", dir="input"),
+                        app.QueueInfo(name="trigger_record_output_queue", inst="trigger_record_q", dir="output"),
+                        app.QueueInfo(name="data_fragment_input_queue", inst="data_fragments_q", dir="input"),
                     ]),
 
         mspec("datawriter", "DataWriter", [
-                        cmd.QueueInfo(name="trigger_record_input_queue", inst="trigger_record_q", dir="input"),
-                    cmd.QueueInfo(name="token_output_queue", inst="token_q", dir="output"),
+                        app.QueueInfo(name="trigger_record_input_queue", inst="trigger_record_q", dir="input"),
+                    app.QueueInfo(name="token_output_queue", inst="token_q", dir="output"),
                     ]),
 
         mspec("fake_timesync_source", "FakeTimeSyncSource", [
-                        cmd.QueueInfo(name="time_sync_sink", inst="time_sync_q", dir="output"),
+                        app.QueueInfo(name="time_sync_sink", inst="time_sync_q", dir="output"),
                     ]),
 
         ] + [
 
                 mspec(f"fakedataprod_{idx}", "FakeDataProd", [
-                            cmd.QueueInfo(name="data_request_input_queue", inst=f"data_requests_{idx}", dir="input"),
-                            cmd.QueueInfo(name="data_fragment_output_queue", inst="data_fragments_q", dir="output"),
+                            app.QueueInfo(name="data_request_input_queue", inst=f"data_requests_{idx}", dir="input"),
+                            app.QueueInfo(name="data_fragment_output_queue", inst="data_fragments_q", dir="output"),
                             ]) for idx in range(NUMBER_OF_DATA_PRODUCERS)
         ]
 
-    init_specs = cmd.Init(queues=queue_specs, modules=mod_specs)
+    init_specs = app.Init(queues=queue_specs, modules=mod_specs)
 
     jstr = json.dumps(init_specs.pod(), indent=4, sort_keys=True)
     print(jstr)
 
-    initcmd = cmd.Command(
-        id=cmd.CmdId("init"),
+    initcmd = rccmd.RCCommand(
+        id=basecmd.CmdId("init"),
+        entry_state="NONE",
+        exit_state="INITIAL",
         data=init_specs
     )
 
 
-    confcmd = mcmd("conf", [
+    confcmd = mrccmd("conf", "INITIAL", "CONFIGURED",[
                 ("tde", tde.ConfParams(
                         links=[idx for idx in range(NUMBER_OF_DATA_PRODUCERS)],
                         min_links_in_request=NUMBER_OF_DATA_PRODUCERS,
@@ -171,13 +180,9 @@ def generate(
     jstr = json.dumps(confcmd.pod(), indent=4, sort_keys=True)
     print(jstr)
 
-    startpars = cmd.StartParams(run=RUN_NUMBER)
-    startcmd = mcmd("start", [
-            ("datawriter", dw.StartParams(
-                run=RUN_NUMBER,
-                disable_data_storage=DISABLE_OUTPUT,
-                data_storage_prescale=1
-              )),
+    startpars = rccmd.StartParams(run=RUN_NUMBER, disable_data_storage=DISABLE_OUTPUT)
+    startcmd = mrccmd("start", "CONFIGURED", "RUNNING", [
+            ("datawriter", startpars),
             ("ffr", startpars),
             ("fakedataprod_.*", startpars),
             ("rqg", startpars),
@@ -188,9 +193,9 @@ def generate(
     jstr = json.dumps(startcmd.pod(), indent=4, sort_keys=True)
     print("="*80+"\nStart\n\n", jstr)
 
-    emptypars = cmd.EmptyParams()
+    emptypars = rccmd.EmptyParams()
 
-    stopcmd = mcmd("stop", [
+    stopcmd = mrccmd("stop", "RUNNING", "CONFIGURED", [
             ("fake_timesync_source", emptypars),
             ("tde", emptypars),
             ("rqg", emptypars),
@@ -202,14 +207,14 @@ def generate(
     jstr = json.dumps(stopcmd.pod(), indent=4, sort_keys=True)
     print("="*80+"\nStop\n\n", jstr)
 
-    pausecmd = mcmd("pause", [
+    pausecmd = mrccmd("pause", "RUNNING", "RUNNING", [
             ("", emptypars)
         ])
 
     jstr = json.dumps(pausecmd.pod(), indent=4, sort_keys=True)
     print("="*80+"\nPause\n\n", jstr)
 
-    resumecmd = mcmd("resume", [
+    resumecmd = mrccmd("resume", "RUNNING", "RUNNING", [
             ("tde", tde.ResumeParams(
                             trigger_interval_ticks=trigger_interval_ticks
                         ))

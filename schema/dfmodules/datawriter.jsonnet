@@ -14,17 +14,11 @@ local types = {
     conf: s.record("ConfParams", [
         s.field("initial_token_count", self.count, "5",
                 doc="Number of tokens to send at the start of the run"),
+        s.field("data_storage_prescale", self.count, "1",
+                doc="Prescale value for writing TriggerRecords to storage"),
         s.field("data_store_parameters", self.dsparams,
                 doc="Parameters that configure the DataStore associated with this DataWriter"),
     ], doc="DataWriter configuration parameters"),
-
-    start: s.record("StartParams", [
-        s.field("disable_data_storage", self.flag, 0,
-                doc="Flag to disable the storage of data"),
-        s.field("data_storage_prescale", self.count, "1",
-                doc="Prescale value for writing TriggerRecords to storage"),
-        s.field("run", self.run_number, doc="Run Number"),
-    ], doc="DataWriter start parameters"),
 
 };
 

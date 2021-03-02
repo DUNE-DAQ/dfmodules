@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.12)
-project(dfmodules VERSION 1.1.1)
+project(dfmodules VERSION 1.3.0)
 
 find_package(daq-cmake REQUIRED)
 daq_setup_environment()
@@ -18,17 +18,17 @@ daq_add_library( StorageKey.cpp TriggerDecisionForwarder.cpp TriggerInhibitAgent
                  LINK_LIBRARIES 
                  ers::ers HighFive appfwk::appfwk logging::logging stdc++fs dfmessages::dfmessages )
 
-daq_add_plugin( HDF5DataStore      duneDataStore SCHEMA LINK_LIBRARIES logging::logging dataformats::dataformats HighFive appfwk::appfwk stdc++fs)
+daq_add_plugin( HDF5DataStore      duneDataStore LINK_LIBRARIES logging::logging dataformats::dataformats HighFive appfwk::appfwk stdc++fs)
 
-daq_add_plugin( DataGenerator      duneDAQModule SCHEMA LINK_LIBRARIES dfmodules )
-daq_add_plugin( DataTransferModule duneDAQModule SCHEMA LINK_LIBRARIES dfmodules stdc++fs )
-daq_add_plugin( DataWriter         duneDAQModule SCHEMA LINK_LIBRARIES dfmodules )
-daq_add_plugin( FakeDataProd       duneDAQModule SCHEMA LINK_LIBRARIES dfmodules )
-daq_add_plugin( FragmentReceiver   duneDAQModule SCHEMA LINK_LIBRARIES dfmodules )
+daq_add_plugin( DataGenerator      duneDAQModule LINK_LIBRARIES dfmodules )
+daq_add_plugin( DataTransferModule duneDAQModule LINK_LIBRARIES dfmodules stdc++fs )
+daq_add_plugin( DataWriter         duneDAQModule LINK_LIBRARIES dfmodules )
+daq_add_plugin( FakeDataProd       duneDAQModule LINK_LIBRARIES dfmodules )
+daq_add_plugin( FragmentReceiver   duneDAQModule LINK_LIBRARIES dfmodules )
 ##daq_add_plugin( FakeFragRec        duneDAQModule LINK_LIBRARIES dfmodules )
 daq_add_plugin( FakeReqGen         duneDAQModule LINK_LIBRARIES dfmodules )
-daq_add_plugin( RequestGenerator   duneDAQModule SCHEMA LINK_LIBRARIES dfmodules )
-daq_add_plugin( FakeTrigDecEmu     duneDAQModule SCHEMA LINK_LIBRARIES dfmodules )
+daq_add_plugin( RequestGenerator   duneDAQModule LINK_LIBRARIES dfmodules )
+daq_add_plugin( FakeTrigDecEmu     duneDAQModule LINK_LIBRARIES dfmodules )
 
 
 
