@@ -10,8 +10,8 @@ moo.otypes.load_types('rcif/cmd.jsonnet')
 moo.otypes.load_types('appfwk/cmd.jsonnet')
 moo.otypes.load_types('appfwk/app.jsonnet')
 
-moo.otypes.load_types('trigemu/TriggerDecisionEmulator.jsonnet')
-moo.otypes.load_types('trigemu/FakeTimeSyncSource.jsonnet')
+moo.otypes.load_types('trigemu/triggerdecisionemulator.jsonnet')
+moo.otypes.load_types('trigemu/faketimesyncsource.jsonnet')
 moo.otypes.load_types('dfmodules/requestgenerator.jsonnet')
 moo.otypes.load_types('dfmodules/fragmentreceiver.jsonnet')
 moo.otypes.load_types('dfmodules/datawriter.jsonnet')
@@ -193,22 +193,20 @@ def generate(
     jstr = json.dumps(startcmd.pod(), indent=4, sort_keys=True)
     print("="*80+"\nStart\n\n", jstr)
 
-    emptypars = rccmd.EmptyParams()
-
     stopcmd = mrccmd("stop", "RUNNING", "CONFIGURED", [
-            ("fake_timesync_source", emptypars),
-            ("tde", emptypars),
-            ("rqg", emptypars),
-            ("fakedataprod_.*", emptypars),
-            ("ffr", emptypars),
-            ("datawriter", emptypars),
+            ("fake_timesync_source", None),
+            ("tde", None),
+            ("rqg", None),
+            ("fakedataprod_.*", None),
+            ("ffr", None),
+            ("datawriter", None),
         ])
 
     jstr = json.dumps(stopcmd.pod(), indent=4, sort_keys=True)
     print("="*80+"\nStop\n\n", jstr)
 
     pausecmd = mrccmd("pause", "RUNNING", "RUNNING", [
-            ("", emptypars)
+            ("", None)
         ])
 
     jstr = json.dumps(pausecmd.pod(), indent=4, sort_keys=True)
@@ -224,7 +222,7 @@ def generate(
     print("="*80+"\nResume\n\n", jstr)
 
     scrapcmd = mcmd("scrap", [
-            ("", emptypars)
+            ("", None)
         ])
 
     jstr = json.dumps(scrapcmd.pod(), indent=4, sort_keys=True)

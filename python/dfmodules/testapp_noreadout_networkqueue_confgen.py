@@ -17,21 +17,26 @@ moo.io.default_load_path = get_moo_model_path()
 
 # Load configuration types
 import moo.otypes
+moo.otypes.load_types('rcif/cmd.jsonnet')
 moo.otypes.load_types('appfwk/cmd.jsonnet')
-moo.otypes.load_types('trigemu/TriggerDecisionEmulator.jsonnet')
-moo.otypes.load_types('trigemu/FakeTimeSyncSource.jsonnet')
+moo.otypes.load_types('appfwk/app.jsonnet')
+moo.otypes.load_types('trigemu/triggerdecisionemulator.jsonnet')
+moo.otypes.load_types('trigemu/faketimesyncsource.jsonnet')
 moo.otypes.load_types('dfmodules/requestgenerator.jsonnet')
 moo.otypes.load_types('dfmodules/fragmentreceiver.jsonnet')
 moo.otypes.load_types('dfmodules/datawriter.jsonnet')
 moo.otypes.load_types('dfmodules/hdf5datastore.jsonnet')
 moo.otypes.load_types('dfmodules/fakedataprod.jsonnet')
-moo.otypes.load_types('nwqueueadapters/QueueToNetwork.jsonnet')
-moo.otypes.load_types('nwqueueadapters/NetworkToQueue.jsonnet')
-moo.otypes.load_types('serialization/NetworkObjectReceiver.jsonnet')
-moo.otypes.load_types('serialization/NetworkObjectSender.jsonnet')
+moo.otypes.load_types('nwqueueadapters/queuetonetwork.jsonnet')
+moo.otypes.load_types('nwqueueadapters/networktoqueue.jsonnet')
+moo.otypes.load_types('serialization/networkobjectreceiver.jsonnet')
+moo.otypes.load_types('serialization/networkobjectsender.jsonnet')
 
 # Import new types
-import dunedaq.appfwk.cmd as cmd # AddressedCmd, 
+import dunedaq.cmdlib.cmd as basecmd # AddressedCmd, 
+import dunedaq.rcif.cmd as rccmd # AddressedCmd, 
+import dunedaq.appfwk.cmd as cmd # AddressedCmd,
+import dunedaq.appfwk.app as app # AddressedCmd, 
 import dunedaq.trigemu.triggerdecisionemulator as tde
 import dunedaq.trigemu.faketimesyncsource as ftss
 import dunedaq.dfmodules.requestgenerator as rqg
@@ -44,7 +49,7 @@ import dunedaq.nwqueueadapters.queuetonetwork as qton
 import dunedaq.serialization.networkobjectreceiver as nor
 import dunedaq.serialization.networkobjectsender as nos
 
-from appfwk.utils import mcmd, mspec
+from appfwk.utils import mcmd, mrccmd, mspec
 
 import json
 import math
@@ -86,102 +91,103 @@ def generate(
 
     # Define modules and queues
     queue_bare_specs = [
-            cmd.QueueSpec(inst="time_sync_to_netq", kind='FollyMPMCQueue', capacity=100),
-            cmd.QueueSpec(inst="time_sync_from_netq", kind='FollySPSCQueue', capacity=100),
+            app.QueueSpec(inst="time_sync_to_netq", kind='FollyMPMCQueue', capacity=100),
+            app.QueueSpec(inst="time_sync_from_netq", kind='FollySPSCQueue', capacity=100),
         
-            cmd.QueueSpec(inst="token_to_netq", kind='FollySPSCQueue', capacity=20),
-            cmd.QueueSpec(inst="token_from_netq", kind='FollySPSCQueue', capacity=20),
+            app.QueueSpec(inst="token_to_netq", kind='FollySPSCQueue', capacity=20),
+            app.QueueSpec(inst="token_from_netq", kind='FollySPSCQueue', capacity=20),
         
-            cmd.QueueSpec(inst="trigger_decision_to_netq", kind='FollySPSCQueue', capacity=20),
-            cmd.QueueSpec(inst="trigger_decision_from_netq", kind='FollySPSCQueue', capacity=20),
+            app.QueueSpec(inst="trigger_decision_to_netq", kind='FollySPSCQueue', capacity=20),
+            app.QueueSpec(inst="trigger_decision_from_netq", kind='FollySPSCQueue', capacity=20),
         
-            cmd.QueueSpec(inst="trigger_decision_copy_for_bookkeeping", kind='FollySPSCQueue', capacity=20),
-            cmd.QueueSpec(inst="trigger_record_q", kind='FollySPSCQueue', capacity=20),
-            cmd.QueueSpec(inst="data_fragments_q", kind='FollyMPMCQueue', capacity=100),
+            app.QueueSpec(inst="trigger_decision_copy_for_bookkeeping", kind='FollySPSCQueue', capacity=20),
+            app.QueueSpec(inst="trigger_record_q", kind='FollySPSCQueue', capacity=20),
+            app.QueueSpec(inst="data_fragments_q", kind='FollyMPMCQueue', capacity=100),
         ] + [
-            cmd.QueueSpec(inst=f"data_requests_{idx}", kind='FollySPSCQueue', capacity=20)
+            app.QueueSpec(inst=f"data_requests_{idx}", kind='FollySPSCQueue', capacity=20)
                 for idx in range(NUMBER_OF_DATA_PRODUCERS)
         ]
     
 
     # Only needed to reproduce the same order as when using jsonnet
-    queue_specs = cmd.QueueSpecs(sorted(queue_bare_specs, key=lambda x: x.inst))
+    queue_specs = app.QueueSpecs(sorted(queue_bare_specs, key=lambda x: x.inst))
 
 
     mod_specs = [
         mspec("ntoq_trigdec", "NetworkToQueue", [
-                        cmd.QueueInfo(name="output", inst="trigger_decision_from_netq", dir="output")
+                        app.QueueInfo(name="output", inst="trigger_decision_from_netq", dir="output")
                     ]),
 
         mspec("qton_trigdec", "QueueToNetwork", [
-                        cmd.QueueInfo(name="input", inst="trigger_decision_to_netq", dir="input")
+                        app.QueueInfo(name="input", inst="trigger_decision_to_netq", dir="input")
                     ]),
 
         mspec("ntoq_token", "NetworkToQueue", [
-                        cmd.QueueInfo(name="output", inst="token_from_netq", dir="output")
+                        app.QueueInfo(name="output", inst="token_from_netq", dir="output")
                     ]),
 
         mspec("qton_token", "QueueToNetwork", [
-                        cmd.QueueInfo(name="input", inst="token_to_netq", dir="input")
+                        app.QueueInfo(name="input", inst="token_to_netq", dir="input")
                     ]),
 
         mspec("ntoq_timesync", "NetworkToQueue", [
-                        cmd.QueueInfo(name="output", inst="time_sync_from_netq", dir="output")
+                        app.QueueInfo(name="output", inst="time_sync_from_netq", dir="output")
                     ]),
 
         mspec("qton_timesync", "QueueToNetwork", [
-                        cmd.QueueInfo(name="input", inst="time_sync_to_netq", dir="input")
+                        app.QueueInfo(name="input", inst="time_sync_to_netq", dir="input")
                     ]),
 
         mspec("tde", "TriggerDecisionEmulator", [
-                        cmd.QueueInfo(name="time_sync_source", inst="time_sync_from_netq", dir="input"),
-                        cmd.QueueInfo(name="token_source", inst="token_from_netq", dir="input"),
-                        cmd.QueueInfo(name="trigger_decision_sink", inst="trigger_decision_to_netq", dir="output"),
+                        app.QueueInfo(name="time_sync_source", inst="time_sync_from_netq", dir="input"),
+                        app.QueueInfo(name="token_source", inst="token_from_netq", dir="input"),
+                        app.QueueInfo(name="trigger_decision_sink", inst="trigger_decision_to_netq", dir="output"),
                     ]),
 
         mspec("rqg", "RequestGenerator", [
-                        cmd.QueueInfo(name="trigger_decision_input_queue", inst="trigger_decision_from_netq", dir="input"),
-                        cmd.QueueInfo(name="trigger_decision_for_event_building", inst="trigger_decision_copy_for_bookkeeping", dir="output"),
+                        app.QueueInfo(name="trigger_decision_input_queue", inst="trigger_decision_from_netq", dir="input"),
+                        app.QueueInfo(name="trigger_decision_for_event_building", inst="trigger_decision_copy_for_bookkeeping", dir="output"),
                     ] + [
-                        cmd.QueueInfo(name=f"data_request_{idx}_output_queue", inst=f"data_requests_{idx}", dir="output")
+                        app.QueueInfo(name=f"data_request_{idx}_output_queue", inst=f"data_requests_{idx}", dir="output")
                             for idx in range(NUMBER_OF_DATA_PRODUCERS)
                     ]),
 
         mspec("ffr", "FragmentReceiver", [
-                        cmd.QueueInfo(name="trigger_decision_input_queue", inst="trigger_decision_copy_for_bookkeeping", dir="input"),
-                        cmd.QueueInfo(name="trigger_record_output_queue", inst="trigger_record_q", dir="output"),
-                        cmd.QueueInfo(name="data_fragment_input_queue", inst="data_fragments_q", dir="input"),
+                        app.QueueInfo(name="trigger_decision_input_queue", inst="trigger_decision_copy_for_bookkeeping", dir="input"),
+                        app.QueueInfo(name="trigger_record_output_queue", inst="trigger_record_q", dir="output"),
+                        app.QueueInfo(name="data_fragment_input_queue", inst="data_fragments_q", dir="input"),
                     ]),
 
         mspec("datawriter", "DataWriter", [
-                        cmd.QueueInfo(name="trigger_record_input_queue", inst="trigger_record_q", dir="input"),
-                        cmd.QueueInfo(name="token_output_queue", inst="token_to_netq", dir="output"),
+                        app.QueueInfo(name="trigger_record_input_queue", inst="trigger_record_q", dir="input"),
+                        app.QueueInfo(name="token_output_queue", inst="token_to_netq", dir="output"),
                     ]),
 
         mspec("fake_timesync_source", "FakeTimeSyncSource", [
-                        cmd.QueueInfo(name="time_sync_sink", inst="time_sync_to_netq", dir="output"),
+                        app.QueueInfo(name="time_sync_sink", inst="time_sync_to_netq", dir="output"),
                     ]),
 
         ] + [
 
                 mspec(f"fakedataprod_{idx}", "FakeDataProd", [
-                            cmd.QueueInfo(name="data_request_input_queue", inst=f"data_requests_{idx}", dir="input"),
-                            cmd.QueueInfo(name="data_fragment_output_queue", inst="data_fragments_q", dir="output"),
+                            app.QueueInfo(name="data_request_input_queue", inst=f"data_requests_{idx}", dir="input"),
+                            app.QueueInfo(name="data_fragment_output_queue", inst="data_fragments_q", dir="output"),
                             ]) for idx in range(NUMBER_OF_DATA_PRODUCERS)
         ]
 
-    init_specs = cmd.Init(queues=queue_specs, modules=mod_specs)
+    init_specs = app.Init(queues=queue_specs, modules=mod_specs)
 
     jstr = json.dumps(init_specs.pod(), indent=4, sort_keys=True)
     print(jstr)
 
-    initcmd = cmd.Command(
-        id=cmd.CmdId("init"),
+    initcmd = rccmd.RCCommand(
+        id=basecmd.CmdId("init"),
+        entry_state="NONE",
+        exit_state="INITIAL",
         data=init_specs
     )
 
-
-    confcmd = mcmd("conf", [
+    confcmd = mrccmd("conf", "INITIAL", "CONFIGURED",[
                 ("qton_trigdec", qton.Conf(msg_type="dunedaq::dfmessages::TriggerDecision",
                                            msg_module_name="TriggerDecisionNQ",
                                            sender_config=nos.Conf(ipm_plugin_type="ZmqSender",
@@ -284,19 +290,15 @@ def generate(
     jstr = json.dumps(confcmd.pod(), indent=4, sort_keys=True)
     print(jstr)
 
-    startpars = cmd.StartParams(run=RUN_NUMBER)
-    startcmd = mcmd("start", [
+    startpars = rccmd.StartParams(run=RUN_NUMBER, disable_data_storage=DISABLE_OUTPUT)
+    startcmd = mrccmd("start", "CONFIGURED", "RUNNING", [
             ("ntoq_trigdec", startpars),
             ("qton_trigdec", startpars),
             ("ntoq_token", startpars),
             ("qton_token", startpars),
             ("ntoq_timesync", startpars),
             ("qton_timesync", startpars),
-            ("datawriter", dw.StartParams(
-                run=RUN_NUMBER,
-                disable_data_storage=DISABLE_OUTPUT,
-                data_storage_prescale=1
-              )),
+            ("datawriter", startpars),
             ("ffr", startpars),
             ("fakedataprod_.*", startpars),
             ("rqg", startpars),
@@ -307,34 +309,33 @@ def generate(
     jstr = json.dumps(startcmd.pod(), indent=4, sort_keys=True)
     print("="*80+"\nStart\n\n", jstr)
 
-    emptypars = cmd.EmptyParams()
 
-    stopcmd = mcmd("stop", [
-            ("ntoq_trigdec", emptypars),
-            ("qton_trigdec", emptypars),
-            ("ntoq_timesync", emptypars),
-            ("qton_timesync", emptypars),
-            ("ntoq_token", emptypars),
-            ("qton_token", emptypars),
-            ("fake_timesync_source", emptypars),
-            ("tde", emptypars),
-            ("rqg", emptypars),
-            ("fakedataprod_.*", emptypars),
-            ("ffr", emptypars),
-            ("datawriter", emptypars),
+    stopcmd = mrccmd("stop", "RUNNING", "CONFIGURED", [
+            ("ntoq_trigdec", None),
+            ("qton_trigdec", None),
+            ("ntoq_timesync", None),
+            ("qton_timesync", None),
+            ("ntoq_token", None),
+            ("qton_token", None),
+            ("fake_timesync_source", None),
+            ("tde", None),
+            ("rqg", None),
+            ("fakedataprod_.*", None),
+            ("ffr", None),
+            ("datawriter", None),
         ])
 
     jstr = json.dumps(stopcmd.pod(), indent=4, sort_keys=True)
     print("="*80+"\nStop\n\n", jstr)
 
-    pausecmd = mcmd("pause", [
-            ("", emptypars)
+    pausecmd = mrccmd("pause", "RUNNING", "RUNNING", [
+            ("", None)
         ])
 
     jstr = json.dumps(pausecmd.pod(), indent=4, sort_keys=True)
     print("="*80+"\nPause\n\n", jstr)
 
-    resumecmd = mcmd("resume", [
+    resumecmd = mrccmd("resume", "RUNNING", "RUNNING", [
             ("tde", tde.ResumeParams(
                             trigger_interval_ticks=trigger_interval_ticks
                         ))
@@ -344,7 +345,7 @@ def generate(
     print("="*80+"\nResume\n\n", jstr)
 
     scrapcmd = mcmd("scrap", [
-            ("", emptypars)
+            ("", None)
         ])
 
     jstr = json.dumps(scrapcmd.pod(), indent=4, sort_keys=True)
