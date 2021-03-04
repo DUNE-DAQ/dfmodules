@@ -246,7 +246,12 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
         } // vector loop
       }   // fragment loop
 
-    } // if a books were updated
+    } // if books were updated
+    else {
+      if (running_flag.load()) {
+        std::this_thread::sleep_for(m_queue_timeout);
+      }
+    }
 
   } // working loop
 
