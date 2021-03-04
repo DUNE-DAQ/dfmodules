@@ -234,7 +234,7 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
 
             ers::error(FragmentObsolete(ERS_HERE,
                                         (*frag_it)->get_trigger_number(),
-                                        (*frag_it)->get_fragment_type(),
+                                        (*frag_it)->get_fragment_type_code(),
                                         (*frag_it)->get_trigger_timestamp(),
                                         m_current_time));
             // it = m_trigger_decisions.erase( it ) ;
