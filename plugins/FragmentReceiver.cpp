@@ -248,8 +248,8 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
 
     } // if books were updated
     else {
-      if ( running_flag.load() ) {
-	std::this_thread::sleep_for( m_queue_timeout ) ;
+      if (running_flag.load()) {
+        std::this_thread::sleep_for(m_queue_timeout);
       }
     }
 
