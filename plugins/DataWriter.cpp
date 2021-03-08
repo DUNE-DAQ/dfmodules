@@ -261,10 +261,9 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
 
         // add information about each Fragment to the list of data blocks to be stored
         // //StorageKey fragment_skey(trigger_record_ptr->get_run_number(), trigger_record_ptr->get_trigger_number,
-        // "TPC",
         StorageKey fragment_skey(frag_ptr->get_run_number(),
                                  frag_ptr->get_trigger_number(),
-                                 "TPC",
+                                 dataformats::fragment_type_to_string(frag_ptr->get_fragment_type()),
                                  frag_ptr->get_link_id().apa_number,
                                  frag_ptr->get_link_id().link_number);
         KeyedDataBlock data_block(fragment_skey);

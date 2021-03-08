@@ -21,8 +21,6 @@ local types = {
 
     flprefix: s.string("FileLayoutPrefix", doc="String used to specify a Group or DataSet name prefix"),
 
-    detname: s.string("DetectorName", doc="String used to specify a detector type"),
-
     flag: s.boolean("Flag", doc="Parameter that can be used to enable or disable functionality"),
 
     hdf5_filename_params: s.record("HDF5DataStoreFileNameParams", [
@@ -43,8 +41,6 @@ local types = {
                 doc="Prefix for the TriggerRecord name"),
         s.field("digits_for_trigger_number", self.count, 6,
                 doc="Number of digits to use for the TriggerRecord name inside the HDF5 file"),
-        s.field("detector_name", self.detname, "TPC",
-                doc="Name for the detector"),
         s.field("apa_name_prefix", self.flprefix, "APA",
                 doc="Prefix for the APA name"),
         s.field("digits_for_apa_number", self.count, 3,
