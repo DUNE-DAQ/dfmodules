@@ -77,8 +77,8 @@ def print_frag_header(data_array):
   fragment_size = data_array[8:16]
   trigger_number = data_array[16:24]
   trigger_timestamp = data_array[24:32]
-  window_offset = data_array[32:40]
-  window_width = data_array[40:48]
+  window_begin = data_array[32:40]
+  window_end = data_array[40:48]
   run_number = data_array[48:52]
   geo_id_apa = data_array[52:56]
   geo_id_link = data_array[56:60]
@@ -91,8 +91,10 @@ def print_frag_header(data_array):
   print("Trig number:\t\t", bytes_to_int((trigger_number)[::-1]))
   print("Trig timestamp:\t\t", bytes_to_int((trigger_timestamp)[::-1]),
         "("+str(datetime.datetime.fromtimestamp(float(bytes_to_int((trigger_timestamp)[::-1]))/50000000.0))+")")
-  print("Window offset:\t\t", bytes_to_int((window_offset)[::-1]))
-  print("Window width:\t\t", bytes_to_int((window_width)[::-1]))
+  print("Window begin:\t\t", bytes_to_int((window_begin)[::-1]),
+        "("+str(datetime.datetime.fromtimestamp(float(bytes_to_int((window_begin)[::-1]))/50000000.0))+")")
+  print("Window end:\t\t", bytes_to_int((window_end)[::-1]),
+        "("+str(datetime.datetime.fromtimestamp(float(bytes_to_int((window_end)[::-1]))/50000000.0))+")")
   print("Run number:\t\t", bytes_to_int((run_number)[::-1]))
   print("GeoID (APA):\t\t", bytes_to_int((geo_id_apa)[::-1]))
   print("GeoID (link):\t\t", bytes_to_int((geo_id_link)[::-1]))
