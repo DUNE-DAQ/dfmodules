@@ -57,12 +57,14 @@ from appfwk.utils import mcmd, mrccmd, mspec
 import json
 import math
 from pprint import pprint
-# Time to waait on pop()
+# Time to wait on pop()
 QUEUE_POP_WAIT_MS=100;
 # local clock speed Hz
 CLOCK_SPEED_HZ = 50000000;
 
+
 def generate_df(
+        network_endpoints,
         NUMBER_OF_DATA_PRODUCERS=2,          
         DATA_RATE_SLOWDOWN_FACTOR = 1,
         RUN_NUMBER = 333, 
@@ -151,14 +153,14 @@ def generate_df(
                 ("ntoq_trigdec", ntoq.Conf(msg_type="dunedaq::dfmessages::TriggerDecision",
                                            msg_module_name="TriggerDecisionNQ",
                                            receiver_config=nor.Conf(ipm_plugin_type="ZmqReceiver",
-                                                                    address= "tcp://127.0.0.1:12345")
+                                                                    address=network_endpoints["trigdec"])
                                            )
                  ),
 
                 ("qton_token", qton.Conf(msg_type="dunedaq::dfmessages::TriggerDecisionToken",
                                            msg_module_name="TriggerDecisionTokenNQ",
                                            sender_config=nos.Conf(ipm_plugin_type="ZmqSender",
-                                                                  address= "tcp://127.0.0.1:12346",
+                                                                  address=network_endpoints["triginh"],
                                                                   stype="msgpack")
                                            )
                  ),
@@ -166,7 +168,7 @@ def generate_df(
                 ("qton_timesync", qton.Conf(msg_type="dunedaq::dfmessages::TimeSync",
                                             msg_module_name="TimeSyncNQ",
                                             sender_config=nos.Conf(ipm_plugin_type="ZmqSender",
-                                                                   address= "tcp://127.0.0.1:12347",
+                                                                   address=network_endpoints["timesync"],
                                                                    stype="msgpack")
                                            )
                 ),
@@ -245,6 +247,7 @@ def generate_df(
 
 #===============================================================================
 def generate_trigemu(
+        network_endpoints,
         NUMBER_OF_DATA_PRODUCERS=2,          
         DATA_RATE_SLOWDOWN_FACTOR = 1,
         RUN_NUMBER = 333, 
@@ -300,7 +303,7 @@ def generate_trigemu(
                 ("qton_trigdec", qton.Conf(msg_type="dunedaq::dfmessages::TriggerDecision",
                                            msg_module_name="TriggerDecisionNQ",
                                            sender_config=nos.Conf(ipm_plugin_type="ZmqSender",
-                                                                  address= "tcp://127.0.0.1:12345",
+                                                                  address=network_endpoints["trigdec"],
                                                                   stype="msgpack")
                                            )
                  ),
@@ -308,14 +311,14 @@ def generate_trigemu(
                  ("ntoq_token", ntoq.Conf(msg_type="dunedaq::dfmessages::TriggerDecisionToken",
                                             msg_module_name="TriggerDecisionTokenNQ",
                                             receiver_config=nor.Conf(ipm_plugin_type="ZmqReceiver",
-                                                                     address= "tcp://127.0.0.1:12346")
+                                                                     address=network_endpoints["triginh"])
                                             )
                  ),
 
                 ("ntoq_timesync", ntoq.Conf(msg_type="dunedaq::dfmessages::TimeSync",
                                            msg_module_name="TimeSyncNQ",
                                            receiver_config=nor.Conf(ipm_plugin_type="ZmqReceiver",
-                                                                    address= "tcp://127.0.0.1:12347")
+                                                                    address=network_endpoints["timesync"])
                                            )
                 ),
 
@@ -388,8 +391,10 @@ if __name__ == '__main__':
     @click.option('-o', '--output-path', type=click.Path(), default='.')
     @click.option('--disable-data-storage', is_flag=True)
     @click.option('-c', '--token-count', default=10)
+    @click.option('--host-ip-df', default='127.0.0.1')
+    @click.option('--host-ip-trigemu', default='127.0.0.1')
     @click.argument('json_file_base', type=click.Path(), default='testapp-noreadout-two-process')
-    def cli(number_of_data_producers, data_rate_slowdown_factor, run_number, trigger_rate_hz, data_file, output_path, disable_data_storage, token_count, json_file_base):
+    def cli(number_of_data_producers, data_rate_slowdown_factor, run_number, trigger_rate_hz, data_file, output_path, disable_data_storage, token_count, host_ip_df, host_ip_trigemu, json_file_base):
         """
           JSON_FILE: Input raw data file.
           JSON_FILE: Output json configuration file.
@@ -397,9 +402,16 @@ if __name__ == '__main__':
 
         json_file_trigemu=json_file_base+"-trigemu.json"
         json_file_df=json_file_base+"-df.json"
-                   
+
+        network_endpoints={
+            "trigdec" : f"tcp://{host_ip_trigemu}:12345",
+            "triginh" : f"tcp://{host_ip_df}:12346",
+            "timesync": f"tcp://{host_ip_df}:12347"
+        }
+
         with open(json_file_trigemu, 'w') as f:
             f.write(generate_trigemu(
+                    network_endpoints,
                     NUMBER_OF_DATA_PRODUCERS = number_of_data_producers,
                     DATA_RATE_SLOWDOWN_FACTOR = data_rate_slowdown_factor,
                     RUN_NUMBER = run_number, 
@@ -410,6 +422,7 @@ if __name__ == '__main__':
 
         with open(json_file_df, 'w') as f:
             f.write(generate_df(
+                    network_endpoints,
                     NUMBER_OF_DATA_PRODUCERS = number_of_data_producers,
                     DATA_RATE_SLOWDOWN_FACTOR = data_rate_slowdown_factor,
                     RUN_NUMBER = run_number, 
