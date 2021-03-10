@@ -15,6 +15,8 @@ import h5py
 import binascii
 import datetime
 
+CLOCK_SPEED_HZ = 50000000.0
+
 def parse_args():
     parser = argparse.ArgumentParser(description='Python script to parse DUNE-DAQ HDF5 output files.')
     parser.version = '0.1'
@@ -90,11 +92,11 @@ def print_frag_header(data_array):
   print("Frag size:\t\t", bytes_to_int((fragment_size)[::-1]))
   print("Trig number:\t\t", bytes_to_int((trigger_number)[::-1]))
   print("Trig timestamp:\t\t", bytes_to_int((trigger_timestamp)[::-1]),
-        "("+str(datetime.datetime.fromtimestamp(float(bytes_to_int((trigger_timestamp)[::-1]))/50000000.0))+")")
+        "("+str(datetime.datetime.fromtimestamp(float(bytes_to_int((trigger_timestamp)[::-1]))/CLOCK_SPEED_HZ))+")")
   print("Window begin:\t\t", bytes_to_int((window_begin)[::-1]),
-        "("+str(datetime.datetime.fromtimestamp(float(bytes_to_int((window_begin)[::-1]))/50000000.0))+")")
+        "("+str(datetime.datetime.fromtimestamp(float(bytes_to_int((window_begin)[::-1]))/CLOCK_SPEED_HZ))+")")
   print("Window end:\t\t", bytes_to_int((window_end)[::-1]),
-        "("+str(datetime.datetime.fromtimestamp(float(bytes_to_int((window_end)[::-1]))/50000000.0))+")")
+        "("+str(datetime.datetime.fromtimestamp(float(bytes_to_int((window_end)[::-1]))/CLOCK_SPEED_HZ))+")")
   print("Run number:\t\t", bytes_to_int((run_number)[::-1]))
   print("GeoID (APA):\t\t", bytes_to_int((geo_id_apa)[::-1]))
   print("GeoID (link):\t\t", bytes_to_int((geo_id_link)[::-1]))
@@ -120,7 +122,7 @@ def print_trh(data_array):
   print("Version:\t\t", bytes_to_int((version)[::-1]))
   print("Trig number:\t\t", bytes_to_int((trigger_number)[::-1]))
   print("Trig timestamp:\t\t", bytes_to_int((trigger_timestamp)[::-1]),
-        "("+str(datetime.datetime.fromtimestamp(float(bytes_to_int((trigger_timestamp)[::-1]))/50000000.0))+")")
+        "("+str(datetime.datetime.fromtimestamp(float(bytes_to_int((trigger_timestamp)[::-1]))/CLOCK_SPEED_HZ))+")")
   print("Num req comp:\t\t", bytes_to_int((numb_req_comp)[::-1]))
   print("Run number:\t\t", bytes_to_int((run_number)[::-1]))
   print("Error bits:\t\t", bytes_to_int((error_bits)[::-1]))
