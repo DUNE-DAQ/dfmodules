@@ -85,6 +85,14 @@ ERS_DECLARE_ISSUE_BASE(dfmodules,
                        ((std::string)name),
                        ((std::string)output_path)((size_t)free_bytes)((size_t)max_file_size_bytes))
 
+ERS_DECLARE_ISSUE_BASE(dfmodules,
+                       EmptyDataBlockList,
+                       appfwk::GeneralDAQModuleIssue,
+                       "There was a request to write out a list of data blocks, but the list was empty. "
+                         << "Ignoring this request",
+                       ((std::string)name),
+                       ERS_EMPTY)
+
 namespace dfmodules {
 
 /**
@@ -198,7 +206,7 @@ public:
       m_recorded_size = 0;
     }
 
-    // opening the file from Storage Key + configuration parameters
+    // determine the filename from Storage Key + configuration parameters
     std::string full_filename = HDF5KeyTranslator::get_file_name(data_block.m_data_key, m_config_params, m_file_index);
 
     // m_file_ptr will be the handle to the Opened-File after a call to open_file_if_needed()
@@ -210,42 +218,8 @@ public:
       throw HDF5Issue(ERS_HERE, "Unknown exception thrown by HDF5");
     }
 
-    TLOG_DEBUG(TLVL_BASIC) << get_name() << ": Writing data with run number " << data_block.m_data_key.get_run_number()
-                           << " and trigger number " << data_block.m_data_key.get_trigger_number()
-                           << " and detector type " << data_block.m_data_key.get_detector_type()
-                           << " and apa/link number " << data_block.m_data_key.get_apa_number() << " / "
-                           << data_block.m_data_key.get_link_number();
-
-    std::vector<std::string> group_and_dataset_path_elements =
-      HDF5KeyTranslator::get_path_elements(data_block.m_data_key, m_config_params.file_layout_parameters);
-
-    const std::string dataset_name = group_and_dataset_path_elements.back();
-
-    HighFive::Group sub_group = HDF5FileUtils::get_subgroup(m_file_ptr, group_and_dataset_path_elements, true);
-
-    // Create dataset
-    HighFive::DataSpace data_space = HighFive::DataSpace({ data_block.m_data_size, 1 });
-    HighFive::DataSetCreateProps data_set_create_props;
-    HighFive::DataSetAccessProps data_set_access_props;
-
-    try {
-      auto data_set =
-        sub_group.createDataSet<char>(dataset_name, data_space, data_set_create_props, data_set_access_props);
-      if (data_set.isValid()) {
-        data_set.write_raw(static_cast<const char*>(data_block.get_data_start()));
-      } else {
-        throw InvalidHDF5Dataset(ERS_HERE, get_name(), dataset_name, m_file_ptr->getName());
-      }
-    } catch (HighFive::DataSetException const& excpt) {
-      throw HDF5DataSetError(ERS_HERE, get_name(), dataset_name, excpt.what());
-    } catch (HighFive::Exception const& excpt) {
-      throw HDF5Issue(ERS_HERE, excpt.what(), excpt);
-    } catch (...) {
-      throw HDF5Issue(ERS_HERE, "Unknown exception thrown by HDF5");
-    }
-
-    m_file_ptr->flush();
-    m_recorded_size += data_block.m_data_size;
+    // write the data block
+    do_write(data_block);
   }
 
   /**
@@ -254,6 +228,11 @@ public:
    */
   virtual void write(const std::vector<KeyedDataBlock>& data_block_list)
   {
+    // check that the list has at least one entry
+    if (data_block_list.size() < 1) {
+      throw EmptyDataBlockList(ERS_HERE, get_name());
+    }
+
     // check if a new file should be opened for this set of data blocks
     size_t sum_of_sizes = 0;
     for (auto& data_block : data_block_list) {
@@ -266,9 +245,23 @@ public:
       m_recorded_size = 0;
     }
 
+    // determine the filename from Storage Key + configuration parameters
+    // (This assumes that all of the blocks have a data_key that puts them in the same file...)
+    std::string full_filename =
+      HDF5KeyTranslator::get_file_name(data_block_list[0].m_data_key, m_config_params, m_file_index);
+
+    // m_file_ptr will be the handle to the Opened-File after a call to open_file_if_needed()
+    try {
+      open_file_if_needed(full_filename, HighFive::File::OpenOrCreate);
+    } catch (HighFive::Exception const& excpt) {
+      throw HDF5Issue(ERS_HERE, excpt.what(), excpt);
+    } catch (...) {
+      throw HDF5Issue(ERS_HERE, "Unknown exception thrown by HDF5");
+    }
+
     // write each data block
     for (auto& data_block : data_block_list) {
-      write(data_block);
+      do_write(data_block);
     }
   }
 
@@ -404,6 +397,46 @@ private:
     return HDF5FileUtils::get_files_matching_pattern(m_path, work_string);
   }
 #endif
+
+  void do_write(const KeyedDataBlock& data_block)
+  {
+    TLOG_DEBUG(TLVL_BASIC) << get_name() << ": Writing data with run number " << data_block.m_data_key.get_run_number()
+                           << " and trigger number " << data_block.m_data_key.get_trigger_number()
+                           << " and detector type " << data_block.m_data_key.get_detector_type()
+                           << " and apa/link number " << data_block.m_data_key.get_apa_number() << " / "
+                           << data_block.m_data_key.get_link_number();
+
+    std::vector<std::string> group_and_dataset_path_elements =
+      HDF5KeyTranslator::get_path_elements(data_block.m_data_key, m_config_params.file_layout_parameters);
+
+    const std::string dataset_name = group_and_dataset_path_elements.back();
+
+    HighFive::Group sub_group = HDF5FileUtils::get_subgroup(m_file_ptr, group_and_dataset_path_elements, true);
+
+    // Create dataset
+    HighFive::DataSpace data_space = HighFive::DataSpace({ data_block.m_data_size, 1 });
+    HighFive::DataSetCreateProps data_set_create_props;
+    HighFive::DataSetAccessProps data_set_access_props;
+
+    try {
+      auto data_set =
+        sub_group.createDataSet<char>(dataset_name, data_space, data_set_create_props, data_set_access_props);
+      if (data_set.isValid()) {
+        data_set.write_raw(static_cast<const char*>(data_block.get_data_start()));
+      } else {
+        throw InvalidHDF5Dataset(ERS_HERE, get_name(), dataset_name, m_file_ptr->getName());
+      }
+    } catch (HighFive::DataSetException const& excpt) {
+      throw HDF5DataSetError(ERS_HERE, get_name(), dataset_name, excpt.what());
+    } catch (HighFive::Exception const& excpt) {
+      throw HDF5Issue(ERS_HERE, excpt.what(), excpt);
+    } catch (...) {
+      throw HDF5Issue(ERS_HERE, "Unknown exception thrown by HDF5");
+    }
+
+    m_file_ptr->flush();
+    m_recorded_size += data_block.m_data_size;
+  }
 
   void open_file_if_needed(const std::string& file_name, unsigned open_flags = HighFive::File::ReadOnly)
   {
