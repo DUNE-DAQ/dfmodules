@@ -201,10 +201,7 @@ public:
   virtual void write(const KeyedDataBlock& data_block)
   {
     // check if a new file should be opened for this data block
-    if ((m_recorded_size + data_block.m_data_size) > m_max_file_size) {
-      ++m_file_index;
-      m_recorded_size = 0;
-    }
+    increment_file_index_if_needed(data_block.m_data_size);
 
     // determine the filename from Storage Key + configuration parameters
     std::string full_filename = HDF5KeyTranslator::get_file_name(data_block.m_data_key, m_config_params, m_file_index);
@@ -240,10 +237,7 @@ public:
     }
     TLOG_DEBUG(TLVL_FILE_SIZE) << get_name() << ": Checking file size, recorded=" << m_recorded_size
                                << ", additional=" << sum_of_sizes << ", max=" << m_max_file_size;
-    if ((m_recorded_size + sum_of_sizes) > (m_max_file_size)) {
-      ++m_file_index;
-      m_recorded_size = 0;
-    }
+    increment_file_index_if_needed(sum_of_sizes);
 
     // determine the filename from Storage Key + configuration parameters
     // (This assumes that all of the blocks have a data_key that puts them in the same file...)
@@ -436,6 +430,15 @@ private:
 
     m_file_ptr->flush();
     m_recorded_size += data_block.m_data_size;
+  }
+
+  void increment_file_index_if_needed(size_t size_of_next_write)
+  {
+    if ((m_recorded_size + size_of_next_write) > m_max_file_size &&
+        m_recorded_size > 0) {
+      ++m_file_index;
+      m_recorded_size = 0;
+    }
   }
 
   void open_file_if_needed(const std::string& file_name, unsigned open_flags = HighFive::File::ReadOnly)
