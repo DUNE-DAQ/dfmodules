@@ -106,7 +106,7 @@ FragmentReceiver::init(const data_t& init_data)
 }
 
 void 
-get_info(opmonlib::InfoCollector& ci, /*int level*/)  {
+FragmentReceiver::get_info(opmonlib::InfoCollector& ci, int /*level*/)  {
 
   fragmentreceiverinfo::Info i;
 
@@ -116,14 +116,6 @@ get_info(opmonlib::InfoCollector& ci, /*int level*/)  {
 
   ci.add(i) ;
 
-}
-
-records_received = m_records_received_tot.load();
-  dwi.new_records_received = m_records_received.exchange(0);
-  dwi.records_written = m_records_written_tot.load();
-  dwi.new_records_written = m_records_written.exchange(0);
-
-  ci.add(dwi);
 }
 
 void
@@ -187,7 +179,7 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
     m_trigger_decisions_counter.store( m_trigger_decisions.size() ) ;
     m_fragment_index_counter.store( m_fragments.size() ) ;
     uint64_t tot = std::accumulate( m_fragments.begin(), m_fragments.end(), 0, 
-				    [&](auto tot, auto ele){ return tot += ele.size() ; } ) ;
+				    [&](auto tot, auto & ele){ return tot += ele.second.size() ; } ) ;
     m_fragment_counter.store( tot ) ;
     
 
