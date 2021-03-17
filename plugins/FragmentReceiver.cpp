@@ -12,7 +12,6 @@
 #include "appfwk/DAQModuleHelper.hpp"
 #include "appfwk/app/Nljs.hpp"
 #include "dfmodules/fragmentreceiver/Nljs.hpp"
-#include "dfmodules/fragmentreceiverinfo/Nljs.hpp"
 #include "dfmodules/fragmentreceiver/Structs.hpp"
 #include "logging/Logging.hpp"
 
@@ -160,10 +159,6 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
   m_trigger_decisions.clear();
   m_fragments.clear();
 
-  m_trigger_decisions_counter.store( 0 ) ;
-  m_fragment_index_counter.store( 0 ) ;
-  m_fragment_counter.store( 0 ) ;
-
   // allocate queues
   trigger_decision_source_t decision_source(m_trigger_decision_source_name);
   trigger_record_sink_t record_sink(m_trigger_record_sink_name);
@@ -246,29 +241,11 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
       //-------------------------------------------------
       // Check if some fragments are obsolete
       //--------------------------------------------------
-
-      for (auto it = m_fragments.begin(); it != m_fragments.end(); ++it) {
-
-        for (auto frag_it = it->second.begin(); frag_it != it->second.end(); ++frag_it) {
-
-          if (m_current_time > m_max_time_difference + (*frag_it)->get_trigger_timestamp()) {
-
-            ers::error(FragmentObsolete(ERS_HERE,
-                                        (*frag_it)->get_trigger_number(),
-                                        (*frag_it)->get_fragment_type_code(),
-                                        (*frag_it)->get_trigger_timestamp(),
-                                        m_current_time));
-            // it = m_trigger_decisions.erase( it ) ;
-
-            // note that if we reached this point it means there is no corresponding trigger decision for this id
-            // otherwise we would have created a dedicated trigger record (though probably incomplete)
-            // so there is no need to check the trigger decision book
-          }
-        } // vector loop
-      }   // fragment loop
-
+      check_old_fragments() ;
+      
     } // if books were updated
-    else {
+    else 
+    {
       if (running_flag.load()) {
         std::this_thread::sleep_for(m_queue_timeout);
       }
@@ -439,13 +416,42 @@ FragmentReceiver::send_trigger_record(const TriggerId& id, trigger_record_sink_t
   return wasSentSuccessfully;
 }
 
+bool
+FragmentReceiver::check_old_fragments() const {
+  
+  bool old_stuff = false ;
+
+  for (auto it = m_fragments.begin(); it != m_fragments.end(); ++it) {
+    
+    for (auto frag_it = it->second.begin(); frag_it != it->second.end(); ++frag_it) {
+      
+      if (m_current_time > m_max_time_difference + (*frag_it)->get_trigger_timestamp()) {
+	old_stuff = true ;
+	ers::error(FragmentObsolete(ERS_HERE,
+				    (*frag_it)->get_trigger_number(),
+				    (*frag_it)->get_fragment_type_code(),
+				    (*frag_it)->get_trigger_timestamp(),
+				    m_current_time));
+	// it = m_trigger_decisions.erase( it ) ;
+	
+	// note that if we reached this point it means there is no corresponding trigger decision for this id
+	// otherwise we would have created a dedicated trigger record (though probably incomplete)
+	// so there is no need to check the trigger decision book
+      }
+    } // vector loop
+  }   // fragment loop
+  
+  return old_stuff ;
+}
+
+
 void
 FragmentReceiver::fill_counters() const {
 
   m_trigger_decisions_counter.store( m_trigger_decisions.size() ) ;
   m_fragment_index_counter.store( m_fragments.size() ) ;
-  uint64_t tot = std::accumulate( m_fragments.begin(), m_fragments.end(), 0, 
-				  [&](auto tot, auto & ele){ return tot += ele.second.size() ; } ) ;
+  metric_counter_type tot = std::accumulate( m_fragments.begin(), m_fragments.end(), 0, 
+					     [](auto tot, auto & ele){ return tot += ele.second.size() ; } ) ;
   m_fragment_counter.store( tot ) ;
   
 }

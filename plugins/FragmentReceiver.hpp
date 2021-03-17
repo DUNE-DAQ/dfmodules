@@ -9,7 +9,7 @@
 #ifndef DFMODULES_PLUGINS_FRAGMENTRECEIVER_HPP_
 #define DFMODULES_PLUGINS_FRAGMENTRECEIVER_HPP_
 
-
+#include "dfmodules/fragmentreceiverinfo/Nljs.hpp"
 
 #include "dataformats/Fragment.hpp"
 #include "dataformats/TriggerRecord.hpp"
@@ -135,6 +135,8 @@ protected:
   bool send_trigger_record(const TriggerId&, trigger_record_sink_t&, std::atomic<bool>& running);
   // this creates a trigger record and send it
 
+  bool check_old_fragments() const ;
+
   void fill_counters() const ;
 
 private:
@@ -163,9 +165,10 @@ private:
   std::map<TriggerId, dfmessages::TriggerDecision> m_trigger_decisions;
 
   // book related metrics
-  mutable std::atomic<uint64_t> m_trigger_decisions_counter = { 0 };
-  mutable std::atomic<uint64_t> m_fragment_index_counter = { 0 };
-  mutable std::atomic<uint64_t> m_fragment_counter = { 0 };
+  using metric_counter_type = decltype( fragmentreceiverinfo::Info::trigger_decisions ) ;
+  mutable std::atomic<metric_counter_type> m_trigger_decisions_counter = { 0 };
+  mutable std::atomic<metric_counter_type> m_fragment_index_counter = { 0 };
+  mutable std::atomic<metric_counter_type> m_fragment_counter = { 0 };
 
   dataformats::timestamp_diff_t m_max_time_difference;
   dataformats::timestamp_t m_current_time = 0;
