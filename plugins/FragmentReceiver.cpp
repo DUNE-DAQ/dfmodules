@@ -12,6 +12,7 @@
 #include "appfwk/DAQModuleHelper.hpp"
 #include "appfwk/app/Nljs.hpp"
 #include "dfmodules/fragmentreceiver/Nljs.hpp"
+#include "dfmodules/fragmentreceiverinfo/Nljs.hpp"
 #include "dfmodules/fragmentreceiver/Structs.hpp"
 #include "logging/Logging.hpp"
 
@@ -22,6 +23,7 @@
 #include <thread>
 #include <utility>
 #include <vector>
+#include <numeric>
 
 /**
  * @brief TRACE debug levels used in this source file
@@ -103,6 +105,27 @@ FragmentReceiver::init(const data_t& init_data)
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
 
+void 
+get_info(opmonlib::InfoCollector& ci, /*int level*/)  {
+
+  fragmentreceiverinfo::Info i;
+
+  i.trigger_decisions = m_trigger_decisions_counter.load() ; 
+  i.trigger_fragments = m_fragment_index_counter.load() ;
+  i.total_fragments = m_fragment_counter.load() ;
+
+  ci.add(i) ;
+
+}
+
+records_received = m_records_received_tot.load();
+  dwi.new_records_received = m_records_received.exchange(0);
+  dwi.records_written = m_records_written_tot.load();
+  dwi.new_records_written = m_records_written.exchange(0);
+
+  ci.add(dwi);
+}
+
 void
 FragmentReceiver::do_conf(const data_t& payload)
 {
@@ -145,6 +168,10 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
   m_trigger_decisions.clear();
   m_fragments.clear();
 
+  m_trigger_decisions_counter.store( 0 ) ;
+  m_fragment_index_counter.store( 0 ) ;
+  m_fragment_counter.store( 0 ) ;
+
   // allocate queues
   trigger_decision_source_t decision_source(m_trigger_decision_source_name);
   trigger_record_sink_t record_sink(m_trigger_record_sink_name);
@@ -156,6 +183,13 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
   bool book_updates = false;
 
   while (running_flag.load() || book_updates) {
+
+    m_trigger_decisions_counter.store( m_trigger_decisions.size() ) ;
+    m_fragment_index_counter.store( m_fragments.size() ) ;
+    uint64_t tot = std::accumulate( m_fragments.begin(), m_fragments.end(), 0, 
+				    [&](auto tot, auto ele){ return tot += ele.size() ; } ) ;
+    m_fragment_counter.store( tot ) ;
+    
 
     book_updates = read_queues(decision_source, frag_sources);
 
