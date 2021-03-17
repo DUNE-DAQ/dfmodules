@@ -69,8 +69,7 @@ BOOST_AUTO_TEST_CASE(WriteFragmentFiles)
   const int link_count = 1;
 
   // delete any pre-existing files so that we start with a clean slate
-  // std::string delete_pattern = file_prefix + ".*.hdf5";
-  std::string delete_pattern = ".*.hdf5";
+  std::string delete_pattern = file_prefix + ".*.hdf5";
   delete_files_matching_pattern(file_path, delete_pattern);
 
   // create the DataStore
@@ -106,8 +105,7 @@ BOOST_AUTO_TEST_CASE(WriteFragmentFiles)
   data_store_ptr.reset(); // explicit destruction
 
   // check that the expected number of files was created
-  // std::string search_pattern = file_prefix+"_trigger_number*_apa_number_*.hdf5";
-  std::string search_pattern = ".*.hdf5";
+  std::string search_pattern = file_prefix + ".*.hdf5";
   std::vector<std::string> file_list = get_files_matching_pattern(file_path, search_pattern);
   BOOST_REQUIRE_EQUAL(file_list.size(), (trigger_count * apa_count));
 
@@ -122,15 +120,14 @@ BOOST_AUTO_TEST_CASE(WriteEventFiles)
   std::string file_prefix = "demo" + std::to_string(getpid());
 
   const int dummydata_size = 7;
-  const int run_number = 52;
+  const int run_number = 53;
   const int trigger_count = 5;
   const std::string detector_name = "TPC";
   const int apa_count = 3;
   const int link_count = 1;
 
   // delete any pre-existing files so that we start with a clean slate
-  // std::string delete_pattern = file_prefix + ".*.hdf5";
-  std::string delete_pattern = ".*.hdf5";
+  std::string delete_pattern = file_prefix + ".*.hdf5";
   delete_files_matching_pattern(file_path, delete_pattern);
 
   // create the DataStore
@@ -167,8 +164,7 @@ BOOST_AUTO_TEST_CASE(WriteEventFiles)
   data_store_ptr.reset(); // explicit destruction
 
   // check that the expected number of files was created
-  std::string search_pattern = ".*.hdf5";
-  // std::string search_pattern = file_prefix + "trigger_number*.hdf5";
+  std::string search_pattern = file_prefix + ".*.hdf5";
   std::vector<std::string> file_list = get_files_matching_pattern(file_path, search_pattern);
   BOOST_REQUIRE_EQUAL(file_list.size(), trigger_count);
 
@@ -183,7 +179,7 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
   std::string file_prefix = "demo" + std::to_string(getpid());
 
   const int dummydata_size = 7;
-  const int run_number = 52;
+  const int run_number = 54;
   const int trigger_count = 5;
   const std::string detector_name = "TPC";
   const int apa_count = 3;
@@ -246,7 +242,7 @@ BOOST_AUTO_TEST_CASE(FileSizeLimitResultsInMultipleFiles)
   std::string file_prefix = "demo" + std::to_string(getpid());
 
   const int dummydata_size = 10000;
-  const int run_number = 52;
+  const int run_number = 55;
   const int trigger_count = 15;
   const std::string detector_name = "TPC";
   const int apa_count = 5;
@@ -313,7 +309,7 @@ BOOST_AUTO_TEST_CASE(SmallFileSizeLimitDataBlockListWrite)
   std::string file_prefix = "demo" + std::to_string(getpid());
 
   const int dummydata_size = 100000;
-  const int run_number = 55;
+  const int run_number = 56;
   const int trigger_count = 5;
   const std::string detector_name = "TPC";
   const int apa_count = 5;
@@ -371,8 +367,8 @@ BOOST_AUTO_TEST_CASE(SmallFileSizeLimitDataBlockListWrite)
   BOOST_REQUIRE_EQUAL(file_list.size(), 5);
 
   // clean up the files that were created
-  //file_list = delete_files_matching_pattern(file_path, delete_pattern);
-  //BOOST_REQUIRE_EQUAL(file_list.size(), 5);
+  file_list = delete_files_matching_pattern(file_path, delete_pattern);
+  BOOST_REQUIRE_EQUAL(file_list.size(), 5);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
