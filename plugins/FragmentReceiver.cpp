@@ -176,12 +176,7 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
 
   while (running_flag.load() || book_updates) {
 
-    m_trigger_decisions_counter.store( m_trigger_decisions.size() ) ;
-    m_fragment_index_counter.store( m_fragments.size() ) ;
-    uint64_t tot = std::accumulate( m_fragments.begin(), m_fragments.end(), 0, 
-				    [&](auto tot, auto & ele){ return tot += ele.second.size() ; } ) ;
-    m_fragment_counter.store( tot ) ;
-    
+    fill_counters() ;
 
     book_updates = read_queues(decision_source, frag_sources);
 
@@ -299,6 +294,8 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
   for (const auto& t : triggers) {
     send_trigger_record(t, record_sink, running_flag);
   }
+
+  fill_counters() ;
 
   std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
 
@@ -440,6 +437,17 @@ FragmentReceiver::send_trigger_record(const TriggerId& id, trigger_record_sink_t
   } // push while loop
 
   return wasSentSuccessfully;
+}
+
+void
+FragmentReceiver::fill_counters() const {
+
+  m_trigger_decisions_counter.store( m_trigger_decisions.size() ) ;
+  m_fragment_index_counter.store( m_fragments.size() ) ;
+  uint64_t tot = std::accumulate( m_fragments.begin(), m_fragments.end(), 0, 
+				  [&](auto tot, auto & ele){ return tot += ele.second.size() ; } ) ;
+  m_fragment_counter.store( tot ) ;
+  
 }
 
 } // namespace dfmodules
