@@ -15,7 +15,8 @@ local info = {
        s.field("class_name", self.cl, "fragmentreceiverinfo", doc="Info class name"),
        s.field("trigger_decisions", self.uint8, 0, doc="Number of trigger decisions in the book"), 
        s.field("trigger_fragments", self.uint8, 0, doc="number of trigger decisions with at least one fragment"), 
-       s.field("total_fragments", self.uint8, 0, doc="Total number of fragments in the book")       
+       s.field("total_fragments", self.uint8, 0, doc="Total number of fragments in the book"),
+       s.field("old_fragments", self.uint8, 0, doc="number of fragments that are late with respect to present time. How late is configurable")       
    ], doc="Fragment receiver information")
 };
 

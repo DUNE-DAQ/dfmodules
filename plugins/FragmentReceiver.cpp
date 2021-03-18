@@ -112,6 +112,7 @@ FragmentReceiver::get_info(opmonlib::InfoCollector& ci, int /*level*/)  {
   i.trigger_decisions = m_trigger_decisions_counter.load() ; 
   i.trigger_fragments = m_fragment_index_counter.load() ;
   i.total_fragments = m_fragment_counter.load() ;
+  i.old_fragments = m_old_fragment_counter.load() ;
 
   ci.add(i) ;
 
@@ -420,6 +421,8 @@ bool
 FragmentReceiver::check_old_fragments() const {
   
   bool old_stuff = false ;
+  
+  metric_counter_type old_fragments = 0 ;
 
   for (auto it = m_fragments.begin(); it != m_fragments.end(); ++it) {
     
@@ -427,6 +430,7 @@ FragmentReceiver::check_old_fragments() const {
       
       if (m_current_time > m_max_time_difference + (*frag_it)->get_trigger_timestamp()) {
 	old_stuff = true ;
+	++ old_fragments ;
 	ers::error(FragmentObsolete(ERS_HERE,
 				    (*frag_it)->get_trigger_number(),
 				    (*frag_it)->get_fragment_type_code(),
@@ -441,6 +445,8 @@ FragmentReceiver::check_old_fragments() const {
     } // vector loop
   }   // fragment loop
   
+  m_old_fragment_counter.store( old_fragments ) ;
+
   return old_stuff ;
 }
 
