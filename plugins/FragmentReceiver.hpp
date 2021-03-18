@@ -168,6 +168,7 @@ private:
   using metric_counter_type = decltype( fragmentreceiverinfo::Info::trigger_decisions ) ;
   mutable std::atomic<metric_counter_type> m_trigger_decisions_counter = { 0 };
   mutable std::atomic<metric_counter_type> m_fragment_index_counter = { 0 };
+  mutable std::atomic<metric_counter_type> m_old_fragment_index_counter = { 0 };
   mutable std::atomic<metric_counter_type> m_fragment_counter = { 0 };
   mutable std::atomic<metric_counter_type> m_old_fragment_counter = { 0 };
 
