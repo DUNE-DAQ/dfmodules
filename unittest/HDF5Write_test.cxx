@@ -21,6 +21,7 @@
 #include <iostream>
 #include <memory>
 #include <regex>
+#include <stdlib.h>
 #include <string>
 #include <vector>
 
@@ -59,7 +60,7 @@ BOOST_AUTO_TEST_SUITE(HDF5Write_test)
 BOOST_AUTO_TEST_CASE(WriteFragmentFiles)
 {
   std::string file_path(std::filesystem::temp_directory_path());
-  std::string file_prefix = "demo" + std::to_string(getpid());
+  std::string file_prefix = "demo" + std::to_string(getpid()) + "_" + std::string(getenv("USER"));
 
   const int dummydata_size = 7;
   const int run_number = 52;
@@ -117,7 +118,7 @@ BOOST_AUTO_TEST_CASE(WriteFragmentFiles)
 BOOST_AUTO_TEST_CASE(WriteEventFiles)
 {
   std::string file_path(std::filesystem::temp_directory_path());
-  std::string file_prefix = "demo" + std::to_string(getpid());
+  std::string file_prefix = "demo" + std::to_string(getpid()) + "_" + std::string(getenv("USER"));
 
   const int dummydata_size = 7;
   const int run_number = 53;
@@ -176,7 +177,7 @@ BOOST_AUTO_TEST_CASE(WriteEventFiles)
 BOOST_AUTO_TEST_CASE(WriteOneFile)
 {
   std::string file_path(std::filesystem::temp_directory_path());
-  std::string file_prefix = "demo" + std::to_string(getpid());
+  std::string file_prefix = "demo" + std::to_string(getpid()) + "_" + std::string(getenv("USER"));
 
   const int dummydata_size = 7;
   const int run_number = 54;
@@ -239,7 +240,7 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
 BOOST_AUTO_TEST_CASE(FileSizeLimitResultsInMultipleFiles)
 {
   std::string file_path(std::filesystem::temp_directory_path());
-  std::string file_prefix = "demo" + std::to_string(getpid());
+  std::string file_prefix = "demo" + std::to_string(getpid()) + "_" + std::string(getenv("USER"));
 
   const int dummydata_size = 10000;
   const int run_number = 55;
@@ -306,7 +307,7 @@ BOOST_AUTO_TEST_CASE(FileSizeLimitResultsInMultipleFiles)
 BOOST_AUTO_TEST_CASE(SmallFileSizeLimitDataBlockListWrite)
 {
   std::string file_path(std::filesystem::temp_directory_path());
-  std::string file_prefix = "demo" + std::to_string(getpid());
+  std::string file_prefix = "demo" + std::to_string(getpid()) + "_" + std::string(getenv("USER"));
 
   const int dummydata_size = 100000;
   const int run_number = 56;
