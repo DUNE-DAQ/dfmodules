@@ -124,7 +124,7 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
   BOOST_REQUIRE_EQUAL(file_list.size(), 1);
 
   // clean up the files that were created
-  // file_list = delete_files_matching_pattern(file_path, delete_pattern);
-  // BOOST_REQUIRE_EQUAL(file_list.size(), 1);
+  file_list = delete_files_matching_pattern(file_path, delete_pattern);
+  BOOST_REQUIRE_EQUAL(file_list.size(), 1);
 }
 BOOST_AUTO_TEST_SUITE_END()
