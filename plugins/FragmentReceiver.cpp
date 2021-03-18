@@ -18,6 +18,7 @@
 #include <chrono>
 #include <cstdlib>
 #include <memory>
+#include <numeric>
 #include <string>
 #include <thread>
 #include <utility>
@@ -104,6 +105,21 @@ FragmentReceiver::init(const data_t& init_data)
 }
 
 void
+FragmentReceiver::get_info(opmonlib::InfoCollector& ci, int /*level*/)
+{
+
+  fragmentreceiverinfo::Info i;
+
+  i.trigger_decisions = m_trigger_decisions_counter.load();
+  i.populated_trigger_ids = m_fragment_index_counter.load();
+  i.old_trigger_ids = m_old_fragment_index_counter.load();
+  i.total_fragments = m_fragment_counter.load();
+  i.old_fragments = m_old_fragment_counter.load();
+
+  ci.add(i);
+}
+
+void
 FragmentReceiver::do_conf(const data_t& payload)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
@@ -156,6 +172,8 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
   bool book_updates = false;
 
   while (running_flag.load() || book_updates) {
+
+    fill_counters();
 
     book_updates = read_queues(decision_source, frag_sources);
 
@@ -225,26 +243,7 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
       //-------------------------------------------------
       // Check if some fragments are obsolete
       //--------------------------------------------------
-
-      for (auto it = m_fragments.begin(); it != m_fragments.end(); ++it) {
-
-        for (auto frag_it = it->second.begin(); frag_it != it->second.end(); ++frag_it) {
-
-          if (m_current_time > m_max_time_difference + (*frag_it)->get_trigger_timestamp()) {
-
-            ers::error(FragmentObsolete(ERS_HERE,
-                                        (*frag_it)->get_trigger_number(),
-                                        (*frag_it)->get_fragment_type_code(),
-                                        (*frag_it)->get_trigger_timestamp(),
-                                        m_current_time));
-            // it = m_trigger_decisions.erase( it ) ;
-
-            // note that if we reached this point it means there is no corresponding trigger decision for this id
-            // otherwise we would have created a dedicated trigger record (though probably incomplete)
-            // so there is no need to check the trigger decision book
-          }
-        } // vector loop
-      }   // fragment loop
+      check_old_fragments();
 
     } // if books were updated
     else {
@@ -273,6 +272,8 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
   for (const auto& t : triggers) {
     send_trigger_record(t, record_sink, running_flag);
   }
+
+  fill_counters();
 
   std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
 
@@ -414,6 +415,60 @@ FragmentReceiver::send_trigger_record(const TriggerId& id, trigger_record_sink_t
   } // push while loop
 
   return wasSentSuccessfully;
+}
+
+bool
+FragmentReceiver::check_old_fragments() const
+{
+
+  bool old_stuff = false;
+
+  metric_counter_type old_fragments = 0;
+  metric_counter_type old_trigger_indexes = 0;
+
+  for (auto it = m_fragments.begin(); it != m_fragments.end(); ++it) {
+
+    metric_counter_type index_old_fragments = 0;
+
+    for (auto frag_it = it->second.begin(); frag_it != it->second.end(); ++frag_it) {
+
+      if (m_current_time > m_max_time_difference + (*frag_it)->get_trigger_timestamp()) {
+        old_stuff = true;
+        ++index_old_fragments;
+        ers::error(FragmentObsolete(ERS_HERE,
+                                    (*frag_it)->get_trigger_number(),
+                                    (*frag_it)->get_fragment_type_code(),
+                                    (*frag_it)->get_trigger_timestamp(),
+                                    m_current_time));
+        // it = m_trigger_decisions.erase( it ) ;
+
+        // note that if we reached this point it means there is no corresponding trigger decision for this id
+        // otherwise we would have created a dedicated trigger record (though probably incomplete)
+        // so there is no need to check the trigger decision book
+      }
+    } // vector loop
+
+    if (index_old_fragments > 0) {
+      ++old_trigger_indexes;
+      old_fragments += index_old_fragments;
+    }
+  } // fragment loop
+
+  m_old_fragment_counter.store(old_fragments);
+  m_old_fragment_index_counter.store(old_trigger_indexes);
+
+  return old_stuff;
+}
+
+void
+FragmentReceiver::fill_counters() const
+{
+
+  m_trigger_decisions_counter.store(m_trigger_decisions.size());
+  m_fragment_index_counter.store(m_fragments.size());
+  metric_counter_type tot = std::accumulate(
+    m_fragments.begin(), m_fragments.end(), 0, [](auto tot, auto& ele) { return tot += ele.second.size(); });
+  m_fragment_counter.store(tot);
 }
 
 } // namespace dfmodules
