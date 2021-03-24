@@ -7,10 +7,9 @@
  * received with this code.
  */
 
-//#include "dfmodules/DataStore.hpp"
-//#include "dfmodules/hdf5datastore/Nljs.hpp"
-//#include "dfmodules/hdf5datastore/Structs.hpp"
-#include "HDF5DataStore.hpp"
+#include "dfmodules/DataStore.hpp"
+#include "dfmodules/hdf5datastore/Nljs.hpp"
+#include "dfmodules/hdf5datastore/Structs.hpp"
 
 #define BOOST_TEST_MODULE HDF5Write_test // NOLINT
 
@@ -74,21 +73,15 @@ BOOST_AUTO_TEST_CASE(WriteFragmentFiles)
   delete_files_matching_pattern(file_path, delete_pattern);
 
   // create the DataStore
-  // nlohmann::json conf ;
-  // conf["name"] = "tempWriter" ;
-  // conf["filename_prefix"] = file_prefix ;
-  // conf["directory_path"] = file_path ;
-  // conf["mode"] = "one-fragment-per-file" ;
-
-  // create the DataStore
-  nlohmann::json conf;
-  conf["name"] = "tempWriter";
-  conf["directory_path"] = file_path;
-  conf["mode"] = "one-fragment-per-file";
-  nlohmann::json subconf;
-  subconf["overall_prefix"] = file_prefix;
-  conf["filename_parameters"] = subconf;
-  std::unique_ptr<HDF5DataStore> data_store_ptr(new HDF5DataStore(conf));
+  hdf5datastore::ConfParams config_params;
+  config_params.name = "tempWriter";
+  config_params.directory_path = file_path;
+  config_params.mode = "one-fragment-per-file";
+  config_params.filename_parameters.overall_prefix = file_prefix;
+  hdf5datastore::data_t hdf5ds_json;
+  hdf5datastore::to_json(hdf5ds_json, config_params);
+  std::unique_ptr<DataStore> data_store_ptr;
+  data_store_ptr = make_data_store(hdf5ds_json);
 
   // write several events, each with several fragments
   char dummy_data[dummydata_size];
@@ -132,22 +125,15 @@ BOOST_AUTO_TEST_CASE(WriteEventFiles)
   delete_files_matching_pattern(file_path, delete_pattern);
 
   // create the DataStore
-  // nlohmann::json conf ;
-  // conf["name"] = "tempWriter" ;
-  // conf["filename_prefix"] = file_prefix ;
-  // conf["directory_path"] = file_path ;
-  // conf["mode"] = "one-event-per-file" ;
-  // std::unique_ptr<HDF5DataStore> data_store_ptr(new HDF5DataStore(conf));
-
-  // create the DataStore
-  nlohmann::json conf;
-  conf["name"] = "tempWriter";
-  conf["directory_path"] = file_path;
-  conf["mode"] = "one-event-per-file";
-  nlohmann::json subconf;
-  subconf["overall_prefix"] = file_prefix;
-  conf["filename_parameters"] = subconf;
-  std::unique_ptr<HDF5DataStore> data_store_ptr(new HDF5DataStore(conf));
+  hdf5datastore::ConfParams config_params;
+  config_params.name = "tempWriter";
+  config_params.directory_path = file_path;
+  config_params.mode = "one-event-per-file";
+  config_params.filename_parameters.overall_prefix = file_prefix;
+  hdf5datastore::data_t hdf5ds_json;
+  hdf5datastore::to_json(hdf5ds_json, config_params);
+  std::unique_ptr<DataStore> data_store_ptr;
+  data_store_ptr = make_data_store(hdf5ds_json);
 
   // write several events, each with several fragments
   char dummy_data[dummydata_size];
@@ -191,26 +177,16 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
   delete_files_matching_pattern(file_path, delete_pattern);
 
   // create the DataStore
-  nlohmann::json conf;
-  conf["name"] = "tempWriter";
-  conf["directory_path"] = file_path;
-  conf["mode"] = "all-per-file";
-  nlohmann::json subconf;
-  subconf["overall_prefix"] = file_prefix;
-  conf["filename_parameters"] = subconf;
-  std::unique_ptr<HDF5DataStore> data_store_ptr(new HDF5DataStore(conf));
-#if 0
   hdf5datastore::ConfParams config_params;
   config_params.name = "tempWriter";
-  config_params.mode = "all-per-file";
-  config_params.max_file_size_bytes = 10000000;  // much larger than what we expect, so no second file;
   config_params.directory_path = file_path;
+  config_params.mode = "all-per-file";
+  config_params.max_file_size_bytes = 100000000; // much larger than what we expect, so no second file;
   config_params.filename_parameters.overall_prefix = file_prefix;
   hdf5datastore::data_t hdf5ds_json;
   hdf5datastore::to_json(hdf5ds_json, config_params);
   std::unique_ptr<DataStore> data_store_ptr;
   data_store_ptr = make_data_store(hdf5ds_json);
-#endif
 
   // write several events, each with several fragments
   char dummy_data[dummydata_size];
@@ -257,27 +233,16 @@ BOOST_AUTO_TEST_CASE(FileSizeLimitResultsInMultipleFiles)
   delete_files_matching_pattern(file_path, delete_pattern);
 
   // create the DataStore
-  nlohmann::json conf;
-  conf["name"] = "tempWriter";
-  conf["directory_path"] = file_path;
-  conf["mode"] = "all-per-file";
-  conf["max_file_size_bytes"] = 3000000;
-  nlohmann::json subconf;
-  subconf["overall_prefix"] = file_prefix;
-  conf["filename_parameters"] = subconf;
-  std::unique_ptr<HDF5DataStore> data_store_ptr(new HDF5DataStore(conf));
-#if 0
   hdf5datastore::ConfParams config_params;
   config_params.name = "tempWriter";
-  config_params.mode = "all-per-file";
-  config_params.max_file_size_bytes = 10000000;  // much larger than what we expect, so no second file;
   config_params.directory_path = file_path;
+  config_params.mode = "all-per-file";
+  config_params.max_file_size_bytes = 3000000; // goal is 6 events per file
   config_params.filename_parameters.overall_prefix = file_prefix;
   hdf5datastore::data_t hdf5ds_json;
   hdf5datastore::to_json(hdf5ds_json, config_params);
   std::unique_ptr<DataStore> data_store_ptr;
   data_store_ptr = make_data_store(hdf5ds_json);
-#endif
 
   char dummy_data[dummydata_size];
   for (int trigger_number = 1; trigger_number <= trigger_count; ++trigger_number) {
@@ -323,27 +288,16 @@ BOOST_AUTO_TEST_CASE(SmallFileSizeLimitDataBlockListWrite)
   delete_files_matching_pattern(file_path, delete_pattern);
 
   // create the DataStore
-  nlohmann::json conf;
-  conf["name"] = "tempWriter";
-  conf["directory_path"] = file_path;
-  conf["mode"] = "all-per-file";
-  conf["max_file_size_bytes"] = 150000;  // ~1.5 Fragment, ~0.3 TR
-  nlohmann::json subconf;
-  subconf["overall_prefix"] = file_prefix;
-  conf["filename_parameters"] = subconf;
-  std::unique_ptr<HDF5DataStore> data_store_ptr(new HDF5DataStore(conf));
-#if 0
   hdf5datastore::ConfParams config_params;
   config_params.name = "tempWriter";
-  config_params.mode = "all-per-file";
-  config_params.max_file_size_bytes = 10000000;  // much larger than what we expect, so no second file;
   config_params.directory_path = file_path;
+  config_params.mode = "all-per-file";
+  config_params.max_file_size_bytes = 150000; // ~1.5 Fragment, ~0.3 TR
   config_params.filename_parameters.overall_prefix = file_prefix;
   hdf5datastore::data_t hdf5ds_json;
   hdf5datastore::to_json(hdf5ds_json, config_params);
   std::unique_ptr<DataStore> data_store_ptr;
   data_store_ptr = make_data_store(hdf5ds_json);
-#endif
 
   char dummy_data[dummydata_size];
   for (int trigger_number = 1; trigger_number <= trigger_count; ++trigger_number) {
@@ -355,8 +309,8 @@ BOOST_AUTO_TEST_CASE(SmallFileSizeLimitDataBlockListWrite)
         data_block.m_unowned_data_start = static_cast<void*>(&dummy_data[0]);
         data_block.m_data_size = dummydata_size;
         data_block_list.emplace_back(std::move(data_block));
-      }                   // link number
-    }                     // apa number
+      } // link number
+    }   // apa number
     data_store_ptr->write(data_block_list);
   }                       // trigger number
   data_store_ptr.reset(); // explicit destruction
