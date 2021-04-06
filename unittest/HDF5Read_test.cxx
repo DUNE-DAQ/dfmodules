@@ -7,7 +7,9 @@
  * received with this code.
  */
 
-#include "HDF5DataStore.hpp"
+#include "dfmodules/DataStore.hpp"
+#include "dfmodules/hdf5datastore/Nljs.hpp"
+#include "dfmodules/hdf5datastore/Structs.hpp"
 
 #define BOOST_TEST_MODULE HDF5Read_test // NOLINT
 
@@ -18,6 +20,7 @@
 #include <iostream>
 #include <memory>
 #include <regex>
+#include <stdlib.h>
 #include <string>
 #include <vector>
 
@@ -178,7 +181,7 @@ BOOST_AUTO_TEST_CASE(ReadEventFiles)
 BOOST_AUTO_TEST_CASE(ReadSingleFile)
 {
   std::string file_path(std::filesystem::temp_directory_path());
-  std::string file_prefix = "demo" + std::to_string(getpid());
+  std::string file_prefix = "demo" + std::to_string(getpid()) + "_" + std::string(getenv("USER"));
 
   const int dummydata_size = 7;
   const int run_number = 52;
@@ -192,14 +195,16 @@ BOOST_AUTO_TEST_CASE(ReadSingleFile)
   delete_files_matching_pattern(file_path, delete_pattern);
 
   // create the DataStore instance for writing
-  nlohmann::json conf;
-  conf["name"] = "tempWriter";
-  conf["directory_path"] = file_path;
-  conf["mode"] = "all-per-file";
-  nlohmann::json subconf;
-  subconf["overall_prefix"] = file_prefix;
-  conf["filename_parameters"] = subconf;
-  std::unique_ptr<HDF5DataStore> data_store_ptr(new HDF5DataStore(conf));
+  hdf5datastore::ConfParams config_params;
+  config_params.name = "tempWriter";
+  config_params.directory_path = file_path;
+  config_params.mode = "all-per-file";
+  config_params.max_file_size_bytes = 100000000;
+  config_params.filename_parameters.overall_prefix = file_prefix;
+  hdf5datastore::data_t hdf5ds_json;
+  hdf5datastore::to_json(hdf5ds_json, config_params);
+  std::unique_ptr<DataStore> data_store_ptr;
+  data_store_ptr = make_data_store(hdf5ds_json);
 
   int initialized_checksum = 0;
   // write several events, each with several fragments
@@ -225,14 +230,13 @@ BOOST_AUTO_TEST_CASE(ReadSingleFile)
   data_store_ptr.reset(); // explicit destruction
 
   // create a new DataStore instance to read back the data that was written
-  nlohmann::json read_conf;
-  read_conf["name"] = "tempReader";
-  read_conf["directory_path"] = file_path;
-  read_conf["mode"] = "all-per-file";
-  nlohmann::json read_subconf;
-  read_subconf["overall_prefix"] = file_prefix;
-  read_conf["filename_parameters"] = read_subconf;
-  std::unique_ptr<HDF5DataStore> data_store_ptr2(new HDF5DataStore(read_conf));
+  config_params.name = "tempReader";
+  config_params.directory_path = file_path;
+  config_params.mode = "all-per-file";
+  config_params.filename_parameters.overall_prefix = file_prefix;
+  hdf5datastore::to_json(hdf5ds_json, config_params);
+  std::unique_ptr<DataStore> data_store_ptr2;
+  data_store_ptr2 = make_data_store(hdf5ds_json);
 
   // loop over all of the keys to read in the data
   for (size_t kdx = 0; kdx < key_list.size(); ++kdx) {
