@@ -7,10 +7,9 @@
  * received with this code.
  */
 
-//#include "dfmodules/DataStore.hpp"
-//#include "dfmodules/hdf5datastore/Nljs.hpp"
-//#include "dfmodules/hdf5datastore/Structs.hpp"
-#include "HDF5DataStore.hpp"
+#include "dfmodules/DataStore.hpp"
+#include "dfmodules/hdf5datastore/Nljs.hpp"
+#include "dfmodules/hdf5datastore/Structs.hpp"
 
 #define BOOST_TEST_MODULE TriggerRecordHeaderWrite_test // NOLINT
 
@@ -21,6 +20,7 @@
 #include <iostream>
 #include <memory>
 #include <regex>
+#include <stdlib.h>
 #include <string>
 #include <vector>
 
@@ -59,7 +59,7 @@ BOOST_AUTO_TEST_SUITE(TriggerRecordHeaderWrite_test)
 BOOST_AUTO_TEST_CASE(WriteOneFile)
 {
   std::string file_path(std::filesystem::temp_directory_path());
-  std::string file_prefix = "demo" + std::to_string(getpid());
+  std::string file_prefix = "demo" + std::to_string(getpid()) + "_" + std::string(getenv("USER"));
 
   const int dummydata_size = 7;
   const int run_number = 52;
@@ -73,26 +73,16 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
   delete_files_matching_pattern(file_path, delete_pattern);
 
   // create the DataStore
-  nlohmann::json conf;
-  conf["name"] = "tempWriter";
-  conf["directory_path"] = file_path;
-  conf["mode"] = "all-per-file";
-  nlohmann::json subconf;
-  subconf["overall_prefix"] = file_prefix;
-  conf["filename_parameters"] = subconf;
-  std::unique_ptr<HDF5DataStore> data_store_ptr(new HDF5DataStore(conf));
-#if 0
   hdf5datastore::ConfParams config_params;
   config_params.name = "tempWriter";
-  config_params.mode = "all-per-file";
-  config_params.max_file_size_bytes = 10000000;  // much larger than what we expect, so no second file;
   config_params.directory_path = file_path;
+  config_params.mode = "all-per-file";
+  config_params.max_file_size_bytes = 10000000; // much larger than what we expect, so no second file;
   config_params.filename_parameters.overall_prefix = file_prefix;
   hdf5datastore::data_t hdf5ds_json;
   hdf5datastore::to_json(hdf5ds_json, config_params);
   std::unique_ptr<DataStore> data_store_ptr;
   data_store_ptr = make_data_store(hdf5ds_json);
-#endif
 
   // write several events, each with several fragments
   char dummy_data[dummydata_size];
