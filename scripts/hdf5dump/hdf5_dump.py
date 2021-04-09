@@ -3,7 +3,7 @@
 # Version 0.1
 # Last modified: January 23, 2021
 
-# USAGE: python3 hdf5_dump.py -f sample.hdf5 -TRH  
+# USAGE: python3 hdf5_dump.py -f sample.hdf5 -TRH
 
 import os
 import time
@@ -27,47 +27,22 @@ def parse_args():
     parser.add_argument('-f', '--file_name',
                        help='Name of HDF5 file',
                        required=True)
-    
+
     parser.add_argument('-H', '--header_only',
                        help='Print the header only; no data is displayed',
-                       action='store_true')    
+                       action='store_true')
 
     parser.add_argument('-TRH', '--TRH_only',
                        help='Print the TriggerRecordheader only; data is displayed',
-                       action='store_true')   
+                       action='store_true')
 
     parser.add_argument('-num', '--num_req_trig_records',
+                        type=int,
                        help='Select number of trigger records to be parsed',
-                       default=None)   
+                       default=None)
 
     parser.add_argument('-v', '--version', action='version')
     return parser.parse_args()
-
-
-         
-## Recursive function to get all the information         
-## for a given HDF5 file_name
-def traverse_datasets(hdf_file, reqTrigRecords, isTRH):
-  def h5py_dataset_iterator(hdf5_group, prefix=''):
-    for key in hdf5_group.keys():
-      item = hdf5_group[key]
-      path = f'{prefix}/{key}'
-      if isinstance(item, h5py.Group): # test for group (go down)
-        yield from h5py_dataset_iterator(item, path) 
-      else:
-        if isinstance(item, h5py.Dataset):
-          if (key == "TriggerRecordHeader" and isTRH) or  (key != "TriggerRecordHeader" and isTRH != True):
-            yield (path, item)
-
-  counter = 0
-  for path, _ in h5py_dataset_iterator(hdf_file):
-    if reqTrigRecords == None:
-      yield path
-    elif counter < int(reqTrigRecords):
-      counter += 1
-      yield path
-
-
 
 def bytes_to_int(bytes):
   return int(binascii.hexlify(bytes), 16)
@@ -104,8 +79,6 @@ def print_frag_header(data_array):
   print("Fragment type:\t\t", bytes_to_int((fragment_type)[::-1]))
 
 
-
-
 ## Print TriggerRecordHeader
 def print_trh(data_array):
   check_word = data_array[0:4]
@@ -116,6 +89,7 @@ def print_trh(data_array):
   run_number = data_array[32:36]
   error_bits = data_array[36:40]
   trigger_type = data_array[40:42]
+  unused = data_array[42:48]
 
   print("Magic word:\t\t", binascii.hexlify(check_word)[::-1])
   #print("Trigger number: ", binascii.hexlify(trigger_number)[::-1])
@@ -128,54 +102,73 @@ def print_trh(data_array):
   print("Error bits:\t\t", bytes_to_int((error_bits)[::-1]))
   print("Trigger type:\t\t", bytes_to_int((trigger_type)[::-1]))
 
+  for i in range(bytes_to_int(numb_req_comp[::-1])):
+      i_geo_id_apa = data_array[48+i*24: 52+i*24]
+      i_geo_id_link = data_array[52+i*24: 56+i*24]
+      print("Expected Component: \t\t", i)
+      print("       GeoID (APA): \t\t", bytes_to_int((i_geo_id_apa)[::-1]))
+      print("       GeoID (link): \t\t", bytes_to_int((i_geo_id_link)[::-1]))
 
 
 
 # Actions
 
+def print_header_func(name, dset):
+    global nheader
+    #if isinstance(dset, h5py.Group) and "/" not in name:
+    #    # This is a new trigger record.
+    #    print("New Trigger Record: ", name)
+    #if isinstance(dset, h5py.Dataset) and "FELIX" in name:
+    #    print("New Component: ", name)
+    #if isinstance(dset, h5py.Dataset) and "TriggerRecordHeader" in name:
+    #    print("New TriggerRecordHeader : ", name)
+    if nheader < NHEADER and isinstance(dset, h5py.Dataset):
+        if printTRH and "TriggerRecordHeader" in name:
+            print("nheader:", nheader)
+            print('Path:', name)
+            print('Size:', dset.shape)
+            print('Data type:', dset.dtype)
+            nheader += 1
+            data_array = bytearray(dset[:])
+            print_trh(data_array)
+        if not printTRH and "TriggerRecordHeader" not in name:
+            print("nheader:", nheader)
+            print('Path:', name)
+            print('Size:', dset.shape)
+            print('Data type:', dset.dtype)
+            nheader += 1
+            data_array = bytearray(dset[:])
+            print_frag_header(data_array)
+    return
 
-## Parse the TriggerRecordHeader data 
-def get_trigger_record_headers(file_name, requested_trigger_records, isTRH):
-  with h5py.File(file_name, 'r') as f:
-    for dset in traverse_datasets(f, requested_trigger_records, isTRH):
-      print('Path:', dset)
-      print('Size:', f[dset].shape)
-      print('Data type:', f[dset].dtype)
-      #print('Data content:', f[dset][:])
-      #print(binascii.hexlify(bytearray(f[dset][:])))
-      print_trh(bytearray(f[dset][:]))
-      print("=============================================")
-
-
-## Dump the contents of the HDF5 file
-## Similar to the h5dump tool
-def dump_file(file_name, requested_trigger_records, isTRH):
-  with h5py.File(file_name, 'r') as f:
-    for dset in traverse_datasets(f, requested_trigger_records, isTRH):
-      print('Path:', dset)
-      print('Size:', f[dset].shape)
-      print('Data type:', f[dset].dtype)
-      #print(binascii.hexlify(bytearray(f[dset][:])))
-      print_frag_header(bytearray(f[dset][:]))
-      print("=============================================")
+nheader = 0
+NHEADER = 0
+printTRH = False
+def get_header(file_name):
+    with h5py.File(file_name, 'r') as f:
+        f.visititems(print_header_func)
+    return
 
 
 def main():
     args=parse_args()
 
-     
+
     input_path = args.path
     input_file_name = args.file_name
-    full_path = input_path + input_file_name  
-    print("Reading file", full_path ) 
- 
+    full_path = input_path + input_file_name
+    print("Reading file", full_path )
+
     requested_trigger_records = args.num_req_trig_records
+    global NHEADER
+    global printTRH
+    NHEADER = args.num_req_trig_records
 
     if args.header_only:
-      dump_file(full_path, requested_trigger_records, False)
-
+      get_header(full_path)
     if args.TRH_only:
-      get_trigger_record_headers(full_path, requested_trigger_records, True)
+      printTRH = True
+      get_header(full_path)
 
 if __name__ == "__main__":
     main()
