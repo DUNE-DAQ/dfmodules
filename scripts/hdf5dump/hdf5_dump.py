@@ -5,15 +5,10 @@
 
 # USAGE: python3 hdf5_dump.py -f sample.hdf5 -TRH
 
-import os
-import time
 import argparse
-import subprocess
-import re
 import struct
 
 import h5py
-import binascii
 import datetime
 
 CLOCK_SPEED_HZ = 50000000.0
@@ -37,6 +32,10 @@ def parse_args():
                        help='Print the TriggerRecordheader only; data is displayed',
                        action='store_true')
 
+    parser.add_argument('--check-fragment',
+                       help='check if fragments written in trigger record matches expected number in trigger record header',
+                       action='store_true')
+
     parser.add_argument('-num', '--num_req_trig_records',
                         type=int,
                        help='Select number of trigger records to be parsed',
@@ -53,6 +52,10 @@ def print_frag_header(data_array):
    runumber, geo_id_apa, geo_id_link,
    error_bits, fragment_type
    ) = struct.unpack('<2I5Q5I', data_array[:68])
+   # https://docs.python.org/3/library/struct.html
+   # Do a h5dump on the hdf5 file to see the datatype
+   # "H5T_STD_I8LE" means, 8 bit little endian standard type
+   # https://support.hdfgroup.org/HDF5/doc/RM/PredefDTypes.html
 
   print("Magic word:\t\t", hex(check_word))
   print("Version:\t\t", version)
@@ -98,15 +101,28 @@ def print_trh(data_array):
 
 # Actions
 
+trigger_record_fragments = []
+trigger_record_header_expected_fragments = []
+
+def examine_fragments(name, dset):
+    global nheader
+    if isinstance(dset, h5py.Group) and "/" not in name:
+        # This is a new trigger record.
+        nheader += 1
+        trigger_record_fragments.append(0)
+    if isinstance(dset, h5py.Dataset) and "FELIX" in name:
+        # This is a new fragment
+        trigger_record_fragments[nheader] += 1
+    if isinstance(dset, h5py.Dataset) and "TriggerRecordHeader" in name:
+        # This is a new TriggerRecordHeader
+        print("New TriggerRecordHeader : ", name)
+        data_array = bytearray(dset[:])
+        (i,) = struct.unpack('<Q', data_array[24:32])
+        trigger_record_header_expected_fragments.append(i)
+    return
+
 def print_header_func(name, dset):
     global nheader
-    #if isinstance(dset, h5py.Group) and "/" not in name:
-    #    # This is a new trigger record.
-    #    print("New Trigger Record: ", name)
-    #if isinstance(dset, h5py.Dataset) and "FELIX" in name:
-    #    print("New Component: ", name)
-    #if isinstance(dset, h5py.Dataset) and "TriggerRecordHeader" in name:
-    #    print("New TriggerRecordHeader : ", name)
     if nheader < NHEADER and isinstance(dset, h5py.Dataset):
         if printTRH and "TriggerRecordHeader" in name:
             print(80*'=')
@@ -136,10 +152,20 @@ def get_header(file_name):
         f.visititems(print_header_func)
     return
 
+def examine(file_name):
+    global nheader
+    nheader = -1
+    with h5py.File(file_name, 'r') as f:
+        f.visititems(examine_fragments)
+    for i in range(len(trigger_record_fragments)):
+        print("Trigger record {} No. of fragments (exp. vs. act): {} vs. {}; diff: {}".format(
+            i, trigger_record_header_expected_fragments[i], trigger_record_fragments[i],
+        trigger_record_header_expected_fragments[i] - trigger_record_fragments[i]
+        ))
+    return
 
 def main():
     args=parse_args()
-
 
     input_path = args.path
     input_file_name = args.file_name
@@ -156,6 +182,8 @@ def main():
     if args.TRH_only:
       printTRH = True
       get_header(full_path)
+    if args.check_fragment:
+      examine(full_path)
 
 if __name__ == "__main__":
     main()
