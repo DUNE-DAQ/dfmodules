@@ -10,6 +10,7 @@ import time
 import argparse
 import subprocess
 import re
+import struct
 
 import h5py
 import binascii
@@ -44,72 +45,56 @@ def parse_args():
     parser.add_argument('-v', '--version', action='version')
     return parser.parse_args()
 
-def bytes_to_int(bytes):
-  return int(binascii.hexlify(bytes), 16)
-
 ## Print FragmentHeader
 def print_frag_header(data_array):
-  check_word = data_array[0:4]
-  version = data_array[4:8]
-  fragment_size = data_array[8:16]
-  trigger_number = data_array[16:24]
-  trigger_timestamp = data_array[24:32]
-  window_begin = data_array[32:40]
-  window_end = data_array[40:48]
-  run_number = data_array[48:52]
-  geo_id_apa = data_array[52:56]
-  geo_id_link = data_array[56:60]
-  error_bits = data_array[60:64]
-  fragment_type = data_array[64:68]
+  (check_word, version, fragment_size,
+   trigger_number, trigger_timestamp,
+   window_begin, window_end,
+   runumber, geo_id_apa, geo_id_link,
+   error_bits, fragment_type
+   ) = struct.unpack('<2I5Q5I', data_array[:68])
 
-  print("Magic word:\t\t", binascii.hexlify(check_word)[::-1])
-  print("Version:\t\t", bytes_to_int((version)[::-1]))
-  print("Frag size:\t\t", bytes_to_int((fragment_size)[::-1]))
-  print("Trig number:\t\t", bytes_to_int((trigger_number)[::-1]))
-  print("Trig timestamp:\t\t", bytes_to_int((trigger_timestamp)[::-1]),
-        "("+str(datetime.datetime.fromtimestamp(float(bytes_to_int((trigger_timestamp)[::-1]))/CLOCK_SPEED_HZ))+")")
-  print("Window begin:\t\t", bytes_to_int((window_begin)[::-1]),
-        "("+str(datetime.datetime.fromtimestamp(float(bytes_to_int((window_begin)[::-1]))/CLOCK_SPEED_HZ))+")")
-  print("Window end:\t\t", bytes_to_int((window_end)[::-1]),
-        "("+str(datetime.datetime.fromtimestamp(float(bytes_to_int((window_end)[::-1]))/CLOCK_SPEED_HZ))+")")
-  print("Run number:\t\t", bytes_to_int((run_number)[::-1]))
-  print("GeoID (APA):\t\t", bytes_to_int((geo_id_apa)[::-1]))
-  print("GeoID (link):\t\t", bytes_to_int((geo_id_link)[::-1]))
-  print("Error bits:\t\t", bytes_to_int((error_bits)[::-1]))
-  print("Fragment type:\t\t", bytes_to_int((fragment_type)[::-1]))
+  print("Magic word:\t\t", hex(check_word))
+  print("Version:\t\t", version)
+  print("Frag size:\t\t", fragment_size)
+  print("Trig number:\t\t", trigger_number)
+  print("Trig timestamp:\t\t {} ({})".format(trigger_timestamp,
+        datetime.datetime.fromtimestamp(float(trigger_timestamp)/CLOCK_SPEED_HZ)))
+  print("Window begin (ticks@50MHz):\t", window_begin)
+  print("Window end (ticks@50MHz):\t", window_end)
+  print("Run number:\t\t", runumber)
+  print("GeoID (APA):\t\t", geo_id_apa)
+  print("GeoID (link):\t\t", geo_id_link)
+  print("Error bits:\t\t", error_bits)
+  print("Fragment type:\t\t", fragment_type)
 
 
 ## Print TriggerRecordHeader
 def print_trh(data_array):
-  check_word = data_array[0:4]
-  version = data_array[4:8]
-  trigger_number = data_array[8:16]
-  trigger_timestamp= data_array[16:24]
-  numb_req_comp = data_array[24:32]
-  run_number = data_array[32:36]
-  error_bits = data_array[36:40]
-  trigger_type = data_array[40:42]
-  unused = data_array[42:48]
+  (check_word, version, trigger_number,
+   trigger_timestamp, numb_req_comp, run_number,
+   error_bits, trigger_type) = struct.unpack('<2I3Q2IH', data_array[:42])
 
-  print("Magic word:\t\t", binascii.hexlify(check_word)[::-1])
-  #print("Trigger number: ", binascii.hexlify(trigger_number)[::-1])
-  print("Version:\t\t", bytes_to_int((version)[::-1]))
-  print("Trig number:\t\t", bytes_to_int((trigger_number)[::-1]))
-  print("Trig timestamp:\t\t", bytes_to_int((trigger_timestamp)[::-1]),
-        "("+str(datetime.datetime.fromtimestamp(float(bytes_to_int((trigger_timestamp)[::-1]))/CLOCK_SPEED_HZ))+")")
-  print("Num req comp:\t\t", bytes_to_int((numb_req_comp)[::-1]))
-  print("Run number:\t\t", bytes_to_int((run_number)[::-1]))
-  print("Error bits:\t\t", bytes_to_int((error_bits)[::-1]))
-  print("Trigger type:\t\t", bytes_to_int((trigger_type)[::-1]))
+  print("Magic word:\t\t", hex(check_word))
+  print("Version:\t\t", version)
+  print("Trig number:\t\t", trigger_number)
+  print("Trig timestamp:\t\t", trigger_timestamp,
+        "("+str(datetime.datetime.fromtimestamp(float(trigger_timestamp)/CLOCK_SPEED_HZ))+")")
+  print("Num req comp:\t\t", numb_req_comp)
+  print("Run number:\t\t", run_number)
+  print("Error bits:\t\t", error_bits)
+  print("Trigger type:\t\t", trigger_type)
 
-  for i in range(bytes_to_int(numb_req_comp[::-1])):
-      i_geo_id_apa = data_array[48+i*24: 52+i*24]
-      i_geo_id_link = data_array[52+i*24: 56+i*24]
-      print("Expected Component: \t\t", i)
-      print("       GeoID (APA): \t\t", bytes_to_int((i_geo_id_apa)[::-1]))
-      print("       GeoID (link): \t\t", bytes_to_int((i_geo_id_link)[::-1]))
+  j = 0
+  for (i_geo_id_apa, i_geo_id_link, i_begin, i_end) in struct.iter_unpack("<2I2Q", data_array[48:]):
+      print("Expected Component: \t\t", j)
+      print("       GeoID (APA): \t\t", i_geo_id_apa)
+      print("       GeoID (link): \t\t", i_geo_id_link)
+      print("       Begin time (ticks@50MHz): \t", i_begin)
+      print("       End time (ticks@50MHz): \t\t", i_end)
+      j += 1
 
-
+  return
 
 # Actions
 
@@ -124,18 +109,20 @@ def print_header_func(name, dset):
     #    print("New TriggerRecordHeader : ", name)
     if nheader < NHEADER and isinstance(dset, h5py.Dataset):
         if printTRH and "TriggerRecordHeader" in name:
-            print("nheader:", nheader)
-            print('Path:', name)
-            print('Size:', dset.shape)
-            print('Data type:', dset.dtype)
+            print(80*'=')
+            print("nheader:\t\t", nheader)
+            print('Path:\t\t', name)
+            print('Size:\t\t', dset.shape)
+            print('Data type:\t\t', dset.dtype)
             nheader += 1
             data_array = bytearray(dset[:])
             print_trh(data_array)
         if not printTRH and "TriggerRecordHeader" not in name:
-            print("nheader:", nheader)
-            print('Path:', name)
-            print('Size:', dset.shape)
-            print('Data type:', dset.dtype)
+            print(80*'=')
+            print("nheader:\t\t", nheader)
+            print('Path:\t\t', name)
+            print('Size:\t\t', dset.shape)
+            print('Data type:\t\t', dset.dtype)
             nheader += 1
             data_array = bytearray(dset[:])
             print_frag_header(data_array)
