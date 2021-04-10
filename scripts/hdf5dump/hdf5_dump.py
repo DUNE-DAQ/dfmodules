@@ -23,6 +23,7 @@ g_n_request = 0
 g_header_type = "both"
 g_list_components = False
 
+
 def tick_to_timestamp(ticks):
     ns = float(ticks)/CLOCK_SPEED_HZ
     return datetime.datetime.fromtimestamp(ns)
@@ -48,9 +49,9 @@ def print_header(hdict):
 
 def print_fragment_header(data_array):
     keys = ['Magic word', 'Version', 'Frag Size', 'Trig number',
-        'Trig timestamp', 'Window begin (ticks@50MHz)',
-        'Window end (ticks@50MHz)', 'Run number',
-        'GeoID (APA)', 'GeoID (link)', 'Error bits', 'Fragment type' ]
+            'Trig timestamp', 'Window begin (ticks@50MHz)',
+            'Window end (ticks@50MHz)', 'Run number',
+            'GeoID (APA)', 'GeoID (link)', 'Error bits', 'Fragment type']
     unpack_string = '<2I5Q5I'
     print_header(unpack_header(data_array[:68], unpack_string, keys))
     return
@@ -59,7 +60,7 @@ def print_fragment_header(data_array):
 def print_trigger_record_header(data_array):
     keys = ['Magic word', 'Version', 'Trigger number',
             'Trigger timestamp', 'No. of requested components', 'Run Number',
-            'Error bits', 'Trigger type' ]
+            'Error bits', 'Trigger type']
     unpack_string = '<2I3Q2IH'
     print_header(unpack_header(data_array[:42], unpack_string, keys))
 
@@ -67,7 +68,8 @@ def print_trigger_record_header(data_array):
         comp_keys = ['GeoID (APA)', 'GeoID (link)', 'Begin time (ticks@50MHz)',
                      'End time (ticks@50MHz)']
         comp_unpack_string = "<2I2Q"
-        for i_values in struct.iter_unpack(comp_unpack_string, data_array[48:]):
+        for i_values in struct.iter_unpack(comp_unpack_string,
+                                           data_array[48:]):
             i_comp = dict(zip(comp_keys, i_values))
             print(80*'-')
             print_header(i_comp)
@@ -112,14 +114,14 @@ def examine_fragments_func(name, dset):
         g_trigger_record_nfragments.append(0)
         g_ith_record += 1
     if isinstance(dset, h5py.Dataset):
-            if "FELIX" in name:
-                # This is a new fragment
-                g_trigger_record_nfragments[g_ith_record] += 1
-            if "TriggerRecordHeader" in name:
-                # This is a new TriggerRecordHeader
-                data_array = bytearray(dset[:])
-                (i,) = struct.unpack('<Q', data_array[24:32])
-                g_trigger_record_nexp_fragments.append(i)
+        if "FELIX" in name:
+            # This is a new fragment
+            g_trigger_record_nfragments[g_ith_record] += 1
+        if "TriggerRecordHeader" in name:
+            # This is a new TriggerRecordHeader
+            data_array = bytearray(dset[:])
+            (i,) = struct.unpack('<Q', data_array[24:32])
+            g_trigger_record_nexp_fragments.append(i)
     return
 
 
@@ -134,12 +136,13 @@ def examine_fragments(file_name):
     print("N_diff:      N_frag_act - N_frag_exp")
     print("{:-^60}".format("Column Definitions"))
     print("{:^10}{:^15}{:^15}{:^10}".format(
-        "i", "N_frag_exp","N_frag_act", "N_diff"))
+        "i", "N_frag_exp", "N_frag_act", "N_diff"))
     for i in range(len(g_trigger_record_nfragments)):
         print("{:^10}{:^15}{:^15}{:^10}".format(
             i, g_trigger_record_nexp_fragments[i],
             g_trigger_record_nfragments[i],
-         g_trigger_record_nfragments[i] - g_trigger_record_nexp_fragments[i]))
+            (g_trigger_record_nfragments[i] -
+             g_trigger_record_nexp_fragments[i])))
     return
 
 
@@ -151,7 +154,7 @@ def parse_args():
                         help='Path to HDF5 file',
                         required=True)
 
-    parser.add_argument('--header', choices=['trigger','fragment', 'both'],
+    parser.add_argument('--header', choices=['trigger', 'fragment', 'both'],
                         default='both',
                         help='Select which header data to display')
 
@@ -174,7 +177,7 @@ def parse_args():
 
 
 def main():
-    args=parse_args()
+    args = parse_args()
 
     h5file = args.file_name
     print("Reading file", h5file)
@@ -187,11 +190,11 @@ def main():
     g_header_type = args.header
     g_list_components = args.list_components
 
-
     if not args.check_fragments:
         get_header(h5file)
     else:
         examine_fragments(h5file)
+
 
 if __name__ == "__main__":
     main()
