@@ -77,10 +77,10 @@ def get_header_func(name, dset):
     global g_n_printed
     if isinstance(dset, h5py.Dataset):
         if g_n_request <= 0 or g_n_printed < g_n_request:
-            g_n_printed += 1
-            data_array = bytearray(dset[:])
             if "TriggerRecordHeader" in name:
                 if g_header_type in ['trigger', 'both']:
+                    g_n_printed += 1
+                    data_array = bytearray(dset[:])
                     print(80*'=')
                     print('{:<30}:\t{}'.format("Path", name))
                     print('{:<30}:\t{}'.format("Size", dset.shape))
@@ -88,6 +88,8 @@ def get_header_func(name, dset):
                     print_trigger_record_header(data_array)
             else:
                 if g_header_type in ['fragment', 'both']:
+                    g_n_printed += 1
+                    data_array = bytearray(dset[:])
                     print(80*'=')
                     print('{:<30}:\t{}'.format("Path", name))
                     print('{:<30}:\t{}'.format("Size", dset.shape))
