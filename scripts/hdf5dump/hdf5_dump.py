@@ -58,7 +58,7 @@ def print_fragment_header(data_array):
 
 def print_trigger_record_header(data_array):
     keys = ['Magic word', 'Version', 'Trigger number',
-            'Trigger Timestamp', 'No. of requested components', 'Run Number',
+            'Trigger timestamp', 'No. of requested components', 'Run Number',
             'Error bits', 'Trigger type' ]
     unpack_string = '<2I3Q2IH'
     print_header(unpack_header(data_array[:42], unpack_string, keys))
