@@ -13,37 +13,6 @@ import datetime
 
 CLOCK_SPEED_HZ = 50000000.0
 
-def parse_args():
-    parser = argparse.ArgumentParser(description='Python script to parse DUNE-DAQ HDF5 output files.')
-    parser.version = '0.1'
-    parser.add_argument('-p', '--path',
-                       help='Path to HDF5 file',
-                       default='./')
-
-    parser.add_argument('-f', '--file_name',
-                       help='Name of HDF5 file',
-                       required=True)
-
-    parser.add_argument('-H', '--header_only',
-                       help='Print the header only; no data is displayed',
-                       action='store_true')
-
-    parser.add_argument('-TRH', '--TRH_only',
-                       help='Print the TriggerRecordheader only; data is displayed',
-                       action='store_true')
-
-    parser.add_argument('--check-fragment',
-                       help='check if fragments written in trigger record matches expected number in trigger record header',
-                       action='store_true')
-
-    parser.add_argument('-num', '--num_req_trig_records',
-                        type=int,
-                       help='Select number of trigger records to be parsed',
-                       default=None)
-
-    parser.add_argument('-v', '--version', action='version')
-    return parser.parse_args()
-
 ## Print FragmentHeader
 def print_frag_header(data_array):
   (check_word, version, fragment_size,
@@ -88,14 +57,15 @@ def print_trh(data_array):
   print("Error bits:\t\t", error_bits)
   print("Trigger type:\t\t", trigger_type)
 
-  j = 0
-  for (i_geo_id_apa, i_geo_id_link, i_begin, i_end) in struct.iter_unpack("<2I2Q", data_array[48:]):
-      print("Expected Component: \t\t", j)
-      print("       GeoID (APA): \t\t", i_geo_id_apa)
-      print("       GeoID (link): \t\t", i_geo_id_link)
-      print("       Begin time (ticks@50MHz): \t", i_begin)
-      print("       End time (ticks@50MHz): \t\t", i_end)
-      j += 1
+  if listComponents:
+      j = 0
+      for (i_geo_id_apa, i_geo_id_link, i_begin, i_end) in struct.iter_unpack("<2I2Q", data_array[48:]):
+          print("Expected Component: \t\t", j)
+          print("       GeoID (APA): \t\t", i_geo_id_apa)
+          print("       GeoID (link): \t\t", i_geo_id_link)
+          #print("       Begin time (ticks@50MHz): \t", i_begin)
+          #print("       End time (ticks@50MHz): \t\t", i_end)
+          j += 1
 
   return
 
@@ -115,7 +85,6 @@ def examine_fragments(name, dset):
         trigger_record_fragments[nheader] += 1
     if isinstance(dset, h5py.Dataset) and "TriggerRecordHeader" in name:
         # This is a new TriggerRecordHeader
-        print("New TriggerRecordHeader : ", name)
         data_array = bytearray(dset[:])
         (i,) = struct.unpack('<Q', data_array[24:32])
         trigger_record_header_expected_fragments.append(i)
@@ -126,7 +95,7 @@ def print_header_func(name, dset):
     if nheader < NHEADER and isinstance(dset, h5py.Dataset):
         if printTRH and "TriggerRecordHeader" in name:
             print(80*'=')
-            print("nheader:\t\t", nheader)
+            print("TriggerRecordHeader:\t\t", nheader)
             print('Path:\t\t', name)
             print('Size:\t\t', dset.shape)
             print('Data type:\t\t', dset.dtype)
@@ -135,7 +104,7 @@ def print_header_func(name, dset):
             print_trh(data_array)
         if not printTRH and "TriggerRecordHeader" not in name:
             print(80*'=')
-            print("nheader:\t\t", nheader)
+            print("Fragment:\t\t", nheader)
             print('Path:\t\t', name)
             print('Size:\t\t', dset.shape)
             print('Data type:\t\t', dset.dtype)
@@ -144,9 +113,6 @@ def print_header_func(name, dset):
             print_frag_header(data_array)
     return
 
-nheader = 0
-NHEADER = 0
-printTRH = False
 def get_header(file_name):
     with h5py.File(file_name, 'r') as f:
         f.visititems(print_header_func)
@@ -164,6 +130,47 @@ def examine(file_name):
         ))
     return
 
+
+def parse_args():
+    parser = argparse.ArgumentParser(description='Python script to parse DUNE-DAQ HDF5 output files.')
+    parser.version = '0.1'
+    parser.add_argument('-p', '--path',
+                       help='Path to HDF5 file',
+                       default='./')
+
+    parser.add_argument('-f', '--file_name',
+                       help='Name of HDF5 file',
+                       required=True)
+
+    parser.add_argument('-H', '--header_only',
+                       help='Print the header only; no data is displayed',
+                       action='store_true')
+
+    parser.add_argument('-TRH', '--TRH_only',
+                       help='Print the TriggerRecordheader only; data is displayed',
+                       action='store_true')
+
+    parser.add_argument('--check-fragment',
+                       help='check if fragments written in trigger record matches expected number in trigger record header',
+                       action='store_true')
+
+    parser.add_argument('--list-components',
+                       help='list components in trigger record header',
+                       action='store_true')
+
+    parser.add_argument('-num', '--num_req_trig_records',
+                        type=int,
+                       help='Select number of trigger records to be parsed',
+                       default=None)
+
+    parser.add_argument('-v', '--version', action='version')
+    return parser.parse_args()
+
+
+nheader = 0
+NHEADER = 0
+printTRH = False
+listComponents = False
 def main():
     args=parse_args()
 
@@ -175,12 +182,15 @@ def main():
     requested_trigger_records = args.num_req_trig_records
     global NHEADER
     global printTRH
+    global listComponents
     NHEADER = args.num_req_trig_records
 
     if args.header_only:
       get_header(full_path)
     if args.TRH_only:
       printTRH = True
+      if args.list_components:
+          listComponents = True
       get_header(full_path)
     if args.check_fragment:
       examine(full_path)
