@@ -64,11 +64,12 @@ def print_trigger_record_header(data_array):
     print_header(unpack_header(data_array[:42], unpack_string, keys))
 
     if g_list_components:
-        comp_keys = ['GeoID (APA)', 'GeoID (link)', 'Begin time (ticks@50MHz)'
+        comp_keys = ['GeoID (APA)', 'GeoID (link)', 'Begin time (ticks@50MHz)',
                      'End time (ticks@50MHz)']
         comp_unpack_string = "<2I2Q"
         for i_values in struct.iter_unpack(comp_unpack_string, data_array[48:]):
             i_comp = dict(zip(comp_keys, i_values))
+            print(80*'-')
             print_header(i_comp)
     return
 
@@ -132,10 +133,10 @@ def examine_fragments(file_name):
     print("N_frag_act:  no. of fragments written in trigger record;")
     print("N_diff:      N_frag_act - N_frag_exp")
     print("{:-^60}".format("Column Definitions"))
-    print("{:^10}{:^10}{:^10}{:^10}".format(
+    print("{:^10}{:^15}{:^15}{:^10}".format(
         "i", "N_frag_exp","N_frag_act", "N_diff"))
     for i in range(len(g_trigger_record_nfragments)):
-        print("{:^10}{:^10}{:^10}{:^10}".format(
+        print("{:^10}{:^15}{:^15}{:^10}".format(
             i, g_trigger_record_nexp_fragments[i],
             g_trigger_record_nfragments[i],
          g_trigger_record_nfragments[i] - g_trigger_record_nexp_fragments[i]))
