@@ -101,21 +101,24 @@ def get_header_func(name, dset):
 
 
 def get_header(file_name):
+    global g_n_printed
     with h5py.File(file_name, 'r') as f:
         f.visititems(get_header_func)
+    g_n_printed = 0
     return
 
 
 def examine_fragments_func(name, dset):
     global g_ith_record
     global g_n_printed
+    if g_n_request != 0 and g_n_printed > g_n_request:
+        return
     if isinstance(dset, h5py.Group) and "/" not in name:
         # This is a new trigger record.
         g_trigger_record_nfragments.append(0)
         g_ith_record += 1
         g_n_printed += 1
-    if isinstance(dset, h5py.Dataset) and (g_n_printed <= g_n_request
-                                           or g_n_request <= 0):
+    if isinstance(dset, h5py.Dataset):
         if "TriggerRecordHeader" in name:
             # This is a new TriggerRecordHeader
             data_array = bytearray(dset[:])
@@ -155,7 +158,8 @@ def parse_args():
                         help='Path to HDF5 file',
                         required=True)
 
-    parser.add_argument('--header', choices=['trigger', 'fragment', 'both'],
+    parser.add_argument('--header', choices=['trigger', 'fragment',
+                                             'both', 'none'],
                         default='both',
                         help='Select which header data to display')
 
@@ -191,9 +195,9 @@ def main():
     g_header_type = args.header
     g_list_components = args.list_components
 
-    if not args.check_fragments:
+    if g_header_type != "none":
         get_header(h5file)
-    else:
+    if args.check_fragments:
         examine_fragments(h5file)
 
 
