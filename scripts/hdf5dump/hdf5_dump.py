@@ -79,8 +79,8 @@ def get_header_func(name, dset):
     if isinstance(dset, h5py.Dataset):
         if g_n_request <= 0 or g_n_printed < g_n_request:
             if "TriggerRecordHeader" in name:
+                g_n_printed += 1
                 if g_header_type in ['trigger', 'both']:
-                    g_n_printed += 1
                     data_array = bytearray(dset[:])
                     print(80*'=')
                     print('{:<30}:\t{}'.format("Path", name))
@@ -89,8 +89,6 @@ def get_header_func(name, dset):
                     print_trigger_record_header(data_array)
             else:
                 if g_header_type in ['fragment', 'both']:
-                    if g_header_type != "both":
-                        g_n_printed += 1
                     data_array = bytearray(dset[:])
                     print(80*'=')
                     print('{:<30}:\t{}'.format("Path", name))
@@ -173,7 +171,7 @@ def parse_args():
                         action='store_true')
 
     parser.add_argument('-n', '--num-of-records', type=int,
-                        help='Select number of records to be parsed',
+                        help='Select number of trigger records to be parsed',
                         default=0)
 
     parser.add_argument('-v', '--version', action='version',
