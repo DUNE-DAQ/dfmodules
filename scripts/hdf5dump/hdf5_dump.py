@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 # Version 1.0
 # Last modified: April 10, 2021
@@ -6,10 +6,8 @@
 # USAGE: python3 hdf5_dump.py -f sample.hdf5
 
 import argparse
-
-import h5py
 import datetime
-
+import h5py
 import struct
 
 CLOCK_SPEED_HZ = 50000000.0
@@ -91,7 +89,8 @@ def get_header_func(name, dset):
                     print_trigger_record_header(data_array)
             else:
                 if g_header_type in ['fragment', 'both']:
-                    g_n_printed += 1
+                    if g_header_type != "both":
+                        g_n_printed += 1
                     data_array = bytearray(dset[:])
                     print(80*'=')
                     print('{:<30}:\t{}'.format("Path", name))
@@ -109,19 +108,21 @@ def get_header(file_name):
 
 def examine_fragments_func(name, dset):
     global g_ith_record
+    global g_n_printed
     if isinstance(dset, h5py.Group) and "/" not in name:
         # This is a new trigger record.
         g_trigger_record_nfragments.append(0)
         g_ith_record += 1
-    if isinstance(dset, h5py.Dataset):
-        if "FELIX" in name:
-            # This is a new fragment
-            g_trigger_record_nfragments[g_ith_record] += 1
+        g_n_printed += 1
+    if isinstance(dset, h5py.Dataset) and (g_n_printed <= g_n_request
+                                           or g_n_request <= 0):
         if "TriggerRecordHeader" in name:
             # This is a new TriggerRecordHeader
             data_array = bytearray(dset[:])
             (i,) = struct.unpack('<Q', data_array[24:32])
             g_trigger_record_nexp_fragments.append(i)
+        else:
+            g_trigger_record_nfragments[g_ith_record] += 1
     return
 
 
@@ -137,7 +138,7 @@ def examine_fragments(file_name):
     print("{:-^60}".format("Column Definitions"))
     print("{:^10}{:^15}{:^15}{:^10}".format(
         "i", "N_frag_exp", "N_frag_act", "N_diff"))
-    for i in range(len(g_trigger_record_nfragments)):
+    for i in range(len(g_trigger_record_nexp_fragments)):
         print("{:^10}{:^15}{:^15}{:^10}".format(
             i, g_trigger_record_nexp_fragments[i],
             g_trigger_record_nfragments[i],
