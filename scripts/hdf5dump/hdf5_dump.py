@@ -153,25 +153,25 @@ def parse_args():
         description='Python script to parse DUNE-DAQ HDF5 output files.')
 
     parser.add_argument('-f', '--file_name',
-                        help='Path to HDF5 file',
+                        help='path to HDF5 file',
                         required=True)
 
-    parser.add_argument('--header', choices=['trigger', 'fragment',
-                                             'both', 'none'],
-                        default='both',
-                        help='Select which header data to display')
+    parser.add_argument('-p', '--print-headers',
+                        choices=['trigger', 'fragment', 'both'],
+                        help='select which header data to display')
 
-    parser.add_argument('--check-fragments',
+    parser.add_argument('-c', '--check-fragments',
                         help='''check if fragments written in trigger record
                         matches expected number in trigger record header''',
                         action='store_true')
 
-    parser.add_argument('--list-components',
-                        help='list components in trigger record header',
-                        action='store_true')
+    parser.add_argument('-l', '--list-components',
+                        help='''list components in trigger record header, used
+                        together with "--print-headers trigger" or
+                        "--print-headers both"''', action='store_true')
 
     parser.add_argument('-n', '--num-of-records', type=int,
-                        help='Select number of trigger records to be parsed',
+                        help='specify number of trigger records to be parsed',
                         default=0)
 
     parser.add_argument('-v', '--version', action='version',
@@ -182,21 +182,28 @@ def parse_args():
 def main():
     args = parse_args()
 
-    h5file = args.file_name
-    print("Reading file", h5file)
-
     global g_n_request
     global g_header_type
     global g_list_components
 
     g_n_request = args.num_of_records
-    g_header_type = args.header
+    g_header_type = args.print_headers
     g_list_components = args.list_components
 
-    if g_header_type != "none":
+    if g_header_type is None and g_list_components is False:
+        print("Error: use at least one of the two following options:")
+        print("       -p, --print-headers {trigger,fragment,both}")
+        print("       -c, --check-fragments")
+        return
+
+    h5file = args.file_name
+    print("Reading file", h5file)
+
+    if g_header_type is not None:
         get_header(h5file)
     if args.check_fragments:
         examine_fragments(h5file)
+    return
 
 
 if __name__ == "__main__":
