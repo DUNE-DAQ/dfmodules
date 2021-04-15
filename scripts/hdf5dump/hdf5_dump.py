@@ -16,10 +16,10 @@ g_trigger_record_nfragments = []
 g_trigger_record_nexp_fragments = []
 g_ith_record = -1
 
-g_n_printed = 0
 g_n_request = 0
 g_header_type = "both"
 g_list_components = False
+g_header_paths = []
 
 
 def tick_to_timestamp(ticks):
@@ -74,48 +74,60 @@ def print_trigger_record_header(data_array):
     return
 
 
-def get_header_func(name, dset):
-    global g_n_printed
+def get_header_path_func(name, dset):
+    global g_ith_record
+    global g_header_paths
+    if g_n_request != 0 and g_ith_record >= g_n_request:
+        return
+    if isinstance(dset, h5py.Group) and "/" not in name:
+        g_ith_record += 1
+        g_header_paths.append({"TriggerRecordHeader": '', "Fragments": []})
     if isinstance(dset, h5py.Dataset):
-        if g_n_request <= 0 or g_n_printed < g_n_request:
-            if "TriggerRecordHeader" in name:
-                g_n_printed += 1
-                if g_header_type in ['trigger', 'both']:
+        if "TriggerRecordHeader" in name:
+            g_header_paths[g_ith_record]["TriggerRecordHeader"] = name
+        else:
+            g_header_paths[g_ith_record]["Fragments"].append(name)
+    return
+
+
+def get_header(file_name):
+    global g_ith_record
+    g_ith_record = -1
+    with h5py.File(file_name, 'r') as f:
+        f.visititems(get_header_path_func)
+        g_ith_record = -1
+        for i in g_header_paths:
+            if i["TriggerRecordHeader"] == "":
+                continue
+            g_ith_record += 1
+            print(80*'=')
+            if g_header_type in ["trigger", "both"]:
+                dset = f[i["TriggerRecordHeader"]]
+                data_array = bytearray(dset[:])
+                print('{:<30}:\t{}'.format("Path", i["TriggerRecordHeader"]))
+                print('{:<30}:\t{}'.format("Size", dset.shape))
+                print('{:<30}:\t{}'.format("Data type", dset.dtype))
+                print_trigger_record_header(data_array)
+            if g_header_type in ["fragment", "both"]:
+                for j in i["Fragments"]:
+                    dset = f[j]
                     data_array = bytearray(dset[:])
-                    print(80*'=')
-                    print('{:<30}:\t{}'.format("Path", name))
-                    print('{:<30}:\t{}'.format("Size", dset.shape))
-                    print('{:<30}:\t{}'.format("Data type", dset.dtype))
-                    print_trigger_record_header(data_array)
-            else:
-                if g_header_type in ['fragment', 'both']:
-                    data_array = bytearray(dset[:])
-                    print(80*'=')
-                    print('{:<30}:\t{}'.format("Path", name))
+                    print(80*'-')
+                    print('{:<30}:\t{}'.format("Path", j))
                     print('{:<30}:\t{}'.format("Size", dset.shape))
                     print('{:<30}:\t{}'.format("Data type", dset.dtype))
                     print_fragment_header(data_array)
     return
 
 
-def get_header(file_name):
-    global g_n_printed
-    with h5py.File(file_name, 'r') as f:
-        f.visititems(get_header_func)
-    g_n_printed = 0
-    return
-
-
 def examine_fragments_func(name, dset):
     global g_ith_record
-    global g_n_printed
-    if g_n_request != 0 and g_n_printed > g_n_request:
+    if g_n_request != 0 and g_ith_record >= g_n_request:
         return
     if isinstance(dset, h5py.Group) and "/" not in name:
         # This is a new trigger record.
         g_trigger_record_nfragments.append(0)
         g_ith_record += 1
-        g_n_printed += 1
     if isinstance(dset, h5py.Dataset):
         if "TriggerRecordHeader" in name:
             # This is a new TriggerRecordHeader
@@ -190,7 +202,7 @@ def main():
     g_header_type = args.print_headers
     g_list_components = args.list_components
 
-    if g_header_type is None and g_list_components is False:
+    if g_header_type is None and args.check_fragments is False:
         print("Error: use at least one of the two following options:")
         print("       -p, --print-headers {trigger,fragment,both}")
         print("       -c, --check-fragments")
