@@ -33,7 +33,7 @@ def unpack_header(data_array, unpack_string, keys):
     return header
 
 
-def print_header(hdict):
+def print_header_dict(hdict):
     for ik, iv in hdict.items():
         if "timestamp" in ik:
             print("{:<30}: {} ({})".format(
@@ -51,7 +51,7 @@ def print_fragment_header(data_array):
             'Window end (ticks@50MHz)', 'Run number',
             'GeoID (APA)', 'GeoID (link)', 'Error bits', 'Fragment type']
     unpack_string = '<2I5Q5I'
-    print_header(unpack_header(data_array[:68], unpack_string, keys))
+    print_header_dict(unpack_header(data_array[:68], unpack_string, keys))
     return
 
 
@@ -60,7 +60,7 @@ def print_trigger_record_header(data_array):
             'Trigger timestamp', 'No. of requested components', 'Run Number',
             'Error bits', 'Trigger type']
     unpack_string = '<2I3Q2IH'
-    print_header(unpack_header(data_array[:42], unpack_string, keys))
+    print_header_dict(unpack_header(data_array[:42], unpack_string, keys))
 
     if g_list_components:
         comp_keys = ['GeoID (APA)', 'GeoID (link)', 'Begin time (ticks@50MHz)',
@@ -70,11 +70,11 @@ def print_trigger_record_header(data_array):
                                            data_array[48:]):
             i_comp = dict(zip(comp_keys, i_values))
             print(80*'-')
-            print_header(i_comp)
+            print_header_dict(i_comp)
     return
 
 
-def get_header_path_func(name, dset):
+def process_record_func(name, dset):
     global g_ith_record
     global g_header_paths
     if g_n_request != 0 and g_ith_record >= g_n_request:
@@ -82,19 +82,29 @@ def get_header_path_func(name, dset):
     if isinstance(dset, h5py.Group) and "/" not in name:
         g_ith_record += 1
         g_header_paths.append({"TriggerRecordHeader": '', "Fragments": []})
+        g_trigger_record_nfragments.append(0)
     if isinstance(dset, h5py.Dataset):
         if "TriggerRecordHeader" in name:
             g_header_paths[g_ith_record]["TriggerRecordHeader"] = name
+            data_array = bytearray(dset[:])
+            (i,) = struct.unpack('<Q', data_array[24:32])
+            g_trigger_record_nexp_fragments.append(i)
         else:
             g_header_paths[g_ith_record]["Fragments"].append(name)
+            g_trigger_record_nfragments[g_ith_record] += 1
     return
 
 
-def get_header(file_name):
+def process_file(file_name):
     global g_ith_record
     g_ith_record = -1
     with h5py.File(file_name, 'r') as f:
-        f.visititems(get_header_path_func)
+        f.visititems(process_record_func)
+    return
+
+
+def print_header(file_name):
+    with h5py.File(file_name, 'r') as f:
         for i in g_header_paths:
             if i["TriggerRecordHeader"] == "":
                 continue
@@ -118,29 +128,7 @@ def get_header(file_name):
     return
 
 
-def examine_fragments_func(name, dset):
-    global g_ith_record
-    if g_n_request != 0 and g_ith_record >= g_n_request:
-        return
-    if isinstance(dset, h5py.Group) and "/" not in name:
-        # This is a new trigger record.
-        g_trigger_record_nfragments.append(0)
-        g_ith_record += 1
-    if isinstance(dset, h5py.Dataset):
-        if "TriggerRecordHeader" in name:
-            # This is a new TriggerRecordHeader
-            data_array = bytearray(dset[:])
-            (i,) = struct.unpack('<Q', data_array[24:32])
-            g_trigger_record_nexp_fragments.append(i)
-        else:
-            g_trigger_record_nfragments[g_ith_record] += 1
-    return
-
-
-def examine_fragments(file_name):
-    with h5py.File(file_name, 'r') as f:
-        f.visititems(examine_fragments_func)
-
+def check_fragments():
     print("{:-^60}".format("Column Definitions"))
     print("i:           Trigger record number;")
     print("N_frag_exp:  expected no. of fragments stored in header;")
@@ -209,10 +197,11 @@ def main():
     h5file = args.file_name
     print("Reading file", h5file)
 
+    process_file(h5file)
     if g_header_type is not None:
-        get_header(h5file)
+        print_header(h5file)
     if args.check_fragments:
-        examine_fragments(h5file)
+        check_fragments()
     return
 
 
