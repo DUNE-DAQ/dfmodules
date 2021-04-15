@@ -35,7 +35,7 @@ def unpack_header(data_array, unpack_string, keys):
 
 def print_header_dict(hdict):
     for ik, iv in hdict.items():
-        if "timestamp" in ik:
+        if "time" in ik or "begin" in ik or "end" in ik:
             print("{:<30}: {} ({})".format(
                 ik, iv, tick_to_timestamp(iv)))
         elif 'Magic word' in ik:
@@ -47,8 +47,7 @@ def print_header_dict(hdict):
 
 def print_fragment_header(data_array):
     keys = ['Magic word', 'Version', 'Frag Size', 'Trig number',
-            'Trig timestamp', 'Window begin (ticks@50MHz)',
-            'Window end (ticks@50MHz)', 'Run number',
+            'Trig timestamp', 'Window begin', 'Window end', 'Run number',
             'GeoID (APA)', 'GeoID (link)', 'Error bits', 'Fragment type']
     unpack_string = '<2I5Q5I'
     print_header_dict(unpack_header(data_array[:68], unpack_string, keys))
@@ -63,8 +62,7 @@ def print_trigger_record_header(data_array):
     print_header_dict(unpack_header(data_array[:42], unpack_string, keys))
 
     if g_list_components:
-        comp_keys = ['GeoID (APA)', 'GeoID (link)', 'Begin time (ticks@50MHz)',
-                     'End time (ticks@50MHz)']
+        comp_keys = ['GeoID (APA)', 'GeoID (link)', 'Begin time', 'End time']
         comp_unpack_string = "<2I2Q"
         for i_values in struct.iter_unpack(comp_unpack_string,
                                            data_array[48:]):
