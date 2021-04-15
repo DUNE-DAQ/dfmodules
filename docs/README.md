@@ -37,3 +37,16 @@ Some of the errors that can be encountered by these modules include the followin
 The modules in this package produce operational monitoring metrics to provide visibility into their operation.  Some example quantities that are reported include the following:
 * the FragmentReceiver module reports the number of stale TriggerRecords that it has in its buffer.  Ideally, this number will always be zero during a run, but if it starts to grow, that would indicate a problem in creating fragments (upstream) or receiving fragments.
 * the DataWriter module reports the number of TRs received and written.  Typically, these two values match, but they may not if data storage has been disabled, or if a data-storage prescale has been specified in the configuration.
+
+### Raw Data Files
+
+The raw data files are written in HDF5 format.  Each TriggerRecord is stored inside a top-level HDF5 Group.  To allow for relatively granular access to the elements of a TriggerRecord, those elements are written into separate HDF5 DataSets.  That is, each Fragment is written into a DataSet, and the TriggerRecordHeader data is written into its own DataSet.  Fragments are grouped by detector type (e.g. TPC), APA, and Link.  Here is a sample of the Groups and DataSets for one event:
+
+```
+   GROUP "TriggerRecord00029"
+      GROUP "TPC"
+         GROUP "APA000"
+            DATASET "Link00"
+            DATASET "Link01"
+      DATASET "TriggerRecordHeader"
+```
