@@ -95,11 +95,9 @@ def get_header(file_name):
     g_ith_record = -1
     with h5py.File(file_name, 'r') as f:
         f.visititems(get_header_path_func)
-        g_ith_record = -1
         for i in g_header_paths:
             if i["TriggerRecordHeader"] == "":
                 continue
-            g_ith_record += 1
             print(80*'=')
             if g_header_type in ["trigger", "both"]:
                 dset = f[i["TriggerRecordHeader"]]
