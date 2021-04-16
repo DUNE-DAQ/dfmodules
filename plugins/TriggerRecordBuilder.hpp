@@ -1,13 +1,16 @@
 /**
- * @file FragmentReceiver.hpp
+ * @file TriggerRecordBuilder.hpp
  *
  * This is part of the DUNE DAQ Software Suite, copyright 2020.
  * Licensing/copyright details are in the COPYING file that you should have
  * received with this code.
  */
 
-#ifndef DFMODULES_PLUGINS_FRAGMENTRECEIVER_HPP_
-#define DFMODULES_PLUGINS_FRAGMENTRECEIVER_HPP_
+#ifndef DFMODULES_PLUGINS_TRIGGERRECORDBUILDER_HPP_
+#define DFMODULES_PLUGINS_TRIGGERRECORDBUILDER_HPP_
+
+
+#include "dfmodules/TriggerDecisionForwarder.hpp"
 
 #include "dfmodules/fragmentreceiverinfo/Nljs.hpp"
 
@@ -29,153 +32,170 @@
 
 namespace dunedaq {
 
-/**
- * @brief Timed out Trigger Decision
- */
-ERS_DECLARE_ISSUE(dfmodules,               ///< Namespace
-                  TimedOutTriggerDecision, ///< Issue class name
-                  "trigger number " << trigger_number << " of run: " << run_number << " generate at: "
-                                    << trigger_timestamp << " too late for: " << present_time, ///< Message
-                  ((dataformats::trigger_number_t)trigger_number)                              ///< Message parameters
-                  ((dataformats::run_number_t)run_number)                                      ///< Message parameters
-                  ((dataformats::timestamp_t)trigger_timestamp)                                ///< Message parameters
-                  ((dataformats::timestamp_t)present_time)                                     ///< Message parameters
-)
+  namespace dfmodules {
 
-/**
- * @brief Removing fragment
- */
-ERS_DECLARE_ISSUE(dfmodules,        ///< Namespace
-                  FragmentObsolete, ///< Issue class name
-                  "Fragment obsolete - trigger_number: " << trigger_number << " type: " << fragment_type
-                                                         << " with timestamp: " << trigger_timestamp
-                                                         << " and present time is " << present_time, ///< Message
-                  ((dataformats::trigger_number_t)trigger_number) ///< Message parameters
-                  ((dataformats::fragment_type_t)fragment_type)   ///< Message parameters
-                  ((dataformats::timestamp_t)trigger_timestamp)   ///< Message parameters
-                  ((dataformats::timestamp_t)present_time)        ///< Message parameters
-)
+    /**
+     * @brief TriggerId is a little class that defines a unique identifier for a trigger decision/record
+     * It also provides an operator < to be used by map to optimise bookkeeping
+     */
+    struct TriggerId
+    {
 
-namespace dfmodules {
+      explicit TriggerId(const dfmessages::TriggerDecision& td)
+	: trigger_number(td.trigger_number)
+	, run_number(td.run_number)
+      {
+	;
+      }
+      explicit TriggerId(dataformats::Fragment& f)
+	: trigger_number(f.get_trigger_number())
+	, run_number(f.get_run_number())
+      {
+	;
+      }
 
-/**
- * @brief TriggerId is a little class that defines a unique identifier for a trigger decision/record
- * It also provides an operator < to be used by map to optimise bookkeeping
- */
-struct TriggerId
-{
+      dataformats::trigger_number_t trigger_number;
+      dataformats::run_number_t run_number;
 
-  explicit TriggerId(const dfmessages::TriggerDecision& td)
-    : trigger_number(td.trigger_number)
-    , run_number(td.run_number)
-  {
-    ;
-  }
-  explicit TriggerId(dataformats::Fragment& f)
-    : trigger_number(f.get_trigger_number())
-    , run_number(f.get_run_number())
-  {
-    ;
-  }
+      bool operator<(const TriggerId& other) const noexcept
+      {
+	return run_number == other.run_number ? trigger_number < other.trigger_number : run_number < other.run_number;
+      }
 
-  dataformats::trigger_number_t trigger_number;
-  dataformats::run_number_t run_number;
+      friend std::ostream& operator<<(std::ostream& out, const TriggerId& id)
+      {
+	out << id.trigger_number << '/' << id.run_number;
+	return out;
+      }
 
-  bool operator<(const TriggerId& other) const noexcept
-  {
-    return run_number == other.run_number ? trigger_number < other.trigger_number : run_number < other.run_number;
-  }
+      friend TraceStreamer& operator<<(TraceStreamer& out, const TriggerId& id)
+      {
+	return out << id.trigger_number << "/" << id.run_number;
+      }
+    };
 
-  friend std::ostream& operator<<(std::ostream& out, const TriggerId& id)
-  {
-    out << id.trigger_number << '/' << id.run_number;
-    return out;
-  }
 
-  friend TraceStreamer& operator<<(TraceStreamer& out, const TriggerId& id)
-  {
-    return out << id.trigger_number << "/" << id.run_number;
-  }
-};
+    /**
+     * @brief Timed out Trigger Decision
+     */
+    ERS_DECLARE_ISSUE(ERS_EMPTY,               ///< Namespace
+		      TimedOutTriggerDecision, ///< Issue class name
+		      "trigger id " << trigger_id 
+		      << " generate at: " << trigger_timestamp 
+		      << " too late for: " << present_time,           ///< Message
+		      ((TriggerID)trigger_id)                         ///< Message parameters
+		      ((dataformats::timestamp_t)trigger_timestamp)   ///< Message parameters
+		      ((dataformats::timestamp_t)present_time)        ///< Message parameters
+		      )
 
-/**
- * @brief FragmentReceiver is the Module that collects Fragment from the Upstream DAQ Modules, it checks
- *        if they corresponds to a Trigger Decision, and once a Trigger Decision has all its fragments,
- *        it sends the data (The complete Trigger Record) to a writer
- */
-class FragmentReceiver : public dunedaq::appfwk::DAQModule
-{
-public:
-  /**
-   * @brief FragmentReceiver Constructor
-   * @param name Instance name for this FragmentReceiver instance
-   */
-  explicit FragmentReceiver(const std::string& name);
+    /**
+     * @brief Unexpected fragment
+     */
+    ERS_DECLARE_ISSUE(ERS_EMPTY,                  ///< Namespace
+		      UnexpectedFragment,         ///< Issue class name
+		      "Unexpected fragment - triggerID: " << trigger_id 
+		      << " type: " << fragment_type,
+		      ((TriggerID)trigger_id) ///< Message parameters
+		      ((dataformats::fragment_type_t)fragment_type)   ///< Message parameters
+		      )
 
-  FragmentReceiver(const FragmentReceiver&) = delete;            ///< FragmentReceiver is not copy-constructible
-  FragmentReceiver& operator=(const FragmentReceiver&) = delete; ///< FragmentReceiver is not copy-assignable
-  FragmentReceiver(FragmentReceiver&&) = delete;                 ///< FragmentReceiver is not move-constructible
-  FragmentReceiver& operator=(FragmentReceiver&&) = delete;      ///< FragmentReceiver is not move-assignable
 
-  void init(const data_t&) override;
-  void get_info(opmonlib::InfoCollector& ci, int level) override;
+    using apatype = decltype(dataformats::GeoID::apa_number);
+    using linktype = decltype(dataformats::GeoID::link_number);
+  
+    ERS_DECLARE_ISSUE(ERS_EMPTY,    ///< Namespace
+		      UnknownGeoID, ///< Issue class name
+		      "trigger id " << trigger_id << " of run: " << run_number << " of APA: " << apa
+		      << " of Link: " << link,
+		      ((TriggerID)trigger_number)    ///< Message parameters
+		      ((apatype)apa)                 ///< Message parameters
+		      ((linktype)link)               ///< Message parameters
+		      )
 
-protected:
-  using trigger_decision_source_t = dunedaq::appfwk::DAQSource<dfmessages::TriggerDecision>;
-  using fragment_source_t = dunedaq::appfwk::DAQSource<std::unique_ptr<dataformats::Fragment>>;
-  using fragment_sources_t = std::vector<std::unique_ptr<fragment_source_t>>;
-  using trigger_record_sink_t = appfwk::DAQSink<std::unique_ptr<dataformats::TriggerRecord>>;
 
-  bool read_queues(trigger_decision_source_t&, fragment_sources_t&, bool drain = false);
 
-  dataformats::TriggerRecord* build_trigger_record(const TriggerId&);
-  // build_trigger_record will allocate memory and then orphan it to the caller via the returned pointer
-  // Plese note that the method will destroy the memory saved in the bookkeeping map
+    /**
+     * @brief TriggerRecordBuilder is the Module that collects Trigger TriggersDecisions, 
+     sends the corresponding data requests and collects Fragment to form a complete Trigger Record.
+     The TR then sent out possibly to a write module
+    */
+    class TriggerRecordBuilder : public dunedaq::appfwk::DAQModule
+    {
+    public:
+      /**
+       * @brief TriggerRecordBuilder Constructor
+       * @param name Instance name for this TriggerRecordBuilder instance
+       */
+      explicit TriggerRecordBuilder(const std::string& name);
 
-  bool send_trigger_record(const TriggerId&, trigger_record_sink_t&, std::atomic<bool>& running);
-  // this creates a trigger record and send it
+      TriggerRecordBuilder(const TriggerRecordBuilder&) = delete;            ///< TriggerRecordBuilder is not copy-constructible
+      TriggerRecordBuilder& operator=(const TriggerRecordBuilder&) = delete; ///< TriggerRecordBuilder is not copy-assignable
+      TriggerRecordBuilder(TriggerRecordBuilder&&) = delete;                 ///< TriggerRecordBuilder is not move-constructible
+      TriggerRecordBuilder& operator=(TriggerRecordBuilder&&) = delete;      ///< TriggerRecordBuilder is not move-assignable
 
-  bool check_old_fragments() const;
+      void init(const data_t&) override;
+      void get_info(opmonlib::InfoCollector& ci, int level) override;
 
-  void fill_counters() const;
+    protected:
+      using trigger_decision_source_t = dunedaq::appfwk::DAQSource<dfmessages::TriggerDecision>;
+      using datareqsink_t = dunedaq::appfwk::DAQSink<dfmessages::DataRequest>;
+      using datareqsinkmap_t = std::map<dataformats::GeoID, datareqsink_t> ;
 
-private:
-  // Commands
-  void do_conf(const data_t&);
-  void do_start(const data_t&);
-  void do_stop(const data_t&);
+      using fragment_source_t = dunedaq::appfwk::DAQSource<std::unique_ptr<dataformats::Fragment>>;
+      using fragment_sources_t = std::vector<std::unique_ptr<fragment_source_t>>;
+      using trigger_record_sink_t = appfwk::DAQSink<std::unique_ptr<dataformats::TriggerRecord>>;
 
-  // Threading
-  dunedaq::appfwk::ThreadHelper m_thread;
-  void do_work(std::atomic<bool>&);
+      bool read_fragments( fragment_sources_t&, bool drain = false);
+      
+      dataformats::TriggerRecord* build_trigger_record(const TriggerId&);
+      // build_trigger_record will allocate memory and then orphan it to the caller via the returned pointer
+      // Plese note that the method will destroy the memory saved in the bookkeeping map
 
-  // Configuration
-  // size_t m_sleep_msec_while_running;
-  std::chrono::milliseconds m_queue_timeout;
+      bool dispatch_data_requests( const dfmessages::TriggerDecision &, datareqsinkmap_t & ) const ;
 
-  // Input Queues
-  std::string m_trigger_decision_source_name;
-  std::vector<std::string> m_fragment_source_names;
+      bool send_trigger_record(const TriggerId&, trigger_record_sink_t&, std::atomic<bool>& running);
+      // this creates a trigger record and send it
 
-  // Output queues
-  std::string m_trigger_record_sink_name;
+      bool check_stale_requests() const;
+      
+      void fill_counters() const;
 
-  // bookeeping
-  std::map<TriggerId, std::vector<std::unique_ptr<dataformats::Fragment>>> m_fragments;
-  std::map<TriggerId, dfmessages::TriggerDecision> m_trigger_decisions;
+    private:
+      // Commands
+      void do_conf(const data_t&);
+      void do_start(const data_t&);
+      void do_stop(const data_t&);
 
-  // book related metrics
-  using metric_counter_type = decltype(fragmentreceiverinfo::Info::trigger_decisions);
-  mutable std::atomic<metric_counter_type> m_trigger_decisions_counter = { 0 };
-  mutable std::atomic<metric_counter_type> m_fragment_index_counter = { 0 };
-  mutable std::atomic<metric_counter_type> m_old_fragment_index_counter = { 0 };
-  mutable std::atomic<metric_counter_type> m_fragment_counter = { 0 };
-  mutable std::atomic<metric_counter_type> m_old_fragment_counter = { 0 };
+      // Threading
+      dunedaq::appfwk::ThreadHelper m_thread;
+      void do_work(std::atomic<bool>&);
 
-  dataformats::timestamp_diff_t m_max_time_difference;
-  dataformats::timestamp_t m_current_time = 0;
-};
-} // namespace dfmodules
+      // Configuration
+      // size_t m_sleep_msec_while_running;
+      std::chrono::milliseconds m_queue_timeout;
+
+      // Input Queues
+      std::string m_trigger_decision_source_name;
+      std::vector<std::string> m_fragment_source_names;
+
+      // Output queues
+      std::string m_trigger_record_sink_name;
+      std::map<dataformats::GeoID, std::string> m_map_geoid_queues; ///< Mappinng between GeoID and queues
+
+      // bookeeping
+      std::map<TriggerId, std::unique_ptr<dataformats::TriggerRecord>> m_trigger_records;
+
+      // book related metrics
+      using metric_counter_type = decltype(fragmentreceiverinfo::Info::trigger_decisions);
+      mutable std::atomic<metric_counter_type> m_trigger_decisions_counter = { 0 };
+      mutable std::atomic<metric_counter_type> m_fragment_counter = { 0 };
+      mutable std::atomic<metric_counter_type> m_old_fragment_index_counter = { 0 };
+      mutable std::atomic<metric_counter_type> m_old_fragment_counter = { 0 };
+
+      dataformats::timestamp_diff_t m_max_time_difference;
+      dataformats::timestamp_t m_current_time = 0;
+    };
+  } // namespace dfmodules
 } // namespace dunedaq
 
-#endif // DFMODULES_PLUGINS_FRAGMENTRECEIVER_HPP_
+#endif // DFMODULES_PLUGINS_TRIGGERRECORDBUILDER_HPP_
