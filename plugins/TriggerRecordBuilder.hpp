@@ -87,30 +87,44 @@ namespace dunedaq {
 		      ((dataformats::timestamp_t)trigger_timestamp)   ///< Message parameters
 		      ((dataformats::timestamp_t)present_time)        ///< Message parameters
 		      )
-
+    
     /**
      * @brief Unexpected fragment
      */
     ERS_DECLARE_ISSUE(ERS_EMPTY,                  ///< Namespace
 		      UnexpectedFragment,         ///< Issue class name
 		      "Unexpected fragment - triggerID: " << trigger_id 
-		      << " type: " << fragment_type,
+		      << " type: " << fragment_type 
+		      << " GeoID: " << geo_id,
 		      ((TriggerID)trigger_id) ///< Message parameters
 		      ((dataformats::fragment_type_t)fragment_type)   ///< Message parameters
+		      ((dataformats::GeoID)geo_id)
 		      )
-
-
+    
     using apatype = decltype(dataformats::GeoID::apa_number);
     using linktype = decltype(dataformats::GeoID::link_number);
-  
+
+    /**
+     * @brief Unknown GeoID
+     */
     ERS_DECLARE_ISSUE(ERS_EMPTY,    ///< Namespace
 		      UnknownGeoID, ///< Issue class name
 		      "trigger id " << trigger_id << " of run: " << run_number << " of APA: " << apa
 		      << " of Link: " << link,
-		      ((TriggerID)trigger_number)    ///< Message parameters
+		      ((TriggerID)trigger_id)    ///< Message parameters
 		      ((apatype)apa)                 ///< Message parameters
 		      ((linktype)link)               ///< Message parameters
 		      )
+
+    /**
+     * @brief Duplicate trigger decision
+     */
+    ERS_DECLARE_ISSUE(ERS_EMPTY,    ///< Namespace
+		      DuplicatedTriggerDecision, ///< Issue class name
+		      "trigger id " << trigger_id << " already in the book" 
+		      ((TriggerID)trigger_id)    ///< Message parameters
+		      )
+
 
 
 
@@ -143,11 +157,14 @@ namespace dunedaq {
 
       using fragment_source_t = dunedaq::appfwk::DAQSource<std::unique_ptr<dataformats::Fragment>>;
       using fragment_sources_t = std::vector<std::unique_ptr<fragment_source_t>>;
-      using trigger_record_sink_t = appfwk::DAQSink<std::unique_ptr<dataformats::TriggerRecord>>;
 
+      using trigger_record_ptr_t = std::unique_ptr<dataformats::TriggerRecord> ;
+      using trigger_record_sink_t = appfwk::DAQSink<trigger_record_ptr_t>;
+
+      
       bool read_fragments( fragment_sources_t&, bool drain = false);
       
-      dataformats::TriggerRecord* build_trigger_record(const TriggerId&);
+      trigger_record_ptr_t extract_trigger_record(const TriggerId&);
       // build_trigger_record will allocate memory and then orphan it to the caller via the returned pointer
       // Plese note that the method will destroy the memory saved in the bookkeeping map
 
@@ -155,7 +172,7 @@ namespace dunedaq {
 
       bool send_trigger_record(const TriggerId&, trigger_record_sink_t&, std::atomic<bool>& running);
       // this creates a trigger record and send it
-
+      
       bool check_stale_requests() const;
       
       void fill_counters() const;
@@ -183,7 +200,7 @@ namespace dunedaq {
       std::map<dataformats::GeoID, std::string> m_map_geoid_queues; ///< Mappinng between GeoID and queues
 
       // bookeeping
-      std::map<TriggerId, std::unique_ptr<dataformats::TriggerRecord>> m_trigger_records;
+      std::map<TriggerId, trigger_record_ptr_t> m_trigger_records;
 
       // book related metrics
       using metric_counter_type = decltype(fragmentreceiverinfo::Info::trigger_decisions);

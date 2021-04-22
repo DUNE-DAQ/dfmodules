@@ -11,8 +11,8 @@
 
 #include "appfwk/DAQModuleHelper.hpp"
 #include "appfwk/app/Nljs.hpp"
-#include "dfmodules/fragmentreceiver/Nljs.hpp"
-#include "dfmodules/fragmentreceiver/Structs.hpp"
+#include "dfmodules/triggerrecordbuilder/Nljs.hpp"
+#include "dfmodules/triggerrecordbuilder/Structs.hpp"
 #include "logging/Logging.hpp"
 
 #include <chrono>
@@ -194,10 +194,12 @@ TriggerRecordBuilder::do_work(std::atomic<bool>& running_flag)
     request_sinks[entry.first] = std::unique_ptr<datareqsink_t>(new datareqsink_t(entry.second));
   }
   
-  bool book_updates = false;
+  bool book_updates = false ;
   
   while (running_flag.load() || book_updates) {
     
+    book_updates = false ;
+
     fill_counters();
     
     // read decision requests
@@ -214,7 +216,20 @@ TriggerRecordBuilder::do_work(std::atomic<bool>& running_flag)
 	// create the book entry
 	TriggerId temp_id(temp_dec);
 	
-	TOBEDONE
+	auto it = find( temp_id ) ;
+	if ( it != trigger_records.end() ) {
+	  ers::error( ERS_HERE, DuplicatedTriggerDecision( temp_id ) ) ;
+	}
+	
+
+	// create trigger record
+	dataformats::TriggerRecord & temp_tr =
+	  trigger_records[temp_id] = trigger_record_ptr_t( new dataformats::TriggerRecord(temp_dec.components) ) ; 
+
+	temp_tr.get_header_ref().set_trigger_number(temp_dec.trigger_number);
+	temp_tr.get_header_ref().set_run_number(temp_dec.run_number);
+	temp_tr.get_header_ref().set_trigger_timestamp(temp_dec.trigger_timestamp);
+	temp_tr.get_header_ref().set_trigger_type(temp_dec.trigger_type);
 	
 	book_updates = true ;
 	
@@ -225,7 +240,9 @@ TriggerRecordBuilder::do_work(std::atomic<bool>& running_flag)
       
     } // if we can pop a trigger decision
     
-    book_updates = read_fragments( frag_sources );
+    
+    // read the fragments queues
+    book_updates = book_updates || read_fragments( frag_sources );
     
     //-------------------------------------------------
     // Check if trigger records are complete or timedout
@@ -245,16 +262,17 @@ TriggerRecordBuilder::do_work(std::atomic<bool>& running_flag)
 	
 	if ( tr.second.components.size() >= tr.second.get_header_ref().get_num_requested_components() ) {
 
+	  
 	  // check GeoID matching
 
-	  message << ": omplete" ;
+	  message << ": complete" ;
 	  complete.push_back( tr.first ) ;
 	  
 	}
 	
 	TLOG_DEBUG(TLVL_BOOKKEEPING) << message.str();
 	
-      } // loop over TR to check if they are complete
+      } // loop over TRs to check if they are complete
       
       //------------------------------------------------
       // Create TriggerRecords and send them
@@ -265,12 +283,12 @@ TriggerRecordBuilder::do_work(std::atomic<bool>& running_flag)
         send_trigger_record(id, record_sink, running_flag);
 	
       } // loop over compled trigger id
-
+      
       //-------------------------------------------------
       // Check if some fragments are obsolete
       //--------------------------------------------------
       check_stale_requests() ;
-
+      
     } // if books were updated
     else {
       if (running_flag.load()) {
@@ -282,7 +300,7 @@ TriggerRecordBuilder::do_work(std::atomic<bool>& running_flag)
   
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Starting draining phase ";
   std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
-
+  
   // //-------------------------------------------------
   // // Here we drain what has been left from the running condition
   // //--------------------------------------------------
@@ -314,53 +332,24 @@ TriggerRecordBuilder::do_work(std::atomic<bool>& running_flag)
 }
 
 bool
-TriggerRecordBuilder::read_queues(trigger_decision_source_t& decision_source, fragment_sources_t& frag_sources, bool drain)
+TriggerRecordBuilder::read_fragments( fragment_sources_t& frag_sources, bool drain)
 {
 
   bool book_updates = false;
-
-  // temp memory allocations
-  dfmessages::TriggerDecision temp_dec;
-
-  //-------------------------------------------------
-  // Try to get a trigger decision of trigger decisions
-  //--------------------------------------------------
-
-  while (decision_source.can_pop()) {
-
-    try {
-      decision_source.pop(temp_dec, m_queue_timeout);
-    } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
-      // it is perfectly reasonable that there might be no data in the queue
-      // some fraction of the times that we check, so we just continue on and try again
-      continue;
-    }
-
-    m_current_time = temp_dec.trigger_timestamp;
-
-    TriggerId temp_id(temp_dec);
-    m_trigger_decisions[temp_id] = temp_dec;
-
-    book_updates = true;
-
-    if (!drain)
-      break;
-
-  } // while decisions loop
 
   //-------------------------------------------------
   // Try to get Fragments from every queue
   //--------------------------------------------------
 
   for (unsigned int j = 0; j < frag_sources.size(); ++j) {
-
+    
     while (frag_sources[j]->can_pop()) {
-
+      
       std::unique_ptr<dataformats::Fragment> temp_fragment;
 
       try {
         frag_sources[j]->pop(temp_fragment, m_queue_timeout);
-
+	
       } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
         // it is perfectly reasonable that there might be no data in the queue
         // some fraction of the times that we check, so we just continue on and try again
@@ -368,10 +357,44 @@ TriggerRecordBuilder::read_queues(trigger_decision_source_t& decision_source, fr
       }
 
       TriggerId temp_id(*temp_fragment);
-      m_fragments[temp_id].push_back(std::move(temp_fragment));
 
-      book_updates = true;
+      auto it = m_trigger_records.find( temp_id ) ;
+      
+      if ( it == m_trigger_records.end() ) {
+	ers::error( UnexpectedFragment(  ERS_HERE,
+					 temp_id, 
+					 temp_fragment -> get_fragment_type(), 
+					 temp_fragment -> get_link_id() ) ) ;
+      }
+      else {
+	
+	// check if the fragment has a GeoId that was desired
+	dataformats::TriggerRecordHeader & header = it -> second.get_header_ref() ;
+	
+	bool requested = false ;
+	for ( size_t i = 0 ; i < header.get_num_requested_components() ; ++i ) {
+	  
+	  const dataformats::ComponentRequest &  request = header[i] ;
+	  if ( request.component == temp_fragment -> get_link_id() ) {
+	    requested = true ;
+	    break ;
+	  }
+	  
+	} // request loop
 
+	if ( requested ) {
+	  it  -> add_fragment( std::move( temp_fragment ) ) ;
+	  book_updates = true;
+	}
+	else {
+	  ers::error( UnexpectedFragment( ERS_HERE, 
+					  temp_id, 
+					  temp_fragment -> get_fragment_type(), 
+					  temp_fragment -> get_link_id() ) ) ;
+	}
+	
+      } // if we can pop
+      
       if (!drain)
         break;
 
@@ -382,43 +405,28 @@ TriggerRecordBuilder::read_queues(trigger_decision_source_t& decision_source, fr
   return book_updates;
 }
 
-dataformats::TriggerRecord*
-TriggerRecordBuilder::build_trigger_record(const TriggerId& id)
+trigger_record_ptr_t
+TriggerRecordBuilder::extract_trigger_record(const TriggerId& id)
 {
 
-  auto trig_dec_it = m_trigger_decisions.find(id);
-  const dfmessages::TriggerDecision& trig_dec = trig_dec_it->second;
+  auto it = m_trigger_records.find(id);
 
-  dataformats::TriggerRecord* trig_rec_ptr = new dataformats::TriggerRecord(trig_dec.components);
+  trigger_record_ptr_t temp = std::move( it -> second ) ;
+  
+  m_trigger_records.erase( it ) ;
 
-  trig_rec_ptr->get_header_ref().set_trigger_number(trig_dec.trigger_number);
-  trig_rec_ptr->get_header_ref().set_run_number(trig_dec.run_number);
-  trig_rec_ptr->get_header_ref().set_trigger_timestamp(trig_dec.trigger_timestamp);
-  trig_rec_ptr->get_header_ref().set_trigger_type(trig_dec.trigger_type);
-
-  auto frags_it = m_fragments.find(id);
-  auto& frags = frags_it->second;
-
-  if (trig_dec.components.size() != frags.size()) {
-    trig_rec_ptr->get_header_ref().set_error_bit(TriggerRecordErrorBits::kIncomplete, true);
+  if ( temp -> get_fragments_ref().size() < temp-> get_header_ref().get_num_requested_components() ) {
+    temp->get_header_ref().set_error_bit(TriggerRecordErrorBits::kIncomplete, true);
   }
-
-  while (frags.size() > 0) {
-    trig_rec_ptr->add_fragment(std::move(frags.back()));
-    frags.pop_back();
-  }
-
-  m_trigger_decisions.erase(trig_dec_it);
-  m_fragments.erase(frags_it);
-
-  return trig_rec_ptr;
+  
+  return temp ;
 }
 
 bool
 TriggerRecordBuilder::send_trigger_record(const TriggerId& id, trigger_record_sink_t& sink, std::atomic<bool>& running)
 {
 
-  std::unique_ptr<dataformats::TriggerRecord> temp_record(build_trigger_record(id));
+  trigger_record_ptr_t temp_record( extract_trigger_record(id) );
 
   bool wasSentSuccessfully = false;
   while (!wasSentSuccessfully) {
