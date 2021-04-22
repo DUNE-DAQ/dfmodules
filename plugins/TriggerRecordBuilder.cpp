@@ -191,84 +191,85 @@ TriggerRecordBuilder::do_work(std::atomic<bool>& running_flag)
 
   datareqsinkmap_t request_sinks ;
   for (auto const& entry : m_map_geoid_queues) {
-    map[entry.first] = std::unique_ptr<datareqsink_t>(new datareqsink_t(entry.second));
+    request_sinks[entry.first] = std::unique_ptr<datareqsink_t>(new datareqsink_t(entry.second));
   }
-
+  
   bool book_updates = false;
-
+  
   while (running_flag.load() || book_updates) {
-
+    
     fill_counters();
+    
+    // read decision requests
+    if (decision_source.can_pop()) {
+      
+      try {
+	
+	// get the trigger decision
+	dfmessages::TriggerDecision temp_dec;
+	decision_source.pop(temp_dec, m_queue_timeout);
+	
+	m_current_time = temp_dec.trigger_timestamp;
+	
+	// create the book entry
+	TriggerId temp_id(temp_dec);
+	
+	TOBEDONE
+	
+	book_updates = true ;
+	
+	// dispatch requests
+	dispatch_data_requests( temp_dec, request_sinks ) const ;
 
-    book_updates = read_queues(decision_source, frag_sources);
-
-    // TLOG_DEBUG(TLVL_WORK_STEPS) << "Decision size: " << m_trigger_decisions.size() ;
-    // TLOG_DEBUG(TLVL_WORK_STEPS) << "Frag size: " << m_fragments.size() ;
-
+      } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) { ; }
+      
+    } // if we can pop a trigger decision
+    
+    book_updates = read_fragments( frag_sources );
+    
     //-------------------------------------------------
-    // Check if some decisions are complete or timedout
+    // Check if trigger records are complete or timedout
     // and create dedicated record
     //--------------------------------------------------
 
     if (book_updates) {
+      
 
-      std::ostringstream message;
-      TLOG_DEBUG(TLVL_BOOKKEEPING) << "Bookeeping status: " << m_trigger_decisions.size() << " decisions and "
-                                   << m_fragments.size() << " Fragment stashes";
-      message << "Trigger Decisions: ";
-
-      for (const auto& d : m_trigger_decisions) {
-        message << d.first << " with " << d.second.components.size() << " components, ";
-      }
-      TLOG_DEBUG(TLVL_BOOKKEEPING) << message.str();
-      message.str("");
-      message << "Fragments: ";
-      for (const auto& f : m_fragments) {
-        message << f.first << " with " << f.second.size() << " fragments, ";
-      }
-
-      TLOG_DEBUG(TLVL_BOOKKEEPING) << message.str();
-      // ers::info(ProgressUpdate(ERS_HERE, get_name(), message.str()));
-
+      TLOG_DEBUG(TLVL_BOOKKEEPING) << "Bookeeping status: " << m_trigger_records.size() << " trigger records in progress " ;
+      
       std::vector<TriggerId> complete;
+      for (const auto& tr : m_trigger_records) {
+	std::ostringstream message;
+        message << tr.first << " with " << tr.second.components.size() << '/' 
+		<< tr.second.get_header_ref().get_num_requested_components() << " components";
+	
+	if ( tr.second.components.size() >= tr.second.get_header_ref().get_num_requested_components() ) {
 
-      for (auto it = m_trigger_decisions.begin(); it != m_trigger_decisions.end(); ++it) {
+	  // check GeoID matching
 
-        // if ( current_time - it -> second.trigger_timestamp > m_max_time_difference ) {
-        // 	ers::warning( TimedOutTriggerDecision( ERS_HERE, it -> second, current_time ) ) ;
-        // 	temp_record = BuildTriggerRecord( it -> first ) ;
-        // }
-
-        auto frag_it = m_fragments.find(it->first);
-
-        if (frag_it != m_fragments.end()) {
-
-          if (frag_it->second.size() >= it->second.components.size()) {
-            complete.push_back(it->first);
-          } else {
-            // std::ostringstream message ;
-            TLOG_DEBUG(TLVL_WORK_STEPS) << "Trigger decision " << it->first << " status: " << frag_it->second.size()
-                                        << " / " << it->second.components.size() << " Fragments";
-            // ers::error(ProgressUpdate(ERS_HERE, get_name(), message.str()));
-          }
-        }
-
-      } // decision loop for complete record
-
+	  message << ": omplete" ;
+	  complete.push_back( tr.first ) ;
+	  
+	}
+	
+	TLOG_DEBUG(TLVL_BOOKKEEPING) << message.str();
+	
+      } // loop over TR to check if they are complete
+      
       //------------------------------------------------
       // Create TriggerRecords and send them
       //-----------------------------------------------
 
       for (const auto& id : complete) {
-
+	
         send_trigger_record(id, record_sink, running_flag);
-
+	
       } // loop over compled trigger id
 
       //-------------------------------------------------
       // Check if some fragments are obsolete
       //--------------------------------------------------
-      check_old_fragments();
+      check_stale_requests() ;
 
     } // if books were updated
     else {
@@ -278,26 +279,25 @@ TriggerRecordBuilder::do_work(std::atomic<bool>& running_flag)
     }
 
   } // working loop
-
+  
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Starting draining phase ";
   std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
 
   // //-------------------------------------------------
   // // Here we drain what has been left from the running condition
   // //--------------------------------------------------
-  // read_queues( decision_source, frag_sources, true ) ;
-
+  
   // create all possible trigger record
   std::vector<TriggerId> triggers;
-  for (const auto& entry : m_trigger_decisions) {
+  for (const auto& entry : m_trigger_records) {
     triggers.push_back(entry.first);
   }
-
+  
   // create the trigger record and send it
   for (const auto& t : triggers) {
     send_trigger_record(t, record_sink, running_flag);
   }
-
+  
   fill_counters();
 
   std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
