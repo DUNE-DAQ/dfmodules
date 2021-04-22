@@ -1,12 +1,12 @@
 /**
- * @file FragmentReceiver.cpp FragmentReceiver class implementation
+ * @file TriggerRecordBuilder.cpp TriggerRecordBuilder class implementation
  *
  * This is part of the DUNE DAQ Software Suite, copyright 2020.
  * Licensing/copyright details are in the COPYING file that you should have
  * received with this code.
  */
 
-#include "FragmentReceiver.hpp"
+#include "TriggerRecordBuilder.hpp"
 #include "dfmodules/CommonIssues.hpp"
 
 #include "appfwk/DAQModuleHelper.hpp"
@@ -39,19 +39,19 @@ namespace dfmodules {
 
 using dataformats::TriggerRecordErrorBits;
 
-FragmentReceiver::FragmentReceiver(const std::string& name)
+TriggerRecordBuilder::TriggerRecordBuilder(const std::string& name)
   : dunedaq::appfwk::DAQModule(name)
-  , m_thread(std::bind(&FragmentReceiver::do_work, this, std::placeholders::_1))
+  , m_thread(std::bind(&TriggerRecordBuilder::do_work, this, std::placeholders::_1))
   , m_queue_timeout(100)
 {
 
-  register_command("conf", &FragmentReceiver::do_conf);
-  register_command("start", &FragmentReceiver::do_start);
-  register_command("stop", &FragmentReceiver::do_stop);
+  register_command("conf", &TriggerRecordBuilder::do_conf);
+  register_command("start", &TriggerRecordBuilder::do_start);
+  register_command("stop", &TriggerRecordBuilder::do_stop);
 }
 
 void
-FragmentReceiver::init(const data_t& init_data)
+TriggerRecordBuilder::init(const data_t& init_data)
 {
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
@@ -85,7 +85,7 @@ FragmentReceiver::init(const data_t& init_data)
   // Get dynamic queues
   //----------------------
 
-  // set names for the
+  // set names for the fragment queue(s)
   auto ini = init_data.get<appfwk::app::ModInit>();
 
   // get the names for the fragment queues
@@ -101,14 +101,26 @@ FragmentReceiver::init(const data_t& init_data)
     }
   }
 
+  // Test for valid output data request queues
+  auto ini = init_data.get<appfwk::app::ModInit>();
+  for (const auto& qitem : ini.qinfos) {
+    if (qitem.name.rfind("data_request_") == 0) {
+      try {
+        datareqsink_t temp(qitem.inst);
+      } catch (const ers::Issue& excpt) {
+        throw InvalidQueueFatalError(ERS_HERE, get_name(), qitem.name, excpt);
+      }
+    }
+  }
+
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
 
 void
-FragmentReceiver::get_info(opmonlib::InfoCollector& ci, int /*level*/)
+TriggerRecordBuilder::get_info(opmonlib::InfoCollector& ci, int /*level*/)
 {
 
-  fragmentreceiverinfo::Info i;
+  triggerrecordbuilderinfo::Info i;
 
   i.trigger_decisions = m_trigger_decisions_counter.load();
   i.populated_trigger_ids = m_fragment_index_counter.load();
@@ -120,21 +132,30 @@ FragmentReceiver::get_info(opmonlib::InfoCollector& ci, int /*level*/)
 }
 
 void
-FragmentReceiver::do_conf(const data_t& payload)
+TriggerRecordBuilder::do_conf(const data_t& payload)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
 
-  fragmentreceiver::ConfParams parsed_conf = payload.get<fragmentreceiver::ConfParams>();
+  m_map_geoid_queues.clear() ;
 
+  triggerrecordbuilder::ConfParams parsed_conf = payload.get<triggerrecordbuilder::ConfParams>();
+
+  for (auto const& entry : parsed_conf.map) {
+    dataformats::GeoID key;
+    key.apa_number = entry.apa;
+    key.link_number = entry.link;
+    m_map_geoid_queues[key] = entry.queueinstance;
+  }
+  
   m_max_time_difference = parsed_conf.max_timestamp_diff;
-
+  
   m_queue_timeout = std::chrono::milliseconds(parsed_conf.general_queue_timeout);
-
+  
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
 }
-
+  
 void
-FragmentReceiver::do_start(const data_t& /*args*/)
+TriggerRecordBuilder::do_start(const data_t& /*args*/)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_start() method";
   m_thread.start_working_thread(get_name());
@@ -143,7 +164,7 @@ FragmentReceiver::do_start(const data_t& /*args*/)
 }
 
 void
-FragmentReceiver::do_stop(const data_t& /*args*/)
+TriggerRecordBuilder::do_stop(const data_t& /*args*/)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_stop() method";
   m_thread.stop_working_thread();
@@ -152,14 +173,13 @@ FragmentReceiver::do_stop(const data_t& /*args*/)
 }
 
 void
-FragmentReceiver::do_work(std::atomic<bool>& running_flag)
+TriggerRecordBuilder::do_work(std::atomic<bool>& running_flag)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() method";
   // uint32_t receivedCount = 0;
 
   // clean books from possible previous memory
-  m_trigger_decisions.clear();
-  m_fragments.clear();
+  m_trigger_records.clear() ;
 
   // allocate queues
   trigger_decision_source_t decision_source(m_trigger_decision_source_name);
@@ -167,6 +187,11 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
   std::vector<std::unique_ptr<fragment_source_t>> frag_sources;
   for (unsigned int i = 0; i < m_fragment_source_names.size(); ++i) {
     frag_sources.push_back(std::unique_ptr<fragment_source_t>(new fragment_source_t(m_fragment_source_names[i])));
+  }
+
+  datareqsinkmap_t request_sinks ;
+  for (auto const& entry : m_map_geoid_queues) {
+    map[entry.first] = std::unique_ptr<datareqsink_t>(new datareqsink_t(entry.second));
   }
 
   bool book_updates = false;
@@ -289,7 +314,7 @@ FragmentReceiver::do_work(std::atomic<bool>& running_flag)
 }
 
 bool
-FragmentReceiver::read_queues(trigger_decision_source_t& decision_source, fragment_sources_t& frag_sources, bool drain)
+TriggerRecordBuilder::read_queues(trigger_decision_source_t& decision_source, fragment_sources_t& frag_sources, bool drain)
 {
 
   bool book_updates = false;
@@ -358,7 +383,7 @@ FragmentReceiver::read_queues(trigger_decision_source_t& decision_source, fragme
 }
 
 dataformats::TriggerRecord*
-FragmentReceiver::build_trigger_record(const TriggerId& id)
+TriggerRecordBuilder::build_trigger_record(const TriggerId& id)
 {
 
   auto trig_dec_it = m_trigger_decisions.find(id);
@@ -390,7 +415,7 @@ FragmentReceiver::build_trigger_record(const TriggerId& id)
 }
 
 bool
-FragmentReceiver::send_trigger_record(const TriggerId& id, trigger_record_sink_t& sink, std::atomic<bool>& running)
+TriggerRecordBuilder::send_trigger_record(const TriggerId& id, trigger_record_sink_t& sink, std::atomic<bool>& running)
 {
 
   std::unique_ptr<dataformats::TriggerRecord> temp_record(build_trigger_record(id));
@@ -418,7 +443,7 @@ FragmentReceiver::send_trigger_record(const TriggerId& id, trigger_record_sink_t
 }
 
 bool
-FragmentReceiver::check_old_fragments() const
+TriggerRecordBuilder::check_old_fragments() const
 {
 
   bool old_stuff = false;
@@ -461,7 +486,7 @@ FragmentReceiver::check_old_fragments() const
 }
 
 void
-FragmentReceiver::fill_counters() const
+TriggerRecordBuilder::fill_counters() const
 {
 
   m_trigger_decisions_counter.store(m_trigger_decisions.size());
@@ -474,4 +499,4 @@ FragmentReceiver::fill_counters() const
 } // namespace dfmodules
 } // namespace dunedaq
 
-DEFINE_DUNE_DAQ_MODULE(dunedaq::dfmodules::FragmentReceiver)
+DEFINE_DUNE_DAQ_MODULE(dunedaq::dfmodules::TriggerRecordBuilder)

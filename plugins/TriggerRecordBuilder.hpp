@@ -139,7 +139,7 @@ namespace dunedaq {
     protected:
       using trigger_decision_source_t = dunedaq::appfwk::DAQSource<dfmessages::TriggerDecision>;
       using datareqsink_t = dunedaq::appfwk::DAQSink<dfmessages::DataRequest>;
-      using datareqsinkmap_t = std::map<dataformats::GeoID, datareqsink_t> ;
+      using datareqsinkmap_t = std::map<dataformats::GeoID, std::unique_ptr<datareqsink_t> > ;
 
       using fragment_source_t = dunedaq::appfwk::DAQSource<std::unique_ptr<dataformats::Fragment>>;
       using fragment_sources_t = std::vector<std::unique_ptr<fragment_source_t>>;
