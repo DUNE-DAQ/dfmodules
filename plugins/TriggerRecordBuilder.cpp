@@ -180,6 +180,10 @@ TriggerRecordBuilder::do_work(std::atomic<bool>& running_flag)
 
   // clean books from possible previous memory
   m_trigger_records.clear() ;
+  m_trigger_decisions_counter.store( 0 ) ;
+  m_fragment_counter.store( 0 ) ;
+  m_old_trigger_decisions.store( 0 ) ;
+  m_old_fragments.store( 0 ) ;
 
   // allocate queues
   trigger_decision_source_t decision_source(m_trigger_decision_source_name);
@@ -203,46 +207,52 @@ TriggerRecordBuilder::do_work(std::atomic<bool>& running_flag)
     fill_counters();
     
     // read decision requests
-    if (decision_source.can_pop()) {
+    while (decision_source.can_pop()) {
+
+      dfmessages::TriggerDecision temp_dec;
       
       try {
 	
 	// get the trigger decision
-	dfmessages::TriggerDecision temp_dec;
 	decision_source.pop(temp_dec, m_queue_timeout);
 	
-	m_current_time = temp_dec.trigger_timestamp;
-	
-	// create the book entry
-	TriggerId temp_id(temp_dec);
-	
-	auto it = find( temp_id ) ;
-	if ( it != trigger_records.end() ) {
-	  ers::error( ERS_HERE, DuplicatedTriggerDecision( temp_id ) ) ;
-	}
-	
-
-	// create trigger record
-	dataformats::TriggerRecord & temp_tr =
-	  trigger_records[temp_id] = trigger_record_ptr_t( new dataformats::TriggerRecord(temp_dec.components) ) ; 
-
-	temp_tr.get_header_ref().set_trigger_number(temp_dec.trigger_number);
-	temp_tr.get_header_ref().set_run_number(temp_dec.run_number);
-	temp_tr.get_header_ref().set_trigger_timestamp(temp_dec.trigger_timestamp);
-	temp_tr.get_header_ref().set_trigger_type(temp_dec.trigger_type);
-	
-	book_updates = true ;
-	
-	// dispatch requests
-	dispatch_data_requests( temp_dec, request_sinks ) const ;
-
-      } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) { ; }
+      } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) { 
+	continue ; 
+      }
       
-    } // if we can pop a trigger decision
+      m_current_time = temp_dec.trigger_timestamp;
+      
+      // create the book entry
+      TriggerId temp_id(temp_dec);
+      
+      auto it = find( temp_id ) ;
+      if ( it != trigger_records.end() ) {
+	ers::error( ERS_HERE, DuplicatedTriggerDecision( temp_id ) ) ;
+      }
+      
+      // create trigger record
+      dataformats::TriggerRecord & temp_tr =
+	trigger_records[temp_id] = trigger_record_ptr_t( new dataformats::TriggerRecord(temp_dec.components) ) ; 
+      
+      temp_tr.get_header_ref().set_trigger_number(temp_dec.trigger_number);
+      temp_tr.get_header_ref().set_run_number(temp_dec.run_number);
+      temp_tr.get_header_ref().set_trigger_timestamp(temp_dec.trigger_timestamp);
+      temp_tr.get_header_ref().set_trigger_type(temp_dec.trigger_type);
+
+      m_trigger_decisions_counter ++ ;
+      
+      book_updates = true ;
+      
+      // dispatch requests
+      dispatch_data_requests( temp_dec, request_sinks ) ;
+      
+      break ;
+      
+    } // while loop, so that we can pop a trigger decision
     
     
     // read the fragments queues
-    book_updates = book_updates || read_fragments( frag_sources );
+    book_updates |= read_fragments( frag_sources );
     
     //-------------------------------------------------
     // Check if trigger records are complete or timedout
@@ -316,8 +326,6 @@ TriggerRecordBuilder::do_work(std::atomic<bool>& running_flag)
     send_trigger_record(t, record_sink, running_flag);
   }
   
-  fill_counters();
-
   std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
 
   std::chrono::duration<double> time_span = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1);
@@ -381,9 +389,10 @@ TriggerRecordBuilder::read_fragments( fragment_sources_t& frag_sources, bool dra
 	  }
 	  
 	} // request loop
-
+	
 	if ( requested ) {
 	  it  -> add_fragment( std::move( temp_fragment ) ) ;
+	  ++ m_fragment_counter ;
 	  book_updates = true;
 	}
 	else {
@@ -397,7 +406,7 @@ TriggerRecordBuilder::read_fragments( fragment_sources_t& frag_sources, bool dra
       
       if (!drain)
         break;
-
+      
     } // while loop over the j-th queue
 
   } // queue loop
@@ -415,12 +424,91 @@ TriggerRecordBuilder::extract_trigger_record(const TriggerId& id)
   
   m_trigger_records.erase( it ) ;
 
+  -- m_trigger_decisions_counter ;
+  m_fragment_counter -= temp -> get_fragments_ref().size() ;
+
   if ( temp -> get_fragments_ref().size() < temp-> get_header_ref().get_num_requested_components() ) {
     temp->get_header_ref().set_error_bit(TriggerRecordErrorBits::kIncomplete, true);
   }
   
   return temp ;
 }
+
+bool 
+dispatch_data_requests( const dfmessages::TriggerDecision & td, 
+			datareqsinkmap_t & sinks ) const {
+
+  //-----------------------------------------
+  // Loop over trigger decision components
+  // Spawn each component_data_request to the corresponding link_data_handler_queue
+  //----------------------------------------
+  
+  TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() 
+			      << ": Trigger Decision components: " 
+			      << td.components.size();
+
+  bool sent_something = false ;
+
+  for (auto it = td.components.begin(); it != td.components.end(); it++) {
+    
+    dfmessages::DataRequest dataReq;
+    dataReq.trigger_number = trigDecision.trigger_number;
+    dataReq.run_number = trigDecision.run_number;
+    dataReq.trigger_timestamp = trigDecision.trigger_timestamp;
+    
+    TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": trig_number " << dataReq.trigger_number << ": run_number "
+				<< dataReq.run_number << ": trig_timestamp " << dataReq.trigger_timestamp;
+
+    dataformats::ComponentRequest comp_req = *it;
+    dataformats::GeoID geoid_req = comp_req.component;
+    dataReq.window_begin = comp_req.window_begin;
+    dataReq.window_end = comp_req.window_end;
+
+    TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": apa_number " << geoid_req.apa_number << ": link_number "
+				<< geoid_req.link_number << ": window_begin " << comp_req.window_begin
+				<< ": window_end " << comp_req.window_end;
+    
+    // find the queue for geoid_req in the map
+    auto it_req = sinks.find(geoid_req);
+    if (it_req == sinks.end()) {
+      // if geoid request is not valid. then trhow error and continue
+      ers::error(dunedaq::dfmodules::UnknownGeoID( ERS_HERE, 
+						   td.trigger_number, 
+						   dataReq.run_number, 
+						   geoid_req.apa_number, 
+						   geoid_req.link_number));
+      continue;
+    }
+
+    // get the queue from map element
+    auto& queue = it_req->second;
+    
+    wasSentSuccessfully = false;
+    do {
+      TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Pushing the DataRequest from trigger number "
+				  << dataReq.trigger_number << " onto output queue :" << queue->get_name();
+      
+      // push data request into the corresponding queue
+      try {
+	queue->push(dataReq, m_queue_timeout);
+	wasSentSuccessfully = true;
+      } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
+	std::ostringstream oss_warn;
+	oss_warn << "push to output queue \"" << queue->get_name() << "\"";
+	ers::warning(dunedaq::appfwk::QueueTimeoutExpired(
+							  ERS_HERE,
+							  get_name(),
+							  oss_warn.str(),
+							  std::chrono::duration_cast<std::chrono::milliseconds>(m_queue_timeout).count()));
+      }
+    } while (!wasSentSuccessfully && running_flag.load());
+    
+    sent_something |= wasSentSuccessfully ;
+  }  // loop over trigger decision components  
+
+  return sent_something ;
+}
+
 
 bool
 TriggerRecordBuilder::send_trigger_record(const TriggerId& id, trigger_record_sink_t& sink, std::atomic<bool>& running)
@@ -451,58 +539,36 @@ TriggerRecordBuilder::send_trigger_record(const TriggerId& id, trigger_record_si
 }
 
 bool
-TriggerRecordBuilder::check_old_fragments() const
+TriggerRecordBuilder::check_stale_requests() const
 {
 
-  bool old_stuff = false;
+  metric_counter_type old_fragments = 0 ;
+  metric_counter_type old_triggers  = 0 ; 
 
-  metric_counter_type old_fragments = 0;
-  metric_counter_type old_trigger_indexes = 0;
+  for (auto it = m_trigger_records.begin(); it != m_trigger_records.end(); ++it) {
 
-  for (auto it = m_fragments.begin(); it != m_fragments.end(); ++it) {
+    const dataformats::TriggerRecord & tr = * it -> second ;
 
-    metric_counter_type index_old_fragments = 0;
+    if ( tr.get_header_ref().get_trigger_timestamp() + m_max_time_difference < m_current_time ) {
 
-    for (auto frag_it = it->second.begin(); frag_it != it->second.end(); ++frag_it) {
+      old_fragments += tr.get_fragments_ref().size() ;
+      ++old_triggers ;
 
-      if (m_current_time > m_max_time_difference + (*frag_it)->get_trigger_timestamp()) {
-        old_stuff = true;
-        ++index_old_fragments;
-        ers::error(FragmentObsolete(ERS_HERE,
-                                    (*frag_it)->get_trigger_number(),
-                                    (*frag_it)->get_fragment_type_code(),
-                                    (*frag_it)->get_trigger_timestamp(),
-                                    m_current_time));
-        // it = m_trigger_decisions.erase( it ) ;
+      ers::error( TimedOutTriggerDecision( ERS_HERE, 
+					   it -> first, 
+					   tr.get_header_ref().get_trigger_timestamp(), 
+					   m_current_time ) ) ;
 
-        // note that if we reached this point it means there is no corresponding trigger decision for this id
-        // otherwise we would have created a dedicated trigger record (though probably incomplete)
-        // so there is no need to check the trigger decision book
-      }
-    } // vector loop
-
-    if (index_old_fragments > 0) {
-      ++old_trigger_indexes;
-      old_fragments += index_old_fragments;
     }
-  } // fragment loop
 
-  m_old_fragment_counter.store(old_fragments);
-  m_old_fragment_index_counter.store(old_trigger_indexes);
+  } // trigger record loop
 
-  return old_stuff;
+  m_old_trigger_decisions.store( old_triggers ) ;
+  m_old_fragments.store( old_fragments ) ;
+
+  return ( old_triggers > 0 ) ;
 }
 
-void
-TriggerRecordBuilder::fill_counters() const
-{
-
-  m_trigger_decisions_counter.store(m_trigger_decisions.size());
-  m_fragment_index_counter.store(m_fragments.size());
-  metric_counter_type tot = std::accumulate(
-    m_fragments.begin(), m_fragments.end(), 0, [](auto tot, auto& ele) { return tot += ele.second.size(); });
-  m_fragment_counter.store(tot);
-}
 
 } // namespace dfmodules
 } // namespace dunedaq

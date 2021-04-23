@@ -62,13 +62,13 @@ namespace dunedaq {
 	return run_number == other.run_number ? trigger_number < other.trigger_number : run_number < other.run_number;
       }
 
-      friend std::ostream& operator<<(std::ostream& out, const TriggerId& id)
+      friend std::ostream& operator<<(std::ostream& out, const TriggerId& id) noexcept 
       {
 	out << id.trigger_number << '/' << id.run_number;
 	return out;
       }
 
-      friend TraceStreamer& operator<<(TraceStreamer& out, const TriggerId& id)
+      friend TraceStreamer& operator<<(TraceStreamer& out, const TriggerId& id) noexcept 
       {
 	return out << id.trigger_number << "/" << id.run_number;
       }
@@ -175,8 +175,6 @@ namespace dunedaq {
       
       bool check_stale_requests() const;
       
-      void fill_counters() const;
-
     private:
       // Commands
       void do_conf(const data_t&);
@@ -206,8 +204,8 @@ namespace dunedaq {
       using metric_counter_type = decltype(fragmentreceiverinfo::Info::trigger_decisions);
       mutable std::atomic<metric_counter_type> m_trigger_decisions_counter = { 0 };
       mutable std::atomic<metric_counter_type> m_fragment_counter = { 0 };
-      mutable std::atomic<metric_counter_type> m_old_fragment_index_counter = { 0 };
-      mutable std::atomic<metric_counter_type> m_old_fragment_counter = { 0 };
+      mutable std::atomic<metric_counter_type> m_old_trigger_decisions = { 0 };
+      mutable std::atomic<metric_counter_type> m_old_fragments = { 0 };
 
       dataformats::timestamp_diff_t m_max_time_difference;
       dataformats::timestamp_t m_current_time = 0;
