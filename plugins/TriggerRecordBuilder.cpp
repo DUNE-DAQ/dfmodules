@@ -123,10 +123,9 @@ TriggerRecordBuilder::get_info(opmonlib::InfoCollector& ci, int /*level*/)
   triggerrecordbuilderinfo::Info i;
 
   i.trigger_decisions = m_trigger_decisions_counter.load();
-  i.populated_trigger_ids = m_fragment_index_counter.load();
-  i.old_trigger_ids = m_old_fragment_index_counter.load();
-  i.total_fragments = m_fragment_counter.load();
-  i.old_fragments = m_old_fragment_counter.load();
+  i.fragments = m_fragment_counter.load();
+  i.old_trigger_decisions = m_old_trigger_decisions.load();
+  i.old_fragments = m_old_fragments.load();
 
   ci.add(i);
 }
