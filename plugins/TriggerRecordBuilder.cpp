@@ -13,6 +13,7 @@
 #include "appfwk/app/Nljs.hpp"
 #include "dfmodules/triggerrecordbuilder/Nljs.hpp"
 #include "dfmodules/triggerrecordbuilder/Structs.hpp"
+#include "dfmodules/triggerrecordbuilderinfo/Structs.hpp"
 #include "logging/Logging.hpp"
 
 #include <chrono>
@@ -102,7 +103,6 @@ TriggerRecordBuilder::init(const data_t& init_data)
   }
 
   // Test for valid output data request queues
-  auto ini = init_data.get<appfwk::app::ModInit>();
   for (const auto& qitem : ini.qinfos) {
     if (qitem.name.rfind("data_request_") == 0) {
       try {
@@ -203,8 +203,6 @@ TriggerRecordBuilder::do_work(std::atomic<bool>& running_flag)
     
     book_updates = false ;
 
-    fill_counters();
-    
     // read decision requests
     while (decision_source.can_pop()) {
 
@@ -224,14 +222,14 @@ TriggerRecordBuilder::do_work(std::atomic<bool>& running_flag)
       // create the book entry
       TriggerId temp_id(temp_dec);
       
-      auto it = find( temp_id ) ;
-      if ( it != trigger_records.end() ) {
-	ers::error( ERS_HERE, DuplicatedTriggerDecision( temp_id ) ) ;
+      auto it = m_trigger_records.find( temp_id ) ;
+      if ( it != m_trigger_records.end() ) {
+	ers::error( DuplicatedTriggerDecision( ERS_HERE, temp_id ) ) ;
       }
       
       // create trigger record
       dataformats::TriggerRecord & temp_tr =
-	trigger_records[temp_id] = trigger_record_ptr_t( new dataformats::TriggerRecord(temp_dec.components) ) ; 
+	m_trigger_records[temp_id] = trigger_record_ptr_t( new dataformats::TriggerRecord(temp_dec.components) ) ; 
       
       temp_tr.get_header_ref().set_trigger_number(temp_dec.trigger_number);
       temp_tr.get_header_ref().set_run_number(temp_dec.run_number);
@@ -269,10 +267,7 @@ TriggerRecordBuilder::do_work(std::atomic<bool>& running_flag)
         message << tr.first << " with " << tr.second.components.size() << '/' 
 		<< tr.second.get_header_ref().get_num_requested_components() << " components";
 	
-	if ( tr.second.components.size() >= tr.second.get_header_ref().get_num_requested_components() ) {
-
-	  
-	  // check GeoID matching
+	if ( tr.second.components.size() == tr.second.get_header_ref().get_num_requested_components() ) {
 
 	  message << ": complete" ;
 	  complete.push_back( tr.first ) ;

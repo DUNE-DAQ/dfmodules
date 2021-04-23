@@ -19,6 +19,7 @@
 #include "dataformats/Types.hpp"
 #include "dfmessages/TriggerDecision.hpp"
 #include "dfmessages/Types.hpp"
+#include "dfmessages/DataRequest.hpp"
 
 #include "appfwk/DAQModule.hpp"
 #include "appfwk/DAQSink.hpp"
@@ -40,6 +41,8 @@ namespace dunedaq {
      */
     struct TriggerId
     {
+      
+      TriggerId() : trigger_number(0), run_number(0) {;}
 
       explicit TriggerId(const dfmessages::TriggerDecision& td)
 	: trigger_number(td.trigger_number)
@@ -74,57 +77,66 @@ namespace dunedaq {
       }
     };
 
+  } // namespace dfmoduls
 
     /**
-     * @brief Timed out Trigger Decision
-     */
-    ERS_DECLARE_ISSUE(ERS_EMPTY,               ///< Namespace
-		      TimedOutTriggerDecision, ///< Issue class name
-		      "trigger id " << trigger_id 
-		      << " generate at: " << trigger_timestamp 
-		      << " too late for: " << present_time,           ///< Message
-		      ((TriggerID)trigger_id)                         ///< Message parameters
-		      ((dataformats::timestamp_t)trigger_timestamp)   ///< Message parameters
-		      ((dataformats::timestamp_t)present_time)        ///< Message parameters
-		      )
+   * @brief Timed out Trigger Decision
+   */
+  ERS_DECLARE_ISSUE(dfmodules,               ///< Namespace
+		    TimedOutTriggerDecision, ///< Issue class name
+		    "trigger id " << trigger_id 
+		    << " generate at: " << trigger_timestamp 
+		    << " too late for: " << present_time,           ///< Message
+		    ((dfmodules::TriggerId)trigger_id)              ///< Message parameters
+		    ((dataformats::timestamp_t)trigger_timestamp)   ///< Message parameters
+		    ((dataformats::timestamp_t)present_time)        ///< Message parameters
+		    )
     
-    /**
-     * @brief Unexpected fragment
-     */
-    ERS_DECLARE_ISSUE(ERS_EMPTY,                  ///< Namespace
-		      UnexpectedFragment,         ///< Issue class name
-		      "Unexpected fragment - triggerID: " << trigger_id 
-		      << " type: " << fragment_type 
-		      << " GeoID: " << geo_id,
-		      ((TriggerID)trigger_id) ///< Message parameters
-		      ((dataformats::fragment_type_t)fragment_type)   ///< Message parameters
-		      ((dataformats::GeoID)geo_id)
-		      )
+  /**
+  * @brief Unexpected fragment
+  */
+  ERS_DECLARE_ISSUE(dfmodules,                  ///< Namespace
+  		    UnexpectedFragment,         ///< Issue class name
+   		    "Unexpected fragment - triggerID: " << trigger_id 
+		    << " type: " << fragment_type << " GeoID: " << geo_id,
+   		    ((dfmodules::TriggerId)trigger_id)             ///< Message parameters
+   		    ((dataformats::fragment_type_t)fragment_type)   ///< Message parameters
+		    ((dataformats::GeoID)geo_id) 
+   		    )
     
-    using apatype = decltype(dataformats::GeoID::apa_number);
-    using linktype = decltype(dataformats::GeoID::link_number);
+  using apatype = decltype(dataformats::GeoID::apa_number);
+  using linktype = decltype(dataformats::GeoID::link_number);
 
-    /**
-     * @brief Unknown GeoID
-     */
-    ERS_DECLARE_ISSUE(ERS_EMPTY,    ///< Namespace
-		      UnknownGeoID, ///< Issue class name
-		      "trigger id " << trigger_id << " of run: " << run_number << " of APA: " << apa
-		      << " of Link: " << link,
-		      ((TriggerID)trigger_id)    ///< Message parameters
-		      ((apatype)apa)                 ///< Message parameters
-		      ((linktype)link)               ///< Message parameters
-		      )
+  /**
+  * @brief Unknown GeoID
+  */
+  ERS_DECLARE_ISSUE(dfmodules,    ///< Namespace
+   		    UnknownGeoID, ///< Issue class name
+   		    "GeoID: " << geo_id,
+		    ((dataformats::GeoID)geo_id) 
+   		    )
 
-    /**
-     * @brief Duplicate trigger decision
-     */
-    ERS_DECLARE_ISSUE(ERS_EMPTY,    ///< Namespace
-		      DuplicatedTriggerDecision, ///< Issue class name
-		      "trigger id " << trigger_id << " already in the book" 
-		      ((TriggerID)trigger_id)    ///< Message parameters
-		      )
+  
+  // ERS_DECLARE_ISSUE(dfmodules,    ///< Namespace
+  //  		    UnknownGeoID, ///< Issue class name
+  //  		    "trigger id " << trigger_id << " of APA: " << apa
+  //  		    << " of Link: " << link,
+  //  		    ((dfmodules::TriggerId)trigger_id)    ///< Message parameters
+  //  		    ((apatype)apa)                         ///< Message parameters
+  //  		    ((linktype)link)                       ///< Message parameters
+  //  		    )
 
+  /**
+   * @brief Duplicate trigger decision
+   */
+  ERS_DECLARE_ISSUE(dfmodules,    ///< Namespace
+   		    DuplicatedTriggerDecision, ///< Issue class name
+   		    "trigger id " << trigger_id << " already in the book" ,
+   		    ((dfmodules::TriggerId)trigger_id)    ///< Message parameters
+   		    )
+
+
+  namespace dfmodules {
 
 
 
