@@ -224,7 +224,8 @@ TriggerRecordBuilder::do_work(std::atomic<bool>& running_flag)
       
       auto it = m_trigger_records.find( temp_id ) ;
       if ( it != m_trigger_records.end() ) {
-	ers::error( DuplicatedTriggerDecision( ERS_HERE, temp_id ) ) ;
+	ers::error( DuplicatedTriggerDecision( ERS_HERE, 
+					       temp_id.trigger_number, temp_id.run_number ) ) ;
       }
       
       // create trigger record
@@ -242,7 +243,7 @@ TriggerRecordBuilder::do_work(std::atomic<bool>& running_flag)
       book_updates = true ;
       
       // dispatch requests
-      dispatch_data_requests( temp_dec, request_sinks ) ;
+      dispatch_data_requests( temp_dec, request_sinks, running_flag ) ;
       
       break ;
       
@@ -366,15 +367,17 @@ TriggerRecordBuilder::read_fragments( fragment_sources_t& frag_sources, bool dra
       auto it = m_trigger_records.find( temp_id ) ;
       
       if ( it == m_trigger_records.end() ) {
-	ers::error( UnexpectedFragment(  ERS_HERE,
-					 temp_id, 
-					 temp_fragment -> get_fragment_type(), 
-					 temp_fragment -> get_link_id() ) ) ;
+	ers::error( UnexpectedFragment( ERS_HERE,
+					temp_id.trigger_number,
+					temp_id.run_number, 
+					temp_fragment -> get_fragment_type_code(), 
+					temp_fragment -> get_link_id().apa_number, 
+					temp_fragment -> get_link_id().link_number) ) ;
       }
       else {
 	
 	// check if the fragment has a GeoId that was desired
-	dataformats::TriggerRecordHeader & header = it -> second.get_header_ref() ;
+	dataformats::TriggerRecordHeader & header = it -> second -> get_header_ref() ;
 	
 	bool requested = false ;
 	for ( size_t i = 0 ; i < header.get_num_requested_components() ; ++i ) {
@@ -388,15 +391,18 @@ TriggerRecordBuilder::read_fragments( fragment_sources_t& frag_sources, bool dra
 	} // request loop
 	
 	if ( requested ) {
-	  it  -> add_fragment( std::move( temp_fragment ) ) ;
+	  it  -> second -> add_fragment( std::move( temp_fragment ) ) ;
 	  ++ m_fragment_counter ;
 	  book_updates = true;
 	}
 	else {
 	  ers::error( UnexpectedFragment( ERS_HERE, 
-					  temp_id, 
-					  temp_fragment -> get_fragment_type(), 
-					  temp_fragment -> get_link_id() ) ) ;
+					  temp_id.trigger_number,
+					  temp_id.run_number, 
+					  temp_fragment -> get_fragment_type_code(), 
+					  temp_fragment -> get_link_id().apa_number, 
+					  temp_fragment -> get_link_id().link_number) ) ;
+
 	}
 	
       } // if we can pop
@@ -411,7 +417,7 @@ TriggerRecordBuilder::read_fragments( fragment_sources_t& frag_sources, bool dra
   return book_updates;
 }
 
-trigger_record_ptr_t
+TriggerRecordBuilder::trigger_record_ptr_t
 TriggerRecordBuilder::extract_trigger_record(const TriggerId& id)
 {
 
@@ -432,8 +438,8 @@ TriggerRecordBuilder::extract_trigger_record(const TriggerId& id)
 }
 
 bool 
-dispatch_data_requests( const dfmessages::TriggerDecision & td, 
-			datareqsinkmap_t & sinks ) const {
+TriggerRecordBuilder::dispatch_data_requests( const dfmessages::TriggerDecision & td, 
+					      datareqsinkmap_t & sinks, std::atomic<bool>& running ) const {
 
   //-----------------------------------------
   // Loop over trigger decision components
@@ -449,38 +455,34 @@ dispatch_data_requests( const dfmessages::TriggerDecision & td,
   for (auto it = td.components.begin(); it != td.components.end(); it++) {
     
     dfmessages::DataRequest dataReq;
-    dataReq.trigger_number = trigDecision.trigger_number;
-    dataReq.run_number = trigDecision.run_number;
-    dataReq.trigger_timestamp = trigDecision.trigger_timestamp;
+    dataReq.trigger_number    = td.trigger_number;
+    dataReq.run_number        = td.run_number;
+    dataReq.trigger_timestamp = td.trigger_timestamp;
     
     TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": trig_number " << dataReq.trigger_number << ": run_number "
 				<< dataReq.run_number << ": trig_timestamp " << dataReq.trigger_timestamp;
 
-    dataformats::ComponentRequest comp_req = *it;
-    dataformats::GeoID geoid_req = comp_req.component;
+    const dataformats::ComponentRequest & comp_req = *it;
+    const dataformats::GeoID & req_geoid = comp_req.component;
     dataReq.window_begin = comp_req.window_begin;
     dataReq.window_end = comp_req.window_end;
 
-    TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": apa_number " << geoid_req.apa_number << ": link_number "
-				<< geoid_req.link_number << ": window_begin " << comp_req.window_begin
+    TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": GeoID " << req_geoid 
+				<< ": window_begin " << comp_req.window_begin
 				<< ": window_end " << comp_req.window_end;
     
     // find the queue for geoid_req in the map
-    auto it_req = sinks.find(geoid_req);
+    auto it_req = sinks.find(req_geoid);
     if (it_req == sinks.end()) {
       // if geoid request is not valid. then trhow error and continue
-      ers::error(dunedaq::dfmodules::UnknownGeoID( ERS_HERE, 
-						   td.trigger_number, 
-						   dataReq.run_number, 
-						   geoid_req.apa_number, 
-						   geoid_req.link_number));
+      ers::error(dunedaq::dfmodules::UnknownGeoID( ERS_HERE, req_geoid.apa_number, req_geoid.link_number ));
       continue;
     }
 
     // get the queue from map element
     auto& queue = it_req->second;
     
-    wasSentSuccessfully = false;
+    bool wasSentSuccessfully = false;
     do {
       TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Pushing the DataRequest from trigger number "
 				  << dataReq.trigger_number << " onto output queue :" << queue->get_name();
@@ -498,7 +500,7 @@ dispatch_data_requests( const dfmessages::TriggerDecision & td,
 							  oss_warn.str(),
 							  std::chrono::duration_cast<std::chrono::milliseconds>(m_queue_timeout).count()));
       }
-    } while (!wasSentSuccessfully && running_flag.load());
+    } while (!wasSentSuccessfully && running.load());
     
     sent_something |= wasSentSuccessfully ;
   }  // loop over trigger decision components  
@@ -536,7 +538,7 @@ TriggerRecordBuilder::send_trigger_record(const TriggerId& id, trigger_record_si
 }
 
 bool
-TriggerRecordBuilder::check_stale_requests() const
+TriggerRecordBuilder::check_stale_requests() 
 {
 
   metric_counter_type old_fragments = 0 ;
@@ -544,7 +546,7 @@ TriggerRecordBuilder::check_stale_requests() const
 
   for (auto it = m_trigger_records.begin(); it != m_trigger_records.end(); ++it) {
 
-    const dataformats::TriggerRecord & tr = * it -> second ;
+    dataformats::TriggerRecord & tr = * it -> second ;
 
     if ( tr.get_header_ref().get_trigger_timestamp() + m_max_time_difference < m_current_time ) {
 
@@ -552,7 +554,8 @@ TriggerRecordBuilder::check_stale_requests() const
       ++old_triggers ;
 
       ers::error( TimedOutTriggerDecision( ERS_HERE, 
-					   it -> first, 
+					   it -> first.trigger_number, 
+					   it -> first.run_number, 
 					   tr.get_header_ref().get_trigger_timestamp(), 
 					   m_current_time ) ) ;
 

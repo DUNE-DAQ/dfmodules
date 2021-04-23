@@ -84,36 +84,42 @@ namespace dunedaq {
    */
   ERS_DECLARE_ISSUE(dfmodules,               ///< Namespace
 		    TimedOutTriggerDecision, ///< Issue class name
-		    "trigger id " << trigger_id 
+		    "trigger id: " << trigger_number << '/' << run_number 
 		    << " generate at: " << trigger_timestamp 
 		    << " too late for: " << present_time,           ///< Message
-		    ((dfmodules::TriggerId)trigger_id)              ///< Message parameters
+		    ((dataformats::trigger_number_t)trigger_number)   ///< Message parameters
+		    ((dataformats::run_number_t)run_number)           ///< Message parameters
 		    ((dataformats::timestamp_t)trigger_timestamp)   ///< Message parameters
 		    ((dataformats::timestamp_t)present_time)        ///< Message parameters
 		    )
-    
+
+  using apatype = decltype(dataformats::GeoID::apa_number);
+  using linktype = decltype(dataformats::GeoID::link_number);
+      
   /**
   * @brief Unexpected fragment
   */
   ERS_DECLARE_ISSUE(dfmodules,                  ///< Namespace
   		    UnexpectedFragment,         ///< Issue class name
-   		    "triggerID: " << trigger_id 
-		    << " type: " << fragment_type << " GeoID: " << geo_id,
-   		    ((dfmodules::TriggerId)trigger_id)             ///< Message parameters
-   		    ((dataformats::fragment_type_t)fragment_type)   ///< Message parameters
-		    ((dataformats::GeoID)geo_id) 
-   		    )
+   		    "triggerID: " << trigger_number <<'/' << run_number
+		    << " type: " << fragment_type 
+		    << " GeoID: " << apa << '/' << link,
+		    ((dataformats::trigger_number_t)trigger_number)   ///< Message parameters
+		    ((dataformats::run_number_t)run_number)           ///< Message parameters
+   		    ((dataformats::fragment_type_t)fragment_type)     ///< Message parameters
+		    ((apatype)apa)                                  ///< Message parameters
+		    ((linktype)link)                                ///< Message parameters
+     		    )
     
-  // using apatype = decltype(dataformats::GeoID::apa_number);
-  // using linktype = decltype(dataformats::GeoID::link_number);
 
   /**
   * @brief Unknown GeoID
   */
   ERS_DECLARE_ISSUE(dfmodules,    ///< Namespace
    		    UnknownGeoID, ///< Issue class name
-   		    "GeoID: " << geo_id,
-		    ((dataformats::GeoID)geo_id) 
+   		    "APA: " << apa << " Link: " << link,
+		    ((apatype)apa)                                  ///< Message parameters
+		    ((linktype)link)                                ///< Message parameters
    		    )
 
   
@@ -131,9 +137,10 @@ namespace dunedaq {
    */
   ERS_DECLARE_ISSUE(dfmodules,    ///< Namespace
    		    DuplicatedTriggerDecision, ///< Issue class name
-   		    "trigger id " << trigger_id << " already in the book" ,
-   		    ((dfmodules::TriggerId)trigger_id)    ///< Message parameters
-   		    )
+   		    "trigger id " << trigger_number <<'/' << run_number << " already in the book" ,
+		    ((dataformats::trigger_number_t)trigger_number)   ///< Message parameters                        
+                    ((dataformats::run_number_t)run_number)           ///< Message parameters                        
+ 		    )
 
 
   namespace dfmodules {
@@ -180,12 +187,14 @@ namespace dunedaq {
       // build_trigger_record will allocate memory and then orphan it to the caller via the returned pointer
       // Plese note that the method will destroy the memory saved in the bookkeeping map
 
-      bool dispatch_data_requests( const dfmessages::TriggerDecision &, datareqsinkmap_t & ) const ;
+      bool dispatch_data_requests( const dfmessages::TriggerDecision &, 
+				   datareqsinkmap_t &, 
+				   std::atomic<bool>& running ) const ;
 
       bool send_trigger_record(const TriggerId&, trigger_record_sink_t&, std::atomic<bool>& running);
       // this creates a trigger record and send it
       
-      bool check_stale_requests() const;
+      bool check_stale_requests() ;
       
     private:
       // Commands
