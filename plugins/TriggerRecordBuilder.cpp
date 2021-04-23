@@ -228,13 +228,14 @@ TriggerRecordBuilder::do_work(std::atomic<bool>& running_flag)
       }
       
       // create trigger record
-      dataformats::TriggerRecord & temp_tr =
-	m_trigger_records[temp_id] = trigger_record_ptr_t( new dataformats::TriggerRecord(temp_dec.components) ) ; 
-      
-      temp_tr.get_header_ref().set_trigger_number(temp_dec.trigger_number);
-      temp_tr.get_header_ref().set_run_number(temp_dec.run_number);
-      temp_tr.get_header_ref().set_trigger_timestamp(temp_dec.trigger_timestamp);
-      temp_tr.get_header_ref().set_trigger_type(temp_dec.trigger_type);
+      trigger_record_ptr_t & trp = m_trigger_records[temp_id] ;
+      trp.reset( new dataformats::TriggerRecord(temp_dec.components) ) ;
+      dataformats::TriggerRecord & tr = * trp ;
+           
+      tr.get_header_ref().set_trigger_number(temp_dec.trigger_number);
+      tr.get_header_ref().set_run_number(temp_dec.run_number);
+      tr.get_header_ref().set_trigger_timestamp(temp_dec.trigger_timestamp);
+      tr.get_header_ref().set_trigger_type(temp_dec.trigger_type);
 
       m_trigger_decisions_counter ++ ;
       
@@ -263,11 +264,13 @@ TriggerRecordBuilder::do_work(std::atomic<bool>& running_flag)
       
       std::vector<TriggerId> complete;
       for (const auto& tr : m_trigger_records) {
+
+	auto comp_size = tr.second -> get_fragments_ref().size() ;
+	auto requ_size = tr.second -> get_header_ref().get_num_requested_components() ;
 	std::ostringstream message;
-        message << tr.first << " with " << tr.second.components.size() << '/' 
-		<< tr.second.get_header_ref().get_num_requested_components() << " components";
+        message << tr.first << " with " << comp_size << '/' << requ_size << " components";
 	
-	if ( tr.second.components.size() == tr.second.get_header_ref().get_num_requested_components() ) {
+	if ( comp_size == requ_size ) {
 
 	  message << ": complete" ;
 	  complete.push_back( tr.first ) ;
@@ -325,8 +328,8 @@ TriggerRecordBuilder::do_work(std::atomic<bool>& running_flag)
   std::chrono::duration<double> time_span = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1);
 
   std::ostringstream oss_summ;
-  oss_summ << ": Exiting the do_work() method, " << m_trigger_decisions.size() << " reminaing Trigger Decision and "
-           << m_fragments.size() << " remaining fragment stashes" << std::endl
+  oss_summ << ": Exiting the do_work() method, " 
+	   << m_trigger_records.size() << " reminaing Trigger Records" << std::endl
            << "Draining took : " << time_span.count() << " s";
   TLOG() << ProgressUpdate(ERS_HERE, get_name(), oss_summ.str());
 

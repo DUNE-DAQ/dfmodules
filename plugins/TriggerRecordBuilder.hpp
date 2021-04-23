@@ -42,7 +42,7 @@ namespace dunedaq {
     struct TriggerId
     {
       
-      TriggerId() : trigger_number(0), run_number(0) {;}
+      TriggerId() = default ;
 
       explicit TriggerId(const dfmessages::TriggerDecision& td)
 	: trigger_number(td.trigger_number)
@@ -97,15 +97,15 @@ namespace dunedaq {
   */
   ERS_DECLARE_ISSUE(dfmodules,                  ///< Namespace
   		    UnexpectedFragment,         ///< Issue class name
-   		    "Unexpected fragment - triggerID: " << trigger_id 
+   		    "triggerID: " << trigger_id 
 		    << " type: " << fragment_type << " GeoID: " << geo_id,
    		    ((dfmodules::TriggerId)trigger_id)             ///< Message parameters
    		    ((dataformats::fragment_type_t)fragment_type)   ///< Message parameters
 		    ((dataformats::GeoID)geo_id) 
    		    )
     
-  using apatype = decltype(dataformats::GeoID::apa_number);
-  using linktype = decltype(dataformats::GeoID::link_number);
+  // using apatype = decltype(dataformats::GeoID::apa_number);
+  // using linktype = decltype(dataformats::GeoID::link_number);
 
   /**
   * @brief Unknown GeoID
