@@ -10,6 +10,7 @@
 #define DFMODULES_PLUGINS_DATAWRITER_HPP_
 
 #include "dfmodules/DataStore.hpp"
+#include "dfmodules/datawriterinfo/OpmonNljs.hpp"
 
 #include "appfwk/DAQModule.hpp"
 #include "appfwk/DAQSink.hpp"
@@ -74,10 +75,7 @@ private:
   // Worker(s)
   std::unique_ptr<DataStore> m_data_writer;
 
-  std::atomic<uint64_t> m_records_received = { 0 };
-  std::atomic<uint64_t> m_records_received_tot = { 0 };
-  std::atomic<uint64_t> m_records_written = { 0 };
-  std::atomic<uint64_t> m_records_written_tot = { 0 };
+  datawriterinfo::Info m_info;
 
   inline double elapsed_seconds(std::chrono::steady_clock::time_point then,
                                 std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now()) const
