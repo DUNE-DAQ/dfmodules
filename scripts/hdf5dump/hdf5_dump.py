@@ -14,6 +14,7 @@ CLOCK_SPEED_HZ = 50000000.0
 
 g_trigger_record_nfragments = []
 g_trigger_record_nexp_fragments = []
+g_trigger_record_number = []
 g_ith_record = -1
 
 g_n_request = 0
@@ -85,8 +86,9 @@ def process_record_func(name, dset):
         if "TriggerRecordHeader" in name:
             g_header_paths[g_ith_record]["TriggerRecordHeader"] = name
             data_array = bytearray(dset[:])
-            (i,) = struct.unpack('<Q', data_array[24:32])
-            g_trigger_record_nexp_fragments.append(i)
+            (i, j, k) = struct.unpack('<3Q', data_array[8:32])
+            g_trigger_record_nexp_fragments.append(k)
+            g_trigger_record_number.append(i)
         else:
             g_header_paths[g_ith_record]["Fragments"].append(name)
             g_trigger_record_nfragments[g_ith_record] += 1
@@ -137,7 +139,7 @@ def check_fragments():
         "i", "N_frag_exp", "N_frag_act", "N_diff"))
     for i in range(len(g_trigger_record_nexp_fragments)):
         print("{:^10}{:^15}{:^15}{:^10}".format(
-            i, g_trigger_record_nexp_fragments[i],
+            g_trigger_record_number[i], g_trigger_record_nexp_fragments[i],
             g_trigger_record_nfragments[i],
             (g_trigger_record_nfragments[i] -
              g_trigger_record_nexp_fragments[i])))
