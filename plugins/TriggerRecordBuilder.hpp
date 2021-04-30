@@ -75,6 +75,14 @@ namespace dunedaq {
       {
 	return out << id.trigger_number << "/" << id.run_number;
       }
+
+      friend std::istream& operator>>(std::istream& in, TriggerId& id) 
+      {
+	char t ;
+	in >> id.trigger_number >> t >> id.run_number;
+	return in;
+      }
+
     };
 
   } // namespace dfmoduls
@@ -84,31 +92,25 @@ namespace dunedaq {
    */
   ERS_DECLARE_ISSUE(dfmodules,               ///< Namespace
 		    TimedOutTriggerDecision, ///< Issue class name
-		    "trigger id: " << trigger_number << '/' << run_number 
+		    "trigger id: " << trigger_id
 		    << " generate at: " << trigger_timestamp 
 		    << " too late for: " << present_time,           ///< Message
-		    ((dataformats::trigger_number_t)trigger_number)   ///< Message parameters
-		    ((dataformats::run_number_t)run_number)           ///< Message parameters
+		    ((dfmodules::TriggerId)trigger_id)              ///< Message parameters
 		    ((dataformats::timestamp_t)trigger_timestamp)   ///< Message parameters
 		    ((dataformats::timestamp_t)present_time)        ///< Message parameters
 		    )
 
-  using apatype = decltype(dataformats::GeoID::apa_number);
-  using linktype = decltype(dataformats::GeoID::link_number);
-      
   /**
   * @brief Unexpected fragment
   */
   ERS_DECLARE_ISSUE(dfmodules,                  ///< Namespace
   		    UnexpectedFragment,         ///< Issue class name
-   		    "triggerID: " << trigger_number <<'/' << run_number
+   		    "triggerID: " << trigger_id
 		    << " type: " << fragment_type 
-		    << " GeoID: " << apa << '/' << link,
-		    ((dataformats::trigger_number_t)trigger_number)   ///< Message parameters
-		    ((dataformats::run_number_t)run_number)           ///< Message parameters
-   		    ((dataformats::fragment_type_t)fragment_type)     ///< Message parameters
-		    ((apatype)apa)                                  ///< Message parameters
-		    ((linktype)link)                                ///< Message parameters
+		    << " GeoID: " << geo_id,
+		    ((dfmodules::TriggerId)trigger_id)              ///< Message parameters
+   		    ((dataformats::fragment_type_t)fragment_type)   ///< Message parameters
+		    ((dataformats::GeoID)geo_id)                       ///< Message parameters
      		    )
     
 
@@ -117,9 +119,8 @@ namespace dunedaq {
   */
   ERS_DECLARE_ISSUE(dfmodules,    ///< Namespace
    		    UnknownGeoID, ///< Issue class name
-   		    "APA: " << apa << " Link: " << link,
-		    ((apatype)apa)                                  ///< Message parameters
-		    ((linktype)link)                                ///< Message parameters
+   		    "GeoID: " << geo_id,
+		    ((dataformats::GeoID)geo_id)                       ///< Message parameters
    		    )
 
   
@@ -137,9 +138,8 @@ namespace dunedaq {
    */
   ERS_DECLARE_ISSUE(dfmodules,    ///< Namespace
    		    DuplicatedTriggerDecision, ///< Issue class name
-   		    "trigger id " << trigger_number <<'/' << run_number << " already in the book" ,
-		    ((dataformats::trigger_number_t)trigger_number)   ///< Message parameters                        
-                    ((dataformats::run_number_t)run_number)           ///< Message parameters                        
+   		    "trigger id " << trigger_id,
+		    ((dfmodules::TriggerId)trigger_id)              ///< Message parameters
  		    )
 
 

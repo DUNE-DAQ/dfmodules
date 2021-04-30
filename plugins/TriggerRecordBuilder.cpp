@@ -225,8 +225,7 @@ TriggerRecordBuilder::do_work(std::atomic<bool>& running_flag)
       
       auto it = m_trigger_records.find( temp_id ) ;
       if ( it != m_trigger_records.end() ) {
-	ers::error( DuplicatedTriggerDecision( ERS_HERE, 
-					       temp_id.trigger_number, temp_id.run_number ) ) ;
+	ers::error( DuplicatedTriggerDecision( ERS_HERE, temp_id ) ) ;
       }
       
       // create trigger record
@@ -368,12 +367,10 @@ TriggerRecordBuilder::read_fragments( fragment_sources_t& frag_sources, bool dra
       auto it = m_trigger_records.find( temp_id ) ;
       
       if ( it == m_trigger_records.end() ) {
-	ers::error( UnexpectedFragment( ERS_HERE,
-					temp_id.trigger_number,
-					temp_id.run_number, 
+	ers::error( UnexpectedFragment( ERS_HERE, 
+					temp_id,
 					temp_fragment -> get_fragment_type_code(), 
-					temp_fragment -> get_link_id().apa_number, 
-					temp_fragment -> get_link_id().link_number) ) ;
+					temp_fragment -> get_link_id() ) ) ;
       }
       else {
 	
@@ -398,11 +395,9 @@ TriggerRecordBuilder::read_fragments( fragment_sources_t& frag_sources, bool dra
 	}
 	else {
 	  ers::error( UnexpectedFragment( ERS_HERE, 
-					  temp_id.trigger_number,
-					  temp_id.run_number, 
+					  temp_id,
 					  temp_fragment -> get_fragment_type_code(), 
-					  temp_fragment -> get_link_id().apa_number, 
-					  temp_fragment -> get_link_id().link_number) ) ;
+					  temp_fragment -> get_link_id() ) ) ;
 
 	}
 	
@@ -476,7 +471,7 @@ TriggerRecordBuilder::dispatch_data_requests( const dfmessages::TriggerDecision 
     auto it_req = sinks.find(req_geoid);
     if (it_req == sinks.end()) {
       // if geoid request is not valid. then trhow error and continue
-      ers::error(dunedaq::dfmodules::UnknownGeoID( ERS_HERE, req_geoid.apa_number, req_geoid.link_number ));
+      ers::error(dunedaq::dfmodules::UnknownGeoID( ERS_HERE, req_geoid ));
       continue;
     }
 
@@ -555,8 +550,7 @@ TriggerRecordBuilder::check_stale_requests()
       ++old_triggers ;
 
       ers::error( TimedOutTriggerDecision( ERS_HERE, 
-					   it -> first.trigger_number, 
-					   it -> first.run_number, 
+					   it -> first, 
 					   tr.get_header_ref().get_trigger_timestamp(), 
 					   m_current_time ) ) ;
 
