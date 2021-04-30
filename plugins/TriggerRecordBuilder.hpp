@@ -105,9 +105,9 @@ namespace dunedaq {
   */
   ERS_DECLARE_ISSUE(dfmodules,                  ///< Namespace
   		    UnexpectedFragment,         ///< Issue class name
-   		    "triggerID: " << trigger_id
-		    << " type: " << fragment_type 
-		    << " GeoID: " << geo_id,
+   		    "Unexpected Fragment for triggerID " << trigger_id
+		    << ", type " << fragment_type 
+		    << ", " << geo_id,
 		    ((dfmodules::TriggerId)trigger_id)              ///< Message parameters
    		    ((dataformats::fragment_type_t)fragment_type)   ///< Message parameters
 		    ((dataformats::GeoID)geo_id)                       ///< Message parameters
@@ -119,7 +119,7 @@ namespace dunedaq {
   */
   ERS_DECLARE_ISSUE(dfmodules,    ///< Namespace
    		    UnknownGeoID, ///< Issue class name
-   		    "GeoID: " << geo_id,
+   		    "Uknown GeoID: " << geo_id,
 		    ((dataformats::GeoID)geo_id)                       ///< Message parameters
    		    )
 
@@ -138,7 +138,7 @@ namespace dunedaq {
    */
   ERS_DECLARE_ISSUE(dfmodules,    ///< Namespace
    		    DuplicatedTriggerDecision, ///< Issue class name
-   		    "trigger id " << trigger_id,
+   		    "Duplicated trigger ID " << trigger_id,
 		    ((dfmodules::TriggerId)trigger_id)              ///< Message parameters
  		    )
 
