@@ -150,6 +150,8 @@ TriggerRecordBuilder::do_conf(const data_t& payload)
   m_max_time_difference = parsed_conf.max_timestamp_diff;
   
   m_queue_timeout = std::chrono::milliseconds(parsed_conf.general_queue_timeout);
+
+  m_mode = static_cast<dfmessages::DataRequest::mode_t>( parsed_conf.data_request_mode ) ;
   
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
 }
@@ -454,6 +456,7 @@ TriggerRecordBuilder::dispatch_data_requests( const dfmessages::TriggerDecision 
     dataReq.trigger_number    = td.trigger_number;
     dataReq.run_number        = td.run_number;
     dataReq.trigger_timestamp = td.trigger_timestamp;
+    dataReq.request_mode      = m_mode;
     
     TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": trig_number " << dataReq.trigger_number << ": run_number "
 				<< dataReq.run_number << ": trig_timestamp " << dataReq.trigger_timestamp;
