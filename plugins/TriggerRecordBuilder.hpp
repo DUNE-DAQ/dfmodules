@@ -230,7 +230,7 @@ namespace dunedaq {
 
       dataformats::timestamp_diff_t m_max_time_difference;
       dataformats::timestamp_t m_current_time = 0;
-      dfmessages::DataRequest::mode_t m_mode = dfmessages::DataRequest::mode_t::kLocalizedReadout ;
+      dfmessages::DataRequest::mode_t m_mode = dfmessages::DataRequest::mode_t::kInvalidMode ;
 
     };
   } // namespace dfmodules

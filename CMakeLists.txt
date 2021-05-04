@@ -11,7 +11,7 @@ find_package(logging REQUIRED)
 find_package(HighFive REQUIRED)
 find_package(dfmessages REQUIRED)
 
-daq_codegen(*.jsonnet TEMPLATES Structs.hpp.j2 Nljs.hpp.j2 )
+daq_codegen(*.jsonnet DEP_PKGS dfmessages TEMPLATES Structs.hpp.j2 Nljs.hpp.j2 )
 
 ##############################################################################
 daq_add_library( StorageKey.cpp TriggerDecisionForwarder.cpp TriggerInhibitAgent.cpp
