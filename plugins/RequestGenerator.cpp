@@ -88,8 +88,9 @@ RequestGenerator::do_conf(const data_t& payload)
 
   for (auto const& entry : parsed_conf.map) {
     dataformats::GeoID key;
-    key.apa_number = entry.apa;
-    key.link_number = entry.link;
+    key.component_type = dataformats::GeoIDComponentType::kTPC;
+    key.region_id = entry.apa;
+    key.element_id = entry.link;
     m_map_geoid_queues[key] = entry.queueinstance;
   }
 
@@ -176,8 +177,8 @@ RequestGenerator::do_work(std::atomic<bool>& running_flag)
       dataReq.window_begin = comp_req.window_begin;
       dataReq.window_end = comp_req.window_end;
 
-      TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": apa_number " << geoid_req.apa_number << ": link_number "
-                                  << geoid_req.link_number << ": window_begin " << comp_req.window_begin
+      TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": apa_number " << geoid_req.region_id << ": link_number "
+                                  << geoid_req.element_id << ": window_begin " << comp_req.window_begin
                                   << ": window_end " << comp_req.window_end;
 
       // find the queue for geoid_req in the map
@@ -185,7 +186,7 @@ RequestGenerator::do_work(std::atomic<bool>& running_flag)
       if (it_req == map.end()) {
         // if geoid request is not valid. then trhow error and continue
         ers::error(dunedaq::dfmodules::UnknownGeoID(
-          ERS_HERE, dataReq.trigger_number, dataReq.run_number, geoid_req.apa_number, geoid_req.link_number));
+          ERS_HERE, dataReq.trigger_number, dataReq.run_number, geoid_req.region_id, geoid_req.element_id));
         continue;
       }
 

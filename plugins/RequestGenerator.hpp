@@ -24,8 +24,8 @@
 #include <vector>
 
 namespace dunedaq {
-using apatype = decltype(dataformats::GeoID::apa_number);
-using linktype = decltype(dataformats::GeoID::link_number);
+using apatype = decltype(dataformats::GeoID::region_id);
+using linktype = decltype(dataformats::GeoID::element_id);
 
 ERS_DECLARE_ISSUE(dfmodules,    ///< Namespace
                   UnknownGeoID, ///< Issue class name
