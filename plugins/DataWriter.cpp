@@ -11,7 +11,7 @@
 #include "dfmodules/KeyedDataBlock.hpp"
 #include "dfmodules/StorageKey.hpp"
 #include "dfmodules/datawriter/Nljs.hpp"
-#include "dfmodules/datawriterinfo/Nljs.hpp"
+
 
 #include "appfwk/DAQModuleHelper.hpp"
 #include "dataformats/Fragment.hpp"
@@ -78,15 +78,9 @@ DataWriter::init(const data_t& init_data)
 void
 DataWriter::get_info(opmonlib::InfoCollector& ci, int /*level*/)
 {
-  datawriterinfo::Info dwi;
-
-  dwi.records_received = m_records_received_tot.load();
-  dwi.new_records_received = m_records_received.exchange(0);
-  dwi.records_written = m_records_written_tot.load();
-  dwi.new_records_written = m_records_written.exchange(0);
-
-  ci.add(dwi);
+  ci.add(m_info);
 }
+
 void
 DataWriter::do_conf(const data_t& payload)
 {
@@ -176,10 +170,8 @@ void
 DataWriter::do_work(std::atomic<bool>& running_flag)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() method";
-  m_records_received = 0;
-  m_records_received_tot = 0;
-  m_records_written = 0;
-  m_records_written_tot = 0;
+  m_info.records_received = 0;
+  m_info.records_written = 0;
 
   // ensure that we have a valid dataWriter instance
   if (m_data_writer.get() == nullptr) {
@@ -195,8 +187,7 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
     // receive the next TriggerRecord
     try {
       m_trigger_record_input_queue->pop(trigger_record_ptr, m_queue_timeout);
-      ++m_records_received;
-      ++m_records_received_tot;
+      ++m_info.records_received;
       TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Popped the TriggerRecord for trigger number "
                                   << trigger_record_ptr->get_header_ref().get_trigger_number()
                                   << " off the input queue";
@@ -210,7 +201,7 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
     // In this "if" statement, I deliberately compare the result of (N mod prescale) to 1
     // instead of zero, since I think that it would be nice to always get the first event
     // written out.
-    if (m_data_storage_prescale <= 1 || ((m_records_received_tot.load() % m_data_storage_prescale) == 1)) {
+    if (m_data_storage_prescale <= 1 || ((m_info.records_received.load() % m_data_storage_prescale) == 1)) {
       std::vector<KeyedDataBlock> data_block_list;
 
       // First deal with the trigger record header
@@ -277,8 +268,7 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
       if (m_data_storage_is_enabled) {
         try {
           m_data_writer->write(data_block_list);
-          ++m_records_written;
-          ++m_records_written_tot;
+          ++m_info.records_written;
         } catch (const ers::Issue& excpt) {
           ers::error(DataStoreWritingFailed(ERS_HERE, m_data_writer->get_name(), excpt));
         }

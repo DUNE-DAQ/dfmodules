@@ -11,7 +11,18 @@ find_package(logging REQUIRED)
 find_package(HighFive REQUIRED)
 find_package(dfmessages REQUIRED)
 
-daq_codegen(*.jsonnet TEMPLATES Structs.hpp.j2 Nljs.hpp.j2 )
+daq_codegen(datagenerator.jsonnet
+            datatransfermodule.jsonnet
+            datawriter.jsonnet
+            fakedataprod.jsonnet
+            faketrigdecemu.jsonnet
+            fragmentreceiver.jsonnet
+            hdf5datastore.jsonnet
+            requestgenerator.jsonnet TEMPLATES Structs.hpp.j2 Nljs.hpp.j2 )
+
+daq_codegen(datawriterinfo.jsonnet
+            fragmentreceiverinfo.jsonnet
+            DEP_PKGS appfwk TEMPLATES appfwk/OpmonStructs.hpp.j2 appfwk/OpmonNljs.hpp.j2 )
 
 ##############################################################################
 daq_add_library( StorageKey.cpp TriggerDecisionForwarder.cpp TriggerInhibitAgent.cpp

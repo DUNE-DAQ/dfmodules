@@ -107,16 +107,7 @@ FragmentReceiver::init(const data_t& init_data)
 void
 FragmentReceiver::get_info(opmonlib::InfoCollector& ci, int /*level*/)
 {
-
-  fragmentreceiverinfo::Info i;
-
-  i.trigger_decisions = m_trigger_decisions_counter.load();
-  i.populated_trigger_ids = m_fragment_index_counter.load();
-  i.old_trigger_ids = m_old_fragment_index_counter.load();
-  i.total_fragments = m_fragment_counter.load();
-  i.old_fragments = m_old_fragment_counter.load();
-
-  ci.add(i);
+  ci.add(m_info);
 }
 
 void
@@ -454,8 +445,8 @@ FragmentReceiver::check_old_fragments() const
     }
   } // fragment loop
 
-  m_old_fragment_counter.store(old_fragments);
-  m_old_fragment_index_counter.store(old_trigger_indexes);
+  m_info.old_fragments.store(old_fragments);
+  m_info.old_trigger_ids.store(old_trigger_indexes);
 
   return old_stuff;
 }
@@ -464,11 +455,11 @@ void
 FragmentReceiver::fill_counters() const
 {
 
-  m_trigger_decisions_counter.store(m_trigger_decisions.size());
-  m_fragment_index_counter.store(m_fragments.size());
+  m_info.trigger_decisions.store(m_trigger_decisions.size());
+  m_info.populated_trigger_ids.store(m_fragments.size());
   metric_counter_type tot = std::accumulate(
     m_fragments.begin(), m_fragments.end(), 0, [](auto tot, auto& ele) { return tot += ele.second.size(); });
-  m_fragment_counter.store(tot);
+  m_info.total_fragments.store(tot);
 }
 
 } // namespace dfmodules
