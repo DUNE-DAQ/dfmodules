@@ -88,7 +88,7 @@ RequestGenerator::do_conf(const data_t& payload)
 
   for (auto const& entry : parsed_conf.map) {
     dataformats::GeoID key;
-    key.component_type = dataformats::GeoIDComponentType::kTPC;
+    key.system_type = dataformats::GeoID::SystemType::kTPC;
     key.region_id = entry.apa;
     key.element_id = entry.link;
     m_map_geoid_queues[key] = entry.queueinstance;

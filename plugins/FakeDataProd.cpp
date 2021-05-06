@@ -127,7 +127,7 @@ FakeDataProd::do_work(std::atomic<bool>& running_flag)
     data_fragment_ptr->set_trigger_number(data_request.trigger_number);
     data_fragment_ptr->set_run_number(m_run_number);
     dunedaq::dataformats::GeoID geo_location;
-    geo_location.component_type = dunedaq::dataformats::GeoIDComponentType::kTPC;
+    geo_location.system_type = dunedaq::dataformats::GeoID::SystemType::kTPC;
     geo_location.region_id = 0;
     geo_location.element_id = m_fake_link_number;
     data_fragment_ptr->set_link_id(geo_location);
