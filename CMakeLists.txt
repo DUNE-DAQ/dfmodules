@@ -23,11 +23,6 @@ daq_add_plugin( HDF5DataStore      duneDataStore LINK_LIBRARIES logging::logging
 daq_add_plugin( DataGenerator         duneDAQModule LINK_LIBRARIES dfmodules )
 daq_add_plugin( DataTransferModule    duneDAQModule LINK_LIBRARIES dfmodules stdc++fs )
 daq_add_plugin( DataWriter            duneDAQModule LINK_LIBRARIES dfmodules )
-daq_add_plugin( FakeDataProd          duneDAQModule LINK_LIBRARIES dfmodules )
-daq_add_plugin( FragmentReceiver      duneDAQModule LINK_LIBRARIES dfmodules )
-daq_add_plugin( FakeReqGen            duneDAQModule LINK_LIBRARIES dfmodules )
-daq_add_plugin( RequestGenerator      duneDAQModule LINK_LIBRARIES dfmodules )
-daq_add_plugin( FakeTrigDecEmu        duneDAQModule LINK_LIBRARIES dfmodules )
 daq_add_plugin( TriggerRecordBuilder  duneDAQModule LINK_LIBRARIES dfmodules )
 
 

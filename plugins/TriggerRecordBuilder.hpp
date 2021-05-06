@@ -11,8 +11,8 @@
 
 
 #include "dfmodules/TriggerDecisionForwarder.hpp"
+#include "dfmodules/triggerrecordbuilderinfo/Nljs.hpp" 
 
-#include "dfmodules/fragmentreceiverinfo/Nljs.hpp"
 
 #include "dataformats/Fragment.hpp"
 #include "dataformats/TriggerRecord.hpp"
@@ -124,15 +124,6 @@ namespace dunedaq {
    		    )
 
   
-  // ERS_DECLARE_ISSUE(dfmodules,    ///< Namespace
-  //  		    UnknownGeoID, ///< Issue class name
-  //  		    "trigger id " << trigger_id << " of APA: " << apa
-  //  		    << " of Link: " << link,
-  //  		    ((dfmodules::TriggerId)trigger_id)    ///< Message parameters
-  //  		    ((apatype)apa)                         ///< Message parameters
-  //  		    ((linktype)link)                       ///< Message parameters
-  //  		    )
-
   /**
    * @brief Duplicate trigger decision
    */
@@ -222,7 +213,7 @@ namespace dunedaq {
       std::map<TriggerId, trigger_record_ptr_t> m_trigger_records;
 
       // book related metrics
-      using metric_counter_type = decltype(fragmentreceiverinfo::Info::trigger_decisions);
+      using metric_counter_type = decltype(triggerrecordbuilderinfo::Info::trigger_decisions);
       mutable std::atomic<metric_counter_type> m_trigger_decisions_counter = { 0 };
       mutable std::atomic<metric_counter_type> m_fragment_counter = { 0 };
       mutable std::atomic<metric_counter_type> m_old_trigger_decisions = { 0 };
