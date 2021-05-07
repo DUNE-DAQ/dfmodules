@@ -134,6 +134,16 @@ namespace dunedaq {
  		    )
 
 
+  /**
+   * @brief Invalid System Type
+   */
+  ERS_DECLARE_ISSUE(dfmodules,    ///< Namespace
+   		    InvalidSystemType, ///< Issue class name
+   		    "Unknown system type " << type,
+		    ((std::string)type)              ///< Message parameters
+ 		    )
+
+
   namespace dfmodules {
 
 
