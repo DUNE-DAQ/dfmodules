@@ -454,7 +454,7 @@ TriggerRecordBuilder::dispatch_data_requests( const dfmessages::TriggerDecision 
     dataReq.trigger_number    = td.trigger_number;
     dataReq.run_number        = td.run_number;
     dataReq.trigger_timestamp = td.trigger_timestamp;
-    // dataReq.request_mode      = m_mode;
+    dataReq.readout_type      = td.readout_type;
     
     TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": trig_number " << dataReq.trigger_number << ": run_number "
 				<< dataReq.run_number << ": trig_timestamp " << dataReq.trigger_timestamp;
