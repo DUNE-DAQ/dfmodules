@@ -141,9 +141,17 @@ TriggerRecordBuilder::do_conf(const data_t& payload)
   triggerrecordbuilder::ConfParams parsed_conf = payload.get<triggerrecordbuilder::ConfParams>();
 
   for (auto const& entry : parsed_conf.map) {
+
+    dataformats::GeoID::SystemType type = dataformats::GeoID::string_to_system_type(entry.system) ;
+    
+    if ( type == dataformats::GeoID::SystemType::kInvalid ) {
+      throw InvalidSystemType( ERS_HERE, entry.system ) ;
+    }
+
     dataformats::GeoID key;
-    key.apa_number = entry.apa;
-    key.link_number = entry.link;
+    key.system_type = type ;
+    key.region_id = entry.region;
+    key.element_id = entry.element;
     m_map_geoid_queues[key] = entry.queueinstance;
   }
   
