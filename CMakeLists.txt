@@ -20,8 +20,6 @@ daq_add_library( StorageKey.cpp TriggerDecisionForwarder.cpp TriggerInhibitAgent
 
 daq_add_plugin( HDF5DataStore      duneDataStore LINK_LIBRARIES logging::logging dataformats::dataformats HighFive appfwk::appfwk stdc++fs)
 
-daq_add_plugin( DataGenerator         duneDAQModule LINK_LIBRARIES dfmodules )
-daq_add_plugin( DataTransferModule    duneDAQModule LINK_LIBRARIES dfmodules stdc++fs )
 daq_add_plugin( DataWriter            duneDAQModule LINK_LIBRARIES dfmodules )
 daq_add_plugin( TriggerRecordBuilder  duneDAQModule LINK_LIBRARIES dfmodules )
 
