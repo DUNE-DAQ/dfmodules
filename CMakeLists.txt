@@ -44,7 +44,6 @@ daq_add_unit_test( TriggerRecordHeaderWrite_test  LINK_LIBRARIES dfmodules )
 add_dependencies(  TriggerRecordHeaderWrite_test dfmodules_HDF5DataStore_duneDataStore)
 
 #daq_add_unit_test( HDF5GetAllKeys_test      LINK_LIBRARIES dfmodules )
-#daq_add_unit_test( HDF5Combiner_test        LINK_LIBRARIES dfmodules )
 #daq_add_unit_test( DataStoreFactory_test    LINK_LIBRARIES dfmodules )
 
 ##############################################################################
