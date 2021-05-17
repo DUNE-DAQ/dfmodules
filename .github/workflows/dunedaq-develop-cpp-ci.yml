@@ -4,11 +4,11 @@ name: build-develop
 # or API.
 on:
   push:
-    branches: [ develop ]
+    branches: [ $default-branch ]
     paths-ignore:
       - 'docs/**'
   pull_request:
-    branches: [ develop ]
+    branches: [ $default-branch ]
   schedule:
     - cron: "0 7 * * *"
 
@@ -47,23 +47,30 @@ jobs:
         
     - name: setup dev area
       run: |
-          source $GITHUB_WORKSPACE/daq-buildtools/env.sh
+          source $GITHUB_WORKSPACE/daq-buildtools/dbt-setup-env.sh
           dbt-create.sh -r /releases dunedaq-develop dev
           
     - name: checkout package for CI
       uses: actions/checkout@v2
       with:
         path: ${{ github.repository }}
+
+    - name: checkout dataformats
+      uses: actions/checkout@v2
+      with:
+        repository: DUNE-DAQ/dataformats
+        path:  ${{ github.workspace }}/DUNE-DAQ/dataformats
     
     - name: setup build env and build the dev release
       run: |
           export REPO=$(echo '${{ github.repository }}' | awk -F '/' '{print $2}')
-          source $GITHUB_WORKSPACE/daq-buildtools/env.sh
+          source $GITHUB_WORKSPACE/daq-buildtools/dbt-setup-env.sh
           cd $GITHUB_WORKSPACE/dev
-          dbt-workarea-env || true
+          dbt-setup-build-environment || true
           setup_repo_env="SETUP_$REPO"
           [[ -z ${!setup_env_repo+x} ]] || unsetup $REPO
           cp -pr $GITHUB_WORKSPACE/DUNE-DAQ/$REPO $GITHUB_WORKSPACE/dev/sourcecode
+          cp -pr $GITHUB_WORKSPACE/DUNE-DAQ/dataformats $GITHUB_WORKSPACE/dev/sourcecode
           dbt-build.sh --install
           $GITHUB_WORKSPACE/daq-release/scripts/upsify-daq-pkgs.py -w $GITHUB_WORKSPACE/dev -o /tarballs
           
