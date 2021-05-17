@@ -378,7 +378,7 @@ TriggerRecordBuilder::read_fragments( fragment_sources_t& frag_sources, bool dra
 	ers::error( UnexpectedFragment( ERS_HERE, 
 					temp_id,
 					temp_fragment -> get_fragment_type_code(), 
-					temp_fragment -> get_link_id() ) ) ;
+					temp_fragment -> get_element_id() ) ) ;
       }
       else {
 	
@@ -389,7 +389,7 @@ TriggerRecordBuilder::read_fragments( fragment_sources_t& frag_sources, bool dra
 	for ( size_t i = 0 ; i < header.get_num_requested_components() ; ++i ) {
 	  
 	  const dataformats::ComponentRequest &  request = header[i] ;
-	  if ( request.component == temp_fragment -> get_link_id() ) {
+	  if ( request.component == temp_fragment -> get_element_id() ) {
 	    requested = true ;
 	    break ;
 	  }
@@ -405,7 +405,7 @@ TriggerRecordBuilder::read_fragments( fragment_sources_t& frag_sources, bool dra
 	  ers::error( UnexpectedFragment( ERS_HERE, 
 					  temp_id,
 					  temp_fragment -> get_fragment_type_code(), 
-					  temp_fragment -> get_link_id() ) ) ;
+					  temp_fragment -> get_element_id() ) ) ;
 
 	}
 	
