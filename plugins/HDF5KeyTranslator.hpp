@@ -13,6 +13,7 @@
 #ifndef DFMODULES_PLUGINS_HDF5KEYTRANSLATOR_HPP_
 #define DFMODULES_PLUGINS_HDF5KEYTRANSLATOR_HPP_
 
+#include "dfmodules/HDF5FormattingParameters.hpp"
 #include "dfmodules/StorageKey.hpp"
 #include "dfmodules/hdf5datastore/Nljs.hpp"
 #include "dfmodules/hdf5datastore/Structs.hpp"
@@ -43,12 +44,12 @@ public:
   static std::string get_path_string(const StorageKey& data_key,
                                      const hdf5datastore::HDF5DataStoreFileLayoutParams& layout_params)
   {
-    std::vector<std::string> element_list = get_path_elements(data_key, layout_params);
+    std::vector<std::string> path_list = get_path_elements(data_key, layout_params);
 
-    std::string path = element_list[0]; // need error checking
+    std::string path = path_list[0]; // needs error checking
 
-    for (size_t idx = 1; idx < element_list.size(); ++idx) {
-      path = path + path_separator + element_list[idx];
+    for (size_t idx = 1; idx < path_list.size(); ++idx) {
+      path = path + path_separator + path_list[idx];
     }
 
     return path;
@@ -62,36 +63,38 @@ public:
   static std::vector<std::string> get_path_elements(const StorageKey& data_key,
                                                     const hdf5datastore::HDF5DataStoreFileLayoutParams& layout_params)
   {
-    std::vector<std::string> element_list;
+    std::vector<std::string> path_list;
 
     // first, we take care of the trigger number
     std::ostringstream trigger_number_string;
     trigger_number_string << layout_params.trigger_record_name_prefix
                           << std::setw(layout_params.digits_for_trigger_number) << std::setfill('0')
                           << data_key.get_trigger_number();
-    element_list.push_back(trigger_number_string.str());
+    path_list.push_back(trigger_number_string.str());
 
-    if (data_key.get_detector_type() != "TriggerRecordHeader") {
-      // Add detector type
-      element_list.push_back(data_key.get_detector_type());
+    if (data_key.get_group_type() != StorageKey::DataRecordGroupType::kTriggerRecordHeader) {
+      // Add group type
+      std::map<StorageKey::DataRecordGroupType,HDF5FormattingParameters::PathParameters> path_param_map =
+        HDF5FormattingParameters::get_path_parameters(HDF5FormattingParameters::OperationalEnvironmentType::kSoftwareTest, 1);
+      path_list.push_back(path_param_map[data_key.get_group_type()].system_name);
 
-      // next, we translate the APA number location
-      std::ostringstream apa_number_string;
-      apa_number_string << layout_params.apa_name_prefix << std::setw(layout_params.digits_for_apa_number)
-                        << std::setfill('0') << data_key.get_apa_number();
-      element_list.push_back(apa_number_string.str());
+      // next, we translate the region number
+      std::ostringstream region_number_string;
+      region_number_string << layout_params.apa_name_prefix << std::setw(layout_params.digits_for_apa_number)
+                           << std::setfill('0') << data_key.get_region_number();
+      path_list.push_back(region_number_string.str());
 
-      // Finally, add link number
-      std::ostringstream link_number_string;
-      link_number_string << layout_params.link_name_prefix << std::setw(layout_params.digits_for_link_number)
-                         << std::setfill('0') << data_key.get_link_number();
-      element_list.push_back(link_number_string.str());
+      // Finally, add element number
+      std::ostringstream element_number_string;
+      element_number_string << layout_params.link_name_prefix << std::setw(layout_params.digits_for_link_number)
+                         << std::setfill('0') << data_key.get_element_number();
+      path_list.push_back(element_number_string.str());
     } else {
-      // Add TriggerRecordHeader instead of detector type
-      element_list.push_back("TriggerRecordHeader");
+      // Add TriggerRecordHeader instead of group type
+      path_list.push_back("TriggerRecordHeader");
     }
 
-    return element_list;
+    return path_list;
   }
 
   /**
@@ -101,14 +104,15 @@ public:
    */
   static int get_current_version() { return current_version; }
 
+#if 0
   /**
    * @brief Translates the specified HDF5 'path' into the appropriate StorageKey.
    */
   static StorageKey get_key_from_string(const std::string& path, int translation_version = current_version)
   {
-    std::vector<std::string> element_list;
-    boost::split(element_list, path, boost::is_any_of(path_separator));
-    return get_key_from_list(element_list, translation_version);
+    std::vector<std::string> path_list;
+    boost::split(path_list, path, boost::is_any_of(path_separator));
+    return get_key_from_list(path_list, translation_version);
   }
 
   /**
@@ -120,9 +124,9 @@ public:
     if (translation_version == 1) {
       int run_number = StorageKey::s_invalid_run_number;
       int trigger_number = StorageKey::s_invalid_trigger_number;
-      std::string detector_type = StorageKey::s_invalid_detector_type;
-      int apa_number = StorageKey::s_invalid_apa_number;
-      int link_number = StorageKey::s_invalid_link_number;
+      StorageKey::DataRecordGroupType group_type = StorageKey::DataRecordGroupType::kInvalid;
+      int region_number = StorageKey::s_invalid_region_number;
+      int element_number = StorageKey::s_invalid_element_number;
 
       if (path_elements.size() >= 1) {
         std::stringstream runNumber(path_elements[0]);
@@ -134,31 +138,32 @@ public:
       }
 
       if (path_elements.size() >= 3) {
-        std::stringstream detectorType(path_elements[2]);
-        detectorType >> detector_type;
+        std::stringstream groupType(path_elements[2]);
+        //groupType >> group_type;
       }
 
       if (path_elements.size() >= 4) {
-        std::stringstream apaNumber(path_elements[3]);
-        apaNumber >> apa_number;
+        std::stringstream regionNumber(path_elements[3]);
+        regionNumber >> region_number;
       }
 
       if (path_elements.size() >= 5) {
-        std::stringstream linkNumber(path_elements[4]);
-        linkNumber >> link_number;
+        std::stringstream elementNumber(path_elements[4]);
+        elementNumber >> element_number;
       }
 
-      return StorageKey(run_number, trigger_number, detector_type, apa_number, link_number);
+      return StorageKey(run_number, trigger_number, group_type, region_number, element_number);
 
     } else {
       StorageKey emptyKey(StorageKey::s_invalid_run_number,
                           StorageKey::s_invalid_trigger_number,
-                          StorageKey::s_invalid_detector_type,
-                          StorageKey::s_invalid_apa_number,
-                          StorageKey::s_invalid_link_number);
+                          StorageKey::DataRecordGroupType::kInvalid,
+                          StorageKey::s_invalid_region_number,
+                          StorageKey::s_invalid_element_number);
       return emptyKey;
     }
   }
+#endif
 
   /**
    * @brief Translates the specified input parameters into the appropriate filename.
@@ -178,7 +183,7 @@ public:
     }
 
     size_t trigger_number = data_key.get_trigger_number();
-    size_t apa_number = data_key.get_apa_number();
+    size_t region_number = data_key.get_region_number();
     std::string file_name = std::string("");
     if (config_params.mode == "one-event-per-file") {
 
@@ -189,7 +194,7 @@ public:
     } else if (config_params.mode == "one-fragment-per-file") {
 
       file_name = config_params.directory_path + "/" + config_params.filename_parameters.overall_prefix +
-                  "_trigger_number_" + std::to_string(trigger_number) + "_apa_number_" + std::to_string(apa_number) +
+                  "_trigger_number_" + std::to_string(trigger_number) + "_region_number_" + std::to_string(region_number) +
                   ".hdf5";
       return file_name;
 

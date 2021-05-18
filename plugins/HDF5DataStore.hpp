@@ -150,7 +150,7 @@ public:
   virtual KeyedDataBlock read(const StorageKey& key)
   {
     TLOG_DEBUG(TLVL_BASIC) << get_name()
-                           << ": going to read data block from triggerNumber/detectorType/apaNumber/linkNumber "
+                           << ": going to read data block from triggerNumber/groupType/regionNumber/elementNumber "
                            << HDF5KeyTranslator::get_path_string(key, m_config_params.file_layout_parameters)
                            << " from file " << HDF5KeyTranslator::get_file_name(key, m_config_params, m_file_index);
 
@@ -169,7 +169,7 @@ public:
     std::vector<std::string> group_and_dataset_path_elements =
       HDF5KeyTranslator::get_path_elements(key, m_config_params.file_layout_parameters);
 
-    // const std::string dataset_name = std::to_string(key.get_link_number());
+    // const std::string dataset_name = std::to_string(key.get_element_number());
     const std::string dataset_name = group_and_dataset_path_elements.back();
 
     KeyedDataBlock data_block(key);
@@ -270,6 +270,7 @@ public:
     std::vector<StorageKey> keyList;
     std::vector<std::string> fileList; // = get_all_files();
 
+#if 0
     for (auto& filename : fileList) {
       std::unique_ptr<HighFive::File> local_file_ptr(new HighFive::File(filename, HighFive::File::ReadOnly));
       TLOG_DEBUG(TLVL_BASIC) << get_name() << ": Opened HDF5 file " << filename;
@@ -278,13 +279,14 @@ public:
       TLOG_DEBUG(TLVL_BASIC) << get_name() << ": Path list has element count: " << pathList.size();
 
       for (auto& path : pathList) {
-        StorageKey thisKey(0, 0, "", 0, 0);
+        StorageKey thisKey(0, 0, StorageKey::DataRecordGroupType::kInvalid, 0, 0);
         thisKey = HDF5KeyTranslator::get_key_from_string(path);
         keyList.push_back(thisKey);
       }
 
       local_file_ptr.reset(); // explicit destruction
     }
+#endif
 
     return keyList;
   }
@@ -396,9 +398,9 @@ private:
   {
     TLOG_DEBUG(TLVL_BASIC) << get_name() << ": Writing data with run number " << data_block.m_data_key.get_run_number()
                            << " and trigger number " << data_block.m_data_key.get_trigger_number()
-                           << " and detector type " << data_block.m_data_key.get_detector_type()
-                           << " and apa/link number " << data_block.m_data_key.get_apa_number() << " / "
-                           << data_block.m_data_key.get_link_number();
+                           << " and group type " << data_block.m_data_key.get_group_type()
+                           << " and region/element number " << data_block.m_data_key.get_region_number() << " / "
+                           << data_block.m_data_key.get_element_number();
 
     std::vector<std::string> group_and_dataset_path_elements =
       HDF5KeyTranslator::get_path_elements(data_block.m_data_key, m_config_params.file_layout_parameters);

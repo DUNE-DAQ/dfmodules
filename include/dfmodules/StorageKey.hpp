@@ -1,66 +1,65 @@
-#ifndef DFMODULES_INCLUDE_DFMODULES_STORAGEKEY_HPP_
-#define DFMODULES_INCLUDE_DFMODULES_STORAGEKEY_HPP_
 /**
- * @file StorageKey.hpp
- *
- * StorageKey class used to identify a given block of data
- *
+ * @file StorageKey.hpp Collection of parameters that identify a block of data
  *
  * This is part of the DUNE DAQ Software Suite, copyright 2020.
  * Licensing/copyright details are in the COPYING file that you should have
  * received with this code.
  */
 
+#ifndef DFMODULES_INCLUDE_DFMODULES_STORAGEKEY_HPP_
+#define DFMODULES_INCLUDE_DFMODULES_STORAGEKEY_HPP_
+
 #include <limits>
-#include <string>
 
 namespace dunedaq {
 namespace dfmodules {
+
 /**
- * @brief The StorageKey class defines the container class that will give us a way
- * to group all of the parameters that identify a given block of data
- *
+ * @brief The StorageKey class defines the collection of parameters that
+ * identify a given block of data.
  */
-struct Key
-{
-  Key(int run_number, int trigger_number, std::string detector_type, int apa_number, int link_number) noexcept
-    : m_run_number(run_number)
-    , m_trigger_number(trigger_number)
-    , m_detector_type(detector_type)
-    , m_apa_number(apa_number)
-    , m_link_number(link_number)
-  {}
-
-  int m_run_number;
-  int m_trigger_number;
-  std::string m_detector_type;
-  int m_apa_number;
-  int m_link_number;
-};
-
 class StorageKey
 {
-
 public:
   static constexpr int s_invalid_run_number = std::numeric_limits<int>::max();
   static constexpr int s_invalid_trigger_number = std::numeric_limits<int>::max();
-  inline static const std::string s_invalid_detector_type = "Invalid";
-  static constexpr int s_invalid_apa_number = std::numeric_limits<int>::max();
-  static constexpr int s_invalid_link_number = std::numeric_limits<int>::max();
+  static constexpr int s_invalid_region_number = std::numeric_limits<int>::max();
+  static constexpr int s_invalid_element_number = std::numeric_limits<int>::max();
 
-  StorageKey(int run_number, int trigger_number, std::string detector_type, int apa_number, int link_number) noexcept
-    : m_key(run_number, trigger_number, detector_type, apa_number, link_number)
+  /**
+   * @brief The group that should be used within the data record.
+   */
+  enum DataRecordGroupType
+  {
+    kTriggerRecordHeader = 1,
+    kTPC = 2,
+    kPDS = 3,
+    kTrigger = 4,
+    kInvalid = 0
+  };
+
+  StorageKey(int run_number, int trigger_number, DataRecordGroupType group_type, int region_number, int element_number) noexcept
+    : m_run_number(run_number)
+    , m_trigger_number(trigger_number)
+    , m_group_type(group_type)
+    , m_region_number(region_number)
+    , m_element_number(element_number)
+
   {}
   ~StorageKey() {} // NOLINT
 
   int get_run_number() const;
   int get_trigger_number() const;
-  std::string get_detector_type() const;
-  int get_apa_number() const;
-  int get_link_number() const;
+  DataRecordGroupType get_group_type() const;
+  int get_region_number() const;
+  int get_element_number() const;
 
 private:
-  Key m_key;
+  int m_run_number;
+  int m_trigger_number;
+  DataRecordGroupType m_group_type;
+  int m_region_number;
+  int m_element_number;
 };
 
 } // namespace dfmodules

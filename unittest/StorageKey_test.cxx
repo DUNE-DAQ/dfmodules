@@ -19,10 +19,12 @@
 
 namespace {
 
+constexpr int run_number = 1234;
 constexpr int event_id = 111;
-const std::string detector_id("LARTPC");
-constexpr int geo_location = 333;
-dunedaq::dfmodules::StorageKey stk(event_id, detector_id, geo_location); ///< StorageKey instance for the test
+onstexpr int group_type = StorageKey::DataRecordGroupType::kTPC;
+constexpr int region_number = 1;
+constexpr int element_number = 1;
+dunedaq::dfmodules::StorageKey stk(run_number, event_id, group_type, region_number, element_number); ///< StorageKey instance for the test
 
 } // namespace ""
 
