@@ -85,6 +85,24 @@ private:
   {
     return std::chrono::duration_cast<std::chrono::seconds>(now - then).count();
   }
+
+  using geoid_system_type_t = dataformats::GeoID::SystemType;
+  using key_group_type_t = StorageKey::DataRecordGroupType;
+  std::map<geoid_system_type_t, key_group_type_t> m_system_type_to_group_type_mapping;
+  key_group_type_t get_group_type(geoid_system_type_t system_type)
+  {
+    if (m_system_type_to_group_type_mapping.size() == 0) {
+      m_system_type_to_group_type_mapping[geoid_system_type_t::kTPC] = key_group_type_t::kTPC;
+      m_system_type_to_group_type_mapping[geoid_system_type_t::kPDS] = key_group_type_t::kPDS;
+      m_system_type_to_group_type_mapping[geoid_system_type_t::kDataSelection] = key_group_type_t::kTrigger;
+      m_system_type_to_group_type_mapping[geoid_system_type_t::kInvalid] = key_group_type_t::kInvalid;
+    }
+    auto map_iter = m_system_type_to_group_type_mapping.find(system_type);
+    if (map_iter == m_system_type_to_group_type_mapping.end()) {
+      return key_group_type_t::kInvalid;
+    }
+    return map_iter->second;
+  };
 };
 } // namespace dfmodules
 

@@ -264,22 +264,7 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
         }
 
         // add information about each Fragment to the list of data blocks to be stored
-        // //StorageKey fragment_skey(trigger_record_ptr->get_run_number(), trigger_record_ptr->get_trigger_number,
-        StorageKey::DataRecordGroupType group_type = StorageKey::DataRecordGroupType::kInvalid;
-        switch (frag_ptr->get_element_id().system_type) {
-        case dataformats::GeoID::SystemType::kTPC:
-          group_type = StorageKey::DataRecordGroupType::kTPC;
-          break;
-        case dataformats::GeoID::SystemType::kPDS:
-          group_type = StorageKey::DataRecordGroupType::kPDS;
-          break;
-        case dataformats::GeoID::SystemType::kDataSelection:
-          group_type = StorageKey::DataRecordGroupType::kTrigger;
-          break;
-        case dataformats::GeoID::SystemType::kInvalid:
-          group_type = StorageKey::DataRecordGroupType::kInvalid;
-          break;
-        }
+        StorageKey::DataRecordGroupType group_type = get_group_type(frag_ptr->get_element_id().system_type);
         StorageKey fragment_skey(frag_ptr->get_run_number(),
                                  frag_ptr->get_trigger_number(),
                                  group_type,
