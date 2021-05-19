@@ -15,6 +15,7 @@
 #include "HDF5FileUtils.hpp"
 #include "HDF5KeyTranslator.hpp"
 #include "dfmodules/DataStore.hpp"
+#include "dfmodules/HDF5FormattingParameters.hpp"
 #include "dfmodules/hdf5datastore/Nljs.hpp"
 #include "dfmodules/hdf5datastore/Structs.hpp"
 
@@ -479,10 +480,23 @@ private:
       m_basic_name_of_open_file = file_name;
       m_open_flags_of_open_file = open_flags;
       m_file_ptr.reset(new HighFive::File(unique_filename, open_flags));
-      TLOG_DEBUG(TLVL_BASIC) << get_name() << "Created HDF5 file.";
 
+      if (open_flags == HighFive::File::ReadOnly) {
+        TLOG_DEBUG(TLVL_BASIC) << get_name() << "Opened HDF5 file read-only.";
+      } else {
+        TLOG_DEBUG(TLVL_BASIC) << get_name() << "Created HDF5 file (" << unique_filename << ").";
+
+        if (! m_file_ptr->hasAttribute("data_format_version")) {
+          int version = 1;
+          m_file_ptr->createAttribute("data_format_version", version);
+        }
+        if (! m_file_ptr->hasAttribute("operational_environment")) {
+          std::string op_env_type =
+            HDF5FormattingParameters::op_env_type_to_string(HDF5FormattingParameters::OperationalEnvironmentType::kSoftwareTest);
+          m_file_ptr->createAttribute("operational_environment", op_env_type);
+        }
+      }
     } else {
-
       TLOG_DEBUG(TLVL_BASIC) << get_name() << ": Pointer file to  " << m_basic_name_of_open_file
                              << " was already opened with open_flags " << std::to_string(m_open_flags_of_open_file);
     }
