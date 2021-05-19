@@ -38,7 +38,11 @@ public:
     kInvalid = 0
   };
 
-  StorageKey(int run_number, int trigger_number, DataRecordGroupType group_type, int region_number, int element_number) noexcept
+  StorageKey(int run_number,
+             int trigger_number,
+             DataRecordGroupType group_type,
+             int region_number,
+             int element_number) noexcept
     : m_run_number(run_number)
     , m_trigger_number(trigger_number)
     , m_group_type(group_type)
