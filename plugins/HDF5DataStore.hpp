@@ -122,6 +122,7 @@ public:
     , m_username_substring_for_filename("_UnknownUser")
     , m_timestamp_substring_for_filename("_UnknownTime")
     , m_hashed_timeuser_substring_for_filename("_abcdef")
+    , m_key_translator()
   {
     TLOG_DEBUG(TLVL_BASIC) << get_name() << ": Configuration: " << conf;
 
@@ -150,12 +151,12 @@ public:
   virtual KeyedDataBlock read(const StorageKey& key)
   {
     TLOG_DEBUG(TLVL_BASIC) << get_name()
-                           << ": going to read data block from triggerNumber/detectorType/apaNumber/linkNumber "
-                           << HDF5KeyTranslator::get_path_string(key, m_config_params.file_layout_parameters)
-                           << " from file " << HDF5KeyTranslator::get_file_name(key, m_config_params, m_file_index);
+                           << ": going to read data block from triggerNumber/groupType/regionNumber/elementNumber "
+                           << m_key_translator.get_path_string(key) << " from file "
+                           << m_key_translator.get_file_name(key, m_config_params, m_file_index);
 
     // opening the file from Storage Key + configuration parameters
-    std::string full_filename = HDF5KeyTranslator::get_file_name(key, m_config_params, m_file_index);
+    std::string full_filename = m_key_translator.get_file_name(key, m_config_params, m_file_index);
 
     // m_file_ptr will be the handle to the Opened-File after a call to open_file_if_needed()
     try {
@@ -166,10 +167,9 @@ public:
       throw HDF5Issue(ERS_HERE, "Unknown exception thrown by HDF5");
     }
 
-    std::vector<std::string> group_and_dataset_path_elements =
-      HDF5KeyTranslator::get_path_elements(key, m_config_params.file_layout_parameters);
+    std::vector<std::string> group_and_dataset_path_elements = m_key_translator.get_path_elements(key);
 
-    // const std::string dataset_name = std::to_string(key.get_link_number());
+    // const std::string dataset_name = std::to_string(key.get_element_number());
     const std::string dataset_name = group_and_dataset_path_elements.back();
 
     KeyedDataBlock data_block(key);
@@ -204,7 +204,7 @@ public:
     increment_file_index_if_needed(data_block.m_data_size);
 
     // determine the filename from Storage Key + configuration parameters
-    std::string full_filename = HDF5KeyTranslator::get_file_name(data_block.m_data_key, m_config_params, m_file_index);
+    std::string full_filename = m_key_translator.get_file_name(data_block.m_data_key, m_config_params, m_file_index);
 
     // m_file_ptr will be the handle to the Opened-File after a call to open_file_if_needed()
     try {
@@ -242,7 +242,7 @@ public:
     // determine the filename from Storage Key + configuration parameters
     // (This assumes that all of the blocks have a data_key that puts them in the same file...)
     std::string full_filename =
-      HDF5KeyTranslator::get_file_name(data_block_list[0].m_data_key, m_config_params, m_file_index);
+      m_key_translator.get_file_name(data_block_list[0].m_data_key, m_config_params, m_file_index);
 
     // m_file_ptr will be the handle to the Opened-File after a call to open_file_if_needed()
     try {
@@ -270,6 +270,7 @@ public:
     std::vector<StorageKey> keyList;
     std::vector<std::string> fileList; // = get_all_files();
 
+#if 0
     for (auto& filename : fileList) {
       std::unique_ptr<HighFive::File> local_file_ptr(new HighFive::File(filename, HighFive::File::ReadOnly));
       TLOG_DEBUG(TLVL_BASIC) << get_name() << ": Opened HDF5 file " << filename;
@@ -278,13 +279,14 @@ public:
       TLOG_DEBUG(TLVL_BASIC) << get_name() << ": Path list has element count: " << pathList.size();
 
       for (auto& path : pathList) {
-        StorageKey thisKey(0, 0, "", 0, 0);
+        StorageKey thisKey(0, 0, StorageKey::DataRecordGroupType::kInvalid, 0, 0);
         thisKey = HDF5KeyTranslator::get_key_from_string(path);
         keyList.push_back(thisKey);
       }
 
       local_file_ptr.reset(); // explicit destruction
     }
+#endif
 
     return keyList;
   }
@@ -376,6 +378,8 @@ private:
   size_t m_max_file_size;
   bool m_disable_unique_suffix;
 
+  HDF5KeyTranslator m_key_translator;
+
 #if 0
   std::vector<std::string> get_all_files() const
   {
@@ -395,13 +399,13 @@ private:
   void do_write(const KeyedDataBlock& data_block)
   {
     TLOG_DEBUG(TLVL_BASIC) << get_name() << ": Writing data with run number " << data_block.m_data_key.get_run_number()
-                           << " and trigger number " << data_block.m_data_key.get_trigger_number()
-                           << " and detector type " << data_block.m_data_key.get_detector_type()
-                           << " and apa/link number " << data_block.m_data_key.get_apa_number() << " / "
-                           << data_block.m_data_key.get_link_number();
+                           << " and trigger number " << data_block.m_data_key.get_trigger_number() << " and group type "
+                           << data_block.m_data_key.get_group_type() << " and region/element number "
+                           << data_block.m_data_key.get_region_number() << " / "
+                           << data_block.m_data_key.get_element_number();
 
     std::vector<std::string> group_and_dataset_path_elements =
-      HDF5KeyTranslator::get_path_elements(data_block.m_data_key, m_config_params.file_layout_parameters);
+      m_key_translator.get_path_elements(data_block.m_data_key);
 
     const std::string dataset_name = group_and_dataset_path_elements.back();
 
@@ -434,8 +438,7 @@ private:
 
   void increment_file_index_if_needed(size_t size_of_next_write)
   {
-    if ((m_recorded_size + size_of_next_write) > m_max_file_size &&
-        m_recorded_size > 0) {
+    if ((m_recorded_size + size_of_next_write) > m_max_file_size && m_recorded_size > 0) {
       ++m_file_index;
       m_recorded_size = 0;
     }
@@ -477,10 +480,22 @@ private:
       m_basic_name_of_open_file = file_name;
       m_open_flags_of_open_file = open_flags;
       m_file_ptr.reset(new HighFive::File(unique_filename, open_flags));
-      TLOG_DEBUG(TLVL_BASIC) << get_name() << "Created HDF5 file.";
 
+      if (open_flags == HighFive::File::ReadOnly) {
+        TLOG_DEBUG(TLVL_BASIC) << get_name() << "Opened HDF5 file read-only.";
+      } else {
+        TLOG_DEBUG(TLVL_BASIC) << get_name() << "Created HDF5 file (" << unique_filename << ").";
+
+        if (!m_file_ptr->hasAttribute("data_format_version")) {
+          int version = 1;
+          m_file_ptr->createAttribute("data_format_version", version);
+        }
+        if (!m_file_ptr->hasAttribute("operational_environment")) {
+          std::string op_env_type = "swtest";
+          m_file_ptr->createAttribute("operational_environment", op_env_type);
+        }
+      }
     } else {
-
       TLOG_DEBUG(TLVL_BASIC) << get_name() << ": Pointer file to  " << m_basic_name_of_open_file
                              << " was already opened with open_flags " << std::to_string(m_open_flags_of_open_file);
     }

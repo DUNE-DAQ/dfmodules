@@ -64,7 +64,7 @@ BOOST_AUTO_TEST_CASE(WriteFragmentFiles)
   const int dummydata_size = 7;
   const int run_number = 52;
   const int trigger_count = 5;
-  const std::string detector_name = "TPC";
+  const StorageKey::DataRecordGroupType group_type = StorageKey::DataRecordGroupType::kTPC;
   const int apa_count = 3;
   const int link_count = 1;
 
@@ -88,7 +88,7 @@ BOOST_AUTO_TEST_CASE(WriteFragmentFiles)
   for (int trigger_number = 1; trigger_number <= trigger_count; ++trigger_number) {
     for (int apa_number = 1; apa_number <= apa_count; ++apa_number) {
       for (int link_number = 1; link_number <= link_count; ++link_number) {
-        StorageKey key(run_number, trigger_number, detector_name, apa_number, link_number);
+        StorageKey key(run_number, trigger_number, group_type, apa_number, link_number);
         KeyedDataBlock data_block(key);
         data_block.m_unowned_data_start = static_cast<void*>(&dummy_data[0]);
         data_block.m_data_size = dummydata_size;
@@ -116,7 +116,7 @@ BOOST_AUTO_TEST_CASE(WriteEventFiles)
   const int dummydata_size = 7;
   const int run_number = 53;
   const int trigger_count = 5;
-  const std::string detector_name = "TPC";
+  const StorageKey::DataRecordGroupType group_type = StorageKey::DataRecordGroupType::kTPC;
   const int apa_count = 3;
   const int link_count = 1;
 
@@ -140,7 +140,7 @@ BOOST_AUTO_TEST_CASE(WriteEventFiles)
   for (int trigger_number = 1; trigger_number <= trigger_count; ++trigger_number) {
     for (int apa_number = 1; apa_number <= apa_count; ++apa_number) {
       for (int link_number = 1; link_number <= link_count; ++link_number) {
-        StorageKey key(run_number, trigger_number, detector_name, apa_number, link_number);
+        StorageKey key(run_number, trigger_number, group_type, apa_number, link_number);
         KeyedDataBlock data_block(key);
         data_block.m_unowned_data_start = static_cast<void*>(&dummy_data[0]);
         data_block.m_data_size = dummydata_size;
@@ -168,7 +168,7 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
   const int dummydata_size = 7;
   const int run_number = 54;
   const int trigger_count = 5;
-  const std::string detector_name = "TPC";
+  const StorageKey::DataRecordGroupType group_type = StorageKey::DataRecordGroupType::kTPC;
   const int apa_count = 3;
   const int link_count = 1;
 
@@ -193,7 +193,7 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
   for (int trigger_number = 1; trigger_number <= trigger_count; ++trigger_number) {
     for (int apa_number = 1; apa_number <= apa_count; ++apa_number) {
       for (int link_number = 1; link_number <= link_count; ++link_number) {
-        StorageKey key(run_number, trigger_number, detector_name, apa_number, link_number);
+        StorageKey key(run_number, trigger_number, group_type, apa_number, link_number);
         KeyedDataBlock data_block(key);
         data_block.m_unowned_data_start = static_cast<void*>(&dummy_data[0]);
         data_block.m_data_size = dummydata_size;
@@ -221,7 +221,7 @@ BOOST_AUTO_TEST_CASE(FileSizeLimitResultsInMultipleFiles)
   const int dummydata_size = 10000;
   const int run_number = 55;
   const int trigger_count = 15;
-  const std::string detector_name = "TPC";
+  const StorageKey::DataRecordGroupType group_type = StorageKey::DataRecordGroupType::kTPC;
   const int apa_count = 5;
   const int link_count = 10;
 
@@ -248,7 +248,7 @@ BOOST_AUTO_TEST_CASE(FileSizeLimitResultsInMultipleFiles)
   for (int trigger_number = 1; trigger_number <= trigger_count; ++trigger_number) {
     for (int apa_number = 1; apa_number <= apa_count; ++apa_number) {
       for (int link_number = 1; link_number <= link_count; ++link_number) {
-        StorageKey key(run_number, trigger_number, detector_name, apa_number, link_number);
+        StorageKey key(run_number, trigger_number, group_type, apa_number, link_number);
         KeyedDataBlock data_block(key);
         data_block.m_unowned_data_start = static_cast<void*>(&dummy_data[0]);
         data_block.m_data_size = dummydata_size;
@@ -277,7 +277,7 @@ BOOST_AUTO_TEST_CASE(SmallFileSizeLimitDataBlockListWrite)
   const int dummydata_size = 100000;
   const int run_number = 56;
   const int trigger_count = 5;
-  const std::string detector_name = "TPC";
+  const StorageKey::DataRecordGroupType group_type = StorageKey::DataRecordGroupType::kTPC;
   const int apa_count = 5;
   const int link_count = 1;
 
@@ -304,7 +304,7 @@ BOOST_AUTO_TEST_CASE(SmallFileSizeLimitDataBlockListWrite)
     std::vector<KeyedDataBlock> data_block_list;
     for (int apa_number = 1; apa_number <= apa_count; ++apa_number) {
       for (int link_number = 1; link_number <= link_count; ++link_number) {
-        StorageKey key(run_number, trigger_number, detector_name, apa_number, link_number);
+        StorageKey key(run_number, trigger_number, group_type, apa_number, link_number);
         KeyedDataBlock data_block(key);
         data_block.m_unowned_data_start = static_cast<void*>(&dummy_data[0]);
         data_block.m_data_size = dummydata_size;
