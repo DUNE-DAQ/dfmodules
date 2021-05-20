@@ -13,9 +13,8 @@
 #define DFMODULES_PLUGINS_HDF5DATASTORE_HPP_
 
 #include "HDF5FileUtils.hpp"
-#include "HDF5KeyTranslator.hpp"
 #include "dfmodules/DataStore.hpp"
-#include "dfmodules/HDF5FormattingParameters.hpp"
+#include "dfmodules/HDF5KeyTranslator.hpp"
 #include "dfmodules/hdf5datastore/Nljs.hpp"
 #include "dfmodules/hdf5datastore/Structs.hpp"
 
@@ -123,6 +122,7 @@ public:
     , m_username_substring_for_filename("_UnknownUser")
     , m_timestamp_substring_for_filename("_UnknownTime")
     , m_hashed_timeuser_substring_for_filename("_abcdef")
+    , m_key_translator()
   {
     TLOG_DEBUG(TLVL_BASIC) << get_name() << ": Configuration: " << conf;
 
@@ -152,11 +152,11 @@ public:
   {
     TLOG_DEBUG(TLVL_BASIC) << get_name()
                            << ": going to read data block from triggerNumber/groupType/regionNumber/elementNumber "
-                           << HDF5KeyTranslator::get_path_string(key, m_config_params.file_layout_parameters)
-                           << " from file " << HDF5KeyTranslator::get_file_name(key, m_config_params, m_file_index);
+                           << m_key_translator.get_path_string(key) << " from file "
+                           << m_key_translator.get_file_name(key, m_config_params, m_file_index);
 
     // opening the file from Storage Key + configuration parameters
-    std::string full_filename = HDF5KeyTranslator::get_file_name(key, m_config_params, m_file_index);
+    std::string full_filename = m_key_translator.get_file_name(key, m_config_params, m_file_index);
 
     // m_file_ptr will be the handle to the Opened-File after a call to open_file_if_needed()
     try {
@@ -167,8 +167,7 @@ public:
       throw HDF5Issue(ERS_HERE, "Unknown exception thrown by HDF5");
     }
 
-    std::vector<std::string> group_and_dataset_path_elements =
-      HDF5KeyTranslator::get_path_elements(key, m_config_params.file_layout_parameters);
+    std::vector<std::string> group_and_dataset_path_elements = m_key_translator.get_path_elements(key);
 
     // const std::string dataset_name = std::to_string(key.get_element_number());
     const std::string dataset_name = group_and_dataset_path_elements.back();
@@ -205,7 +204,7 @@ public:
     increment_file_index_if_needed(data_block.m_data_size);
 
     // determine the filename from Storage Key + configuration parameters
-    std::string full_filename = HDF5KeyTranslator::get_file_name(data_block.m_data_key, m_config_params, m_file_index);
+    std::string full_filename = m_key_translator.get_file_name(data_block.m_data_key, m_config_params, m_file_index);
 
     // m_file_ptr will be the handle to the Opened-File after a call to open_file_if_needed()
     try {
@@ -243,7 +242,7 @@ public:
     // determine the filename from Storage Key + configuration parameters
     // (This assumes that all of the blocks have a data_key that puts them in the same file...)
     std::string full_filename =
-      HDF5KeyTranslator::get_file_name(data_block_list[0].m_data_key, m_config_params, m_file_index);
+      m_key_translator.get_file_name(data_block_list[0].m_data_key, m_config_params, m_file_index);
 
     // m_file_ptr will be the handle to the Opened-File after a call to open_file_if_needed()
     try {
@@ -379,6 +378,8 @@ private:
   size_t m_max_file_size;
   bool m_disable_unique_suffix;
 
+  HDF5KeyTranslator m_key_translator;
+
 #if 0
   std::vector<std::string> get_all_files() const
   {
@@ -398,13 +399,13 @@ private:
   void do_write(const KeyedDataBlock& data_block)
   {
     TLOG_DEBUG(TLVL_BASIC) << get_name() << ": Writing data with run number " << data_block.m_data_key.get_run_number()
-                           << " and trigger number " << data_block.m_data_key.get_trigger_number()
-                           << " and group type " << data_block.m_data_key.get_group_type()
-                           << " and region/element number " << data_block.m_data_key.get_region_number() << " / "
+                           << " and trigger number " << data_block.m_data_key.get_trigger_number() << " and group type "
+                           << data_block.m_data_key.get_group_type() << " and region/element number "
+                           << data_block.m_data_key.get_region_number() << " / "
                            << data_block.m_data_key.get_element_number();
 
     std::vector<std::string> group_and_dataset_path_elements =
-      HDF5KeyTranslator::get_path_elements(data_block.m_data_key, m_config_params.file_layout_parameters);
+      m_key_translator.get_path_elements(data_block.m_data_key);
 
     const std::string dataset_name = group_and_dataset_path_elements.back();
 
@@ -437,8 +438,7 @@ private:
 
   void increment_file_index_if_needed(size_t size_of_next_write)
   {
-    if ((m_recorded_size + size_of_next_write) > m_max_file_size &&
-        m_recorded_size > 0) {
+    if ((m_recorded_size + size_of_next_write) > m_max_file_size && m_recorded_size > 0) {
       ++m_file_index;
       m_recorded_size = 0;
     }
@@ -486,13 +486,12 @@ private:
       } else {
         TLOG_DEBUG(TLVL_BASIC) << get_name() << "Created HDF5 file (" << unique_filename << ").";
 
-        if (! m_file_ptr->hasAttribute("data_format_version")) {
+        if (!m_file_ptr->hasAttribute("data_format_version")) {
           int version = 1;
           m_file_ptr->createAttribute("data_format_version", version);
         }
-        if (! m_file_ptr->hasAttribute("operational_environment")) {
-          std::string op_env_type =
-            HDF5FormattingParameters::op_env_type_to_string(HDF5FormattingParameters::OperationalEnvironmentType::kSoftwareTest);
+        if (!m_file_ptr->hasAttribute("operational_environment")) {
+          std::string op_env_type = "swtest";
           m_file_ptr->createAttribute("operational_environment", op_env_type);
         }
       }
