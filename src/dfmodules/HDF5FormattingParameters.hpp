@@ -6,11 +6,13 @@
  * received with this code.
  */
 
-#ifndef DFMODULES_SRC_HDF5FORMATTINGPARAMETERS_HPP_
-#define DFMODULES_SRC_HDF5FORMATTINGPARAMETERS_HPP_
+#ifndef DFMODULES_SRC_DFMODULES_HDF5FORMATTINGPARAMETERS_HPP_
+#define DFMODULES_SRC_DFMODULES_HDF5FORMATTINGPARAMETERS_HPP_
 
 #include "dfmodules/StorageKey.hpp"
+
 #include <map>
+#include <string>
 
 namespace dunedaq {
 namespace dfmodules {
@@ -19,7 +21,7 @@ class HDF5FormattingParameters
 {
 
 public:
-  enum class OperationalEnvironmentType : uint16_t
+  enum class OperationalEnvironmentType : uint16_t // NOLINT(build/unsigned)
   {
     kSoftwareTest = 1,
     kICEBERG = 2,
@@ -134,4 +136,4 @@ public:
 } // namespace dfmodules
 } // namespace dunedaq
 
-#endif // DFMODULES_SRC_HDF5FORMATTINGPARAMETERS_HPP_
+#endif // DFMODULES_SRC_DFMODULES_HDF5FORMATTINGPARAMETERS_HPP_

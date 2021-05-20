@@ -15,12 +15,13 @@
 
 #include "boost/test/unit_test.hpp"
 
+#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <memory>
+#include <utility>
 #include <regex>
-#include <stdlib.h>
 #include <string>
 #include <vector>
 
@@ -61,7 +62,7 @@ BOOST_AUTO_TEST_CASE(WriteFragmentFiles)
   std::string file_path(std::filesystem::temp_directory_path());
   std::string file_prefix = "demo" + std::to_string(getpid()) + "_" + std::string(getenv("USER"));
 
-  const int dummydata_size = 7;
+  constexpr int dummydata_size = 7;
   const int run_number = 52;
   const int trigger_count = 5;
   const StorageKey::DataRecordGroupType group_type = StorageKey::DataRecordGroupType::kTPC;
@@ -84,7 +85,7 @@ BOOST_AUTO_TEST_CASE(WriteFragmentFiles)
   data_store_ptr = make_data_store(hdf5ds_json);
 
   // write several events, each with several fragments
-  char dummy_data[dummydata_size];
+  std::array<char,dummydata_size> dummy_data;
   for (int trigger_number = 1; trigger_number <= trigger_count; ++trigger_number) {
     for (int apa_number = 1; apa_number <= apa_count; ++apa_number) {
       for (int link_number = 1; link_number <= link_count; ++link_number) {
@@ -113,7 +114,7 @@ BOOST_AUTO_TEST_CASE(WriteEventFiles)
   std::string file_path(std::filesystem::temp_directory_path());
   std::string file_prefix = "demo" + std::to_string(getpid()) + "_" + std::string(getenv("USER"));
 
-  const int dummydata_size = 7;
+  constexpr int dummydata_size = 7;
   const int run_number = 53;
   const int trigger_count = 5;
   const StorageKey::DataRecordGroupType group_type = StorageKey::DataRecordGroupType::kTPC;
@@ -136,7 +137,7 @@ BOOST_AUTO_TEST_CASE(WriteEventFiles)
   data_store_ptr = make_data_store(hdf5ds_json);
 
   // write several events, each with several fragments
-  char dummy_data[dummydata_size];
+  std::array<char, dummydata_size> dummy_data;
   for (int trigger_number = 1; trigger_number <= trigger_count; ++trigger_number) {
     for (int apa_number = 1; apa_number <= apa_count; ++apa_number) {
       for (int link_number = 1; link_number <= link_count; ++link_number) {
@@ -165,7 +166,7 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
   std::string file_path(std::filesystem::temp_directory_path());
   std::string file_prefix = "demo" + std::to_string(getpid()) + "_" + std::string(getenv("USER"));
 
-  const int dummydata_size = 7;
+  constexpr int dummydata_size = 7;
   const int run_number = 54;
   const int trigger_count = 5;
   const StorageKey::DataRecordGroupType group_type = StorageKey::DataRecordGroupType::kTPC;
@@ -189,7 +190,7 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
   data_store_ptr = make_data_store(hdf5ds_json);
 
   // write several events, each with several fragments
-  char dummy_data[dummydata_size];
+  std::array<char, dummydata_size> dummy_data;
   for (int trigger_number = 1; trigger_number <= trigger_count; ++trigger_number) {
     for (int apa_number = 1; apa_number <= apa_count; ++apa_number) {
       for (int link_number = 1; link_number <= link_count; ++link_number) {
@@ -218,7 +219,7 @@ BOOST_AUTO_TEST_CASE(FileSizeLimitResultsInMultipleFiles)
   std::string file_path(std::filesystem::temp_directory_path());
   std::string file_prefix = "demo" + std::to_string(getpid()) + "_" + std::string(getenv("USER"));
 
-  const int dummydata_size = 10000;
+  constexpr int dummydata_size = 10000;
   const int run_number = 55;
   const int trigger_count = 15;
   const StorageKey::DataRecordGroupType group_type = StorageKey::DataRecordGroupType::kTPC;
@@ -244,7 +245,7 @@ BOOST_AUTO_TEST_CASE(FileSizeLimitResultsInMultipleFiles)
   std::unique_ptr<DataStore> data_store_ptr;
   data_store_ptr = make_data_store(hdf5ds_json);
 
-  char dummy_data[dummydata_size];
+  std::array<char, dummydata_size> dummy_data;
   for (int trigger_number = 1; trigger_number <= trigger_count; ++trigger_number) {
     for (int apa_number = 1; apa_number <= apa_count; ++apa_number) {
       for (int link_number = 1; link_number <= link_count; ++link_number) {
@@ -274,7 +275,7 @@ BOOST_AUTO_TEST_CASE(SmallFileSizeLimitDataBlockListWrite)
   std::string file_path(std::filesystem::temp_directory_path());
   std::string file_prefix = "demo" + std::to_string(getpid()) + "_" + std::string(getenv("USER"));
 
-  const int dummydata_size = 100000;
+  constexpr int dummydata_size = 100000;
   const int run_number = 56;
   const int trigger_count = 5;
   const StorageKey::DataRecordGroupType group_type = StorageKey::DataRecordGroupType::kTPC;
@@ -299,7 +300,7 @@ BOOST_AUTO_TEST_CASE(SmallFileSizeLimitDataBlockListWrite)
   std::unique_ptr<DataStore> data_store_ptr;
   data_store_ptr = make_data_store(hdf5ds_json);
 
-  char dummy_data[dummydata_size];
+  std::array<char, dummydata_size> dummy_data;
   for (int trigger_number = 1; trigger_number <= trigger_count; ++trigger_number) {
     std::vector<KeyedDataBlock> data_block_list;
     for (int apa_number = 1; apa_number <= apa_count; ++apa_number) {

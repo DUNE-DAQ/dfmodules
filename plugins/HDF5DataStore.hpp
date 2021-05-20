@@ -25,9 +25,9 @@
 #include "boost/lexical_cast.hpp"
 #include "highfive/H5File.hpp"
 
+#include <cstdlib>
 #include <functional>
 #include <memory>
-#include <stdlib.h>
 #include <string>
 #include <sys/statvfs.h>
 #include <utility>
