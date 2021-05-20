@@ -34,13 +34,26 @@ def unpack_header(data_array, unpack_string, keys):
     return header
 
 
+def get_geo_id_type(i):
+    types = {1: 'TPC', 2: 'PDS', 3: 'DataSelection'}
+    if i in types.keys():
+        return types[i]
+    else:
+        return "Invalid"
+
+
 def print_header_dict(hdict):
+    filtered_list = ['Padding', 'GeoID version', 'Component request version']
     for ik, iv in hdict.items():
-        if "time" in ik or "begin" in ik or "end" in ik:
+        if any(map(ik.__contains__, filtered_list)):
+            continue
+        elif "time" in ik or "begin" in ik or "end" in ik:
             print("{:<30}: {} ({})".format(
                 ik, iv, tick_to_timestamp(iv)))
         elif 'Magic word' in ik:
             print("{:<30}: {}".format(ik, hex(iv)))
+        elif 'GeoID type' in ik:
+            print("{:<30}: {}".format(ik, get_geo_id_type(iv)))
         else:
             print("{:<30}: {}".format(ik, iv))
     return
@@ -49,9 +62,11 @@ def print_header_dict(hdict):
 def print_fragment_header(data_array):
     keys = ['Magic word', 'Version', 'Frag Size', 'Trig number',
             'Trig timestamp', 'Window begin', 'Window end', 'Run number',
-            'GeoID (system ID)', 'GeoID (APA)', 'GeoID (link)', 'Error bits', 'Fragment type']
-    unpack_string = '<2I5Q1I2H3I'
-    print_header_dict(unpack_header(data_array[:68], unpack_string, keys))
+            'Error bits', 'Fragment type', 'Fragment Padding',
+            'GeoID version', 'GeoID type', 'Region No.', 'Element No.',
+            'Geo ID Padding']
+    unpack_string = '<2I5Q1I4IHIHI'
+    print_header_dict(unpack_header(data_array[:80], unpack_string, keys))
     return
 
 
@@ -63,8 +78,10 @@ def print_trigger_record_header(data_array):
     print_header_dict(unpack_header(data_array[:42], unpack_string, keys))
 
     if g_list_components:
-        comp_keys = ['GeoID (system ID)', 'GeoID (APA)', 'GeoID (link)', 'Begin time', 'End time']
-        comp_unpack_string = "<2H1I2Q"
+        comp_keys = ['Component request version', 'Component Request Padding',
+                     'GeoID version', 'GeoID type', 'Region No.',
+                     'Element No.', 'Geo ID Padding', 'Begin time', 'End time']
+        comp_unpack_string = "<3IHIHI2Q"
         for i_values in struct.iter_unpack(comp_unpack_string,
                                            data_array[48:]):
             i_comp = dict(zip(comp_keys, i_values))
