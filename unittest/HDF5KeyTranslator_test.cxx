@@ -7,7 +7,7 @@
  * received with this code.
  */
 
-#include "dfmodules/HDF5KeyTranslator.hpp"
+#include "HDF5KeyTranslator.hpp"
 #include "dfmodules/hdf5datastore/Structs.hpp"
 
 #define BOOST_TEST_MODULE HDF5KeyTranslator_test // NOLINT

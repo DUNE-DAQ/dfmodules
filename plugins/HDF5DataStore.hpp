@@ -13,8 +13,8 @@
 #define DFMODULES_PLUGINS_HDF5DATASTORE_HPP_
 
 #include "HDF5FileUtils.hpp"
+#include "HDF5KeyTranslator.hpp"
 #include "dfmodules/DataStore.hpp"
-#include "dfmodules/HDF5KeyTranslator.hpp"
 #include "dfmodules/hdf5datastore/Nljs.hpp"
 #include "dfmodules/hdf5datastore/Structs.hpp"
 
