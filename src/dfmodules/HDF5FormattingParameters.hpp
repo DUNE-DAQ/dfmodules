@@ -53,7 +53,7 @@ public:
   {
     DataRecordParameters dr_params;
     dr_params.trigger_record_name_prefix = "TriggerRecord";
-    dr_params.digits_for_trigger_number = 6;
+    dr_params.digits_for_trigger_number = 5;
     return dr_params;
   }
 
