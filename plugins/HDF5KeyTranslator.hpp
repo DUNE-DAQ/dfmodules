@@ -1,7 +1,7 @@
 /**
  * @file HDF5KeyTranslator.hpp
  *
- * HDF5KeyTranslator is a collection of functions to translate between
+ * HDF5KeyTranslator is a collection of routines to translate between
  * StorageKeys+configuration and HDF5 Group/DataSet 'paths', and between Storage
  * StorageKeys+configuration and HDF5 file names.
  *
@@ -34,6 +34,20 @@ class HDF5KeyTranslator
 public:
   inline static const std::string path_separator = "/";
 
+  enum class OperationalEnvironmentType : uint16_t
+  {
+    kSoftwareTest = 1,
+    kICEBERG = 2,
+    kInvalid = 0
+  };
+
+  HDF5KeyTranslator(OperationalEnvironmentType op_env_type)
+  {
+    m_data_record_params = HDF5FormattingParameters::get_data_record_parameters(op_env_type, m_current_version);
+    ;
+    m_path_param_map = HDF5FormattingParameters::get_path_parameters(op_env_type, m_current_version);
+  }
+
   /**
    * @brief Translates the specified StorageKey into an HDF5 'path',
    * where the 'path' is string that has values from the StorageKey
@@ -41,8 +55,8 @@ public:
    * The intention of this path string is to specify the Group/DataSet
    * structure that should be used in the HDF5 files that are created by this library.
    */
-  static std::string get_path_string(const StorageKey& data_key,
-                                     const hdf5datastore::HDF5DataStoreFileLayoutParams& layout_params)
+  std::string get_path_string(const StorageKey& data_key,
+                              const hdf5datastore::HDF5DataStoreFileLayoutParams& layout_params)
   {
     std::vector<std::string> path_list = get_path_elements(data_key, layout_params);
 
@@ -60,12 +74,12 @@ public:
    * where the 'path' elements are the strings that specify the Group/DataSet
    * structure that should be used in the HDF5 files that are created by this library.
    */
-  static std::vector<std::string> get_path_elements(const StorageKey& data_key,
-                                                    const hdf5datastore::HDF5DataStoreFileLayoutParams& layout_params)
+  std::vector<std::string> get_path_elements(const StorageKey& data_key,
+                                             const hdf5datastore::HDF5DataStoreFileLayoutParams& layout_params)
   {
     std::vector<std::string> path_list;
 
-    // first, we take care of the trigger number
+    // add trigger number to the path
     std::ostringstream trigger_number_string;
     trigger_number_string << layout_params.trigger_record_name_prefix
                           << std::setw(layout_params.digits_for_trigger_number) << std::setfill('0')
@@ -74,20 +88,23 @@ public:
 
     if (data_key.get_group_type() != StorageKey::DataRecordGroupType::kTriggerRecordHeader) {
       // Add group type
-      std::map<StorageKey::DataRecordGroupType,HDF5FormattingParameters::PathParameters> path_param_map =
-        HDF5FormattingParameters::get_path_parameters(HDF5FormattingParameters::OperationalEnvironmentType::kSoftwareTest, 1);
+      std::map<StorageKey::DataRecordGroupType, HDF5FormattingParameters::PathParameters> path_param_map =
+        HDF5FormattingParameters::get_path_parameters(
+          HDF5FormattingParameters::OperationalEnvironmentType::kSoftwareTest, 1);
       path_list.push_back(path_param_map[data_key.get_group_type()].system_name);
 
       // next, we translate the region number
       std::ostringstream region_number_string;
-      region_number_string << layout_params.apa_name_prefix << std::setw(layout_params.digits_for_apa_number)
+      region_number_string << path_param_map[data_key.get_group_type()].region_name_prefix
+                           << std::setw(path_param_map[data_key.get_group_type()].digits_for_region_number)
                            << std::setfill('0') << data_key.get_region_number();
       path_list.push_back(region_number_string.str());
 
       // Finally, add element number
       std::ostringstream element_number_string;
-      element_number_string << layout_params.link_name_prefix << std::setw(layout_params.digits_for_link_number)
-                         << std::setfill('0') << data_key.get_element_number();
+      element_number_string << path_param_map[data_key.get_group_type()].element_name_prefix
+                            << std::setw(path_param_map[data_key.get_group_type()].digits_for_element_number)
+                            << std::setfill('0') << data_key.get_element_number();
       path_list.push_back(element_number_string.str());
     } else {
       // Add TriggerRecordHeader instead of group type
@@ -102,75 +119,14 @@ public:
    * returned by this class. This is independent of the translations from HDF5 paths
    * to StorageKeys (that translation may support multiple versions).
    */
-  static int get_current_version() { return current_version; }
-
-#if 0
-  /**
-   * @brief Translates the specified HDF5 'path' into the appropriate StorageKey.
-   */
-  static StorageKey get_key_from_string(const std::string& path, int translation_version = current_version)
-  {
-    std::vector<std::string> path_list;
-    boost::split(path_list, path, boost::is_any_of(path_separator));
-    return get_key_from_list(path_list, translation_version);
-  }
-
-  /**
-   * @brief Translates the specified HDF5 'path' elements into the appropriate StorageKey.
-   */
-  static StorageKey get_key_from_list(const std::vector<std::string>& path_elements,
-                                      int translation_version = current_version)
-  {
-    if (translation_version == 1) {
-      int run_number = StorageKey::s_invalid_run_number;
-      int trigger_number = StorageKey::s_invalid_trigger_number;
-      StorageKey::DataRecordGroupType group_type = StorageKey::DataRecordGroupType::kInvalid;
-      int region_number = StorageKey::s_invalid_region_number;
-      int element_number = StorageKey::s_invalid_element_number;
-
-      if (path_elements.size() >= 1) {
-        std::stringstream runNumber(path_elements[0]);
-        runNumber >> run_number;
-      }
-      if (path_elements.size() >= 2) {
-        std::stringstream trigNumber(path_elements[1]);
-        trigNumber >> trigger_number;
-      }
-
-      if (path_elements.size() >= 3) {
-        std::stringstream groupType(path_elements[2]);
-        //groupType >> group_type;
-      }
-
-      if (path_elements.size() >= 4) {
-        std::stringstream regionNumber(path_elements[3]);
-        regionNumber >> region_number;
-      }
-
-      if (path_elements.size() >= 5) {
-        std::stringstream elementNumber(path_elements[4]);
-        elementNumber >> element_number;
-      }
-
-      return StorageKey(run_number, trigger_number, group_type, region_number, element_number);
-
-    } else {
-      StorageKey emptyKey(StorageKey::s_invalid_run_number,
-                          StorageKey::s_invalid_trigger_number,
-                          StorageKey::DataRecordGroupType::kInvalid,
-                          StorageKey::s_invalid_region_number,
-                          StorageKey::s_invalid_element_number);
-      return emptyKey;
-    }
-  }
-#endif
+  int get_current_version() { return m_current_version; }
 
   /**
    * @brief Translates the specified input parameters into the appropriate filename.
    */
-  static std::string get_file_name(const StorageKey& data_key,
-                                   const hdf5datastore::ConfParams& config_params,
-                                   size_t file_index)
+  std::string get_file_name(const StorageKey& data_key,
+                            const hdf5datastore::ConfParams& config_params,
+                            size_t file_index)
   {
     std::ostringstream work_oss;
     work_oss << config_params.directory_path;
@@ -194,8 +150,8 @@ public:
     } else if (config_params.mode == "one-fragment-per-file") {
 
       file_name = config_params.directory_path + "/" + config_params.filename_parameters.overall_prefix +
-                  "_trigger_number_" + std::to_string(trigger_number) + "_region_number_" + std::to_string(region_number) +
-                  ".hdf5";
+                  "_trigger_number_" + std::to_string(trigger_number) + "_region_number_" +
+                  std::to_string(region_number) + ".hdf5";
       return file_name;
 
     } else if (config_params.mode == "all-per-file") {
@@ -217,8 +173,32 @@ public:
     return work_oss.str();
   }
 
+  static std::string op_env_type_to_string(OperationalEnvironmentType type)
+  {
+    switch (type) {
+      case OperationalEnvironmentType::kSoftwareTest:
+        return "swtest";
+      case OperationalEnvironmentType::kICEBERG:
+        return "iceberg";
+      case OperationalEnvironmentType::kInvalid:
+        return "invalid";
+    }
+    return "invalid";
+  }
+
+  static OperationalEnvironmentType string_to_op_env_type(std::string typestring)
+  {
+    if (typestring.find("swtest") == 0)
+      return OperationalEnvironmentType::kSoftwareTest;
+    if (typestring.find("iceberg") == 0)
+      return OperationalEnvironmentType::kICEBERG;
+    return OperationalEnvironmentType::kInvalid;
+  }
+
 private:
-  static const int current_version = 1;
+  constexpr int m_current_version = 1;
+  HDF5FormattingParameters::DataRecordParameters m_data_record_params;
+  std::map<StorageKey::DataRecordGroupType, HDF5FormattingParameters::PathParameters> m_path_param_map;
 };
 
 } // namespace dfmodules
