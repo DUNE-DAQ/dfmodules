@@ -65,7 +65,7 @@ def print_fragment_header(data_array):
             'Error bits', 'Fragment type', 'Fragment Padding',
             'GeoID version', 'GeoID type', 'GeoID region', 'GeoID element',
             'Geo ID Padding']
-    unpack_string = '<2I5Q1I4IHIHI'
+    unpack_string = '<2I5Q1I4I2H2I'
     print_header_dict(unpack_header(data_array[:80], unpack_string, keys))
     return
 
@@ -82,7 +82,7 @@ def print_trigger_record_header(data_array):
                      'GeoID version', 'GeoID type', 'GeoID region',
                      'GeoID element', 'Geo ID Padding', 'Begin time',
                      'End time']
-        comp_unpack_string = "<3IHIHI2Q"
+        comp_unpack_string = "<3I2H2I2Q"
         for i_values in struct.iter_unpack(comp_unpack_string,
                                            data_array[48:]):
             i_comp = dict(zip(comp_keys, i_values))
