@@ -63,7 +63,7 @@ def print_fragment_header(data_array):
     keys = ['Magic word', 'Version', 'Frag Size', 'Trig number',
             'Trig timestamp', 'Window begin', 'Window end', 'Run number',
             'Error bits', 'Fragment type', 'Fragment Padding',
-            'GeoID version', 'GeoID type', 'Region No.', 'Element No.',
+            'GeoID version', 'GeoID type', 'GeoID region', 'GeoID element',
             'Geo ID Padding']
     unpack_string = '<2I5Q1I4IHIHI'
     print_header_dict(unpack_header(data_array[:80], unpack_string, keys))
@@ -79,8 +79,9 @@ def print_trigger_record_header(data_array):
 
     if g_list_components:
         comp_keys = ['Component request version', 'Component Request Padding',
-                     'GeoID version', 'GeoID type', 'Region No.',
-                     'Element No.', 'Geo ID Padding', 'Begin time', 'End time']
+                     'GeoID version', 'GeoID type', 'GeoID region',
+                     'GeoID element', 'Geo ID Padding', 'Begin time',
+                     'End time']
         comp_unpack_string = "<3IHIHI2Q"
         for i_values in struct.iter_unpack(comp_unpack_string,
                                            data_array[48:]):
