@@ -84,6 +84,7 @@ DataWriter::get_info(opmonlib::InfoCollector& ci, int /*level*/)
   dwi.new_records_received = m_records_received.exchange(0);
   dwi.records_written = m_records_written_tot.load();
   dwi.new_records_written = m_records_written.exchange(0);
+  dwi.bytes_output = m_bytes_output.load();
 
   ci.add(dwi);
 }
@@ -139,7 +140,7 @@ DataWriter::do_start(const data_t& payload)
 
   m_thread.start_working_thread(get_name());
 
-  TLOG() << get_name() << " successfully started";
+  TLOG() << get_name() << " successfully started for run number " << m_run_number;
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
 }
 
@@ -157,7 +158,7 @@ DataWriter::do_stop(const data_t& /*args*/)
     m_data_writer->finish_with_run(m_run_number);
   }
 
-  TLOG() << get_name() << " successfully stopped";
+  TLOG() << get_name() << " successfully stopped for run number " << m_run_number;
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_stop() method";
 }
 
@@ -180,6 +181,7 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
   m_records_received_tot = 0;
   m_records_written = 0;
   m_records_written_tot = 0;
+  m_bytes_output = 0;
 
   // ensure that we have a valid dataWriter instance
   if (m_data_writer.get() == nullptr) {
@@ -212,6 +214,7 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
     // written out.
     if (m_data_storage_prescale <= 1 || ((m_records_received_tot.load() % m_data_storage_prescale) == 1)) {
       std::vector<KeyedDataBlock> data_block_list;
+      uint64_t bytes_in_data_blocks = 0;
 
       // First deal with the trigger record header
       const void* trh_ptr = trigger_record_ptr->get_header_ref().get_storage_location();
@@ -220,12 +223,13 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
       // are not taken into account for the Trigger
       StorageKey trh_key(trigger_record_ptr->get_header_ref().get_run_number(),
                          trigger_record_ptr->get_header_ref().get_trigger_number(),
-                         "TriggerRecordHeader",
+                         StorageKey::DataRecordGroupType::kTriggerRecordHeader,
                          1,
                          1);
       KeyedDataBlock trh_block(trh_key);
       trh_block.m_unowned_data_start = trh_ptr;
       trh_block.m_data_size = trh_size;
+      bytes_in_data_blocks += trh_block.m_data_size;
       data_block_list.emplace_back(std::move(trh_block));
 
       // Loop over the fragments
@@ -260,15 +264,16 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
         }
 
         // add information about each Fragment to the list of data blocks to be stored
-        // //StorageKey fragment_skey(trigger_record_ptr->get_run_number(), trigger_record_ptr->get_trigger_number,
+        StorageKey::DataRecordGroupType group_type = get_group_type(frag_ptr->get_element_id().system_type);
         StorageKey fragment_skey(frag_ptr->get_run_number(),
                                  frag_ptr->get_trigger_number(),
-                                 dataformats::fragment_type_to_string(frag_ptr->get_fragment_type()),
+                                 group_type,
                                  frag_ptr->get_element_id().region_id,
                                  frag_ptr->get_element_id().element_id);
         KeyedDataBlock data_block(fragment_skey);
         data_block.m_unowned_data_start = frag_ptr->get_storage_location();
         data_block.m_data_size = frag_ptr->get_size();
+        bytes_in_data_blocks += data_block.m_data_size;
 
         data_block_list.emplace_back(std::move(data_block));
       }
@@ -279,6 +284,7 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
           m_data_writer->write(data_block_list);
           ++m_records_written;
           ++m_records_written_tot;
+          m_bytes_output += bytes_in_data_blocks;
         } catch (const ers::Issue& excpt) {
           ers::error(DataStoreWritingFailed(ERS_HERE, m_data_writer->get_name(), excpt));
         }

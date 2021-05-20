@@ -64,7 +64,7 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
   const int dummydata_size = 7;
   const int run_number = 52;
   const int trigger_count = 1;
-  const std::string detector_name = "TPC";
+  const StorageKey::DataRecordGroupType group_type = StorageKey::DataRecordGroupType::kTPC;
   const int apa_count = 1;
   const int link_count = 1;
 
@@ -89,7 +89,7 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
   for (int trigger_number = 1; trigger_number <= trigger_count; ++trigger_number) {
 
     // TriggerRecordHeader
-    StorageKey trh_key(run_number, trigger_number, "TriggerRecordHeader", 1, 1);
+    StorageKey trh_key(run_number, trigger_number, StorageKey::DataRecordGroupType::kTriggerRecordHeader, 1, 1);
     KeyedDataBlock trh_data_block(trh_key);
     trh_data_block.m_unowned_data_start = static_cast<void*>(&dummy_data[0]);
     trh_data_block.m_data_size = 1;
@@ -98,7 +98,7 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
     // Write fragments
     for (int apa_number = 1; apa_number <= apa_count; ++apa_number) {
       for (int link_number = 1; link_number <= link_count; ++link_number) {
-        StorageKey key(run_number, trigger_number, detector_name, apa_number, link_number);
+        StorageKey key(run_number, trigger_number, group_type, apa_number, link_number);
         KeyedDataBlock data_block(key);
         data_block.m_unowned_data_start = static_cast<void*>(&dummy_data[0]);
         data_block.m_data_size = dummydata_size;
