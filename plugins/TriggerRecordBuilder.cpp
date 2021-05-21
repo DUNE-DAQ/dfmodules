@@ -340,7 +340,7 @@ TriggerRecordBuilder::do_work(std::atomic<bool>& running_flag)
   TLOG() << ProgressUpdate(ERS_HERE, get_name(), oss_summ.str());
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_work() method";
-}
+} // NOLINT(readability/fn_size)
 
 bool
 TriggerRecordBuilder::read_fragments(fragment_sources_t& frag_sources, bool drain)

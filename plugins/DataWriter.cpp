@@ -298,7 +298,7 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
   }
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_work() method";
-}
+} // NOLINT(readability/fn_size)
 
 } // namespace dfmodules
 } // namespace dunedaq
