@@ -11,7 +11,7 @@
 
 
 #include "dfmodules/TriggerDecisionForwarder.hpp"
-#include "dfmodules/triggerrecordbuilderinfo/Nljs.hpp" 
+#include "dfmodules/triggerrecordbuilderinfo/InfoNljs.hpp" 
 
 
 #include "dataformats/Fragment.hpp"

@@ -11,7 +11,7 @@
 #include "dfmodules/KeyedDataBlock.hpp"
 #include "dfmodules/StorageKey.hpp"
 #include "dfmodules/datawriter/Nljs.hpp"
-#include "dfmodules/datawriterinfo/Nljs.hpp"
+#include "dfmodules/datawriterinfo/InfoNljs.hpp"
 
 #include "appfwk/DAQModuleHelper.hpp"
 #include "dataformats/Fragment.hpp"
