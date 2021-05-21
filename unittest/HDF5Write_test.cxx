@@ -20,9 +20,9 @@
 #include <fstream>
 #include <iostream>
 #include <memory>
-#include <utility>
 #include <regex>
 #include <string>
+#include <utility>
 #include <vector>
 
 using namespace dunedaq::dfmodules;
@@ -85,7 +85,7 @@ BOOST_AUTO_TEST_CASE(WriteFragmentFiles)
   data_store_ptr = make_data_store(hdf5ds_json);
 
   // write several events, each with several fragments
-  std::array<char,dummydata_size> dummy_data;
+  std::array<char, dummydata_size> dummy_data;
   for (int trigger_number = 1; trigger_number <= trigger_count; ++trigger_number) {
     for (int apa_number = 1; apa_number <= apa_count; ++apa_number) {
       for (int link_number = 1; link_number <= link_count; ++link_number) {

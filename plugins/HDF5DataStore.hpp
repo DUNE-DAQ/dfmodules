@@ -164,7 +164,7 @@ public:
     } catch (HighFive::Exception const& excpt) {
       throw HDF5Issue(ERS_HERE, excpt.what(), excpt);
     } catch (...) { // NOLINT(runtime/exceptions)
-        // NOLINT here because we *ARE* re-throwing the exception!
+      // NOLINT here because we *ARE* re-throwing the exception!
       throw HDF5Issue(ERS_HERE, "Unknown exception thrown by HDF5");
     }
 
