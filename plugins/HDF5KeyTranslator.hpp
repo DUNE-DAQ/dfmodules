@@ -21,6 +21,7 @@
 #include "boost/algorithm/string.hpp"
 
 #include <iomanip>
+#include <map>
 #include <sstream>
 #include <string>
 #include <vector>

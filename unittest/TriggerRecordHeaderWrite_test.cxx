@@ -15,12 +15,12 @@
 
 #include "boost/test/unit_test.hpp"
 
+#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <memory>
 #include <regex>
-#include <stdlib.h>
 #include <string>
 #include <vector>
 
@@ -61,7 +61,7 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
   std::string file_path(std::filesystem::temp_directory_path());
   std::string file_prefix = "demo" + std::to_string(getpid()) + "_" + std::string(getenv("USER"));
 
-  const int dummydata_size = 7;
+  constexpr int dummydata_size = 7;
   const int run_number = 52;
   const int trigger_count = 1;
   const StorageKey::DataRecordGroupType group_type = StorageKey::DataRecordGroupType::kTPC;
@@ -85,7 +85,7 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
   data_store_ptr = make_data_store(hdf5ds_json);
 
   // write several events, each with several fragments
-  char dummy_data[dummydata_size];
+  std::array<char, dummydata_size> dummy_data;
   for (int trigger_number = 1; trigger_number <= trigger_count; ++trigger_number) {
 
     // TriggerRecordHeader
