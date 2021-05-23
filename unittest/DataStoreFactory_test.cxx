@@ -30,7 +30,7 @@ BOOST_AUTO_TEST_CASE(invalid_request)
   BOOST_CHECK_THROW(make_data_store(nlohmann::json{}), std::exception);
 }
 
-/*
+#if 0
 BOOST_AUTO_TEST_CASE(valid_request)
 {
 
@@ -44,6 +44,6 @@ BOOST_AUTO_TEST_CASE(valid_request)
   BOOST_TEST( ds.get() ) ;
 
 }
-*/
+#endif
 
 BOOST_AUTO_TEST_SUITE_END()

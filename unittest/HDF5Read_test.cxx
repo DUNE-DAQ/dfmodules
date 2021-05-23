@@ -43,14 +43,14 @@ delete_files_matching_pattern(const std::string& path, const std::string& patter
 
 BOOST_AUTO_TEST_SUITE(HDF5Read_test)
 
-/*
+#if 0
 BOOST_AUTO_TEST_CASE(ReadFragmentFiles)
 {
   std::string file_path(std::filesystem::temp_directory_path());
   std::string file_prefix = "demo" + std::to_string(getpid());
   const int events_to_generate = 2;
   const int links_to_generate = 2;
-  const int dummydata_size = 128;
+  constexpr int dummydata_size = 128;
 
   // delete any pre-existing files so that we start with a clean slate
   std::string delete_pattern = file_prefix + ".*.hdf5";
@@ -66,7 +66,7 @@ BOOST_AUTO_TEST_CASE(ReadFragmentFiles)
 
   // write several events, each with several fragments
   int initialized_checksum = 0;
-  char dummy_data[dummydata_size];
+  std::array<char, dummydata_size> dummy_data;
   for (int idx = 0; idx < dummydata_size; ++idx) {
     int val = 0x7f & idx;
     dummy_data[idx] = val;
@@ -117,7 +117,7 @@ BOOST_AUTO_TEST_CASE(ReadEventFiles)
   std::string file_prefix = "demo" + std::to_string(getpid());
   const int events_to_generate = 2;
   const int links_to_generate = 2;
-  const int dummydata_size = 128;
+  constexpr int dummydata_size = 128;
 
   // delete any pre-existing files so that we start with a clean slate
   std::string delete_pattern = file_prefix + ".*.hdf5";
@@ -133,7 +133,7 @@ BOOST_AUTO_TEST_CASE(ReadEventFiles)
 
   // write several events, each with several fragments
   int initialized_checksum = 0;
-  char dummy_data[dummydata_size];
+  std::array<char, dummydata_size> dummy_data;
   for (int idx = 0; idx < dummydata_size; ++idx) {
     int val = 0x7f & idx;
     dummy_data[idx] = val;
@@ -177,13 +177,14 @@ BOOST_AUTO_TEST_CASE(ReadEventFiles)
   // clean up the files that were created
   delete_files_matching_pattern(file_path, delete_pattern);
 }
-*/
+#endif
+
 BOOST_AUTO_TEST_CASE(ReadSingleFile)
 {
   std::string file_path(std::filesystem::temp_directory_path());
   std::string file_prefix = "demo" + std::to_string(getpid()) + "_" + std::string(getenv("USER"));
 
-  const int dummydata_size = 7;
+  constexpr int dummydata_size = 7;
   const int run_number = 52;
   const int trigger_count = 5;
   const std::string detector_name = "TPC";
@@ -208,7 +209,7 @@ BOOST_AUTO_TEST_CASE(ReadSingleFile)
 
   int initialized_checksum = 0;
   // write several events, each with several fragments
-  char dummy_data[dummydata_size];
+  std::array<char, dummydata_size> dummy_data;
   for (int idx = 0; idx < dummydata_size; ++idx) {
     int val = 0x7f & idx;
     dummy_data[idx] = val;

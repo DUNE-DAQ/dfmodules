@@ -214,7 +214,7 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
     // written out.
     if (m_data_storage_prescale <= 1 || ((m_records_received_tot.load() % m_data_storage_prescale) == 1)) {
       std::vector<KeyedDataBlock> data_block_list;
-      uint64_t bytes_in_data_blocks = 0;
+      uint64_t bytes_in_data_blocks = 0; // NOLINT(build/unsigned)
 
       // First deal with the trigger record header
       const void* trh_ptr = trigger_record_ptr->get_header_ref().get_storage_location();
@@ -298,7 +298,7 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
   }
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_work() method";
-}
+} // NOLINT(readability/fn_size)
 
 } // namespace dfmodules
 } // namespace dunedaq

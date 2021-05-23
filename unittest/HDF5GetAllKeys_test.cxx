@@ -48,7 +48,7 @@ BOOST_AUTO_TEST_CASE(GetKeysFromFragmentFiles)
   std::string file_prefix = "demo" + std::to_string(getpid());
   const int events_to_generate = 5;
   const int links_to_generate = 3;
-  const int dummydata_size = 20;
+  constexpr int dummydata_size = 20;
 
   // delete any pre-existing files so that we start with a clean slate
   std::string delete_pattern = file_prefix + ".*.hdf5";
@@ -63,7 +63,7 @@ BOOST_AUTO_TEST_CASE(GetKeysFromFragmentFiles)
   std::unique_ptr<HDF5DataStore> data_store_ptr(new HDF5DataStore(conf));
 
   // write several events, each with several fragments
-  char dummy_data[dummydata_size];
+  std::array<char, dummydata_size> dummy_data;
   for (int event_id = 1; event_id <= events_to_generate; ++event_id) {
     for (int geo_location = 0; geo_location < links_to_generate; ++geo_location) {
       StorageKey key(event_id, StorageKey::s_invalid_detector_id, geo_location);
@@ -128,7 +128,7 @@ BOOST_AUTO_TEST_CASE(GetKeysFromEventFiles)
   std::string file_prefix = "demo" + std::to_string(getpid());
   const int events_to_generate = 5;
   const int links_to_generate = 3;
-  const int dummydata_size = 20;
+  constexpr int dummydata_size = 20;
 
   // delete any pre-existing files so that we start with a clean slate
   std::string delete_pattern = file_prefix + ".*.hdf5";
@@ -143,7 +143,7 @@ BOOST_AUTO_TEST_CASE(GetKeysFromEventFiles)
   std::unique_ptr<HDF5DataStore> data_store_ptr(new HDF5DataStore(conf));
 
   // write several events, each with several fragments
-  char dummy_data[dummydata_size];
+  std::array<char, dummydata_size> dummy_data;
   for (int event_id = 1; event_id <= events_to_generate; ++event_id) {
     for (int geo_location = 0; geo_location < links_to_generate; ++geo_location) {
       StorageKey key(event_id, StorageKey::s_invalid_detector_id, geo_location);
@@ -208,7 +208,7 @@ BOOST_AUTO_TEST_CASE(GetKeysFromAllInOneFiles)
   std::string file_prefix = "demo" + std::to_string(getpid());
   const int events_to_generate = 5;
   const int links_to_generate = 3;
-  const int dummydata_size = 20;
+  constexpr int dummydata_size = 20;
 
   // delete any pre-existing files so that we start with a clean slate
   std::string delete_pattern = file_prefix + ".*.hdf5";
@@ -223,7 +223,7 @@ BOOST_AUTO_TEST_CASE(GetKeysFromAllInOneFiles)
   std::unique_ptr<HDF5DataStore> data_store_ptr(new HDF5DataStore(conf));
 
   // write several events, each with several fragments
-  char dummy_data[dummydata_size];
+  std::array<char, dummydata_size> dummy_data;
   for (int event_id = 1; event_id <= events_to_generate; ++event_id) {
     for (int geo_location = 0; geo_location < links_to_generate; ++geo_location) {
       StorageKey key(event_id, StorageKey::s_invalid_detector_id, geo_location);
@@ -288,8 +288,8 @@ BOOST_AUTO_TEST_CASE(CheckCrossTalk)
   std::string file_prefix = "demo" + std::to_string(getpid());
   const int events_to_generate = 5;
   const int links_to_generate = 3;
-  const int dummydata_size = 20;
-  char dummy_data[dummydata_size];
+  constexpr int dummydata_size = 20;
+  std::array<char, dummydata_size> dummy_data;
   std::unique_ptr<HDF5DataStore> data_store_ptr;
   std::vector<StorageKey> key_list;
 
