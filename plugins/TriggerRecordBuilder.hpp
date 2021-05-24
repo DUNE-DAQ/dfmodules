@@ -1,4 +1,4 @@
-1;95;0c/**
+/**
  * @file TriggerRecordBuilder.hpp
  *
  * This is part of the DUNE DAQ Software Suite, copyright 2020.
