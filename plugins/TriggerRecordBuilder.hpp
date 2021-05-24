@@ -10,7 +10,7 @@
 #define DFMODULES_PLUGINS_TRIGGERRECORDBUILDER_HPP_
 
 #include "dfmodules/TriggerDecisionForwarder.hpp"
-#include "dfmodules/triggerrecordbuilderinfo/Nljs.hpp"
+#include "dfmodules/triggerrecordbuilderinfo/InfoNljs.hpp" 
 
 #include "dataformats/Fragment.hpp"
 #include "dataformats/TriggerRecord.hpp"

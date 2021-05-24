@@ -13,8 +13,6 @@
 #include "appfwk/app/Nljs.hpp"
 #include "dfmodules/triggerrecordbuilder/Nljs.hpp"
 #include "dfmodules/triggerrecordbuilder/Structs.hpp"
-#include "dfmodules/triggerrecordbuilderinfo/Nljs.hpp"
-#include "dfmodules/triggerrecordbuilderinfo/Structs.hpp"
 #include "logging/Logging.hpp"
 
 #include <chrono>
