@@ -24,7 +24,11 @@ constexpr int event_id = 111;
 onstexpr int group_type = StorageKey::DataRecordGroupType::kTPC;
 constexpr int region_number = 1;
 constexpr int element_number = 1;
-dunedaq::dfmodules::StorageKey stk(run_number, event_id, group_type, region_number, element_number); ///< StorageKey instance for the test
+dunedaq::dfmodules::StorageKey stk(run_number,
+                                   event_id,
+                                   group_type,
+                                   region_number,
+                                   element_number); ///< StorageKey instance for the test
 
 } // namespace ""
 

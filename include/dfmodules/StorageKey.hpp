@@ -50,7 +50,6 @@ public:
     , m_element_number(element_number)
 
   {}
-  ~StorageKey() {} // NOLINT
 
   int get_run_number() const;
   int get_trigger_number() const;

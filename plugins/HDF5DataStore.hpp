@@ -25,9 +25,9 @@
 #include "boost/lexical_cast.hpp"
 #include "highfive/H5File.hpp"
 
+#include <cstdlib>
 #include <functional>
 #include <memory>
-#include <stdlib.h>
 #include <string>
 #include <sys/statvfs.h>
 #include <utility>
@@ -163,7 +163,8 @@ public:
       open_file_if_needed(full_filename, HighFive::File::ReadOnly);
     } catch (HighFive::Exception const& excpt) {
       throw HDF5Issue(ERS_HERE, excpt.what(), excpt);
-    } catch (...) {
+    } catch (...) { // NOLINT(runtime/exceptions)
+      // NOLINT here because we *ARE* re-throwing the exception!
       throw HDF5Issue(ERS_HERE, "Unknown exception thrown by HDF5");
     }
 
@@ -211,7 +212,8 @@ public:
       open_file_if_needed(full_filename, HighFive::File::OpenOrCreate);
     } catch (HighFive::Exception const& excpt) {
       throw HDF5Issue(ERS_HERE, excpt.what(), excpt);
-    } catch (...) {
+    } catch (...) { // NOLINT(runtime/exceptions)
+      // NOLINT here because we *ARE* re-throwing the exception!
       throw HDF5Issue(ERS_HERE, "Unknown exception thrown by HDF5");
     }
 
@@ -249,7 +251,8 @@ public:
       open_file_if_needed(full_filename, HighFive::File::OpenOrCreate);
     } catch (HighFive::Exception const& excpt) {
       throw HDF5Issue(ERS_HERE, excpt.what(), excpt);
-    } catch (...) {
+    } catch (...) { // NOLINT(runtime/exceptions)
+      // NOLINT here because we *ARE* re-throwing the exception!
       throw HDF5Issue(ERS_HERE, "Unknown exception thrown by HDF5");
     }
 
@@ -428,7 +431,8 @@ private:
       throw HDF5DataSetError(ERS_HERE, get_name(), dataset_name, excpt.what());
     } catch (HighFive::Exception const& excpt) {
       throw HDF5Issue(ERS_HERE, excpt.what(), excpt);
-    } catch (...) {
+    } catch (...) { // NOLINT(runtime/exceptions)
+      // NOLINT here because we *ARE* re-throwing the exception!
       throw HDF5Issue(ERS_HERE, "Unknown exception thrown by HDF5");
     }
 
