@@ -25,8 +25,10 @@ g_header_paths = []
 
 def tick_to_timestamp(ticks):
     ns = float(ticks)/CLOCK_SPEED_HZ
-    return datetime.datetime.fromtimestamp(ns)
-
+    if ns < 3000000000:
+        return datetime.datetime.fromtimestamp(ns)
+    else:
+        return "InvalidDateString"
 
 def unpack_header(data_array, unpack_string, keys):
     values = struct.unpack(unpack_string, data_array)
