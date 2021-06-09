@@ -11,7 +11,7 @@ One note is that I needed to specify the nanorc location, since it moved around
 a bit in the v2.6.0 release.  So, the command that I would use to invoke the tests
 looked like the following:
 
-* 'pytest -s six_process_multi_file_test.py --frame-file <path>/frames.bin --nanorc-path `which nanorc`'
+* 'pytest -s six_process_stop_start_test.py --frame-file <path>/frames.bin --nanorc-path `which nanorc`'
 
 Another note is that I couldn't use the "data_file_checks.sanity_check" on all of
 the files in the multi-file test because it seems to assume that the first trigger
