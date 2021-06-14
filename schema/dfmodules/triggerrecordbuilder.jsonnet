@@ -28,8 +28,10 @@ local types = {
     conf: s.record("ConfParams", [ s.field("map", self.mapgeoidqueue, doc="" ), 
                                    s.field("general_queue_timeout", self.queue_timeout, 100, 
                                            doc="General indication for timeout"),
-                                   s.field("max_timestamp_diff", self.timestamp_diff, 50000000, 
-                                           doc="General indication for timeout to throw errors")
+                                   s.field("old_timestamp_diff", self.timestamp_diff, 50000000, 
+                                           doc="General time indication for a Trigger record to be considered old"),
+                                   s.field("timout_timestamp_diff", self.timestamp_diff, 0, 
+                                           doc="Timeout for a TR to be sent incomplete. 0 means no timeout")
                                   ] , 
                    doc="TriggerRecordBuilder configuration")
 
