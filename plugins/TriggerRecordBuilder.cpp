@@ -153,7 +153,8 @@ TriggerRecordBuilder::do_conf(const data_t& payload)
     m_map_geoid_queues[key] = entry.queueinstance;
   }
 
-  m_max_time_difference = parsed_conf.max_timestamp_diff;
+  m_old_trigger_threshold = parsed_conf.old_timestamp_diff;
+  m_trigger_timeout = parsed_conf.timeout_timestamp_diff;
 
   m_queue_timeout = std::chrono::milliseconds(parsed_conf.general_queue_timeout);
 
@@ -299,7 +300,7 @@ TriggerRecordBuilder::do_work(std::atomic<bool>& running_flag)
       //-------------------------------------------------
       // Check if some fragments are obsolete
       //--------------------------------------------------
-      check_stale_requests();
+      check_stale_requests( record_sink, running_flag );
 
     } else { // if books were updated
       if (running_flag.load()) {
@@ -529,31 +530,66 @@ TriggerRecordBuilder::send_trigger_record(const TriggerId& id, trigger_record_si
 }
 
 bool
-TriggerRecordBuilder::check_stale_requests()
+TriggerRecordBuilder::check_stale_requests( trigger_record_sink_t& sink, std::atomic<bool>& running )
 {
 
+  bool something_is_old = true ;
+
+  // -----------------------------------------------
+  // optionally send over stale trigger records
+  // -----------------------------------------------
+
+  if ( m_trigger_timeout > 0 ) {
+
+    std::vector<TriggerId> stale_triggers;
+
+    for (auto it = m_trigger_records.begin(); it != m_trigger_records.end(); ++it) {
+
+      dataformats::TriggerRecord& tr = *it->second;
+
+      if ( tr.get_header_ref().get_trigger_timestamp() + m_trigger_timeout < m_current_time ) {
+	
+	ers::error( TimedOutTriggerDecision(ERS_HERE, it->first, tr.get_header_ref().get_trigger_timestamp(), m_current_time));
+
+	// mark trigger record for seding
+	stale_triggers.push_back( it -> first ) ;
+
+	something_is_old = true ;
+      }
+	
+    } // trigger record loop
+
+    // create the trigger record and send it
+    for (const auto& t : stale_triggers) {
+      send_trigger_record(t, sink, running );
+    }
+
+  } //  m_trigger_timeout > 0
+  
+
+  // check if some triggers can still be considered old
   metric_counter_type old_fragments = 0;
   metric_counter_type old_triggers = 0;
 
   for (auto it = m_trigger_records.begin(); it != m_trigger_records.end(); ++it) {
 
     dataformats::TriggerRecord& tr = *it->second;
-
-    if (tr.get_header_ref().get_trigger_timestamp() + m_max_time_difference < m_current_time) {
-
+    
+    if (tr.get_header_ref().get_trigger_timestamp() + m_old_trigger_threshold < m_current_time) {
+      
       old_fragments += tr.get_fragments_ref().size();
       ++old_triggers;
+      
+      something_is_old = true ;
 
-      ers::error(
-        TimedOutTriggerDecision(ERS_HERE, it->first, tr.get_header_ref().get_trigger_timestamp(), m_current_time));
     }
 
   } // trigger record loop
-
+  
   m_old_trigger_decisions.store(old_triggers);
   m_old_fragments.store(old_fragments);
-
-  return (old_triggers > 0);
+  
+  return ( something_is_old );
 }
 
 } // namespace dfmodules

@@ -181,7 +181,7 @@ protected:
   bool send_trigger_record(const TriggerId&, trigger_record_sink_t&, std::atomic<bool>& running);
   // this creates a trigger record and send it
 
-  bool check_stale_requests();
+  bool check_stale_requests( trigger_record_sink_t&, std::atomic<bool>& running );
 
 private:
   // Commands
@@ -215,7 +215,8 @@ private:
   mutable std::atomic<metric_counter_type> m_old_trigger_decisions = { 0 };
   mutable std::atomic<metric_counter_type> m_old_fragments = { 0 };
 
-  dataformats::timestamp_diff_t m_max_time_difference;
+  dataformats::timestamp_diff_t m_old_trigger_threshold;
+  dataformats::timestamp_diff_t m_trigger_timeout;
   dataformats::timestamp_t m_current_time = 0;
 };
 } // namespace dfmodules

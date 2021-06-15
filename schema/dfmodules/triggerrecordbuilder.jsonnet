@@ -30,7 +30,7 @@ local types = {
                                            doc="General indication for timeout"),
                                    s.field("old_timestamp_diff", self.timestamp_diff, 50000000, 
                                            doc="General time indication for a Trigger record to be considered old"),
-                                   s.field("timout_timestamp_diff", self.timestamp_diff, 0, 
+                                   s.field("timeout_timestamp_diff", self.timestamp_diff, 0, 
                                            doc="Timeout for a TR to be sent incomplete. 0 means no timeout")
                                   ] , 
                    doc="TriggerRecordBuilder configuration")
