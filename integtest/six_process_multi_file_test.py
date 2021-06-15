@@ -29,11 +29,8 @@ def test_data_file(run_nanorc):
     # Run some tests on the output data file
     assert len(run_nanorc.data_files)==7
 
-    data_file=data_file_checks.DataFile(run_nanorc.data_files[0])
-    assert data_file_checks.sanity_check(data_file)
-
     for idx in range(len(run_nanorc.data_files)):
         data_file=data_file_checks.DataFile(run_nanorc.data_files[idx])
-        # assert data_file_checks.sanity_check(data_file)
+        assert data_file_checks.sanity_check(data_file)
         assert data_file_checks.check_link_presence(data_file, n_links=15)
         assert data_file_checks.check_fragment_sizes(data_file, min_frag_size=22350, max_frag_size=22360)

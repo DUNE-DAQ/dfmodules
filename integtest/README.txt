@@ -1,4 +1,4 @@
-# 09-Jun-2021, KAB: notes on some initial integrationtests...
+# 15-Jun-2021, KAB: notes on some initial integrationtests...
 
 I followed the instructions from Phil
 (https://github.com/philiprodrigues/integrationtest/blob/main/README.md), including
@@ -7,15 +7,9 @@ I followed the instructions from Phil
 * 'pip install -r integrationtest/requirements.txt'
 * 'cd ..'
 
-One note is that I needed to specify the nanorc location, since it moved around
-a bit in the v2.6.0 release.  So, the command that I would use to invoke the tests
-looked like the following:
+Here is a sample command for invoking a test:
 
-* 'pytest -s six_process_stop_start_test.py --frame-file <path>/frames.bin --nanorc-path `which nanorc`'
-
-Another note is that I couldn't use the "data_file_checks.sanity_check" on all of
-the files in the multi-file test because it seems to assume that the first trigger
-number in each file starts with 00001.
+* 'pytest -s six_process_stop_start_test.py --frame-file <path>/frames.bin'
 
 For reference, here are the ideas behind the existing tests:
 * four_process_disabled_output_test.py - verify that the --disable-data-storage option works
