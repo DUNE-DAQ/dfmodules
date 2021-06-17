@@ -25,7 +25,7 @@
 #include "appfwk/ThreadHelper.hpp"
 
 #include <map>
-#include <pair>
+#include <utility>
 #include <memory>
 #include <string>
 #include <vector>
@@ -92,10 +92,10 @@ struct TriggerId
 ERS_DECLARE_ISSUE(dfmodules,               ///< Namespace
                   TimedOutTriggerDecision, ///< Issue class name
                   "trigger id: " << trigger_id << " generate at: " << trigger_timestamp
-                                 << " too late for: " << present_time, ///< Message
+                                 << " timed out",                      ///< Message
                   ((dfmodules::TriggerId)trigger_id)                   ///< Message parameters
                   ((dataformats::timestamp_t)trigger_timestamp)        ///< Message parameters
-                  ((dataformats::timestamp_t)present_time)             ///< Message parameters
+		  
 )
 
 /**
@@ -221,10 +221,10 @@ private:
   mutable std::atomic<metric_counter_type> m_old_fragments = { 0 };              // currently 
   mutable std::atomic<metric_counter_type> m_timed_out_trigger_records = { 0 };  // in the run
   mutable std::atomic<metric_counter_type> m_completed_trigger_records = { 0 };  // in between calls
-  mutable std::atomic<metric_ratio_type>   m_trigger_record_time = { -1. };      // in between calls 
+  mutable std::atomic<unsigned long long>  m_trigger_record_time = { 0 };        // in between calls 
   
   // time thresholds 
-  using duration_type = std::millisecond ;
+  using duration_type = std::chrono::milliseconds ;
   duration_type m_old_trigger_threshold;
   duration_type m_trigger_timeout;
 

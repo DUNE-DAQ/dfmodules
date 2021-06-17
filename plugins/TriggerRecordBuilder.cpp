@@ -130,7 +130,7 @@ TriggerRecordBuilder::get_info(opmonlib::InfoCollector& ci, int /*level*/)
   auto time = m_trigger_record_time.exchange( 0. ) ;
   auto n_triggers = m_completed_trigger_records.exchange( 0 ) ;
 
-  i.average_millisecond_per_trigger = n_triggers > 0 ? time / n_triggers : -1. ;
+  i.average_millisecond_per_trigger = n_triggers > 0 ? time / (metric_ratio_type) n_triggers : -1. ;
 
   ci.add(i);
 }
@@ -398,7 +398,7 @@ TriggerRecordBuilder::read_fragments(fragment_sources_t& frag_sources, bool drai
         } // request loop
 
         if (requested) {
-          it->second->add_fragment(std::move(temp_fragment));
+          it->second.second->add_fragment(std::move(temp_fragment));
           ++m_fragment_counter;
           book_updates = true;
         } else {
@@ -427,9 +427,9 @@ TriggerRecordBuilder::extract_trigger_record(const TriggerId& id)
   trigger_record_ptr_t temp = std::move(it->second.second);
 
   auto time = clock_type::now() ;
-  auto duration = time - it -> first ;
+  auto duration = time - it -> second.first ;
 
-  m_trigger_record_time += std::chrono::duration_cast<duration_type>( duration ) ;
+  m_trigger_record_time += std::chrono::duration_cast<duration_type>( duration ).count() ;
   ++ m_completed_trigger_records;
 
   m_trigger_records.erase(it);
@@ -547,13 +547,13 @@ bool
 TriggerRecordBuilder::check_stale_requests( trigger_record_sink_t& sink, std::atomic<bool>& running )
 {
 
-  bool book_updates = true ;
+  bool book_updates = false ;
 
   // -----------------------------------------------
   // optionally send over stale trigger records
   // -----------------------------------------------
 
-  if ( m_trigger_timeout > 0 ) {
+  if ( m_trigger_timeout.count() > 0 ) {
 
     std::vector<TriggerId> stale_triggers;
 
@@ -561,11 +561,11 @@ TriggerRecordBuilder::check_stale_requests( trigger_record_sink_t& sink, std::at
 
       dataformats::TriggerRecord& tr = *it->second.second;
 
-      auto tr_time = clock_type::now() - it -> first ;
+      auto tr_time = clock_type::now() - it -> second.first ;
 
       if ( tr_time > m_trigger_timeout ) {
 	
-	ers::error( TimedOutTriggerDecision(ERS_HERE, it->first, tr.get_header_ref().get_trigger_timestamp(), m_current_time));
+	ers::error( TimedOutTriggerDecision(ERS_HERE, it->first, tr.get_header_ref().get_trigger_timestamp() ));
 
 	// mark trigger record for seding
 	stale_triggers.push_back( it -> first ) ;
@@ -592,7 +592,7 @@ TriggerRecordBuilder::check_stale_requests( trigger_record_sink_t& sink, std::at
 
     dataformats::TriggerRecord& tr = *it->second.second ;
    
-    auto tr_time = clock_type::now() - it -> first ;
+    auto tr_time = clock_type::now() - it -> second.first ;
     
     if ( tr_time > m_old_trigger_threshold ) {
       
@@ -606,7 +606,7 @@ TriggerRecordBuilder::check_stale_requests( trigger_record_sink_t& sink, std::at
   m_old_trigger_decisions.store(old_triggers);
   m_old_fragments.store(old_fragments);
   
-  return ( something_is_old );
+  return book_updates ;
 }
 
 } // namespace dfmodules
