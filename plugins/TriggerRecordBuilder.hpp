@@ -25,9 +25,11 @@
 #include "appfwk/ThreadHelper.hpp"
 
 #include <map>
+#include <pair>
 #include <memory>
 #include <string>
 #include <vector>
+#include <chrono>
 
 namespace dunedaq {
 
@@ -206,18 +208,22 @@ private:
   std::map<dataformats::GeoID, std::string> m_map_geoid_queues; ///< Mappinng between GeoID and queues
 
   // bookeeping
-  std::map<TriggerId, trigger_record_ptr_t> m_trigger_records;
+  using clock_type = std::chrono::high_resolution_clock ;
+  std::map<TriggerId, std::pair<clock_type::time_point, trigger_record_ptr_t> > m_trigger_records;
 
   // book related metrics
   using metric_counter_type = decltype(triggerrecordbuilderinfo::Info::trigger_decisions);
-  mutable std::atomic<metric_counter_type> m_trigger_decisions_counter = { 0 };
-  mutable std::atomic<metric_counter_type> m_fragment_counter = { 0 };
-  mutable std::atomic<metric_counter_type> m_old_trigger_decisions = { 0 };
-  mutable std::atomic<metric_counter_type> m_old_fragments = { 0 };
+  mutable std::atomic<metric_counter_type> m_trigger_decisions_counter = { 0 };  // currently
+  mutable std::atomic<metric_counter_type> m_fragment_counter = { 0 };           // currently
+  mutable std::atomic<metric_counter_type> m_old_trigger_decisions = { 0 };      // currently 
+  mutable std::atomic<metric_counter_type> m_old_fragments = { 0 };              // currently 
+  mutable std::atomic<metric_counter_type> m_timed_out_trigger_records = { 0 };  // in the run
+  mutable std::atomic<metric_counter_type> m_completed_trigger_records = { 0 };  // in between calls
+  mutable std::atomic<metric_counter_type> m_trigger_record_time = { 0 };        // in between calls 
 
-  dataformats::timestamp_diff_t m_old_trigger_threshold;
-  dataformats::timestamp_diff_t m_trigger_timeout;
-  dataformats::timestamp_t m_current_time = 0;
+  std::millisecond m_old_trigger_threshold;
+  std::millisecond m_trigger_timeout;
+
 };
 } // namespace dfmodules
 } // namespace dunedaq
