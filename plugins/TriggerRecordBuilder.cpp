@@ -125,6 +125,12 @@ TriggerRecordBuilder::get_info(opmonlib::InfoCollector& ci, int /*level*/)
   i.fragments = m_fragment_counter.load();
   i.old_trigger_decisions = m_old_trigger_decisions.load();
   i.old_fragments = m_old_fragments.load();
+  i.timed_out_trigger_records = m_timed_out_trigger_records.load() ;
+
+  auto time = m_trigger_record_time.exchange( 0. ) ;
+  auto n_triggers = m_completed_trigger_records.exchange( 0 ) ;
+
+  i.average_millisecond_per_trigger = n_triggers > 0 ? time / n_triggers : -1. ;
 
   ci.add(i);
 }
@@ -153,8 +159,8 @@ TriggerRecordBuilder::do_conf(const data_t& payload)
     m_map_geoid_queues[key] = entry.queueinstance;
   }
 
-  m_old_trigger_threshold = parsed_conf.old_timestamp_diff;
-  m_trigger_timeout = parsed_conf.timeout_timestamp_diff;
+  m_old_trigger_threshold = duration_type(parsed_conf.old_timestamp_threshold);
+  m_trigger_timeout = duration_type(parsed_conf.trigger_record_timeout);
 
   m_queue_timeout = std::chrono::milliseconds(parsed_conf.general_queue_timeout);
 

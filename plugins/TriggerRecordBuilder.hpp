@@ -214,15 +214,16 @@ private:
 
   // book related metrics
   using metric_counter_type = decltype(triggerrecordbuilderinfo::Info::trigger_decisions);
+  using metric_ratio_type = decltype(triggerrecordbuilderinfo::Info::average_millisecond_per_trigger);
   mutable std::atomic<metric_counter_type> m_trigger_decisions_counter = { 0 };  // currently
   mutable std::atomic<metric_counter_type> m_fragment_counter = { 0 };           // currently
   mutable std::atomic<metric_counter_type> m_old_trigger_decisions = { 0 };      // currently 
   mutable std::atomic<metric_counter_type> m_old_fragments = { 0 };              // currently 
   mutable std::atomic<metric_counter_type> m_timed_out_trigger_records = { 0 };  // in the run
   mutable std::atomic<metric_counter_type> m_completed_trigger_records = { 0 };  // in between calls
-  mutable std::atomic<metric_counter_type> m_trigger_record_time = { 0 };        // in between calls 
+  mutable std::atomic<metric_ratio_type>   m_trigger_record_time = { -1. };      // in between calls 
   
-  // time threshold 
+  // time thresholds 
   using duration_type = std::millisecond ;
   duration_type m_old_trigger_threshold;
   duration_type m_trigger_timeout;
