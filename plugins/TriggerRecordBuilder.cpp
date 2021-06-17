@@ -191,6 +191,7 @@ TriggerRecordBuilder::do_work(std::atomic<bool>& running_flag)
   m_fragment_counter.store(0);
   m_old_trigger_decisions.store(0);
   m_old_fragments.store(0);
+  m_timed_out_trigger_records.store(0) ;
 
   // allocate queues
   trigger_decision_source_t decision_source(m_trigger_decision_source_name);
@@ -225,8 +226,6 @@ TriggerRecordBuilder::do_work(std::atomic<bool>& running_flag)
         continue;
       }
 
-      m_current_time = temp_dec.trigger_timestamp;
-
       // create the book entry
       TriggerId temp_id(temp_dec);
 
@@ -236,7 +235,8 @@ TriggerRecordBuilder::do_work(std::atomic<bool>& running_flag)
       }
 
       // create trigger record
-      trigger_record_ptr_t& trp = m_trigger_records[temp_id];
+      auto & entry = m_trigger_records[temp_id] = std::make_pair( clock_type::now(), trigger_record_ptr_t() ) ;
+      trigger_record_ptr_t& trp = entry.second ;
       trp.reset(new dataformats::TriggerRecord(temp_dec.components));
       dataformats::TriggerRecord& tr = *trp;
 
@@ -272,8 +272,8 @@ TriggerRecordBuilder::do_work(std::atomic<bool>& running_flag)
       std::vector<TriggerId> complete;
       for (const auto& tr : m_trigger_records) {
 
-        auto comp_size = tr.second->get_fragments_ref().size();
-        auto requ_size = tr.second->get_header_ref().get_num_requested_components();
+        auto comp_size = tr.second.second->get_fragments_ref().size();
+        auto requ_size = tr.second.second->get_header_ref().get_num_requested_components();
         std::ostringstream message;
         message << tr.first << " with " << comp_size << '/' << requ_size << " components";
 
@@ -297,17 +297,19 @@ TriggerRecordBuilder::do_work(std::atomic<bool>& running_flag)
 
       } // loop over compled trigger id
 
-      //-------------------------------------------------
-      // Check if some fragments are obsolete
-      //--------------------------------------------------
-      check_stale_requests( record_sink, running_flag );
+    } // if books were updated
 
-    } else { // if books were updated
+    //-------------------------------------------------
+    // Check if some fragments are obsolete
+    //--------------------------------------------------
+    book_updates |= check_stale_requests( record_sink, running_flag );
+    
+    if ( ! book_updates ) {
       if (running_flag.load()) {
         std::this_thread::sleep_for(m_queue_timeout);
       }
     }
-
+    
   } // working loop
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Starting draining phase ";
@@ -376,7 +378,7 @@ TriggerRecordBuilder::read_fragments(fragment_sources_t& frag_sources, bool drai
       } else {
 
         // check if the fragment has a GeoId that was desired
-        dataformats::TriggerRecordHeader& header = it->second->get_header_ref();
+        dataformats::TriggerRecordHeader& header = it->second.second->get_header_ref();
 
         bool requested = false;
         for (size_t i = 0; i < header.get_num_requested_components(); ++i) {
@@ -416,11 +418,17 @@ TriggerRecordBuilder::extract_trigger_record(const TriggerId& id)
 
   auto it = m_trigger_records.find(id);
 
-  trigger_record_ptr_t temp = std::move(it->second);
+  trigger_record_ptr_t temp = std::move(it->second.second);
+
+  auto time = clock_type::now() ;
+  auto duration = time - it -> first ;
+
+  m_trigger_record_time += std::chrono::duration_cast<duration_type>( duration ) ;
+  ++ m_completed_trigger_records;
 
   m_trigger_records.erase(it);
 
-  --m_trigger_decisions_counter;
+  -- m_trigger_decisions_counter;
   m_fragment_counter -= temp->get_fragments_ref().size();
 
   if (temp->get_fragments_ref().size() < temp->get_header_ref().get_num_requested_components()) {
@@ -533,7 +541,7 @@ bool
 TriggerRecordBuilder::check_stale_requests( trigger_record_sink_t& sink, std::atomic<bool>& running )
 {
 
-  bool something_is_old = true ;
+  bool book_updates = true ;
 
   // -----------------------------------------------
   // optionally send over stale trigger records
@@ -545,20 +553,23 @@ TriggerRecordBuilder::check_stale_requests( trigger_record_sink_t& sink, std::at
 
     for (auto it = m_trigger_records.begin(); it != m_trigger_records.end(); ++it) {
 
-      dataformats::TriggerRecord& tr = *it->second;
+      dataformats::TriggerRecord& tr = *it->second.second;
 
-      if ( tr.get_header_ref().get_trigger_timestamp() + m_trigger_timeout < m_current_time ) {
+      auto tr_time = clock_type::now() - it -> first ;
+
+      if ( tr_time > m_trigger_timeout ) {
 	
 	ers::error( TimedOutTriggerDecision(ERS_HERE, it->first, tr.get_header_ref().get_trigger_timestamp(), m_current_time));
 
 	// mark trigger record for seding
 	stale_triggers.push_back( it -> first ) ;
+	++ m_timed_out_trigger_records ;
 
-	something_is_old = true ;
+	book_updates = true ;
       }
-	
+      
     } // trigger record loop
-
+    
     // create the trigger record and send it
     for (const auto& t : stale_triggers) {
       send_trigger_record(t, sink, running );
@@ -573,15 +584,15 @@ TriggerRecordBuilder::check_stale_requests( trigger_record_sink_t& sink, std::at
 
   for (auto it = m_trigger_records.begin(); it != m_trigger_records.end(); ++it) {
 
-    dataformats::TriggerRecord& tr = *it->second;
+    dataformats::TriggerRecord& tr = *it->second.second ;
+   
+    auto tr_time = clock_type::now() - it -> first ;
     
-    if (tr.get_header_ref().get_trigger_timestamp() + m_old_trigger_threshold < m_current_time) {
+    if ( tr_time > m_old_trigger_threshold ) {
       
       old_fragments += tr.get_fragments_ref().size();
       ++old_triggers;
       
-      something_is_old = true ;
-
     }
 
   } // trigger record loop

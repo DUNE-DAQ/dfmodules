@@ -184,6 +184,7 @@ protected:
   // this creates a trigger record and send it
 
   bool check_stale_requests( trigger_record_sink_t&, std::atomic<bool>& running );
+  // it returns true when there are changes in the book = a TR timed out
 
 private:
   // Commands
@@ -220,9 +221,11 @@ private:
   mutable std::atomic<metric_counter_type> m_timed_out_trigger_records = { 0 };  // in the run
   mutable std::atomic<metric_counter_type> m_completed_trigger_records = { 0 };  // in between calls
   mutable std::atomic<metric_counter_type> m_trigger_record_time = { 0 };        // in between calls 
-
-  std::millisecond m_old_trigger_threshold;
-  std::millisecond m_trigger_timeout;
+  
+  // time threshold 
+  using duration_type = std::millisecond ;
+  duration_type m_old_trigger_threshold;
+  duration_type m_trigger_timeout;
 
 };
 } // namespace dfmodules
