@@ -265,14 +265,14 @@ TriggerRecordBuilder::do_work(std::atomic<bool>& running_flag)
     } // while loop, so that we can pop a trigger decision
 
     // read the fragments queues
-    book_updates |= read_fragments(frag_sources);
+    bool new_fragments = read_fragments(frag_sources);
 
     //-------------------------------------------------
     // Check if trigger records are complete or timedout
     // and create dedicated record
     //--------------------------------------------------
 
-    if (book_updates) {
+    if (new_fragments) {
 
       TLOG_DEBUG(TLVL_BOOKKEEPING) << "Bookeeping status: " << m_trigger_records.size()
                                    << " trigger records in progress ";
@@ -312,7 +312,7 @@ TriggerRecordBuilder::do_work(std::atomic<bool>& running_flag)
     //--------------------------------------------------
     book_updates |= check_stale_requests( record_sink, running_flag );
     
-    if ( ! book_updates ) {
+    if ( (! book_updates) && !(new_fragments) ) {
       if (running_flag.load()) {
 	++ m_sleep_counter ;
         std::this_thread::sleep_for(m_loop_sleep);
@@ -359,7 +359,7 @@ bool
 TriggerRecordBuilder::read_fragments(fragment_sources_t& frag_sources, bool drain)
 {
 
-  bool book_updates = false;
+  bool new_fragments = false;
 
   //-------------------------------------------------
   // Try to get Fragments from every queue
@@ -379,6 +379,8 @@ TriggerRecordBuilder::read_fragments(fragment_sources_t& frag_sources, bool drai
         // some fraction of the times that we check, so we just continue on and try again
         continue;
       }
+
+      new_fragments = true ;
 
       TriggerId temp_id(*temp_fragment);
 
@@ -406,7 +408,6 @@ TriggerRecordBuilder::read_fragments(fragment_sources_t& frag_sources, bool drai
         if (requested) {
           it->second.second->add_fragment(std::move(temp_fragment));
           ++m_fragment_counter;
-          book_updates = true;
         } else {
           ers::error(UnexpectedFragment(
             ERS_HERE, temp_id, temp_fragment->get_fragment_type_code(), temp_fragment->get_element_id()));
@@ -421,7 +422,7 @@ TriggerRecordBuilder::read_fragments(fragment_sources_t& frag_sources, bool drai
 
   } // queue loop
 
-  return book_updates;
+  return new_fragments;
 }
 
 TriggerRecordBuilder::trigger_record_ptr_t
