@@ -123,8 +123,6 @@ TriggerRecordBuilder::get_info(opmonlib::InfoCollector& ci, int /*level*/)
 
   i.trigger_decisions = m_trigger_decisions_counter.load();
   i.fragments = m_fragment_counter.load();
-  i.old_trigger_decisions = m_old_trigger_decisions.load();
-  i.old_fragments = m_old_fragments.load();
   i.timed_out_trigger_records = m_timed_out_trigger_records.load() ;
   i.sleep_counter = m_sleep_counter.exchange( 0 ) ;
 
@@ -160,7 +158,6 @@ TriggerRecordBuilder::do_conf(const data_t& payload)
     m_map_geoid_queues[key] = entry.queueinstance;
   }
 
-  m_old_trigger_threshold = duration_type(parsed_conf.old_timestamp_threshold);
   m_trigger_timeout = duration_type(parsed_conf.trigger_record_timeout);
 
   m_queue_timeout = std::chrono::milliseconds(parsed_conf.general_queue_timeout);
@@ -196,8 +193,6 @@ TriggerRecordBuilder::do_work(std::atomic<bool>& running_flag)
   m_trigger_records.clear();
   m_trigger_decisions_counter.store(0);
   m_fragment_counter.store(0);
-  m_old_trigger_decisions.store(0);
-  m_old_fragments.store(0);
   m_timed_out_trigger_records.store(0) ;
 
   // allocate queues
@@ -584,29 +579,6 @@ TriggerRecordBuilder::check_stale_requests( trigger_record_sink_t& sink, std::at
     }
 
   } //  m_trigger_timeout > 0
-  
-
-  // check if some triggers can still be considered old
-  metric_counter_type old_fragments = 0;
-  metric_counter_type old_triggers = 0;
-
-  for (auto it = m_trigger_records.begin(); it != m_trigger_records.end(); ++it) {
-
-    dataformats::TriggerRecord& tr = *it->second.second ;
-   
-    auto tr_time = clock_type::now() - it -> second.first ;
-    
-    if ( tr_time > m_old_trigger_threshold ) {
-      
-      old_fragments += tr.get_fragments_ref().size();
-      ++old_triggers;
-      
-    }
-
-  } // trigger record loop
-  
-  m_old_trigger_decisions.store(old_triggers);
-  m_old_fragments.store(old_fragments);
   
   return book_updates ;
 }
