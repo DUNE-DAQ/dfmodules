@@ -214,7 +214,6 @@ TriggerRecordBuilder::do_work(std::atomic<bool>& running_flag)
   while (running_flag.load() || book_updates) {
 
     book_updates = false;
-    ++ m_loop_counter ;
 
     // read decision requests
     while (decision_source.can_pop()) {
@@ -313,6 +312,9 @@ TriggerRecordBuilder::do_work(std::atomic<bool>& running_flag)
 	++ m_sleep_counter ;
         std::this_thread::sleep_for(m_queue_timeout);
       }
+    }
+    else {
+      ++ m_loop_counter ;
     }
     
   } // working loop
