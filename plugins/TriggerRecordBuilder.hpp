@@ -24,6 +24,7 @@
 #include "appfwk/DAQSource.hpp"
 #include "appfwk/ThreadHelper.hpp"
 
+#include <tuple>
 #include <map>
 #include <memory>
 #include <string>
@@ -42,42 +43,46 @@ struct TriggerId
 
   TriggerId() = default;
 
-  explicit TriggerId(const dfmessages::TriggerDecision& td)
+  explicit TriggerId(const dfmessages::TriggerDecision& td, dataformats::sequence_number_t s = 0)
     : trigger_number(td.trigger_number)
+    , sequence_number(s)
     , run_number(td.run_number)
   {
     ;
   }
   explicit TriggerId(dataformats::Fragment& f)
     : trigger_number(f.get_trigger_number())
+    , sequence_number(f.get_sequence_number())
     , run_number(f.get_run_number())
   {
     ;
   }
 
   dataformats::trigger_number_t trigger_number;
+  dataformats::sequence_number_t sequence_number;
   dataformats::run_number_t run_number;
 
   bool operator<(const TriggerId& other) const noexcept
   {
-    return run_number == other.run_number ? trigger_number < other.trigger_number : run_number < other.run_number;
+    return std::tuple(trigger_number, sequence_number, run_number) <
+           std::tuple(other.trigger_number, other.sequence_number, other.run_number);
   }
 
   friend std::ostream& operator<<(std::ostream& out, const TriggerId& id) noexcept
   {
-    out << id.trigger_number << '/' << id.run_number;
+    out << id.trigger_number << '-' << id.sequence_number  << '/' << id.run_number;
     return out;
   }
 
   friend TraceStreamer& operator<<(TraceStreamer& out, const TriggerId& id) noexcept
   {
-    return out << id.trigger_number << "/" << id.run_number;
+    return out << id.trigger_number << '-' << id.sequence_number << "/" << id.run_number;
   }
 
   friend std::istream& operator>>(std::istream& in, TriggerId& id)
   {
-    char t;
-    in >> id.trigger_number >> t >> id.run_number;
+    char t1,t2;
+    in >> id.trigger_number >> t1 >> id.sequence_number >> t2 >> id.run_number;
     return in;
   }
 };

@@ -240,6 +240,7 @@ TriggerRecordBuilder::do_work(std::atomic<bool>& running_flag)
       dataformats::TriggerRecord& tr = *trp;
 
       tr.get_header_ref().set_trigger_number(temp_dec.trigger_number);
+      tr.get_header_ref().set_sequence_number(temp_id.sequence_number);
       tr.get_header_ref().set_run_number(temp_dec.run_number);
       tr.get_header_ref().set_trigger_timestamp(temp_dec.trigger_timestamp);
       tr.get_header_ref().set_trigger_type(temp_dec.trigger_type);
