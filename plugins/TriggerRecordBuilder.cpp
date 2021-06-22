@@ -214,11 +214,11 @@ TriggerRecordBuilder::do_work(std::atomic<bool>& running_flag)
     request_sinks[entry.first] = std::unique_ptr<datareqsink_t>(new datareqsink_t(entry.second));
   }
 
-  bool book_updates = false;
+  bool run_again = false;
 
-  while (running_flag.load() || book_updates) {
+  while (running_flag.load() || run_again) {
 
-    book_updates = false;
+    bool book_updates = false;
 
     // read decision requests
     while (decision_source.can_pop()) {
@@ -311,8 +311,10 @@ TriggerRecordBuilder::do_work(std::atomic<bool>& running_flag)
     // Check if some fragments are obsolete
     //--------------------------------------------------
     book_updates |= check_stale_requests( record_sink, running_flag );
+
+    run_again = book_updates || new_fragments ;
     
-    if ( (! book_updates) && !(new_fragments) ) {
+    if ( ! run_again ) {
       if (running_flag.load()) {
 	++ m_sleep_counter ;
         std::this_thread::sleep_for(m_loop_sleep);
