@@ -15,6 +15,7 @@
 #include "dfmodules/triggerrecordbuilder/Structs.hpp"
 #include "logging/Logging.hpp"
 
+#include <cmath>
 #include <chrono>
 #include <cstdlib>
 #include <memory>
@@ -161,7 +162,11 @@ TriggerRecordBuilder::do_conf(const data_t& payload)
 
   m_trigger_timeout = duration_type(parsed_conf.trigger_record_timeout);
 
-  m_queue_timeout = std::chrono::milliseconds(parsed_conf.general_queue_timeout);
+  m_loop_sleep = m_queue_timeout = std::chrono::milliseconds(parsed_conf.general_queue_timeout);
+
+  if ( m_map_geoid_queues.size() > 1 ) {
+    m_loop_sleep /= ( 1 + log2( m_map_geoid_queues.size() ) ) ;
+  }
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
 }
@@ -310,7 +315,7 @@ TriggerRecordBuilder::do_work(std::atomic<bool>& running_flag)
     if ( ! book_updates ) {
       if (running_flag.load()) {
 	++ m_sleep_counter ;
-        std::this_thread::sleep_for(m_queue_timeout);
+        std::this_thread::sleep_for(m_loop_sleep);
       }
     }
     else {

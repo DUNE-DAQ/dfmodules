@@ -199,6 +199,7 @@ private:
   // Configuration
   // size_t m_sleep_msec_while_running;
   std::chrono::milliseconds m_queue_timeout;
+  std::chrono::milliseconds m_loop_sleep;
 
   // Input Queues
   std::string m_trigger_decision_source_name;
