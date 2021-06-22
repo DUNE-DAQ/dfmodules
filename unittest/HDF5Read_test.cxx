@@ -187,7 +187,6 @@ BOOST_AUTO_TEST_CASE(ReadSingleFile)
   constexpr int dummydata_size = 7;
   const int run_number = 52;
   const int trigger_count = 5;
-  const std::string detector_name = "TPC";
   const int apa_count = 3;
   const int link_count = 1;
 
@@ -219,7 +218,7 @@ BOOST_AUTO_TEST_CASE(ReadSingleFile)
   for (int trigger_number = 1; trigger_number <= trigger_count; ++trigger_number) {
     for (int apa_number = 1; apa_number <= apa_count; ++apa_number) {
       for (int link_number = 1; link_number <= link_count; ++link_number) {
-        StorageKey key(run_number, trigger_number, detector_name, apa_number, link_number);
+        StorageKey key(run_number, trigger_number, StorageKey::DataRecordGroupType::kTPC, apa_number, link_number);
         KeyedDataBlock data_block(key);
         data_block.m_unowned_data_start = static_cast<void*>(&dummy_data[0]);
         data_block.m_data_size = dummydata_size;

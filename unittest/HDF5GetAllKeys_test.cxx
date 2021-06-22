@@ -40,14 +40,32 @@ delete_files_matching_pattern(const std::string& path, const std::string& patter
   return file_list;
 }
 
+nlohmann::json
+make_config(const std::string& instance_name,
+            const std::string& path,
+            const std::string& pattern,
+            const std::string& mode)
+{
+  hdf5datastore::ConfParams params;
+  params.name = instance_name;
+  params.directory_path = path;
+  params.filename_parameters.overall_prefix = pattern;
+  params.mode = mode;
+
+  nlohmann::json output;
+  hdf5datastore::to_json(output, params);
+  return output;
+}
+
 BOOST_AUTO_TEST_SUITE(HDF5GetAllKeys_test)
 
 BOOST_AUTO_TEST_CASE(GetKeysFromFragmentFiles)
 {
   std::string file_path(std::filesystem::temp_directory_path());
-  std::string file_prefix = "demo" + std::to_string(getpid());
+  std::string file_prefix = "demo1_" + std::to_string(getpid());
   const int events_to_generate = 5;
   const int links_to_generate = 3;
+  const int run_number = 100;
   constexpr int dummydata_size = 20;
 
   // delete any pre-existing files so that we start with a clean slate
@@ -55,31 +73,28 @@ BOOST_AUTO_TEST_CASE(GetKeysFromFragmentFiles)
   delete_files_matching_pattern(file_path, delete_pattern);
 
   // create the DataStore instance for writing
-  nlohmann::json conf;
-  conf["name"] = "tempWriter";
-  conf["filename_prefix"] = file_prefix;
-  conf["directory_path"] = file_path;
-  conf["mode"] = "one-fragment-per-file";
+  auto conf = make_config("tempWriter", file_path, file_prefix, "one-fragment-per-file");
   std::unique_ptr<HDF5DataStore> data_store_ptr(new HDF5DataStore(conf));
 
   // write several events, each with several fragments
   std::array<char, dummydata_size> dummy_data;
-  for (int event_id = 1; event_id <= events_to_generate; ++event_id) {
-    for (int geo_location = 0; geo_location < links_to_generate; ++geo_location) {
-      StorageKey key(event_id, StorageKey::s_invalid_detector_id, geo_location);
+  for (int trigger_number = 1; trigger_number <= events_to_generate; ++trigger_number) {
+    for (int element_number = 0; element_number < links_to_generate; ++element_number) {
+      StorageKey key(run_number,
+                     trigger_number,
+                     StorageKey::DataRecordGroupType::kTPC,
+                     StorageKey::s_invalid_region_number,
+                     element_number);
       KeyedDataBlock data_block(key);
-      data_block.unowned_data_start = static_cast<void*>(&dummy_data[0]);
-      data_block.data_size = dummydata_size;
+      data_block.m_unowned_data_start = static_cast<void*>(&dummy_data[0]);
+      data_block.m_data_size = dummydata_size;
       data_store_ptr->write(data_block);
     }
   }
   data_store_ptr.reset(); // explicit destruction
 
   // create a second DataStore instance to fetch the keys
-  conf["name"] = "hdfStore";
-  conf["filename_prefix"] = file_prefix;
-  conf["directory_path"] = file_path;
-  conf["mode"] = "one-fragment-per-file";
+  conf = make_config("hdfStore", file_path, file_prefix, "one-fragment-per-file");
   data_store_ptr.reset(new HDF5DataStore(conf));
 
   // fetch all of the keys that exist in the DataStore
@@ -94,14 +109,14 @@ BOOST_AUTO_TEST_CASE(GetKeysFromFragmentFiles)
     }
   }
   for (auto& key : key_list) {
-    int event_id = key.get_event_id();
-    int geo_location = key.get_geo_location();
-    if (event_id > 0 && (static_cast<int>(event_id)) <= events_to_generate &&
-        (static_cast<int>(geo_location)) < links_to_generate) // geo_location >= 0 &&
+    int trigger_number = key.get_trigger_number();
+    int element_number = key.get_element_number();
+    if (trigger_number > 0 && (static_cast<int>(trigger_number)) <= events_to_generate &&
+        (static_cast<int>(element_number)) < links_to_generate) // element_number >= 0 &&
     {
-      ++individual_key_count[event_id - 1][geo_location]; // NOLINT
+      ++individual_key_count[trigger_number - 1][element_number]; // NOLINT
     } else {
-      TLOG() << "Unexpected key found: event_id=" << event_id << ", geo_location=" << geo_location;
+      TLOG() << "Unexpected key found: trigger_number=" << trigger_number << ", element_number=" << element_number;
     }
   }
   int correctlyFoundKeyCount = 0;
@@ -110,7 +125,7 @@ BOOST_AUTO_TEST_CASE(GetKeysFromFragmentFiles)
       if (individual_key_count[edx][gdx] == 1) {
         ++correctlyFoundKeyCount;
       } else {
-        TLOG() << "Missing or duplicate key found:  event_id=" << (edx + 1) << ", geo_location=" << gdx
+        TLOG() << "Missing or duplicate key found:  trigger_number=" << (edx + 1) << ", element_number=" << gdx
                << ", count=" << individual_key_count[edx][gdx];
       }
     }
@@ -125,9 +140,10 @@ BOOST_AUTO_TEST_CASE(GetKeysFromFragmentFiles)
 BOOST_AUTO_TEST_CASE(GetKeysFromEventFiles)
 {
   std::string file_path(std::filesystem::temp_directory_path());
-  std::string file_prefix = "demo" + std::to_string(getpid());
+  std::string file_prefix = "demo2_" + std::to_string(getpid());
   const int events_to_generate = 5;
   const int links_to_generate = 3;
+  const int run_number = 100;
   constexpr int dummydata_size = 20;
 
   // delete any pre-existing files so that we start with a clean slate
@@ -135,31 +151,28 @@ BOOST_AUTO_TEST_CASE(GetKeysFromEventFiles)
   delete_files_matching_pattern(file_path, delete_pattern);
 
   // create the DataStore instance for writing
-  nlohmann::json conf;
-  conf["name"] = "tempWriter";
-  conf["filename_prefix"] = file_prefix;
-  conf["directory_path"] = file_path;
-  conf["mode"] = "one-event-per-file";
+  auto conf = make_config("tempWriter", file_path, file_prefix, "one-event-per-file");
   std::unique_ptr<HDF5DataStore> data_store_ptr(new HDF5DataStore(conf));
 
   // write several events, each with several fragments
   std::array<char, dummydata_size> dummy_data;
-  for (int event_id = 1; event_id <= events_to_generate; ++event_id) {
-    for (int geo_location = 0; geo_location < links_to_generate; ++geo_location) {
-      StorageKey key(event_id, StorageKey::s_invalid_detector_id, geo_location);
+  for (int trigger_number = 1; trigger_number <= events_to_generate; ++trigger_number) {
+    for (int element_number = 0; element_number < links_to_generate; ++element_number) {
+      StorageKey key(run_number,
+                     trigger_number,
+                     StorageKey::DataRecordGroupType::kTPC,
+                     StorageKey::s_invalid_region_number,
+                     element_number);
       KeyedDataBlock data_block(key);
-      data_block.unowned_data_start = static_cast<void*>(&dummy_data[0]);
-      data_block.data_size = dummydata_size;
+      data_block.m_unowned_data_start = static_cast<void*>(&dummy_data[0]);
+      data_block.m_data_size = dummydata_size;
       data_store_ptr->write(data_block);
     }
   }
   data_store_ptr.reset(); // explicit destruction
 
   // create a second DataStore instance to fetch the keys
-  conf["name"] = "hdfStore";
-  conf["filename_prefix"] = file_prefix;
-  conf["directory_path"] = file_path;
-  conf["mode"] = "one-event-per-file";
+  conf = make_config("hdfStore", file_path, file_prefix, "one-event-per-file");
   data_store_ptr.reset(new HDF5DataStore(conf));
 
   // fetch all of the keys that exist in the DataStore
@@ -174,14 +187,14 @@ BOOST_AUTO_TEST_CASE(GetKeysFromEventFiles)
     }
   }
   for (auto& key : key_list) {
-    int event_id = key.get_event_id();
-    int geo_location = key.get_geo_location();
-    if (event_id > 0 && (static_cast<int>(event_id)) <= events_to_generate &&
-        (static_cast<int>(geo_location)) < links_to_generate) // geo_location >= 0 &&
+    int trigger_number = key.get_trigger_number();
+    int element_number = key.get_element_number();
+    if (trigger_number > 0 && (static_cast<int>(trigger_number)) <= events_to_generate &&
+        (static_cast<int>(element_number)) < links_to_generate) // element_number >= 0 &&
     {
-      ++individual_key_count[event_id - 1][geo_location]; // NOLINT
+      ++individual_key_count[trigger_number - 1][element_number]; // NOLINT
     } else {
-      TLOG() << "Unexpected key found: event_id=" << event_id << ", geo_location=" << geo_location;
+      TLOG() << "Unexpected key found: trigger_number=" << trigger_number << ", element_number=" << element_number;
     }
   }
   int correctlyFoundKeyCount = 0;
@@ -190,7 +203,7 @@ BOOST_AUTO_TEST_CASE(GetKeysFromEventFiles)
       if (individual_key_count[edx][gdx] == 1) {
         ++correctlyFoundKeyCount;
       } else {
-        TLOG() << "Missing or duplicate key found:  event_id=" << (edx + 1) << ", geo_location=" << gdx
+        TLOG() << "Missing or duplicate key found:  trigger_number=" << (edx + 1) << ", element_number=" << gdx
                << ", count=" << individual_key_count[edx][gdx];
       }
     }
@@ -205,9 +218,10 @@ BOOST_AUTO_TEST_CASE(GetKeysFromEventFiles)
 BOOST_AUTO_TEST_CASE(GetKeysFromAllInOneFiles)
 {
   std::string file_path(std::filesystem::temp_directory_path());
-  std::string file_prefix = "demo" + std::to_string(getpid());
+  std::string file_prefix = "demo3_" + std::to_string(getpid());
   const int events_to_generate = 5;
   const int links_to_generate = 3;
+  const int run_number = 100;
   constexpr int dummydata_size = 20;
 
   // delete any pre-existing files so that we start with a clean slate
@@ -215,31 +229,28 @@ BOOST_AUTO_TEST_CASE(GetKeysFromAllInOneFiles)
   delete_files_matching_pattern(file_path, delete_pattern);
 
   // create the DataStore instance for writing
-  nlohmann::json conf;
-  conf["name"] = "tempWriter";
-  conf["filename_prefix"] = file_prefix;
-  conf["directory_path"] = file_path;
-  conf["mode"] = "all-per-file";
+  auto conf = make_config("tempWriter", file_path, file_prefix, "all-per-file");
   std::unique_ptr<HDF5DataStore> data_store_ptr(new HDF5DataStore(conf));
 
   // write several events, each with several fragments
   std::array<char, dummydata_size> dummy_data;
-  for (int event_id = 1; event_id <= events_to_generate; ++event_id) {
-    for (int geo_location = 0; geo_location < links_to_generate; ++geo_location) {
-      StorageKey key(event_id, StorageKey::s_invalid_detector_id, geo_location);
+  for (int trigger_number = 1; trigger_number <= events_to_generate; ++trigger_number) {
+    for (int element_number = 0; element_number < links_to_generate; ++element_number) {
+      StorageKey key(run_number,
+                     trigger_number,
+                     StorageKey::DataRecordGroupType::kTPC,
+                     StorageKey::s_invalid_region_number,
+                     element_number);
       KeyedDataBlock data_block(key);
-      data_block.unowned_data_start = static_cast<void*>(&dummy_data[0]);
-      data_block.data_size = dummydata_size;
+      data_block.m_unowned_data_start = static_cast<void*>(&dummy_data[0]);
+      data_block.m_data_size = dummydata_size;
       data_store_ptr->write(data_block);
     }
   }
   data_store_ptr.reset(); // explicit destruction
 
   // create a second DataStore instance to fetch the keys
-  conf["name"] = "hdfStore";
-  conf["filename_prefix"] = file_prefix;
-  conf["directory_path"] = file_path;
-  conf["mode"] = "all-per-file";
+  conf = make_config("tempWriter", file_path, file_prefix, "all-per-file");
   data_store_ptr.reset(new HDF5DataStore(conf));
 
   // fetch all of the keys that exist in the DataStore
@@ -254,14 +265,14 @@ BOOST_AUTO_TEST_CASE(GetKeysFromAllInOneFiles)
     }
   }
   for (auto& key : key_list) {
-    int event_id = key.get_event_id();
-    int geo_location = key.get_geo_location();
-    if (event_id > 0 && (static_cast<int>(event_id)) <= events_to_generate &&
-        (static_cast<int>(geo_location)) < links_to_generate) // geo_location >= 0 &&
+    int trigger_number = key.get_trigger_number();
+    int element_number = key.get_element_number();
+    if (trigger_number > 0 && (static_cast<int>(trigger_number)) <= events_to_generate &&
+        (static_cast<int>(element_number)) < links_to_generate) // element_number >= 0 &&
     {
-      ++individual_key_count[event_id - 1][geo_location]; // NOLINT
+      ++individual_key_count[trigger_number - 1][element_number]; // NOLINT
     } else {
-      TLOG() << "Unexpected key found: event_id=" << event_id << ", geo_location=" << geo_location;
+      TLOG() << "Unexpected key found: trigger_number=" << trigger_number << ", element_number=" << element_number;
     }
   }
   int correctlyFoundKeyCount = 0;
@@ -270,7 +281,7 @@ BOOST_AUTO_TEST_CASE(GetKeysFromAllInOneFiles)
       if (individual_key_count[edx][gdx] == 1) {
         ++correctlyFoundKeyCount;
       } else {
-        TLOG() << "Missing or duplicate key found:  event_id=" << (edx + 1) << ", geo_location=" << gdx
+        TLOG() << "Missing or duplicate key found:  trigger_number=" << (edx + 1) << ", element_number=" << gdx
                << ", count=" << individual_key_count[edx][gdx];
       }
     }
@@ -285,9 +296,10 @@ BOOST_AUTO_TEST_CASE(GetKeysFromAllInOneFiles)
 BOOST_AUTO_TEST_CASE(CheckCrossTalk)
 {
   std::string file_path(std::filesystem::temp_directory_path());
-  std::string file_prefix = "demo" + std::to_string(getpid());
+  std::string file_prefix = "demo4_" + std::to_string(getpid());
   const int events_to_generate = 5;
   const int links_to_generate = 3;
+  const int run_number = 100;
   constexpr int dummydata_size = 20;
   std::array<char, dummydata_size> dummy_data;
   std::unique_ptr<HDF5DataStore> data_store_ptr;
@@ -300,18 +312,18 @@ BOOST_AUTO_TEST_CASE(CheckCrossTalk)
   // ****************************************
   // * write some fragment-based-file data
   // ****************************************
-  nlohmann::json conf;
-  conf["name"] = "hdfDataStore";
-  conf["filename_prefix"] = file_prefix;
-  conf["directory_path"] = file_path;
-  conf["mode"] = "one-fragment-per-file";
+  auto conf = make_config("hdfDataStore", file_path, file_prefix, "one-fragment-per-file");
   data_store_ptr.reset(new HDF5DataStore(conf));
-  for (int event_id = 1; event_id <= events_to_generate; ++event_id) {
-    for (int geo_location = 0; geo_location < links_to_generate; ++geo_location) {
-      StorageKey key(event_id, StorageKey::s_invalid_detector_id, geo_location);
+  for (int trigger_number = 1; trigger_number <= events_to_generate; ++trigger_number) {
+    for (int element_number = 0; element_number < links_to_generate; ++element_number) {
+      StorageKey key(run_number,
+                     trigger_number,
+                     StorageKey::DataRecordGroupType::kTPC,
+                     StorageKey::s_invalid_region_number,
+                     element_number);
       KeyedDataBlock data_block(key);
-      data_block.unowned_data_start = static_cast<void*>(&dummy_data[0]);
-      data_block.data_size = dummydata_size;
+      data_block.m_unowned_data_start = static_cast<void*>(&dummy_data[0]);
+      data_block.m_data_size = dummydata_size;
       data_store_ptr->write(data_block);
     }
   }
@@ -320,17 +332,18 @@ BOOST_AUTO_TEST_CASE(CheckCrossTalk)
   // ****************************************
   // * write some event-based-file data
   // ****************************************
-  conf["name"] = "hdfDataStore";
-  conf["filename_prefix"] = file_prefix;
-  conf["directory_path"] = file_path;
-  conf["mode"] = "one-event-per-file";
+  conf = make_config("hdfDataStore", file_path, file_prefix, "one-event-per-file");
   data_store_ptr.reset(new HDF5DataStore(conf));
-  for (int event_id = 1; event_id <= events_to_generate; ++event_id) {
-    for (int geo_location = 0; geo_location < links_to_generate; ++geo_location) {
-      StorageKey key(event_id, StorageKey::s_invalid_detector_id, geo_location);
+  for (int trigger_number = 1; trigger_number <= events_to_generate; ++trigger_number) {
+    for (int element_number = 0; element_number < links_to_generate; ++element_number) {
+      StorageKey key(run_number,
+                     trigger_number,
+                     StorageKey::DataRecordGroupType::kTPC,
+                     StorageKey::s_invalid_region_number,
+                     element_number);
       KeyedDataBlock data_block(key);
-      data_block.unowned_data_start = static_cast<void*>(&dummy_data[0]);
-      data_block.data_size = dummydata_size;
+      data_block.m_unowned_data_start = static_cast<void*>(&dummy_data[0]);
+      data_block.m_data_size = dummydata_size;
       data_store_ptr->write(data_block);
     }
   }
@@ -339,17 +352,18 @@ BOOST_AUTO_TEST_CASE(CheckCrossTalk)
   // ****************************************
   // * write some single-file data
   // ****************************************
-  conf["name"] = "hdfDataStore";
-  conf["filename_prefix"] = file_prefix;
-  conf["directory_path"] = file_path;
-  conf["mode"] = "all-per-file";
+  conf = make_config("hdfDataStore", file_path, file_prefix, "all-per-file");
   data_store_ptr.reset(new HDF5DataStore(conf));
-  for (int event_id = 1; event_id <= events_to_generate; ++event_id) {
-    for (int geo_location = 0; geo_location < links_to_generate; ++geo_location) {
-      StorageKey key(event_id, StorageKey::s_invalid_detector_id, geo_location);
+  for (int trigger_number = 1; trigger_number <= events_to_generate; ++trigger_number) {
+    for (int element_number = 0; element_number < links_to_generate; ++element_number) {
+      StorageKey key(run_number,
+                     trigger_number,
+                     StorageKey::DataRecordGroupType::kTPC,
+                     StorageKey::s_invalid_region_number,
+                     element_number);
       KeyedDataBlock data_block(key);
-      data_block.unowned_data_start = static_cast<void*>(&dummy_data[0]);
-      data_block.data_size = dummydata_size;
+      data_block.m_unowned_data_start = static_cast<void*>(&dummy_data[0]);
+      data_block.m_data_size = dummydata_size;
       data_store_ptr->write(data_block);
     }
   }
@@ -358,10 +372,7 @@ BOOST_AUTO_TEST_CASE(CheckCrossTalk)
   // **************************************************
   // * check that fragment-based-file key lookup works
   // **************************************************
-  conf["name"] = "hdfDataStore";
-  conf["filename_prefix"] = file_prefix;
-  conf["directory_path"] = file_path;
-  conf["mode"] = "one-fragment-per-file";
+  conf = make_config("hdfDataStore", file_path, file_prefix, "one-fragment-per-file");
   data_store_ptr.reset(new HDF5DataStore(conf));
   key_list = data_store_ptr->get_all_existing_keys();
   BOOST_REQUIRE_EQUAL(key_list.size(), (events_to_generate * links_to_generate));
@@ -369,10 +380,7 @@ BOOST_AUTO_TEST_CASE(CheckCrossTalk)
   // **************************************************
   // * check that event-based-file key lookup works
   // **************************************************
-  conf["name"] = "hdfDataStore";
-  conf["filename_prefix"] = file_prefix;
-  conf["directory_path"] = file_path;
-  conf["mode"] = "one-event-per-file";
+  conf = make_config("hdfDataStore", file_path, file_prefix, "one-event-per-file");
   data_store_ptr.reset(new HDF5DataStore(conf));
   key_list = data_store_ptr->get_all_existing_keys();
   BOOST_REQUIRE_EQUAL(key_list.size(), (events_to_generate * links_to_generate));
@@ -380,10 +388,7 @@ BOOST_AUTO_TEST_CASE(CheckCrossTalk)
   // **************************************************
   // * check that single-file key lookup works
   // **************************************************
-  conf["name"] = "hdfDataStore";
-  conf["filename_prefix"] = file_prefix;
-  conf["directory_path"] = file_path;
-  conf["mode"] = "all-per-file";
+  conf = make_config("hdfDataStore", file_path, file_prefix, "all-per-file");
   data_store_ptr.reset(new HDF5DataStore(conf));
   key_list = data_store_ptr->get_all_existing_keys();
   BOOST_REQUIRE_EQUAL(key_list.size(), (events_to_generate * links_to_generate));
