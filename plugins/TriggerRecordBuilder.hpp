@@ -43,7 +43,8 @@ struct TriggerId
 
   TriggerId() = default;
 
-  explicit TriggerId(const dfmessages::TriggerDecision& td, dataformats::sequence_number_t s = 0)
+  explicit TriggerId(const dfmessages::TriggerDecision& td, 
+		     dataformats::sequence_number_t s = dataformats::TypeDefaults::s_invalid_sequence_number)
     : trigger_number(td.trigger_number)
     , sequence_number(s)
     , run_number(td.run_number)
