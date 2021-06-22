@@ -203,8 +203,7 @@ BOOST_AUTO_TEST_CASE(ReadSingleFile)
   config_params.filename_parameters.overall_prefix = file_prefix;
   hdf5datastore::data_t hdf5ds_json;
   hdf5datastore::to_json(hdf5ds_json, config_params);
-  std::unique_ptr<DataStore> data_store_ptr;
-  data_store_ptr = make_data_store(hdf5ds_json);
+  std::unique_ptr<DataStore> data_store_ptr = make_data_store(hdf5ds_json);
 
   int initialized_checksum = 0;
   // write several events, each with several fragments
@@ -235,8 +234,7 @@ BOOST_AUTO_TEST_CASE(ReadSingleFile)
   config_params.mode = "all-per-file";
   config_params.filename_parameters.overall_prefix = file_prefix;
   hdf5datastore::to_json(hdf5ds_json, config_params);
-  std::unique_ptr<DataStore> data_store_ptr2;
-  data_store_ptr2 = make_data_store(hdf5ds_json);
+  std::unique_ptr<DataStore> data_store_ptr2 = make_data_store(hdf5ds_json);
 
   // loop over all of the keys to read in the data
   for (size_t kdx = 0; kdx < key_list.size(); ++kdx) {
