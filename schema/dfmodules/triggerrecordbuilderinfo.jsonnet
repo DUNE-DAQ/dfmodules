@@ -14,6 +14,7 @@ local info = {
        s.field("fragments", self.uint8, 0, doc="Number of fragments in the book"), 
        s.field("timed_out_trigger_records", self.uint8, 0, doc="Number of timed out triggers in the run"),
        s.field("sleep_counter", self.uint8, 0, doc="Number times the loop goes to sleep"),
+       s.field("loop_counter", self.uint8, 0, doc="Number times the loop is executed"),
        s.field("average_millisecond_per_trigger", self.ratio, -1, doc="Average time (ms) for a trigger record to be completed")
    ], doc="Trigger Record builder information")
 };

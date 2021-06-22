@@ -125,6 +125,7 @@ TriggerRecordBuilder::get_info(opmonlib::InfoCollector& ci, int /*level*/)
   i.fragments = m_fragment_counter.load();
   i.timed_out_trigger_records = m_timed_out_trigger_records.load() ;
   i.sleep_counter = m_sleep_counter.exchange( 0 ) ;
+  i.loop_counter = m_loop_counter.exchange( 0 ) ;
 
   auto time = m_trigger_record_time.exchange( 0. ) ;
   auto n_triggers = m_completed_trigger_records.exchange( 0 ) ;
@@ -213,6 +214,7 @@ TriggerRecordBuilder::do_work(std::atomic<bool>& running_flag)
   while (running_flag.load() || book_updates) {
 
     book_updates = false;
+    ++ m_loop_counter ;
 
     // read decision requests
     while (decision_source.can_pop()) {
