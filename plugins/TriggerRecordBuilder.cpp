@@ -23,6 +23,7 @@
 #include <thread>
 #include <utility>
 #include <vector>
+#include <limits>
 
 /**
  * @brief TRACE debug levels used in this source file
@@ -155,6 +156,8 @@ TriggerRecordBuilder::do_conf(const data_t& payload)
 
   m_max_time_difference = parsed_conf.max_timestamp_diff;
 
+  m_max_time_window = parsed_conf.max_time_window;
+
   m_queue_timeout = std::chrono::milliseconds(parsed_conf.general_queue_timeout);
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
@@ -234,7 +237,7 @@ TriggerRecordBuilder::do_work(std::atomic<bool>& running_flag)
         ers::error(DuplicatedTriggerDecision(ERS_HERE, temp_id));
       }
 
-      // create trigger record
+      // create trigger records
       trigger_record_ptr_t& trp = m_trigger_records[temp_id];
       trp.reset(new dataformats::TriggerRecord(temp_dec.components));
       dataformats::TriggerRecord& tr = *trp;
@@ -429,6 +432,70 @@ TriggerRecordBuilder::extract_trigger_record(const TriggerId& id)
 
   return temp;
 }
+
+unsigned int 
+TriggerRecordBuilder::create_trigger_records_and_dispatch( const dfmessages::TriggerDecision& td,
+							   datareqsinkmap_t& sinks,
+							   std::atomic<bool>& running ) {
+
+  // check the whole time window
+  dataformat::timestamp_t begin = std::numeric_limits<dataformat::timestamp_t>::max();
+  dataformat::timestamp_t end   = 0;
+
+  for ( const auto & component : td.components ) {
+    if ( component.window_begin < begin ) 
+      begin = component.window_begin ;
+    if ( component.window_end > end ) 
+      end = component.window_end ; 
+  }
+  
+  dataformat::timestamp_diff_t tot_width = end - begin ;
+  dataformat::sequence_number_t max_sequence_number = tot_width / m_max_time_window ;
+
+  for (  dataformat::sequence_number_t sequence = 0 ; 
+	 sequence <= max_sequence_number ; 
+	 ++ sequence ) {
+
+    // create the book entry
+    TriggerId temp_id(temp_dec, sequence);
+
+    // create the components cropped in time
+
+    // create the trigger record
+
+    // create the requests
+
+    // send the requests
+
+  }
+
+
+  auto it = m_trigger_records.find(temp_id);
+  if (it != m_trigger_records.end()) {
+    ers::error(DuplicatedTriggerDecision(ERS_HERE, temp_id));
+  }
+
+  // create trigger records
+  trigger_record_ptr_t& trp = m_trigger_records[temp_id];
+  trp.reset(new dataformats::TriggerRecord(temp_dec.components));
+  dataformats::TriggerRecord& tr = *trp;
+
+  tr.get_header_ref().set_trigger_number(temp_dec.trigger_number);
+  tr.get_header_ref().set_sequence_number(temp_id.sequence_number);
+  tr.get_header_ref().set_run_number(temp_dec.run_number);
+  tr.get_header_ref().set_trigger_timestamp(temp_dec.trigger_timestamp);
+  tr.get_header_ref().set_trigger_type(temp_dec.trigger_type);
+
+  m_trigger_decisions_counter++;
+
+  book_updates = true;
+
+  // dispatch requests
+  dispatch_data_requests(temp_dec, request_sinks, running_flag);
+  
+
+}
+
 
 bool
 TriggerRecordBuilder::dispatch_data_requests(const dfmessages::TriggerDecision& td,

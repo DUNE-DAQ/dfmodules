@@ -182,6 +182,9 @@ protected:
   // build_trigger_record will allocate memory and then orphan it to the caller via the returned pointer
   // Plese note that the method will destroy the memory saved in the bookkeeping map
 
+  unsigned int create_trigger_records_and_dispatch( const dfmessages::TriggerDecision&, 
+						    datareqsinkmap_t&, 
+						    std::atomic<bool>& running ) ;
   bool dispatch_data_requests(const dfmessages::TriggerDecision&, datareqsinkmap_t&, std::atomic<bool>& running) const;
 
   bool send_trigger_record(const TriggerId&, trigger_record_sink_t&, std::atomic<bool>& running);
@@ -213,6 +216,9 @@ private:
 
   // bookeeping
   std::map<TriggerId, trigger_record_ptr_t> m_trigger_records;
+
+  // Data request properties
+  dataformats::timestamp_diff_t m_max_time_window ;
 
   // book related metrics
   using metric_counter_type = decltype(triggerrecordbuilderinfo::Info::trigger_decisions);

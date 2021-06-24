@@ -29,7 +29,9 @@ local types = {
                                    s.field("general_queue_timeout", self.queue_timeout, 100, 
                                            doc="General indication for timeout"),
                                    s.field("max_timestamp_diff", self.timestamp_diff, 50000000, 
-                                           doc="General indication for timeout to throw errors")
+                                           doc="General indication for timeout to throw errors"),
+                                   s.field("max_time_window", self.timestamp_diff, 250000, 
+                                           doc="Maximum time window size for Data requests")
                                   ] , 
                    doc="TriggerRecordBuilder configuration")
 
