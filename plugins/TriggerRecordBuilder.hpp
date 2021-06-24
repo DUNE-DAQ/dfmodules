@@ -185,7 +185,8 @@ protected:
   unsigned int create_trigger_records_and_dispatch( const dfmessages::TriggerDecision&, 
 						    datareqsinkmap_t&, 
 						    std::atomic<bool>& running ) ;
-  bool dispatch_data_requests(const dfmessages::TriggerDecision&, datareqsinkmap_t&, std::atomic<bool>& running) const;
+  bool dispatch_data_requests(const dfmessages::DataRequest&, const dataformats::GeoID &,
+			      dfdatareqsinkmap_t&, std::atomic<bool>& running) const;
 
   bool send_trigger_record(const TriggerId&, trigger_record_sink_t&, std::atomic<bool>& running);
   // this creates a trigger record and send it

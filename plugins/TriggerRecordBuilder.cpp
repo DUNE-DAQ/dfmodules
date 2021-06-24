@@ -229,36 +229,12 @@ TriggerRecordBuilder::do_work(std::atomic<bool>& running_flag)
 
       m_current_time = temp_dec.trigger_timestamp;
 
-      // create the book entry
-      TriggerId temp_id(temp_dec);
-
-      auto it = m_trigger_records.find(temp_id);
-      if (it != m_trigger_records.end()) {
-        ers::error(DuplicatedTriggerDecision(ERS_HERE, temp_id));
-      }
-
-      // create trigger records
-      trigger_record_ptr_t& trp = m_trigger_records[temp_id];
-      trp.reset(new dataformats::TriggerRecord(temp_dec.components));
-      dataformats::TriggerRecord& tr = *trp;
-
-      tr.get_header_ref().set_trigger_number(temp_dec.trigger_number);
-      tr.get_header_ref().set_sequence_number(temp_id.sequence_number);
-      tr.get_header_ref().set_run_number(temp_dec.run_number);
-      tr.get_header_ref().set_trigger_timestamp(temp_dec.trigger_timestamp);
-      tr.get_header_ref().set_trigger_type(temp_dec.trigger_type);
-
-      m_trigger_decisions_counter++;
-
-      book_updates = true;
-
-      // dispatch requests
-      dispatch_data_requests(temp_dec, request_sinks, running_flag);
-
+      book_updates = create_trigger_records_and_dispatch( temp_dec, request_sinks, running_flag) > 0 ;
+      
       break;
-
+      
     } // while loop, so that we can pop a trigger decision
-
+    
     // read the fragments queues
     book_updates |= read_fragments(frag_sources);
 
@@ -438,6 +414,8 @@ TriggerRecordBuilder::create_trigger_records_and_dispatch( const dfmessages::Tri
 							   datareqsinkmap_t& sinks,
 							   std::atomic<bool>& running ) {
 
+  unsigned int new_tr_counter = 0 ;
+
   // check the whole time window
   dataformat::timestamp_t begin = std::numeric_limits<dataformat::timestamp_t>::max();
   dataformat::timestamp_t end   = 0;
@@ -452,48 +430,88 @@ TriggerRecordBuilder::create_trigger_records_and_dispatch( const dfmessages::Tri
   dataformat::timestamp_diff_t tot_width = end - begin ;
   dataformat::sequence_number_t max_sequence_number = tot_width / m_max_time_window ;
 
-  for (  dataformat::sequence_number_t sequence = 0 ; 
-	 sequence <= max_sequence_number ; 
-	 ++ sequence ) {
+  for ( dataformat::sequence_number_t sequence = 0 ; 
+	sequence <= max_sequence_number ; 
+	++ sequence ) {
 
-    // create the book entry
-    TriggerId temp_id(temp_dec, sequence);
-
+    dataformat::timestamp_t slice_begin = begin + sequence*m_max_time_window ; 
+    dataformat::timestamp_t slice_end   = std::min( slice_begin + m_max_time_window, end ) ; 
+    
     // create the components cropped in time
+    decltype( td.components ) slice_components;
+    for ( const auto & component : td.components ) {
 
-    // create the trigger record
+      if ( component.window_begin >= slice_end ) continue ;
+      if ( component.window_end <= slice_begin ) continue ;
+      
+      dataformat::timestamp_t new_begin = std::max( slice_begin, component.window_begin ) ;
+      dataformat::timestamp_t new_end   = std::min( slice_end, component.window_end ) ;
+      if ( new_end < component.window_end ) --new_end ;
 
-    // create the requests
+      dataformats::ComponentRequest temp( component.component, new_begin, new_end ) ;
+      slice_components.push_back( temp ) ;
+      
+    }  // loop over component in trigger decision
 
-    // send the requests
 
-  }
+    if ( slice_components.empty() ) continue ;
+    
+    // create the book entry
+    TriggerId slice_id(td, sequence);
+
+    auto it = m_trigger_records.find(slice_id);
+    if (it != m_trigger_records.end()) {
+      ers::error(DuplicatedTriggerDecision(ERS_HERE, slice_id));
+      continue ;
+    }
+
+    // create trigger record for the slice
+    trigger_record_ptr_t& trp = m_trigger_records[slice_id];
+    trp.reset(new dataformats::TriggerRecord(slice_components));
+    dataformats::TriggerRecord& tr = *trp;
+
+    tr.get_header_ref().set_trigger_number(td.trigger_number);
+    tr.get_header_ref().set_sequence_number(sequence);
+    tr.get_header_ref().set_max_sequence_number(max_sequence_number);
+    tr.get_header_ref().set_run_number(td.run_number);
+    tr.get_header_ref().set_trigger_timestamp(td.trigger_timestamp);
+    tr.get_header_ref().set_trigger_type(td.trigger_type);
+
+    m_trigger_decisions_counter++;
+    ++ new_tr_counter ;
+
+    
+    // create and send the requests 
+    TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Trigger Decision components: " << td.components.size();
+
+    for ( const auto & component : slice_components ) {
+
+      dfmessages::DataRequest dataReq;
+      dataReq.trigger_number = td.trigger_number;
+      dataReq.sequence_number = sequence;
+      dataReq.run_number = td.run_number;
+      dataReq.trigger_timestamp = td.trigger_timestamp;
+      dataReq.readout_type = td.readout_type;
+      dataReq.window_begin = component.window_begin;
+      dataReq.window_end = component.window_end;
 
 
-  auto it = m_trigger_records.find(temp_id);
-  if (it != m_trigger_records.end()) {
-    ers::error(DuplicatedTriggerDecision(ERS_HERE, temp_id));
-  }
 
-  // create trigger records
-  trigger_record_ptr_t& trp = m_trigger_records[temp_id];
-  trp.reset(new dataformats::TriggerRecord(temp_dec.components));
-  dataformats::TriggerRecord& tr = *trp;
+      dispatch_data_requests( dataReq, component.component, 
+			      request_sinks, running_flag);
 
-  tr.get_header_ref().set_trigger_number(temp_dec.trigger_number);
-  tr.get_header_ref().set_sequence_number(temp_id.sequence_number);
-  tr.get_header_ref().set_run_number(temp_dec.run_number);
-  tr.get_header_ref().set_trigger_timestamp(temp_dec.trigger_timestamp);
-  tr.get_header_ref().set_trigger_type(temp_dec.trigger_type);
 
-  m_trigger_decisions_counter++;
+      TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": trig_number " << dataReq.trigger_number << ": run_number "
+				  << dataReq.run_number << ": trig_timestamp " << dataReq.trigger_timestamp;
 
-  book_updates = true;
+      TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": GeoID " << req_geoid << ": window_begin " << comp_req.window_begin
+                                << ": window_end " << comp_req.window_end;
 
-  // dispatch requests
-  dispatch_data_requests(temp_dec, request_sinks, running_flag);
+    } // loop loop over component in the slice
+
+  } // sequence loop 
   
-
+  return new_tr_counter ;
 }
 
 
