@@ -35,6 +35,7 @@
 
 namespace dunedaq {
 
+// Disable coverage checking LCOV_EXCL_START
 /**
  * @brief A ERS Issue to report an HDF5 exception
  */
@@ -93,6 +94,7 @@ ERS_DECLARE_ISSUE_BASE(dfmodules,
                        ((std::string)name),
                        ERS_EMPTY)
 
+// Re-enable coverage checking LCOV_EXCL_STOP
 namespace dfmodules {
 
 /**

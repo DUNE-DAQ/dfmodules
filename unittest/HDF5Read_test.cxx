@@ -187,7 +187,6 @@ BOOST_AUTO_TEST_CASE(ReadSingleFile)
   constexpr int dummydata_size = 7;
   const int run_number = 52;
   const int trigger_count = 5;
-  const std::string detector_name = "TPC";
   const int apa_count = 3;
   const int link_count = 1;
 
@@ -204,8 +203,7 @@ BOOST_AUTO_TEST_CASE(ReadSingleFile)
   config_params.filename_parameters.overall_prefix = file_prefix;
   hdf5datastore::data_t hdf5ds_json;
   hdf5datastore::to_json(hdf5ds_json, config_params);
-  std::unique_ptr<DataStore> data_store_ptr;
-  data_store_ptr = make_data_store(hdf5ds_json);
+  std::unique_ptr<DataStore> data_store_ptr = make_data_store(hdf5ds_json);
 
   int initialized_checksum = 0;
   // write several events, each with several fragments
@@ -219,7 +217,7 @@ BOOST_AUTO_TEST_CASE(ReadSingleFile)
   for (int trigger_number = 1; trigger_number <= trigger_count; ++trigger_number) {
     for (int apa_number = 1; apa_number <= apa_count; ++apa_number) {
       for (int link_number = 1; link_number <= link_count; ++link_number) {
-        StorageKey key(run_number, trigger_number, detector_name, apa_number, link_number);
+        StorageKey key(run_number, trigger_number, StorageKey::DataRecordGroupType::kTPC, apa_number, link_number);
         KeyedDataBlock data_block(key);
         data_block.m_unowned_data_start = static_cast<void*>(&dummy_data[0]);
         data_block.m_data_size = dummydata_size;
@@ -236,8 +234,7 @@ BOOST_AUTO_TEST_CASE(ReadSingleFile)
   config_params.mode = "all-per-file";
   config_params.filename_parameters.overall_prefix = file_prefix;
   hdf5datastore::to_json(hdf5ds_json, config_params);
-  std::unique_ptr<DataStore> data_store_ptr2;
-  data_store_ptr2 = make_data_store(hdf5ds_json);
+  std::unique_ptr<DataStore> data_store_ptr2 = make_data_store(hdf5ds_json);
 
   // loop over all of the keys to read in the data
   for (size_t kdx = 0; kdx < key_list.size(); ++kdx) {
