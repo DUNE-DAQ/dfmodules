@@ -417,8 +417,8 @@ TriggerRecordBuilder::create_trigger_records_and_dispatch( const dfmessages::Tri
   unsigned int new_tr_counter = 0 ;
 
   // check the whole time window
-  dataformat::timestamp_t begin = std::numeric_limits<dataformat::timestamp_t>::max();
-  dataformat::timestamp_t end   = 0;
+  dataformats::timestamp_t begin = std::numeric_limits<dataformats::timestamp_t>::max();
+  dataformats::timestamp_t end   = 0;
 
   for ( const auto & component : td.components ) {
     if ( component.window_begin < begin ) 
@@ -427,15 +427,20 @@ TriggerRecordBuilder::create_trigger_records_and_dispatch( const dfmessages::Tri
       end = component.window_end ; 
   }
   
-  dataformat::timestamp_diff_t tot_width = end - begin ;
-  dataformat::sequence_number_t max_sequence_number = tot_width / m_max_time_window ;
+  dataformats::timestamp_diff_t tot_width = end - begin ;
+  dataformats::sequence_number_t max_sequence_number = tot_width / m_max_time_window ;
 
-  for ( dataformat::sequence_number_t sequence = 0 ; 
+  TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": trig_number " << td.trigger_number << ": run_number "
+			      << td.run_number << ": trig_timestamp " << td.trigger_timestamp 
+			      << " will have " << max_sequence_number + 1 << " sequences";
+
+
+  for ( dataformats::sequence_number_t sequence = 0 ; 
 	sequence <= max_sequence_number ; 
 	++ sequence ) {
 
-    dataformat::timestamp_t slice_begin = begin + sequence*m_max_time_window ; 
-    dataformat::timestamp_t slice_end   = std::min( slice_begin + m_max_time_window, end ) ; 
+    dataformats::timestamp_t slice_begin = begin + sequence*m_max_time_window ; 
+    dataformats::timestamp_t slice_end   = std::min( slice_begin + m_max_time_window, end ) ; 
     
     // create the components cropped in time
     decltype( td.components ) slice_components;
@@ -444,8 +449,8 @@ TriggerRecordBuilder::create_trigger_records_and_dispatch( const dfmessages::Tri
       if ( component.window_begin >= slice_end ) continue ;
       if ( component.window_end <= slice_begin ) continue ;
       
-      dataformat::timestamp_t new_begin = std::max( slice_begin, component.window_begin ) ;
-      dataformat::timestamp_t new_end   = std::min( slice_end, component.window_end ) ;
+      dataformats::timestamp_t new_begin = std::max( slice_begin, component.window_begin ) ;
+      dataformats::timestamp_t new_end   = std::min( slice_end, component.window_end ) ;
       if ( new_end < component.window_end ) --new_end ;
 
       dataformats::ComponentRequest temp( component.component, new_begin, new_end ) ;
@@ -454,7 +459,7 @@ TriggerRecordBuilder::create_trigger_records_and_dispatch( const dfmessages::Tri
     }  // loop over component in trigger decision
 
 
-    if ( slice_components.empty() ) continue ;
+    // if ( slice_components.empty() ) continue ;  MR: I would like to discuss this line with Kurt at least
     
     // create the book entry
     TriggerId slice_id(td, sequence);
@@ -495,18 +500,16 @@ TriggerRecordBuilder::create_trigger_records_and_dispatch( const dfmessages::Tri
       dataReq.window_begin = component.window_begin;
       dataReq.window_end = component.window_end;
 
+      TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": TR " << slice_id 
+				  << ": trig_timestamp " << dataReq.trigger_timestamp 
+				  << ": GeoID " << component.component
+				  << ": window [" << dataReq.window_begin
+				  << ", " << dataReq.window_end << ']';
 
 
-      dispatch_data_requests( dataReq, component.component, 
-			      request_sinks, running_flag);
+      dispatch_data_requests( dataReq, component.component, sinks, running);
 
-
-      TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": trig_number " << dataReq.trigger_number << ": run_number "
-				  << dataReq.run_number << ": trig_timestamp " << dataReq.trigger_timestamp;
-
-      TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": GeoID " << req_geoid << ": window_begin " << comp_req.window_begin
-                                << ": window_end " << comp_req.window_end;
-
+      
     } // loop loop over component in the slice
 
   } // sequence loop 
@@ -516,74 +519,45 @@ TriggerRecordBuilder::create_trigger_records_and_dispatch( const dfmessages::Tri
 
 
 bool
-TriggerRecordBuilder::dispatch_data_requests(const dfmessages::TriggerDecision& td,
-                                             datareqsinkmap_t& sinks,
-                                             std::atomic<bool>& running) const
+TriggerRecordBuilder::dispatch_data_requests(const dfmessages::DataRequest& dr, 
+					     const dataformats::GeoID & geo,
+					     datareqsinkmap_t& sinks, std::atomic<bool>& running) const
+
 {
 
-  //-----------------------------------------
-  // Loop over trigger decision components
-  // Spawn each component_data_request to the corresponding link_data_handler_queue
-  //----------------------------------------
-
-  TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Trigger Decision components: " << td.components.size();
-
-  bool sent_something = false;
-
-  for (auto it = td.components.begin(); it != td.components.end(); it++) {
-
-    dfmessages::DataRequest dataReq;
-    dataReq.trigger_number = td.trigger_number;
-    dataReq.run_number = td.run_number;
-    dataReq.trigger_timestamp = td.trigger_timestamp;
-    dataReq.readout_type = td.readout_type;
-
-    TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": trig_number " << dataReq.trigger_number << ": run_number "
-                                << dataReq.run_number << ": trig_timestamp " << dataReq.trigger_timestamp;
-
-    const dataformats::ComponentRequest& comp_req = *it;
-    const dataformats::GeoID& req_geoid = comp_req.component;
-    dataReq.window_begin = comp_req.window_begin;
-    dataReq.window_end = comp_req.window_end;
-
-    TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": GeoID " << req_geoid << ": window_begin " << comp_req.window_begin
-                                << ": window_end " << comp_req.window_end;
-
-    // find the queue for geoid_req in the map
-    auto it_req = sinks.find(req_geoid);
-    if (it_req == sinks.end()) {
-      // if geoid request is not valid. then trhow error and continue
-      ers::error(dunedaq::dfmodules::UnknownGeoID(ERS_HERE, req_geoid));
-      continue;
+  // find the queue for geoid_req in the map
+  auto it_req = sinks.find(geo);
+  if (it_req == sinks.end()) {
+    // if geoid request is not valid. then trhow error and continue
+    ers::error(dunedaq::dfmodules::UnknownGeoID(ERS_HERE, geo));
+    return false ;
+  }
+  
+  // get the queue from map element
+  auto& queue = it_req->second;
+  
+  bool wasSentSuccessfully = false;
+  do {
+    TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Pushing the DataRequest from trigger number "
+				<< dr.trigger_number << " onto output queue :" << queue->get_name();
+    
+    // push data request into the corresponding queue
+    try {
+      queue->push(dr, m_queue_timeout);
+      wasSentSuccessfully = true;
+    } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
+      std::ostringstream oss_warn;
+      oss_warn << "push to output queue \"" << queue->get_name() << "\"";
+      ers::warning(dunedaq::appfwk::QueueTimeoutExpired(
+							ERS_HERE,
+							get_name(),
+							oss_warn.str(),
+							std::chrono::duration_cast<std::chrono::milliseconds>(m_queue_timeout).count()));
     }
+  } while (!wasSentSuccessfully && running.load());
 
-    // get the queue from map element
-    auto& queue = it_req->second;
 
-    bool wasSentSuccessfully = false;
-    do {
-      TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Pushing the DataRequest from trigger number "
-                                  << dataReq.trigger_number << " onto output queue :" << queue->get_name();
-
-      // push data request into the corresponding queue
-      try {
-        queue->push(dataReq, m_queue_timeout);
-        wasSentSuccessfully = true;
-      } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
-        std::ostringstream oss_warn;
-        oss_warn << "push to output queue \"" << queue->get_name() << "\"";
-        ers::warning(dunedaq::appfwk::QueueTimeoutExpired(
-          ERS_HERE,
-          get_name(),
-          oss_warn.str(),
-          std::chrono::duration_cast<std::chrono::milliseconds>(m_queue_timeout).count()));
-      }
-    } while (!wasSentSuccessfully && running.load());
-
-    sent_something |= wasSentSuccessfully;
-  } // loop over trigger decision components
-
-  return sent_something;
+  return wasSentSuccessfully;
 }
 
 bool
