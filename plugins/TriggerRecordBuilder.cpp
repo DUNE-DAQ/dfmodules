@@ -125,6 +125,9 @@ TriggerRecordBuilder::get_info(opmonlib::InfoCollector& ci, int /*level*/)
   i.trigger_decisions = m_trigger_decisions_counter.load();
   i.fragments = m_fragment_counter.load();
   i.timed_out_trigger_records = m_timed_out_trigger_records.load() ;
+  i.deleted_fragments = m_deleted_fragments.load();
+  i.deleted_requests = m_deleted_requests.load();
+  i.duplicated_trigger_ids = m_duplicated_trigger_ids.load();
   i.sleep_counter = m_sleep_counter.exchange( 0 ) ;
   i.loop_counter = m_loop_counter.exchange( 0 ) ;
 
@@ -161,12 +164,16 @@ TriggerRecordBuilder::do_conf(const data_t& payload)
   }
 
   m_trigger_timeout = duration_type(parsed_conf.trigger_record_timeout);
-
+  
   m_loop_sleep = m_queue_timeout = std::chrono::milliseconds(parsed_conf.general_queue_timeout);
 
   if ( m_map_geoid_queues.size() > 1 ) {
-    m_loop_sleep /= ( 1 + log2( m_map_geoid_queues.size() ) ) ;
+    m_loop_sleep /= (2. + log2( m_map_geoid_queues.size()));
   }
+
+  TLOG() << get_name() 
+	 << ": timeouts (ms): queue = " << m_queue_timeout.count() 
+	 << ", loop = " << m_loop_sleep.count() ;
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
 }
@@ -199,7 +206,10 @@ TriggerRecordBuilder::do_work(std::atomic<bool>& running_flag)
   m_trigger_records.clear();
   m_trigger_decisions_counter.store(0);
   m_fragment_counter.store(0);
-  m_timed_out_trigger_records.store(0) ;
+  m_timed_out_trigger_records.store(0);
+  m_deleted_fragments.store(0);
+  m_deleted_requests.store(0);
+  m_duplicated_trigger_ids.store(0);
 
   // allocate queues
   trigger_decision_source_t decision_source(m_trigger_decision_source_name);
@@ -239,7 +249,8 @@ TriggerRecordBuilder::do_work(std::atomic<bool>& running_flag)
 
       auto it = m_trigger_records.find(temp_id);
       if (it != m_trigger_records.end()) {
-        ers::error(DuplicatedTriggerDecision(ERS_HERE, temp_id));
+	ers::error(DuplicatedTriggerDecision(ERS_HERE, temp_id));
+	++ m_duplicated_trigger_ids;
       }
 
       // create trigger record
@@ -412,7 +423,8 @@ TriggerRecordBuilder::read_fragments(fragment_sources_t& frag_sources, bool drai
           ++m_fragment_counter;
         } else {
           ers::error(UnexpectedFragment(
-            ERS_HERE, temp_id, temp_fragment->get_fragment_type_code(), temp_fragment->get_element_id()));
+					ERS_HERE, temp_id, temp_fragment->get_fragment_type_code(), temp_fragment->get_element_id()));
+	  ++ m_deleted_fragments;
         }
 
       } // if we can pop
@@ -492,6 +504,7 @@ TriggerRecordBuilder::dispatch_data_requests(const dfmessages::TriggerDecision& 
     if (it_req == sinks.end()) {
       // if geoid request is not valid. then trhow error and continue
       ers::error(dunedaq::dfmodules::UnknownGeoID(ERS_HERE, req_geoid));
+      ++ m_deleted_requests;
       continue;
     }
 
