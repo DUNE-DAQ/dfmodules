@@ -122,8 +122,8 @@ TriggerRecordBuilder::get_info(opmonlib::InfoCollector& ci, int /*level*/)
 
   triggerrecordbuilderinfo::Info i;
 
-  i.trigger_decisions = m_trigger_decisions_counter.load();
-  i.fragments = m_fragment_counter.load();
+  i.pending_trigger_decisions = m_trigger_decisions_counter.load();
+  i.fragments_in_the_book = m_fragment_counter.load();
   i.timed_out_trigger_records = m_timed_out_trigger_records.load() ;
   i.deleted_fragments = m_deleted_fragments.load();
   i.deleted_requests = m_deleted_requests.load();
@@ -460,6 +460,9 @@ TriggerRecordBuilder::extract_trigger_record(const TriggerId& id)
 
   if (temp->get_fragments_ref().size() < temp->get_header_ref().get_num_requested_components()) {
     temp->get_header_ref().set_error_bit(TriggerRecordErrorBits::kIncomplete, true);
+    TLOG() << get_name() << " sending incomplete TriggerRecord downstream at Stop time "
+	   << "(trigger/run_number=" << id << ", " << temp->get_fragments_ref().size() << " of "
+	   << temp->get_header_ref().get_num_requested_components() << " fragments included)";
   }
 
   return temp;
@@ -545,12 +548,6 @@ TriggerRecordBuilder::send_trigger_record(const TriggerId& id, trigger_record_si
 
   bool wasSentSuccessfully = false;
   while (!wasSentSuccessfully) {
-    if (!running.load() &&
-        (temp_record->get_fragments_ref().size() < temp_record->get_header_ref().get_num_requested_components())) {
-      TLOG() << get_name() << " sending incomplete TriggerRecord downstream at Stop time "
-             << "(trigger/run_number=" << id << ", " << temp_record->get_fragments_ref().size() << " of "
-             << temp_record->get_header_ref().get_num_requested_components() << " fragments included)";
-    }
     try {
       sink.push(std::move(temp_record), m_queue_timeout);
       wasSentSuccessfully = true;

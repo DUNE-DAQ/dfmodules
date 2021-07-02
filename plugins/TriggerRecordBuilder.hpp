@@ -214,7 +214,7 @@ private:
   std::map<TriggerId, std::pair<clock_type::time_point, trigger_record_ptr_t> > m_trigger_records;
 
   // book related metrics
-  using metric_counter_type = decltype(triggerrecordbuilderinfo::Info::trigger_decisions);
+  using metric_counter_type = decltype(triggerrecordbuilderinfo::Info::pending_trigger_decisions);
   using metric_ratio_type = decltype(triggerrecordbuilderinfo::Info::average_millisecond_per_trigger);
   mutable std::atomic<metric_counter_type> m_trigger_decisions_counter = { 0 };  // currently
   mutable std::atomic<metric_counter_type> m_fragment_counter = { 0 };           // currently
