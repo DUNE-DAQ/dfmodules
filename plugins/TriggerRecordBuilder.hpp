@@ -218,6 +218,8 @@ private:
   using metric_ratio_type = decltype(triggerrecordbuilderinfo::Info::average_millisecond_per_trigger);
   mutable std::atomic<metric_counter_type> m_trigger_decisions_counter = { 0 };  // currently
   mutable std::atomic<metric_counter_type> m_fragment_counter = { 0 };           // currently
+  mutable std::atomic<metric_counter_type> m_pending_fragment_counter = { 0 };   // currently
+
 
   mutable std::atomic<metric_counter_type> m_timed_out_trigger_records = { 0 };  // in the run
   mutable std::atomic<metric_counter_type> m_deleted_fragments = { 0 };          // in the run

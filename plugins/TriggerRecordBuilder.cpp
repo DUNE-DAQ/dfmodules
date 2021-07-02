@@ -124,6 +124,7 @@ TriggerRecordBuilder::get_info(opmonlib::InfoCollector& ci, int /*level*/)
 
   i.pending_trigger_decisions = m_trigger_decisions_counter.load();
   i.fragments_in_the_book = m_fragment_counter.load();
+  i.pending_fragments = m_pending_fragment_counter.load();
   i.timed_out_trigger_records = m_timed_out_trigger_records.load() ;
   i.deleted_fragments = m_deleted_fragments.load();
   i.deleted_requests = m_deleted_requests.load();
@@ -205,6 +206,7 @@ TriggerRecordBuilder::do_work(std::atomic<bool>& running_flag)
   // clean books from possible previous memory
   m_trigger_records.clear();
   m_trigger_decisions_counter.store(0);
+  m_pending_fragment_counter.store(0);
   m_fragment_counter.store(0);
   m_timed_out_trigger_records.store(0);
   m_deleted_fragments.store(0);
@@ -265,6 +267,7 @@ TriggerRecordBuilder::do_work(std::atomic<bool>& running_flag)
       tr.get_header_ref().set_trigger_type(temp_dec.trigger_type);
 
       m_trigger_decisions_counter++;
+      m_pending_fragment_counter += temp_dec.components.size() ;
 
       book_updates = true;
 
@@ -421,6 +424,7 @@ TriggerRecordBuilder::read_fragments(fragment_sources_t& frag_sources, bool drai
         if (requested) {
           it->second.second->add_fragment(std::move(temp_fragment));
           ++m_fragment_counter;
+	  --m_pending_fragment_counter;
         } else {
           ers::error(UnexpectedFragment(
 					ERS_HERE, temp_id, temp_fragment->get_fragment_type_code(), temp_fragment->get_element_id()));
