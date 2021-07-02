@@ -360,7 +360,7 @@ TriggerRecordBuilder::do_work(std::atomic<bool>& running_flag)
   std::chrono::duration<double> time_span = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1);
 
   std::ostringstream oss_summ;
-  oss_summ << ": Exiting the do_work() method, " << m_trigger_records.size() << " reminaing Trigger Records"
+  oss_summ << ": Exiting the do_work() method, " << m_trigger_records.size() << " remaining Trigger Records"
            << std::endl
            << "Draining took : " << time_span.count() << " s";
   TLOG() << ProgressUpdate(ERS_HERE, get_name(), oss_summ.str());
@@ -545,6 +545,12 @@ TriggerRecordBuilder::send_trigger_record(const TriggerId& id, trigger_record_si
 
   bool wasSentSuccessfully = false;
   while (!wasSentSuccessfully) {
+    if (!running.load() &&
+        (temp_record->get_fragments_ref().size() < temp_record->get_header_ref().get_num_requested_components())) {
+      TLOG() << get_name() << " sending incomplete TriggerRecord downstream at Stop time "
+             << "(trigger/run_number=" << id << ", " << temp_record->get_fragments_ref().size() << " of "
+             << temp_record->get_header_ref().get_num_requested_components() << " fragments included)";
+    }
     try {
       sink.push(std::move(temp_record), m_queue_timeout);
       wasSentSuccessfully = true;
