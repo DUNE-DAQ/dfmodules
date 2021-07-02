@@ -28,25 +28,25 @@ daq_add_plugin( TriggerRecordBuilder  duneDAQModule LINK_LIBRARIES dfmodules )
 
 
 ##############################################################################
-#daq_add_unit_test( StorageKey_test          LINK_LIBRARIES dfmodules )
-#daq_add_unit_test( KeyedDataBlock_test      LINK_LIBRARIES dfmodules )
+daq_add_unit_test( StorageKey_test          LINK_LIBRARIES dfmodules )
+daq_add_unit_test( KeyedDataBlock_test      LINK_LIBRARIES dfmodules )
 
-#daq_add_unit_test( HDF5KeyTranslator_test   LINK_LIBRARIES dfmodules )
-#add_dependencies(  HDF5KeyTranslator_test dfmodules_HDF5DataStore_duneDataStore)
+daq_add_unit_test( HDF5KeyTranslator_test   LINK_LIBRARIES dfmodules )
+add_dependencies(  HDF5KeyTranslator_test dfmodules_HDF5DataStore_duneDataStore)
 
-#daq_add_unit_test( HDF5FileUtils_test       LINK_LIBRARIES dfmodules )
+daq_add_unit_test( HDF5FileUtils_test       LINK_LIBRARIES dfmodules )
 
 daq_add_unit_test( HDF5Write_test           LINK_LIBRARIES dfmodules )
 add_dependencies(  HDF5Write_test dfmodules_HDF5DataStore_duneDataStore)
 
-#daq_add_unit_test( HDF5Read_test            LINK_LIBRARIES dfmodules )
-#add_dependencies(  HDF5Read_test dfmodules_HDF5DataStore_duneDataStore)
+daq_add_unit_test( HDF5Read_test            LINK_LIBRARIES dfmodules )
+add_dependencies(  HDF5Read_test dfmodules_HDF5DataStore_duneDataStore)
 
 daq_add_unit_test( TriggerRecordHeaderWrite_test  LINK_LIBRARIES dfmodules )
 add_dependencies(  TriggerRecordHeaderWrite_test dfmodules_HDF5DataStore_duneDataStore)
 
 #daq_add_unit_test( HDF5GetAllKeys_test      LINK_LIBRARIES dfmodules )
-#daq_add_unit_test( DataStoreFactory_test    LINK_LIBRARIES dfmodules )
+daq_add_unit_test( DataStoreFactory_test    LINK_LIBRARIES dfmodules )
 
 ##############################################################################
 
