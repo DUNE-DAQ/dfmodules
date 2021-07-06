@@ -20,6 +20,8 @@
 
 namespace dunedaq {
 
+    // Disable coverage checking LCOV_EXCL_START
+
 ERS_DECLARE_ISSUE_BASE(dfmodules,
                        ProgressUpdate,
                        appfwk::GeneralDAQModuleIssue,
@@ -47,6 +49,8 @@ ERS_DECLARE_ISSUE_BASE(dfmodules,
                        "Unable to start run " << run_number << ".",
                        ((std::string)name),
                        ((size_t)run_number))
+
+    // Re-enable coverage checking LCOV_EXCL_STOP
 
 } // namespace dunedaq
 
