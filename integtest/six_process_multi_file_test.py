@@ -13,7 +13,7 @@ confgen_name="minidaqapp.nanorc.mdapp_multiru_gen"
 # output directory (the test framework handles that)
 confgen_arguments=[ "-d", "./frames.bin", "-o", ".", "-s", "10", "-n", "5", "--host-ru", "localhost", "--host-ru", "localhost", "--host-ru", "localhost", "--hsi-event-period", "100000000"]
 # The commands to run in nanorc, as a list
-nanorc_command_list="boot init conf start 101 resume wait 1100 pause stop wait 21 start 101 resume wait 800 pause stop wait 21 scrap terminate".split()
+nanorc_command_list="boot init conf start 101 resume wait 1100 pause stop wait 21 start 102 resume wait 800 pause stop wait 21 scrap terminate".split()
 
 # The tests themselves
 
