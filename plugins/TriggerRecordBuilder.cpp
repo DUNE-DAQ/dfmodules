@@ -337,8 +337,7 @@ TriggerRecordBuilder::do_work(std::atomic<bool>& running_flag)
 	++ m_sleep_counter ;
         std::this_thread::sleep_for(m_loop_sleep);
       }
-    }
-    else {
+    } else {
       ++ m_loop_counter ;
     }
     

@@ -229,7 +229,7 @@ private:
   mutable std::atomic<metric_counter_type> m_completed_trigger_records = { 0 };  // in between calls
   mutable std::atomic<metric_counter_type> m_sleep_counter = { 0 };              // in between calls
   mutable std::atomic<metric_counter_type> m_loop_counter = { 0 };               // in between calls
-  mutable std::atomic<unsigned long long>  m_trigger_record_time = { 0 };        // in between calls 
+  mutable std::atomic<uint64_t>            m_trigger_record_time = { 0 };        // in between calls 
   
   // time thresholds 
   using duration_type = std::chrono::milliseconds ;
