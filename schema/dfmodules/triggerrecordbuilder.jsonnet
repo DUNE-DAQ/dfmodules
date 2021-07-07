@@ -26,7 +26,7 @@ local types = {
     conf: s.record("ConfParams", [ s.field("map", self.mapgeoidqueue, doc="" ), 
                                    s.field("general_queue_timeout", self.timeout, 100, 
                                            doc="General indication for timeout"),
-                                   s.field("trigger_record_timeout", self.timeout, 0, 
+                                   s.field("trigger_record_timeout_ms", self.timeout, 0, 
                                            doc="Timeout for a TR to be sent incomplete. 0 means no timeout")
                                   ] , 
                    doc="TriggerRecordBuilder configuration")

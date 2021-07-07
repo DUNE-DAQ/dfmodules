@@ -165,12 +165,14 @@ TriggerRecordBuilder::do_conf(const data_t& payload)
     m_map_geoid_queues[key] = entry.queueinstance;
   }
 
-  m_trigger_timeout = duration_type(parsed_conf.trigger_record_timeout);
+  m_trigger_timeout = duration_type(parsed_conf.trigger_record_timeout_ms);
   
   m_loop_sleep = m_queue_timeout = std::chrono::milliseconds(parsed_conf.general_queue_timeout);
 
   if ( m_map_geoid_queues.size() > 1 ) {
     m_loop_sleep /= (2. + log2( m_map_geoid_queues.size()));
+    if ( m_loop_sleep.count() == 0 ) 
+      m_loop_sleep = m_queue_timeout = std::chrono::milliseconds(parsed_conf.general_queue_timeout);
   }
 
   TLOG() << get_name() 
