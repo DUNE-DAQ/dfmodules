@@ -126,8 +126,9 @@ TriggerRecordBuilder::get_info(opmonlib::InfoCollector& ci, int /*level*/)
   i.fragments_in_the_book = m_fragment_counter.load();
   i.pending_fragments = m_pending_fragment_counter.load();
   i.timed_out_trigger_records = m_timed_out_trigger_records.load() ;
-  i.deleted_fragments = m_deleted_fragments.load();
-  i.deleted_requests = m_deleted_requests.load();
+  i.unexpected_fragments = m_unexpected_fragments.load();
+  i.lost_fragments = m_lost_fragments.load();
+  i.invalid_requests = m_invalid_requests.load();
   i.duplicated_trigger_ids = m_duplicated_trigger_ids.load();
   i.sleep_counter = m_sleep_counter.exchange( 0 ) ;
   i.loop_counter = m_loop_counter.exchange( 0 ) ;
@@ -209,8 +210,9 @@ TriggerRecordBuilder::do_work(std::atomic<bool>& running_flag)
   m_pending_fragment_counter.store(0);
   m_fragment_counter.store(0);
   m_timed_out_trigger_records.store(0);
-  m_deleted_fragments.store(0);
-  m_deleted_requests.store(0);
+  m_unexpected_fragments.store(0);
+  m_lost_fragments.store(0);
+  m_invalid_requests.store(0);
   m_duplicated_trigger_ids.store(0);
 
   // allocate queues
@@ -399,43 +401,42 @@ TriggerRecordBuilder::read_fragments(fragment_sources_t& frag_sources, bool drai
       new_fragments = true ;
 
       TriggerId temp_id(*temp_fragment);
+      bool requested = false;
 
       auto it = m_trigger_records.find(temp_id);
 
-      if (it == m_trigger_records.end()) {
-        ers::error(UnexpectedFragment(
-          ERS_HERE, temp_id, temp_fragment->get_fragment_type_code(), temp_fragment->get_element_id()));
-      } else {
-
-        // check if the fragment has a GeoId that was desired
+      if (it != m_trigger_records.end()) {
+        
+	// check if the fragment has a GeoId that was desired
         dataformats::TriggerRecordHeader& header = it->second.second->get_header_ref();
-
-        bool requested = false;
-        for (size_t i = 0; i < header.get_num_requested_components(); ++i) {
-
+	
+	for (size_t i = 0; i < header.get_num_requested_components(); ++i) {
+	  
           const dataformats::ComponentRequest& request = header[i];
           if (request.component == temp_fragment->get_element_id()) {
             requested = true;
             break;
           }
-
+	  
         } // request loop
+	
+      } // if there is a corresponding trigger ID entry in the boook
 
-        if (requested) {
-          it->second.second->add_fragment(std::move(temp_fragment));
-          ++m_fragment_counter;
-	  --m_pending_fragment_counter;
-        } else {
-          ers::error(UnexpectedFragment(
-					ERS_HERE, temp_id, temp_fragment->get_fragment_type_code(), temp_fragment->get_element_id()));
-	  ++ m_deleted_fragments;
-        }
-
-      } // if we can pop
+      if (requested) {
+	it->second.second->add_fragment(std::move(temp_fragment));
+	++m_fragment_counter;
+	--m_pending_fragment_counter;
+      } else {
+	ers::error(UnexpectedFragment(ERS_HERE, 
+				      temp_id, 
+				      temp_fragment->get_fragment_type_code(), 
+				      temp_fragment->get_element_id()));
+	++ m_unexpected_fragments;
+      }
 
       if (!drain)
         break;
-
+      
     } // while loop over the j-th queue
 
   } // queue loop
@@ -461,9 +462,14 @@ TriggerRecordBuilder::extract_trigger_record(const TriggerId& id)
 
   -- m_trigger_decisions_counter;
   m_fragment_counter -= temp->get_fragments_ref().size();
+  
+  auto missing_fragments = temp->get_header_ref().get_num_requested_components() - temp->get_fragments_ref().size() ;
 
-  if (temp->get_fragments_ref().size() < temp->get_header_ref().get_num_requested_components()) {
+  if ( missing_fragments > 0 ) {
+
+    m_lost_fragments += missing_fragments ;
     temp->get_header_ref().set_error_bit(TriggerRecordErrorBits::kIncomplete, true);
+    
     TLOG() << get_name() << " sending incomplete TriggerRecord downstream at Stop time "
 	   << "(trigger/run_number=" << id << ", " << temp->get_fragments_ref().size() << " of "
 	   << temp->get_header_ref().get_num_requested_components() << " fragments included)";
@@ -511,7 +517,7 @@ TriggerRecordBuilder::dispatch_data_requests(const dfmessages::TriggerDecision& 
     if (it_req == sinks.end()) {
       // if geoid request is not valid. then trhow error and continue
       ers::error(dunedaq::dfmodules::UnknownGeoID(ERS_HERE, req_geoid));
-      ++ m_deleted_requests;
+      ++ m_invalid_requests;
       continue;
     }
 

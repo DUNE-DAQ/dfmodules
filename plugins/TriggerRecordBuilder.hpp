@@ -220,10 +220,10 @@ private:
   mutable std::atomic<metric_counter_type> m_fragment_counter = { 0 };           // currently
   mutable std::atomic<metric_counter_type> m_pending_fragment_counter = { 0 };   // currently
 
-
   mutable std::atomic<metric_counter_type> m_timed_out_trigger_records = { 0 };  // in the run
-  mutable std::atomic<metric_counter_type> m_deleted_fragments = { 0 };          // in the run
-  mutable std::atomic<metric_counter_type> m_deleted_requests = { 0 };           // in the run
+  mutable std::atomic<metric_counter_type> m_unexpected_fragments = { 0 };       // in the run
+  mutable std::atomic<metric_counter_type> m_lost_fragments = { 0 };             // in the run
+  mutable std::atomic<metric_counter_type> m_invalid_requests = { 0 };           // in the run
   mutable std::atomic<metric_counter_type> m_duplicated_trigger_ids = { 0 };     // in the run
 
   mutable std::atomic<metric_counter_type> m_completed_trigger_records = { 0 };  // in between calls
