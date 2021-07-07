@@ -468,6 +468,7 @@ TriggerRecordBuilder::extract_trigger_record(const TriggerId& id)
   if ( missing_fragments > 0 ) {
 
     m_lost_fragments += missing_fragments ;
+    m_pending_fragment_counter -= missing_fragments ;
     temp->get_header_ref().set_error_bit(TriggerRecordErrorBits::kIncomplete, true);
     
     TLOG() << get_name() << " sending incomplete TriggerRecord downstream at Stop time "
