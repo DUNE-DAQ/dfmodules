@@ -20,12 +20,13 @@
 namespace {
 
 constexpr int run_number = 1234;
-constexpr int event_id = 111;
-onstexpr int group_type = StorageKey::DataRecordGroupType::kTPC;
+constexpr int trigger_number = 111;
+constexpr dunedaq::dfmodules::StorageKey::DataRecordGroupType group_type =
+  dunedaq::dfmodules::StorageKey::DataRecordGroupType::kTPC;
 constexpr int region_number = 1;
 constexpr int element_number = 1;
 dunedaq::dfmodules::StorageKey stk(run_number,
-                                   event_id,
+                                   trigger_number,
                                    group_type,
                                    region_number,
                                    element_number); ///< StorageKey instance for the test
@@ -36,49 +37,101 @@ BOOST_AUTO_TEST_SUITE(StorageKey_test)
 
 BOOST_AUTO_TEST_CASE(sanity_checks)
 {
-  int m_event_id = -999;
-  std::string m_detector_id = "XXXXX";
-  int m_geo_location = -999;
-  BOOST_TEST_MESSAGE("Attempted StorageKey sanity checks for Key::event_id,detector_id,geo_location");
-  m_event_id = stk.get_event_id();
-  m_detector_id = stk.get_detector_id();
-  m_geo_location = stk.get_geo_location();
+  int check_run_number = -99;
+  int check_trigger_number = -999;
+  dunedaq::dfmodules::StorageKey::DataRecordGroupType check_group_type =
+    dunedaq::dfmodules::StorageKey::DataRecordGroupType::kInvalid;
+  int check_region_number = -9999;
+  int check_element_number = -99999;
+  BOOST_TEST_MESSAGE(
+    "Attempted StorageKey sanity checks for Key::run_number,trigger_number,detector_type,region_number,element_number");
+  check_run_number = stk.get_run_number();
+  check_trigger_number = stk.get_trigger_number();
+  check_group_type = stk.get_group_type();
+  check_region_number = stk.get_region_number();
+  check_element_number = stk.get_element_number();
 
-  BOOST_CHECK_EQUAL(m_event_id, event_id);
-  BOOST_CHECK_EQUAL(m_detector_id, detector_id);
-  BOOST_CHECK_EQUAL(m_geo_location, geo_location);
+  BOOST_CHECK_EQUAL(check_run_number, run_number);
+  BOOST_CHECK_EQUAL(check_trigger_number, trigger_number);
+  BOOST_CHECK_EQUAL(check_group_type, group_type);
+  BOOST_CHECK_EQUAL(check_region_number, region_number);
+  BOOST_CHECK_EQUAL(check_element_number, element_number);
 }
 
 using namespace dunedaq::dfmodules;
 
 BOOST_AUTO_TEST_CASE(check_placeholder_values)
 {
-  const int sample_event_id = 1234;
-  const std::string sample_detector_id = "TPC";
-  const int sample_geo_location = 0;
+  const int sample_run_number = 0x5678;
+  const int sample_trigger_number = 0x1234;
+  const int sample_region_number = 0x9ABC;
+  const int sample_element_number = 0;
+  constexpr StorageKey::DataRecordGroupType sample_group_type = StorageKey::DataRecordGroupType::kTPC;
 
   // Something would have to be very wrong for this test to fail...
-  StorageKey key1(
-    StorageKey::s_invalid_event_id, StorageKey::s_invalid_detector_id, StorageKey::s_invalid_geo_location);
-  BOOST_CHECK_EQUAL(key1.get_event_id(), StorageKey::s_invalid_event_id);
-  BOOST_CHECK_EQUAL(key1.get_detector_id(), StorageKey::s_invalid_detector_id);
-  BOOST_CHECK_EQUAL(key1.get_geo_location(), StorageKey::s_invalid_geo_location);
+  StorageKey key1(StorageKey::s_invalid_run_number,
+                  StorageKey::s_invalid_trigger_number,
+                  StorageKey::DataRecordGroupType::kInvalid,
+                  StorageKey::s_invalid_region_number,
+                  StorageKey::s_invalid_element_number);
+  BOOST_CHECK_EQUAL(key1.get_run_number(), StorageKey::s_invalid_run_number);
+  BOOST_CHECK_EQUAL(key1.get_trigger_number(), StorageKey::s_invalid_trigger_number);
+  BOOST_CHECK_EQUAL(key1.get_group_type(), StorageKey::DataRecordGroupType::kInvalid);
+  BOOST_CHECK_EQUAL(key1.get_region_number(), StorageKey::s_invalid_region_number);
+  BOOST_CHECK_EQUAL(key1.get_element_number(), StorageKey::s_invalid_element_number);
 
   // check for some sort of weird cross-talk
-  StorageKey key2(sample_event_id, StorageKey::s_invalid_detector_id, StorageKey::s_invalid_geo_location);
-  BOOST_CHECK_EQUAL(key2.get_event_id(), sample_event_id);
-  BOOST_CHECK_EQUAL(key2.get_detector_id(), StorageKey::s_invalid_detector_id);
-  BOOST_CHECK_EQUAL(key2.get_geo_location(), StorageKey::s_invalid_geo_location);
+  StorageKey key2(sample_run_number,
+                  StorageKey::s_invalid_trigger_number,
+                  StorageKey::DataRecordGroupType::kInvalid,
+                  StorageKey::s_invalid_region_number,
+                  StorageKey::s_invalid_element_number);
+  BOOST_CHECK_EQUAL(key2.get_run_number(), sample_run_number);
+  BOOST_CHECK_EQUAL(key2.get_trigger_number(), StorageKey::s_invalid_trigger_number);
+  BOOST_CHECK_EQUAL(key2.get_group_type(), StorageKey::DataRecordGroupType::kInvalid);
+  BOOST_CHECK_EQUAL(key2.get_region_number(), StorageKey::s_invalid_region_number);
+  BOOST_CHECK_EQUAL(key2.get_element_number(), StorageKey::s_invalid_element_number);
 
-  StorageKey key3(StorageKey::s_invalid_event_id, sample_detector_id, StorageKey::s_invalid_geo_location);
-  BOOST_CHECK_EQUAL(key3.get_event_id(), StorageKey::s_invalid_event_id);
-  BOOST_CHECK_EQUAL(key3.get_detector_id(), sample_detector_id);
-  BOOST_CHECK_EQUAL(key3.get_geo_location(), StorageKey::s_invalid_geo_location);
+  StorageKey key3(sample_run_number,
+                  sample_trigger_number,
+                  StorageKey::DataRecordGroupType::kInvalid,
+                  StorageKey::s_invalid_region_number,
+                  StorageKey::s_invalid_element_number);
+  BOOST_CHECK_EQUAL(key3.get_run_number(), sample_run_number);
+  BOOST_CHECK_EQUAL(key3.get_trigger_number(), sample_trigger_number);
+  BOOST_CHECK_EQUAL(key3.get_group_type(), StorageKey::DataRecordGroupType::kInvalid);
+  BOOST_CHECK_EQUAL(key3.get_region_number(), StorageKey::s_invalid_region_number);
+  BOOST_CHECK_EQUAL(key3.get_element_number(), StorageKey::s_invalid_element_number);
 
-  StorageKey key4(StorageKey::s_invalid_event_id, StorageKey::s_invalid_detector_id, sample_geo_location);
-  BOOST_CHECK_EQUAL(key4.get_event_id(), StorageKey::s_invalid_event_id);
-  BOOST_CHECK_EQUAL(key4.get_detector_id(), StorageKey::s_invalid_detector_id);
-  BOOST_CHECK_EQUAL(key4.get_geo_location(), sample_geo_location);
+  StorageKey key4(sample_run_number,
+                  sample_trigger_number,
+                  sample_group_type,
+                  StorageKey::s_invalid_region_number,
+                  StorageKey::s_invalid_element_number);
+  BOOST_CHECK_EQUAL(key4.get_run_number(), sample_run_number);
+  BOOST_CHECK_EQUAL(key4.get_trigger_number(), sample_trigger_number);
+  BOOST_CHECK_EQUAL(key4.get_group_type(), sample_group_type);
+  BOOST_CHECK_EQUAL(key4.get_region_number(), StorageKey::s_invalid_region_number);
+  BOOST_CHECK_EQUAL(key4.get_element_number(), StorageKey::s_invalid_element_number);
+
+  StorageKey key5(sample_run_number,
+                  sample_trigger_number,
+                  sample_group_type,
+                  sample_region_number,
+                  StorageKey::s_invalid_element_number);
+  BOOST_CHECK_EQUAL(key5.get_run_number(), sample_run_number);
+  BOOST_CHECK_EQUAL(key5.get_trigger_number(), sample_trigger_number);
+  BOOST_CHECK_EQUAL(key5.get_group_type(), sample_group_type);
+  BOOST_CHECK_EQUAL(key5.get_region_number(), sample_region_number);
+  BOOST_CHECK_EQUAL(key5.get_element_number(), StorageKey::s_invalid_element_number);
+
+  StorageKey key6(
+    sample_run_number, sample_trigger_number, sample_group_type, sample_region_number, sample_element_number);
+  BOOST_CHECK_EQUAL(key6.get_run_number(), sample_run_number);
+  BOOST_CHECK_EQUAL(key6.get_trigger_number(), sample_trigger_number);
+  BOOST_CHECK_EQUAL(key6.get_group_type(), sample_group_type);
+  BOOST_CHECK_EQUAL(key6.get_region_number(), sample_region_number);
+  BOOST_CHECK_EQUAL(key6.get_element_number(), sample_element_number);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

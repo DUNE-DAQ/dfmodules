@@ -25,36 +25,23 @@ BOOST_AUTO_TEST_CASE(PathString)
 {
   std::string path;
 
-  hdf5datastore::HDF5DataStoreFileLayoutParams layout_params;
-  layout_params.trigger_record_name_prefix = "";
-  layout_params.digits_for_trigger_number = 4;
-  layout_params.apa_name_prefix = "";
-  layout_params.digits_for_apa_number = 3;
-  layout_params.link_name_prefix = "";
-  layout_params.digits_for_link_number = 2;
+  HDF5KeyTranslator translator;
 
   StorageKey key1(101, 1, StorageKey::DataRecordGroupType::kInvalid, 2, 3);
-  path = HDF5KeyTranslator::get_path_string(key1, layout_params);
-  BOOST_REQUIRE_EQUAL(path, "0001/Invalid/002/03");
+  path = translator.get_path_string(key1);
+  BOOST_REQUIRE_EQUAL(path, "TriggerRecord00001/Invalid/Region002/Element03");
 
-  StorageKey key2(101, 12345, StorageKey::DataRecordGroupType::kInvalid, 6, 7);
-  path = HDF5KeyTranslator::get_path_string(key2, layout_params);
-  BOOST_REQUIRE_EQUAL(path, "12345/Invalid/006/07");
+  StorageKey key2(101, 123456, StorageKey::DataRecordGroupType::kInvalid, 6, 7);
+  path = translator.get_path_string(key2);
+  BOOST_REQUIRE_EQUAL(path, "TriggerRecord123456/Invalid/Region006/Element07");
 
   StorageKey key3(101, 123, StorageKey::DataRecordGroupType::kInvalid, 4567, 890);
-  path = HDF5KeyTranslator::get_path_string(key3, layout_params);
-  BOOST_REQUIRE_EQUAL(path, "0123/Invalid/4567/890");
-
-  layout_params.trigger_record_name_prefix = "TriggerRecord";
-  layout_params.digits_for_trigger_number = 3;
-  layout_params.apa_name_prefix = "APA";
-  layout_params.digits_for_apa_number = 2;
-  layout_params.link_name_prefix = "Link";
-  layout_params.digits_for_link_number = 3;
+  path = translator.get_path_string(key3);
+  BOOST_REQUIRE_EQUAL(path, "TriggerRecord00123/Invalid/Region4567/Element890");
 
   StorageKey key4(101, 22, StorageKey::DataRecordGroupType::kTPC, 33, 44);
-  path = HDF5KeyTranslator::get_path_string(key4, layout_params);
-  BOOST_REQUIRE_EQUAL(path, "TriggerRecord022/TPC/APA33/Link044");
+  path = translator.get_path_string(key4);
+  BOOST_REQUIRE_EQUAL(path, "TriggerRecord00022/TPC/APA033/Link44");
 }
 
 #if 0
