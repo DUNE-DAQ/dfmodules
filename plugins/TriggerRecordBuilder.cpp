@@ -538,7 +538,8 @@ TriggerRecordBuilder::create_trigger_records_and_dispatch( const dfmessages::Tri
     }
 
     // create trigger record for the slice
-    trigger_record_ptr_t& trp = m_trigger_records[slice_id];
+    auto & entry = m_trigger_records[slice_id] = std::make_pair(clock_type::now(), trigger_record_ptr_t());;
+    trigger_record_ptr_t &trp = entry.second; 
     trp.reset(new dataformats::TriggerRecord(slice_components));
     dataformats::TriggerRecord& tr = *trp;
 
