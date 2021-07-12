@@ -551,6 +551,7 @@ TriggerRecordBuilder::create_trigger_records_and_dispatch( const dfmessages::Tri
     tr.get_header_ref().set_trigger_type(td.trigger_type);
 
     m_trigger_decisions_counter++;
+    m_pending_fragment_counter += slice_components.size() ;
     ++ new_tr_counter ;
 
     // create and send the requests 
