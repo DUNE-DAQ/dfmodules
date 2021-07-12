@@ -15,12 +15,12 @@
 
 #include "boost/test/unit_test.hpp"
 
+#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <memory>
 #include <regex>
-#include <stdlib.h>
 #include <string>
 #include <vector>
 

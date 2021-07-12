@@ -20,7 +20,7 @@
 
 namespace dunedaq {
 
-    // Disable coverage checking LCOV_EXCL_START
+// Disable coverage checking LCOV_EXCL_START
 
 ERS_DECLARE_ISSUE_BASE(dfmodules,
                        ProgressUpdate,
@@ -50,7 +50,7 @@ ERS_DECLARE_ISSUE_BASE(dfmodules,
                        ((std::string)name),
                        ((size_t)run_number))
 
-    // Re-enable coverage checking LCOV_EXCL_STOP
+// Re-enable coverage checking LCOV_EXCL_STOP
 
 } // namespace dunedaq
 
