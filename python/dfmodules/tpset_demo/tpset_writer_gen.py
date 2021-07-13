@@ -13,7 +13,7 @@ moo.otypes.load_types('appfwk/app.jsonnet')
 
 moo.otypes.load_types('nwqueueadapters/networktoqueue.jsonnet')
 moo.otypes.load_types('nwqueueadapters/networkobjectreceiver.jsonnet')
-moo.otypes.load_types('trigger/triggerprimitivemaker.jsonnet')
+moo.otypes.load_types('dfmodules/tpsetwriter.jsonnet')
 
 
 # Import new types
@@ -24,6 +24,7 @@ import dunedaq.appfwk.app as app # AddressedCmd,
 
 import dunedaq.nwqueueadapters.networktoqueue as ntoq
 import dunedaq.nwqueueadapters.networkobjectreceiver as nor
+import dunedaq.dfmodules.tpsetwriter as tpsw
 
 from appfwk.utils import acmd, mcmd, mrccmd, mspec
 
@@ -68,7 +69,6 @@ def generate(
                                                      ) # Empty subscription means subscribe to everything
                             )
          ),
-
         ("ntoq2", ntoq.Conf(msg_type="dunedaq::trigger::TPSet",
                             msg_module_name="TPSetNQ",
                             receiver_config=nor.Conf(ipm_plugin_type="ZmqSubscriber",
@@ -76,8 +76,10 @@ def generate(
                                                      subscriptions=["foo"]
                                                      ) # Empty subscription means subscribe to everything
                             )
-         )
-
+         ),
+        ("tps_writer", tpsw.ConfParams(
+            max_file_size_bytes=1000000000,
+        ))
     ])
 
     startpars = rccmd.StartParams(run=1, disable_data_storage=False)

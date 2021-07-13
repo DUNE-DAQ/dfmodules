@@ -57,6 +57,7 @@ TPSetWriter::do_conf(const data_t& payload)
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
   tpsetwriter::ConfParams conf_params = payload.get<tpsetwriter::ConfParams>();
   m_max_file_size = conf_params.max_file_size_bytes;
+  TLOG_DEBUG(TLVL_CONFIG) << get_name() << ": max file size is " << m_max_file_size << " bytes.";
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
 }
 
@@ -100,7 +101,7 @@ TPSetWriter::do_work(std::atomic<bool>& running_flag)
   triggeralgs::timestamp_t first_timestamp = 0;
   triggeralgs::timestamp_t last_timestamp = 0;
 
-  uint32_t last_seqno = 0;
+  //uint32_t last_seqno = 0;
   dunedaq::readout::BufferedFileWriter<uint8_t> tpset_writer;
   size_t bytes_written = 0;
   int file_index = 0;
@@ -121,10 +122,10 @@ TPSetWriter::do_work(std::atomic<bool>& running_flag)
     }
 
     // Do some checks on the received TPSet
-    if (last_seqno != 0 && tpset.seqno != last_seqno + 1) {
-      TLOG() << "Missed TPSets: last_seqno=" << last_seqno << ", current seqno=" << tpset.seqno;
-    }
-    last_seqno = tpset.seqno;
+    //if (last_seqno != 0 && tpset.seqno != last_seqno + 1) {
+    //  TLOG() << "Missed TPSets: last_seqno=" << last_seqno << ", current seqno=" << tpset.seqno;
+    //}
+    //last_seqno = tpset.seqno;
 
     if (tpset.start_time < last_timestamp) {
       TLOG() << "TPSets out of order: last start time " << last_timestamp << ", current start time "
@@ -175,7 +176,7 @@ TPSetWriter::do_work(std::atomic<bool>& running_flag)
       tpset_writer.write(0x0);
     }
     bytes_written += frag.get_size() + padding;
-    if (bytes_written > m_max_file_size) {
+    if (m_max_file_size > 0 && bytes_written > m_max_file_size) {
       if (tpset_writer.is_open()) {
         tpset_writer.close();
       }
