@@ -7,6 +7,7 @@
  */
 
 #include "TPSetWriter.hpp"
+#include "dfmodules/tpsetwriter/Nljs.hpp"
 
 #include "appfwk/DAQModuleHelper.hpp"
 #include "appfwk/app/Nljs.hpp"
@@ -43,18 +44,19 @@ TPSetWriter::TPSetWriter(const std::string& name)
 }
 
 void
-TPSetWriter::init(const nlohmann::json& obj)
+TPSetWriter::init(const nlohmann::json& payload)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
-  m_tpset_source.reset(new source_t(appfwk::queue_inst(obj, "tpset_source")));
+  m_tpset_source.reset(new source_t(appfwk::queue_inst(payload, "tpset_source")));
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
 
 void
-TPSetWriter::do_conf(const data_t& /*payload*/)
+TPSetWriter::do_conf(const data_t& payload)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
-  // tpsetwriter::ConfParams conf_params = payload.get<tpsetwriter::ConfParams>();
+  tpsetwriter::ConfParams conf_params = payload.get<tpsetwriter::ConfParams>();
+  m_max_file_size = conf_params.max_file_size_bytes;
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
 }
 
@@ -100,6 +102,8 @@ TPSetWriter::do_work(std::atomic<bool>& running_flag)
 
   uint32_t last_seqno = 0;
   dunedaq::readout::BufferedFileWriter<uint8_t> tpset_writer;
+  size_t bytes_written = 0;
+  int file_index = 0;
 
   while (true) {
     trigger::TPSet tpset;
@@ -144,7 +148,8 @@ TPSetWriter::do_work(std::atomic<bool>& running_flag)
 
     if (!tpset_writer.is_open()) {
       std::ostringstream work_oss;
-      work_oss << "tpsets_region" << tpset.origin.region_id << "_element" << tpset.origin.element_id;
+      work_oss << "tpsets_run" << std::setfill('0') << std::setw(6) << m_run_number << "_" << std::setw(4)
+               << file_index;
       time_t now = time(0);
       work_oss << "_" << boost::posix_time::to_iso_string(boost::posix_time::from_time_t(now)) << ".bin";
       tpset_writer.open(work_oss.str(), 1024, "None", false);
@@ -168,6 +173,14 @@ TPSetWriter::do_work(std::atomic<bool>& running_flag)
     size_t padding = (num_longwords * sizeof(int64_t)) - frag.get_size();
     for (uint32_t idx = 0; idx < padding; ++idx) {
       tpset_writer.write(0x0);
+    }
+    bytes_written += frag.get_size() + padding;
+    if (bytes_written > m_max_file_size) {
+      if (tpset_writer.is_open()) {
+        tpset_writer.close();
+      }
+      ++file_index;
+      bytes_written = 0;
     }
 
     if (first_timestamp == 0) {

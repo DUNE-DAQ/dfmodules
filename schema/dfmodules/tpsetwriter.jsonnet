@@ -3,10 +3,11 @@ local ns = "dunedaq.dfmodules.tpsetwriter";
 local s = moo.oschema.schema(ns);
 
 local types = {
-    a_number : s.number("a_number", "u2", doc="placeholder"),
+    size: s.number("Size", "u8", doc="A count of very many things"),
 
     conf: s.record("ConfParams", [
-        s.field("sample_number", self.a_number, 0, doc=""),
+        s.field("max_file_size_bytes", self.size, 1000000000,
+                doc="Maximum number of bytes in each raw data file"),
     ], doc="TPSetWriter configuration parameters"),
 
 };

@@ -53,6 +53,7 @@ private:
 
   // Configuration
   std::chrono::milliseconds m_queue_timeout;
+  size_t m_max_file_size;
   dataformats::run_number_t m_run_number;
 
   // Queue sources and sinks
