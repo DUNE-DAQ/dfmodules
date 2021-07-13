@@ -492,9 +492,8 @@ TriggerRecordBuilder::create_trigger_records_and_dispatch( const dfmessages::Tri
       end = component.window_end ; 
   }
   
-  
   dataformats::timestamp_diff_t tot_width = end - begin ;
-  dataformats::sequence_number_t max_sequence_number = tot_width / m_max_time_window ;
+  dataformats::sequence_number_t max_sequence_number = m_max_time_window > 0 ? tot_width / m_max_time_window : 0 ;
   
   TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": trig_number " << td.trigger_number << ": run_number "
 			      << td.run_number << ": trig_timestamp " << td.trigger_timestamp 
@@ -506,7 +505,7 @@ TriggerRecordBuilder::create_trigger_records_and_dispatch( const dfmessages::Tri
 	++ sequence ) {
     
     dataformats::timestamp_t slice_begin = begin + sequence*m_max_time_window ; 
-    dataformats::timestamp_t slice_end   = std::min( slice_begin + m_max_time_window, end ) ; 
+    dataformats::timestamp_t slice_end   = m_max_time_window > 0 ? std::min( slice_begin + m_max_time_window, end ) : end ; 
     
     // create the components cropped in time
     decltype( td.components ) slice_components;

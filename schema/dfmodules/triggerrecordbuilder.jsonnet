@@ -31,8 +31,8 @@ local types = {
                                            doc="General indication for timeout"),
                                    s.field("trigger_record_timeout_ms", self.timeout, 0, 
                                            doc="Timeout for a TR to be sent incomplete. 0 means no timeout"),
-                                   s.field("max_time_window", self.timestamp_diff, 250000, 
-                                           doc="Maximum time window size for Data requests")
+                                   s.field("max_time_window", self.timestamp_diff, 0, 
+                                           doc="Maximum time window size for Data requests. 0 means no slicing")
                                   ] , 
                    doc="TriggerRecordBuilder configuration")
 
