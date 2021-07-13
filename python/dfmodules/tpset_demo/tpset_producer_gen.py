@@ -66,6 +66,8 @@ def generate(
             number_of_loops=-1, # Infinite
             tpset_time_offset=0,
             tpset_time_width=10000, # 0.2 ms
+            region_id=2,
+            element_id=7,
             clock_frequency_hz=CLOCK_FREQUENCY_HZ
         )),
         ("qton", qton.Conf(msg_type="dunedaq::trigger::TPSet",
