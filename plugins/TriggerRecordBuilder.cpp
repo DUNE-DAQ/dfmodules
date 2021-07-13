@@ -517,7 +517,6 @@ TriggerRecordBuilder::create_trigger_records_and_dispatch( const dfmessages::Tri
       
       dataformats::timestamp_t new_begin = std::max( slice_begin, component.window_begin ) ;
       dataformats::timestamp_t new_end   = std::min( slice_end, component.window_end ) ;
-      if ( new_end < component.window_end ) --new_end ;
 
       dataformats::ComponentRequest temp( component.component, new_begin, new_end ) ;
       slice_components.push_back( temp ) ;
