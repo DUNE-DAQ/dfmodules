@@ -138,8 +138,23 @@ void TriggerRecordBuilder::get_info(opmonlib::InfoCollector &ci,
   auto time = m_trigger_record_time.exchange(0.);
   auto n_triggers = m_completed_trigger_records.exchange(0);
 
-  i.average_millisecond_per_trigger =
-      n_triggers > 0 ? time / (metric_ratio_type)n_triggers : -1.;
+  if ( n_triggers > 0 ) {
+    i.average_millisecond_per_trigger = time / (metric_ratio_type)n_triggers ;
+  }
+
+  auto td_width = m_trigger_decision_width.exchange(0);
+  auto n_td  = m_received_trigger_decisions.exchange(0);
+
+  if ( n_td > 0 ) {
+    i.average_decision_width = td_width / (metric_ratio_type) n_td ;
+  }
+
+  auto dr_width = m_data_request_width.exchange(0) ;
+  auto n_dr     = m_generated_data_requests.exchange(0);
+
+  if ( n_dr > 0 ) {
+    i.average_data_request_width = dr_width /  (metric_ratio_type) n_dr ;
+  }
 
   ci.add(i);
 }
@@ -257,6 +272,7 @@ void TriggerRecordBuilder::do_work(std::atomic<bool> &running_flag) {
       } catch (const dunedaq::appfwk::QueueTimeoutExpired &excpt) {
         continue;
       }
+
 
       book_updates = create_trigger_records_and_dispatch( temp_dec, request_sinks, running_flag) > 0 ;
       
@@ -499,6 +515,9 @@ TriggerRecordBuilder::create_trigger_records_and_dispatch( const dfmessages::Tri
 			      << td.run_number << ": trig_timestamp " << td.trigger_timestamp 
 			      << " will have " << max_sequence_number + 1 << " sequences";
   
+  ++m_received_trigger_decisions ;
+  m_trigger_decision_width += tot_width ;
+
   // create the trigger records 
   for ( dataformats::sequence_number_t sequence = 0 ; 
 	sequence <= max_sequence_number ; 
@@ -519,6 +538,9 @@ TriggerRecordBuilder::create_trigger_records_and_dispatch( const dfmessages::Tri
 
       dataformats::ComponentRequest temp( component.component, new_begin, new_end ) ;
       slice_components.push_back( temp ) ;
+
+      ++m_generated_data_requests;
+      m_data_request_width += new_end - new_begin ;
       
     }  // loop over component in trigger decision
 
