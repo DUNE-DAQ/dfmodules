@@ -1,6 +1,6 @@
 import pytest
 
-import integrationtest.data_file_checks as data_file_checks
+import dfmodules.data_file_checks as data_file_checks
 import integrationtest.log_file_checks as log_file_checks
 
 # The next three variable declarations *must* be present as globals in the test
