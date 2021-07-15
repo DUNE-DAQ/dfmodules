@@ -129,11 +129,15 @@ void TriggerRecordBuilder::get_info(opmonlib::InfoCollector &ci,
   i.pending_fragments = m_pending_fragment_counter.load();
   i.timed_out_trigger_records = m_timed_out_trigger_records.load();
   i.unexpected_fragments = m_unexpected_fragments.load();
+  i.unexpected_trigger_decisions = m_unexpected_trigger_decisions.load();
   i.lost_fragments = m_lost_fragments.load();
   i.invalid_requests = m_invalid_requests.load();
   i.duplicated_trigger_ids = m_duplicated_trigger_ids.load();
   i.sleep_counter = m_sleep_counter.exchange(0);
   i.loop_counter = m_loop_counter.exchange(0);
+
+  i.received_trigger_decisions = m_run_received_trigger_decisions.load();
+  i.generated_trigger_records = m_generated_trigger_records.load();
 
   auto time = m_trigger_record_time.exchange(0.);
   auto n_triggers = m_completed_trigger_records.exchange(0);
@@ -233,7 +237,10 @@ void TriggerRecordBuilder::do_work(std::atomic<bool> &running_flag) {
   // clean books from possible previous memory
   m_trigger_records.clear();
   m_trigger_decisions_counter.store(0);
+  m_unexpected_trigger_decisions.store(0);
   m_pending_fragment_counter.store(0);
+  m_run_received_trigger_decisions.store(0);
+  m_generated_trigger_records.store(0);
   m_fragment_counter.store(0);
   m_timed_out_trigger_records.store(0);
   m_unexpected_fragments.store(0);
@@ -282,8 +289,11 @@ void TriggerRecordBuilder::do_work(std::atomic<bool> &running_flag) {
 					       temp_dec.trigger_number, 
 					       temp_dec.run_number, 
 					       *m_run_number ) );
+	++m_unexpected_trigger_decisions;
 	continue ;
       }
+
+      ++m_run_received_trigger_decisions;
 
       book_updates = create_trigger_records_and_dispatch( temp_dec, request_sinks, running_flag) > 0 ;
       
@@ -670,6 +680,7 @@ bool TriggerRecordBuilder::send_trigger_record(const TriggerId &id,
     try {
       sink.push(std::move(temp_record), m_queue_timeout);
       wasSentSuccessfully = true;
+      ++m_generated_trigger_records;
     } catch (const dunedaq::appfwk::QueueTimeoutExpired &excpt) {
       std::ostringstream oss_warn;
       oss_warn << "push to output queue \"" << get_name() << "\"";
