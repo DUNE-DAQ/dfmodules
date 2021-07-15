@@ -272,11 +272,19 @@ private:
       0}; // in the run
   mutable std::atomic<metric_counter_type> m_unexpected_fragments = {
       0};                                                          // in the run
+  mutable std::atomic<metric_counter_type> m_unexpected_trigger_decisions = {
+      0};                                                          // in the run
   mutable std::atomic<metric_counter_type> m_lost_fragments = {0}; // in the run
   mutable std::atomic<metric_counter_type> m_invalid_requests = {
       0}; // in the run
   mutable std::atomic<metric_counter_type> m_duplicated_trigger_ids = {
       0}; // in the run
+  mutable std::atomic<metric_counter_type> m_run_received_trigger_decisions = {
+      0}; // in the run
+  mutable std::atomic<metric_counter_type> m_generated_trigger_records = {
+      0}; // in the run
+
+
 
   mutable std::atomic<metric_counter_type> m_completed_trigger_records = {
       0}; // in between calls
