@@ -48,14 +48,19 @@ public:
     , m_group_type(group_type)
     , m_region_number(region_number)
     , m_element_number(element_number)
-
-  {}
+  {
+    m_this_sequence_number = 0;
+    m_max_sequence_number = 0;
+  }
 
   int get_run_number() const;
   int get_trigger_number() const;
   DataRecordGroupType get_group_type() const;
   int get_region_number() const;
   int get_element_number() const;
+
+  int m_this_sequence_number;
+  int m_max_sequence_number;
 
 private:
   int m_run_number;
