@@ -226,6 +226,8 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
                          StorageKey::DataRecordGroupType::kTriggerRecordHeader,
                          1,
                          1);
+      trh_key.m_this_sequence_number = trigger_record_ptr->get_header_ref().get_sequence_number();
+      trh_key.m_max_sequence_number = trigger_record_ptr->get_header_ref().get_max_sequence_number();
       KeyedDataBlock trh_block(trh_key);
       trh_block.m_unowned_data_start = trh_ptr;
       trh_block.m_data_size = trh_size;
@@ -270,6 +272,8 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
                                  group_type,
                                  frag_ptr->get_element_id().region_id,
                                  frag_ptr->get_element_id().element_id);
+        fragment_skey.m_this_sequence_number = frag_ptr->get_sequence_number();
+        fragment_skey.m_max_sequence_number = trigger_record_ptr->get_header_ref().get_max_sequence_number();
         KeyedDataBlock data_block(fragment_skey);
         data_block.m_unowned_data_start = frag_ptr->get_storage_location();
         data_block.m_data_size = frag_ptr->get_size();

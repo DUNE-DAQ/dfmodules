@@ -75,6 +75,9 @@ public:
     trigger_number_string << m_data_record_params.trigger_record_name_prefix
                           << std::setw(m_data_record_params.digits_for_trigger_number) << std::setfill('0')
                           << data_key.get_trigger_number();
+    if (data_key.m_max_sequence_number > 0) {
+      trigger_number_string << "." << data_key.m_this_sequence_number;
+    }
     path_list.push_back(trigger_number_string.str());
 
     if (data_key.get_group_type() != StorageKey::DataRecordGroupType::kTriggerRecordHeader) {

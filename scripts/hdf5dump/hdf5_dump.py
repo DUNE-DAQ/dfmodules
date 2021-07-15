@@ -64,10 +64,10 @@ def print_header_dict(hdict):
 def print_fragment_header(data_array):
     keys = ['Magic word', 'Version', 'Frag Size', 'Trig number',
             'Trig timestamp', 'Window begin', 'Window end', 'Run number',
-            'Error bits', 'Fragment type', 'Fragment Padding',
+            'Error bits', 'Fragment type', 'Sequence number', 'Fragment Padding',
             'GeoID version', 'GeoID type', 'GeoID region', 'GeoID element',
             'Geo ID Padding']
-    unpack_string = '<2I5Q1I4I2H2I'
+    unpack_string = '<2I5Q3I2H1I2H2I'
     print_header_dict(unpack_header(data_array[:80], unpack_string, keys))
     return
 
@@ -75,9 +75,9 @@ def print_fragment_header(data_array):
 def print_trigger_record_header(data_array):
     keys = ['Magic word', 'Version', 'Trigger number',
             'Trigger timestamp', 'No. of requested components', 'Run Number',
-            'Error bits', 'Trigger type']
-    unpack_string = '<2I3Q2IH'
-    print_header_dict(unpack_header(data_array[:42], unpack_string, keys))
+            'Error bits', 'Trigger type', 'Sequence number', 'Max sequence num']
+    unpack_string = '<2I3Q2I3H'
+    print_header_dict(unpack_header(data_array[:46], unpack_string, keys))
 
     if g_list_components:
         comp_keys = ['Component request version', 'Component Request Padding',
