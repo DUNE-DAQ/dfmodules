@@ -79,7 +79,7 @@ struct TriggerId {
 
   friend TraceStreamer& operator<<(TraceStreamer& out, const TriggerId& id) noexcept
   {
-    return out << id.trigger_number << '-' << id.sequence_number << "/" << id.run_number;
+    return out << id.trigger_number << '.' << id.sequence_number << "/" << id.run_number;
   }
 
   friend std::istream& operator>>(std::istream& in, TriggerId& id)
@@ -92,6 +92,20 @@ struct TriggerId {
 
 } // namespace dfmodules
 
+
+/**
+ * @brief Unexpected trigger decision
+ */
+ERS_DECLARE_ISSUE(
+    dfmodules,          ///< Namespace
+    UnexpectedTriggerDecision, ///< Issue class name
+    "Unexpected Trigger Decisions: " << trigger << '/' << decision_run 
+                                     << " while in run " << current_run,
+    ((dataformats::trigger_number_t) trigger)   ///< Message parameters
+    ((dataformats::run_number_t) decision_run)  ///< Message parameters
+    ((dataformats::run_number_t) current_run)   ///< Message parameters
+)
+
 /**
  * @brief Timed out Trigger Decision
  */
@@ -102,7 +116,6 @@ ERS_DECLARE_ISSUE(
                    << " timed out",               ///< Message
     ((dfmodules::TriggerId)trigger_id)            ///< Message parameters
     ((dataformats::timestamp_t)trigger_timestamp) ///< Message parameters
-
 )
 
 /**
