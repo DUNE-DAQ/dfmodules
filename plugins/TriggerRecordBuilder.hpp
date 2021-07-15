@@ -233,7 +233,6 @@ private:
   void do_work(std::atomic<bool> &);
 
   // Configuration
-  // size_t m_sleep_msec_while_running;
   std::chrono::milliseconds m_queue_timeout;
   std::chrono::milliseconds m_loop_sleep;
 
@@ -253,6 +252,9 @@ private:
 
   // Data request properties
   dataformats::timestamp_diff_t m_max_time_window ;
+
+  // Run information
+  std::unique_ptr<const dataformats::run_number_t> m_run_number = nullptr ;
 
   // book related metrics
   using metric_counter_type =

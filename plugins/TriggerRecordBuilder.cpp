@@ -204,9 +204,12 @@ void TriggerRecordBuilder::do_conf(const data_t &payload) {
     << get_name() << ": Exiting do_conf() method";
 }
   
-void TriggerRecordBuilder::do_start(const data_t & /*args*/) {
+void TriggerRecordBuilder::do_start(const data_t & args) {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS)
       << get_name() << ": Entering do_start() method";
+
+  m_run_number.reset( new const dataformats::run_number_t(args.at("run").get<dataformats::run_number_t>() ) );
+
   m_thread.start_working_thread(get_name());
   TLOG() << get_name() << " successfully started";
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS)
@@ -273,6 +276,14 @@ void TriggerRecordBuilder::do_work(std::atomic<bool> &running_flag) {
         continue;
       }
 
+
+      if ( temp_dec.run_number != *m_run_number ) {
+	ers::error( UnexpectedTriggerDecision( ERS_HERE, 
+					       temp_dec.trigger_number, 
+					       temp_dec.run_number, 
+					       *m_run_number ) );
+	continue ;
+      }
 
       book_updates = create_trigger_records_and_dispatch( temp_dec, request_sinks, running_flag) > 0 ;
       
