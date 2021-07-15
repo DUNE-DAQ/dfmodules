@@ -20,7 +20,9 @@ local info = {
        s.field("duplicated_trigger_ids", self.uint8, 0, doc="Number of TR not created because redundant"),
        s.field("sleep_counter", self.uint8, 0, doc="Number times the loop goes to sleep"),
        s.field("loop_counter", self.uint8, 0, doc="Number times the loop is executed"),
-       s.field("average_millisecond_per_trigger", self.ratio, -1, doc="Average time (ms) for a trigger record to be completed")
+       s.field("average_millisecond_per_trigger", self.ratio, -1, doc="Average time (ms) for a trigger record to be completed"),
+       s.field("average_decision_width", self.ratio, -1, doc="Average width (clock ticks) per received trigger decision"),
+       s.field("average_data_request_width", self.ratio, -1, doc="Average width (clock ticks) per generated data request")
    ], doc="Trigger Record builder information")
 };
 
