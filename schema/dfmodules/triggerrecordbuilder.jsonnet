@@ -19,17 +19,20 @@ local types = {
 
     mapgeoidqueue : s.sequence("mapgeoidqueue",  self.geoidqueue, doc="Map of geoids queues" ),
 
+
+    timeout: s.number( "Timeout", "u8", 
+                       doc="Queue timeout in milliseconds" ),    
+
     timestamp_diff: s.number( "TimestampDiff", "i8", 
                               doc="A timestamp difference" ),
-
-    queue_timeout: s.number( "QueueTimeout", "u4", 
-                             doc="Queue timeout in milliseconds" ),    
-  
+ 
     conf: s.record("ConfParams", [ s.field("map", self.mapgeoidqueue, doc="" ), 
-                                   s.field("general_queue_timeout", self.queue_timeout, 100, 
+                                   s.field("general_queue_timeout", self.timeout, 100, 
                                            doc="General indication for timeout"),
-                                   s.field("max_timestamp_diff", self.timestamp_diff, 50000000, 
-                                           doc="General indication for timeout to throw errors")
+                                   s.field("trigger_record_timeout_ms", self.timeout, 0, 
+                                           doc="Timeout for a TR to be sent incomplete. 0 means no timeout"),
+                                   s.field("max_time_window", self.timestamp_diff, 0, 
+                                           doc="Maximum time window size for Data requests. 0 means no slicing")
                                   ] , 
                    doc="TriggerRecordBuilder configuration")
 

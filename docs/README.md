@@ -33,7 +33,7 @@ Some of the errors that can be encountered by these modules include the followin
 ### Operational Monitoring Metrics
 
 The modules in this package produce operational monitoring metrics to provide visibility into their operation.  Some example quantities that are reported include the following:
-* the TriggerRecordBuilder module reports the number of stale TriggerRecords that it has in its buffer.  Ideally, this number will always be zero during a run, but if it starts to grow, that would indicate a problem in creating fragments (upstream) or receiving fragments.
+* the TriggerRecordBuilder (TRB) module reports a lot of information that can be useful to understand boht the state of the TRB and part of the surrounding systems. The complete description of all the metrics can be found at this [link](https://github.com/DUNE-DAQ/dfmodules/blob/develop/docs/TRB_metrics.md). The metrics are used to report both error conditions and internal status as well as general information about the data stream.
 * the DataWriter module reports the number of TRs received and written.  Typically, these two values match, but they may not if data storage has been disabled, or if a data-storage prescale has been specified in the configuration.
 
 ### Raw Data Files
