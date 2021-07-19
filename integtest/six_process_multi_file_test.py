@@ -11,9 +11,9 @@ import integrationtest.log_file_checks as log_file_checks
 confgen_name="minidaqapp.nanorc.mdapp_multiru_gen"
 # The arguments to pass to the config generator, excluding the json
 # output directory (the test framework handles that)
-confgen_arguments=[ "-d", "./frames.bin", "-o", ".", "-s", "10", "-n", "5", "--host-ru", "localhost", "--host-ru", "localhost", "--host-ru", "localhost", "--hsi-event-period", "100000000"]
+confgen_arguments=[ "-d", "./frames.bin", "-o", ".", "-s", "10", "-n", "5", "-b", "1000", "-a", "1000", "--host-ru", "localhost", "--host-ru", "localhost", "--host-ru", "localhost", "-t", "10.0"]
 # The commands to run in nanorc, as a list
-nanorc_command_list="boot init conf start 101 resume wait 1100 pause stop wait 21 start 102 resume wait 800 pause stop wait 21 scrap terminate".split()
+nanorc_command_list="boot init conf start 101 resume wait 660 pause stop wait 21 start 102 resume wait 480 pause stop wait 21 scrap terminate".split()
 
 # The tests themselves
 
@@ -33,4 +33,4 @@ def test_data_file(run_nanorc):
         data_file=data_file_checks.DataFile(run_nanorc.data_files[idx])
         assert data_file_checks.sanity_check(data_file)
         assert data_file_checks.check_link_presence(data_file, n_links=15)
-        assert data_file_checks.check_fragment_sizes(data_file, min_frag_size=22350, max_frag_size=22360)
+        assert data_file_checks.check_fragment_sizes(data_file, min_frag_size=37200, max_frag_size=37200)
