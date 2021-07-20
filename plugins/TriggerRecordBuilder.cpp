@@ -15,9 +15,11 @@
 #include "dfmodules/triggerrecordbuilder/Structs.hpp"
 #include "logging/Logging.hpp"
 
+#include <algorithm>
 #include <chrono>
 #include <cmath>
 #include <cstdlib>
+#include <limits>
 #include <memory>
 #include <numeric>
 #include <string>
@@ -128,17 +130,36 @@ void TriggerRecordBuilder::get_info(opmonlib::InfoCollector &ci,
   i.pending_fragments = m_pending_fragment_counter.load();
   i.timed_out_trigger_records = m_timed_out_trigger_records.load();
   i.unexpected_fragments = m_unexpected_fragments.load();
+  i.unexpected_trigger_decisions = m_unexpected_trigger_decisions.load();
   i.lost_fragments = m_lost_fragments.load();
   i.invalid_requests = m_invalid_requests.load();
   i.duplicated_trigger_ids = m_duplicated_trigger_ids.load();
   i.sleep_counter = m_sleep_counter.exchange(0);
   i.loop_counter = m_loop_counter.exchange(0);
 
+  i.received_trigger_decisions = m_run_received_trigger_decisions.load();
+  i.generated_trigger_records = m_generated_trigger_records.load();
+
   auto time = m_trigger_record_time.exchange(0.);
   auto n_triggers = m_completed_trigger_records.exchange(0);
 
-  i.average_millisecond_per_trigger =
-      n_triggers > 0 ? time / (metric_ratio_type)n_triggers : -1.;
+  if (n_triggers > 0) {
+    i.average_millisecond_per_trigger = time / (metric_ratio_type)n_triggers;
+  }
+
+  auto td_width = m_trigger_decision_width.exchange(0);
+  auto n_td = m_received_trigger_decisions.exchange(0);
+
+  if (n_td > 0) {
+    i.average_decision_width = td_width / (metric_ratio_type)n_td;
+  }
+
+  auto dr_width = m_data_request_width.exchange(0);
+  auto n_dr = m_generated_data_requests.exchange(0);
+
+  if (n_dr > 0) {
+    i.average_data_request_width = dr_width / (metric_ratio_type)n_dr;
+  }
 
   ci.add(i);
 }
@@ -182,14 +203,19 @@ void TriggerRecordBuilder::do_conf(const data_t &payload) {
 
   TLOG() << get_name() << ": timeouts (ms): queue = " << m_queue_timeout.count()
          << ", loop = " << m_loop_sleep.count();
+  m_max_time_window = parsed_conf.max_time_window;
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS)
       << get_name() << ": Exiting do_conf() method";
 }
 
-void TriggerRecordBuilder::do_start(const data_t & /*args*/) {
+void TriggerRecordBuilder::do_start(const data_t &args) {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS)
       << get_name() << ": Entering do_start() method";
+
+  m_run_number.reset(new const dataformats::run_number_t(
+      args.at("run").get<dataformats::run_number_t>()));
+
   m_thread.start_working_thread(get_name());
   TLOG() << get_name() << " successfully started";
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS)
@@ -213,7 +239,10 @@ void TriggerRecordBuilder::do_work(std::atomic<bool> &running_flag) {
   // clean books from possible previous memory
   m_trigger_records.clear();
   m_trigger_decisions_counter.store(0);
+  m_unexpected_trigger_decisions.store(0);
   m_pending_fragment_counter.store(0);
+  m_run_received_trigger_decisions.store(0);
+  m_generated_trigger_records.store(0);
   m_fragment_counter.store(0);
   m_timed_out_trigger_records.store(0);
   m_unexpected_fragments.store(0);
@@ -256,34 +285,18 @@ void TriggerRecordBuilder::do_work(std::atomic<bool> &running_flag) {
         continue;
       }
 
-      // create the book entry
-      TriggerId temp_id(temp_dec);
-
-      auto it = m_trigger_records.find(temp_id);
-      if (it != m_trigger_records.end()) {
-        ers::error(DuplicatedTriggerDecision(ERS_HERE, temp_id));
-        ++m_duplicated_trigger_ids;
+      if (temp_dec.run_number != *m_run_number) {
+        ers::error(UnexpectedTriggerDecision(ERS_HERE, temp_dec.trigger_number,
+                                             temp_dec.run_number,
+                                             *m_run_number));
+        ++m_unexpected_trigger_decisions;
+        continue;
       }
 
-      // create trigger record
-      auto &entry = m_trigger_records[temp_id] =
-          std::make_pair(clock_type::now(), trigger_record_ptr_t());
-      trigger_record_ptr_t &trp = entry.second;
-      trp.reset(new dataformats::TriggerRecord(temp_dec.components));
-      dataformats::TriggerRecord &tr = *trp;
+      ++m_run_received_trigger_decisions;
 
-      tr.get_header_ref().set_trigger_number(temp_dec.trigger_number);
-      tr.get_header_ref().set_run_number(temp_dec.run_number);
-      tr.get_header_ref().set_trigger_timestamp(temp_dec.trigger_timestamp);
-      tr.get_header_ref().set_trigger_type(temp_dec.trigger_type);
-
-      m_trigger_decisions_counter++;
-      m_pending_fragment_counter += temp_dec.components.size();
-
-      book_updates = true;
-
-      // dispatch requests
-      dispatch_data_requests(temp_dec, request_sinks, running_flag);
+      book_updates = create_trigger_records_and_dispatch(
+                         temp_dec, request_sinks, running_flag) > 0;
 
       break;
 
@@ -499,82 +512,171 @@ TriggerRecordBuilder::extract_trigger_record(const TriggerId &id) {
   return temp;
 }
 
-bool TriggerRecordBuilder::dispatch_data_requests(
+unsigned int TriggerRecordBuilder::create_trigger_records_and_dispatch(
     const dfmessages::TriggerDecision &td, datareqsinkmap_t &sinks,
-    std::atomic<bool> &running) const {
+    std::atomic<bool> &running) {
 
-  //-----------------------------------------
-  // Loop over trigger decision components
-  // Spawn each component_data_request to the corresponding
-  // link_data_handler_queue
-  //----------------------------------------
+  unsigned int new_tr_counter = 0;
+
+  // check the whole time window
+  dataformats::timestamp_t begin =
+      std::numeric_limits<dataformats::timestamp_t>::max();
+  dataformats::timestamp_t end = 0;
+
+  for (const auto &component : td.components) {
+    if (component.window_begin < begin)
+      begin = component.window_begin;
+    if (component.window_end > end)
+      end = component.window_end;
+  }
+
+  dataformats::timestamp_diff_t tot_width = end - begin;
+  dataformats::sequence_number_t max_sequence_number =
+      m_max_time_window > 0 ? tot_width / m_max_time_window : 0;
 
   TLOG_DEBUG(TLVL_WORK_STEPS)
-      << get_name()
-      << ": Trigger Decision components: " << td.components.size();
+      << get_name() << ": trig_number " << td.trigger_number << ": run_number "
+      << td.run_number << ": trig_timestamp " << td.trigger_timestamp
+      << " will have " << max_sequence_number + 1 << " sequences";
 
-  bool sent_something = false;
+  ++m_received_trigger_decisions;
+  m_trigger_decision_width += tot_width;
 
-  for (auto it = td.components.begin(); it != td.components.end(); it++) {
+  // create the trigger records
+  for (dataformats::sequence_number_t sequence = 0;
+       sequence <= max_sequence_number; 
+       ++sequence) {
 
-    dfmessages::DataRequest dataReq;
-    dataReq.trigger_number = td.trigger_number;
-    dataReq.run_number = td.run_number;
-    dataReq.trigger_timestamp = td.trigger_timestamp;
-    dataReq.readout_type = td.readout_type;
+    dataformats::timestamp_t slice_begin = begin + sequence * m_max_time_window;
+    dataformats::timestamp_t slice_end =
+        m_max_time_window > 0 ? std::min(slice_begin + m_max_time_window, end)
+                              : end;
 
-    TLOG_DEBUG(TLVL_WORK_STEPS)
-        << get_name() << ": trig_number " << dataReq.trigger_number
-        << ": run_number " << dataReq.run_number << ": trig_timestamp "
-        << dataReq.trigger_timestamp;
+    // create the components cropped in time
+    decltype(td.components) slice_components;
+    for (const auto &component : td.components) {
 
-    const dataformats::ComponentRequest &comp_req = *it;
-    const dataformats::GeoID &req_geoid = comp_req.component;
-    dataReq.window_begin = comp_req.window_begin;
-    dataReq.window_end = comp_req.window_end;
+      if (component.window_begin >= slice_end)
+        continue;
+      if (component.window_end <= slice_begin)
+        continue;
 
-    TLOG_DEBUG(TLVL_WORK_STEPS)
-        << get_name() << ": GeoID " << req_geoid << ": window_begin "
-        << comp_req.window_begin << ": window_end " << comp_req.window_end;
+      dataformats::timestamp_t new_begin =
+          std::max(slice_begin, component.window_begin);
+      dataformats::timestamp_t new_end =
+          std::min(slice_end, component.window_end);
 
-    // find the queue for geoid_req in the map
-    auto it_req = sinks.find(req_geoid);
-    if (it_req == sinks.end()) {
-      // if geoid request is not valid. then trhow error and continue
-      ers::error(dunedaq::dfmodules::UnknownGeoID(ERS_HERE, req_geoid));
-      ++m_invalid_requests;
+      dataformats::ComponentRequest temp(component.component, new_begin,
+                                         new_end);
+      slice_components.push_back(temp);
+
+      ++m_generated_data_requests;
+      m_data_request_width += new_end - new_begin;
+
+    } // loop over component in trigger decision
+
+    // Pleae note that the system could generate empty sequences 
+    // The code keeps them.
+
+    // create the book entry
+    TriggerId slice_id(td, sequence);
+
+    auto it = m_trigger_records.find(slice_id);
+    if (it != m_trigger_records.end()) {
+      ers::error(DuplicatedTriggerDecision(ERS_HERE, slice_id));
+      ++m_duplicated_trigger_ids;
       continue;
     }
 
-    // get the queue from map element
-    auto &queue = it_req->second;
+    // create trigger record for the slice
+    auto &entry = m_trigger_records[slice_id] =
+        std::make_pair(clock_type::now(), trigger_record_ptr_t());
+    ;
+    trigger_record_ptr_t &trp = entry.second;
+    trp.reset(new dataformats::TriggerRecord(slice_components));
+    dataformats::TriggerRecord &tr = *trp;
 
-    bool wasSentSuccessfully = false;
-    do {
+    tr.get_header_ref().set_trigger_number(td.trigger_number);
+    tr.get_header_ref().set_sequence_number(sequence);
+    tr.get_header_ref().set_max_sequence_number(max_sequence_number);
+    tr.get_header_ref().set_run_number(td.run_number);
+    tr.get_header_ref().set_trigger_timestamp(td.trigger_timestamp);
+    tr.get_header_ref().set_trigger_type(td.trigger_type);
+
+    m_trigger_decisions_counter++;
+    m_pending_fragment_counter += slice_components.size();
+    ++new_tr_counter;
+
+    // create and send the requests
+    TLOG_DEBUG(TLVL_WORK_STEPS)
+        << get_name()
+        << ": Trigger Decision components: " << td.components.size();
+
+    for (const auto &component : slice_components) {
+
+      dfmessages::DataRequest dataReq;
+      dataReq.trigger_number = td.trigger_number;
+      dataReq.sequence_number = sequence;
+      dataReq.run_number = td.run_number;
+      dataReq.trigger_timestamp = td.trigger_timestamp;
+      dataReq.readout_type = td.readout_type;
+      dataReq.window_begin = component.window_begin;
+      dataReq.window_end = component.window_end;
+
       TLOG_DEBUG(TLVL_WORK_STEPS)
-          << get_name() << ": Pushing the DataRequest from trigger number "
-          << dataReq.trigger_number
-          << " onto output queue :" << queue->get_name();
+          << get_name() << ": TR " << slice_id << ": trig_timestamp "
+          << dataReq.trigger_timestamp << ": GeoID " << component.component
+          << ": window [" << dataReq.window_begin << ", " << dataReq.window_end
+          << ']';
 
-      // push data request into the corresponding queue
-      try {
-        queue->push(dataReq, m_queue_timeout);
-        wasSentSuccessfully = true;
-      } catch (const dunedaq::appfwk::QueueTimeoutExpired &excpt) {
-        std::ostringstream oss_warn;
-        oss_warn << "push to output queue \"" << queue->get_name() << "\"";
-        ers::warning(dunedaq::appfwk::QueueTimeoutExpired(
-            ERS_HERE, get_name(), oss_warn.str(),
-            std::chrono::duration_cast<std::chrono::milliseconds>(
-                m_queue_timeout)
-                .count()));
-      }
-    } while (!wasSentSuccessfully && running.load());
+      dispatch_data_requests(dataReq, component.component, sinks, running);
 
-    sent_something |= wasSentSuccessfully;
-  } // loop over trigger decision components
+    } // loop loop over component in the slice
 
-  return sent_something;
+  } // sequence loop
+
+  return new_tr_counter;
+}
+
+bool TriggerRecordBuilder::dispatch_data_requests(
+    const dfmessages::DataRequest &dr, const dataformats::GeoID &geo,
+    datareqsinkmap_t &sinks, std::atomic<bool> &running) const
+
+{
+
+  // find the queue for geoid_req in the map
+  auto it_req = sinks.find(geo);
+  if (it_req == sinks.end()) {
+    // if geoid request is not valid. then trhow error and continue
+    ers::error(dunedaq::dfmodules::UnknownGeoID(ERS_HERE, geo));
+    ++m_invalid_requests;
+    return false;
+  }
+
+  // get the queue from map element
+  auto &queue = it_req->second;
+
+  bool wasSentSuccessfully = false;
+  do {
+    TLOG_DEBUG(TLVL_WORK_STEPS)
+        << get_name() << ": Pushing the DataRequest from trigger number "
+        << dr.trigger_number << " onto output queue :" << queue->get_name();
+
+    // push data request into the corresponding queue
+    try {
+      queue->push(dr, m_queue_timeout);
+      wasSentSuccessfully = true;
+    } catch (const dunedaq::appfwk::QueueTimeoutExpired &excpt) {
+      std::ostringstream oss_warn;
+      oss_warn << "push to output queue \"" << queue->get_name() << "\"";
+      ers::warning(dunedaq::appfwk::QueueTimeoutExpired(
+          ERS_HERE, get_name(), oss_warn.str(),
+          std::chrono::duration_cast<std::chrono::milliseconds>(m_queue_timeout)
+              .count()));
+    }
+  } while (!wasSentSuccessfully && running.load());
+
+  return wasSentSuccessfully;
 }
 
 bool TriggerRecordBuilder::send_trigger_record(const TriggerId &id,
@@ -588,6 +690,7 @@ bool TriggerRecordBuilder::send_trigger_record(const TriggerId &id,
     try {
       sink.push(std::move(temp_record), m_queue_timeout);
       wasSentSuccessfully = true;
+      ++m_generated_trigger_records;
     } catch (const dunedaq::appfwk::QueueTimeoutExpired &excpt) {
       std::ostringstream oss_warn;
       oss_warn << "push to output queue \"" << get_name() << "\"";
