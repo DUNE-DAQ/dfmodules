@@ -290,12 +290,12 @@ private:
       0}; // in between calls
   mutable std::atomic<metric_counter_type> m_loop_counter = {
       0}; // in between calls
-  mutable std::atomic<uint64_t> m_trigger_record_time = {
-      0}; // in between calls // NOLINT
-  mutable std::atomic<uint64_t> m_trigger_decision_width = {
-      0}; // in between calls // NOLINT
-  mutable std::atomic<uint64_t> m_data_request_width = {
-      0}; // in between calls  // NOLINT
+  mutable std::atomic<uint64_t> m_trigger_record_time = {  // NOLINT
+      0}; // in between calls 
+  mutable std::atomic<uint64_t> m_trigger_decision_width = {  // NOLINT
+      0}; // in between calls 
+  mutable std::atomic<uint64_t> m_data_request_width = {  // NOLINT
+      0}; // in between calls 
   mutable std::atomic<metric_counter_type> m_received_trigger_decisions = {
       0}; // in between calls
   mutable std::atomic<metric_counter_type> m_generated_data_requests = {

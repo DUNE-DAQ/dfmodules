@@ -544,7 +544,8 @@ unsigned int TriggerRecordBuilder::create_trigger_records_and_dispatch(
 
   // create the trigger records
   for (dataformats::sequence_number_t sequence = 0;
-       sequence <= max_sequence_number; ++sequence) {
+       sequence <= max_sequence_number; 
+       ++sequence) {
 
     dataformats::timestamp_t slice_begin = begin + sequence * m_max_time_window;
     dataformats::timestamp_t slice_end =
@@ -574,8 +575,8 @@ unsigned int TriggerRecordBuilder::create_trigger_records_and_dispatch(
 
     } // loop over component in trigger decision
 
-    // if ( slice_components.empty() ) continue ;  MR: I would like to discuss
-    // this line with Kurt at least
+    // Pleae note that the system could generate empty sequences 
+    // The code keeps them.
 
     // create the book entry
     TriggerId slice_id(td, sequence);
