@@ -352,8 +352,16 @@ public:
   void finish_with_run(dataformats::run_number_t /*run_number*/)
   {
     if (m_file_ptr.get() != nullptr) {
-      m_file_ptr->flush();
-      m_file_ptr.reset();
+      std::string full_filename = m_file_ptr->getName();
+      try {
+	m_file_ptr->flush();
+	m_file_ptr.reset();
+      } catch (std::exception const& excpt) {
+	throw FileOperationProblem(ERS_HERE, get_name(), full_filename, excpt);
+      } catch (...) { // NOLINT(runtime/exceptions)
+	// NOLINT here because we *ARE* re-throwing the exception!
+	throw FileOperationProblem(ERS_HERE, get_name(), full_filename);
+      }
     }
   }
 
@@ -427,6 +435,8 @@ private:
         sub_group.createDataSet<char>(dataset_name, data_space, data_set_create_props, data_set_access_props);
       if (data_set.isValid()) {
         data_set.write_raw(static_cast<const char*>(data_block.get_data_start()));
+        m_file_ptr->flush();
+        m_recorded_size += data_block.m_data_size;
       } else {
         throw InvalidHDF5Dataset(ERS_HERE, get_name(), dataset_name, m_file_ptr->getName());
       }
@@ -436,9 +446,6 @@ private:
       // NOLINT here because we *ARE* re-throwing the exception!
       throw DataWritingProblem(ERS_HERE, get_name(), dataset_name, m_file_ptr->getName());
     }
-
-    m_file_ptr->flush();
-    m_recorded_size += data_block.m_data_size;
   }
 
   void increment_file_index_if_needed(size_t size_of_next_write)

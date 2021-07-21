@@ -155,7 +155,11 @@ DataWriter::do_stop(const data_t& /*args*/)
   // I've put this call fairly late in this method so that any draining of queues
   // (or whatever) can take place before we finalize things in the DataStore.
   if (m_data_storage_is_enabled) {
-    m_data_writer->finish_with_run(m_run_number);
+    try {
+      m_data_writer->finish_with_run(m_run_number);
+    } catch (const std::exception& excpt) {
+      ers::error(ProblemDuringStop(ERS_HERE, get_name(), m_run_number, excpt));
+    }
   }
 
   TLOG() << get_name() << " successfully stopped for run number " << m_run_number;
