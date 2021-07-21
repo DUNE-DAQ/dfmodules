@@ -1,16 +1,8 @@
-# 15-Jul-2021, KAB: notes on some initial integrationtests...
-
-I followed the instructions from Phil
-(https://github.com/philiprodrigues/integrationtest), including
-* `cd sourcecode`
-* `git clone https://github.com/philiprodrigues/integrationtest.git`
-* `cd integrationtest`
-* `pip install .`
-* `cd ../..`
+# 21-Jul-2021, KAB: notes on some initial integrationtests...
 
 Here is a sample command for invoking a test:
 
-* `pytest -s six_process_stop_start_test.py --frame-file <path>/frames.bin`
+* `pytest -s four_process_empty_run_test.py --frame-file <path>/frames.bin`
 
 For reference, here are the ideas behind the existing tests:
 * four_process_disabled_output_test.py - verify that the --disable-data-storage option works
