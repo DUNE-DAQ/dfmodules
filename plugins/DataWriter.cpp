@@ -105,7 +105,7 @@ DataWriter::do_conf(const data_t& payload)
 
   // ensure that we have a valid dataWriter instance
   if (m_data_writer.get() == nullptr) {
-    throw InvalidDataWriterError(ERS_HERE, get_name());
+    throw InvalidDataWriter(ERS_HERE, get_name());
   }
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
@@ -187,7 +187,7 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
   if (m_data_writer.get() == nullptr) {
     // this check is done essentially to notify the user
     // in case the "start" has been called before the "conf"
-    ers::fatal(InvalidDataWriterError(ERS_HERE, get_name()));
+    ers::fatal(InvalidDataWriter(ERS_HERE, get_name()));
   }
 
   while (running_flag.load() || m_trigger_record_input_queue->can_pop()) {
@@ -289,8 +289,12 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
           ++m_records_written;
           ++m_records_written_tot;
           m_bytes_output += bytes_in_data_blocks;
-        } catch (const ers::Issue& excpt) {
-          ers::error(DataStoreWritingFailed(ERS_HERE, m_data_writer->get_name(), excpt));
+        } catch (const std::exception& excpt) {
+          ers::error(DataWritingProblem(ERS_HERE,
+                                        get_name(),
+                                        trigger_record_ptr->get_header_ref().get_trigger_number(),
+                                        trigger_record_ptr->get_header_ref().get_run_number(),
+                                        excpt));
         }
       }
     }

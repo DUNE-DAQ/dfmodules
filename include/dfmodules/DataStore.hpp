@@ -64,17 +64,6 @@ ERS_DECLARE_ISSUE(dfmodules,               ///< Namespace
 )
 /// @endcond LCOV_EXCL_STOP
 
-/**
- * @brief A generic ERS Issue for DataStore writing failure
- * @cond Doxygen doesn't like ERS macros LCOV_EXCL_START
- */
-ERS_DECLARE_ISSUE(dfmodules,                                     ///< Namespace
-                  DataStoreWritingFailed,                        ///< Type of the Issue
-                  "Failed to write data using  " << plugin_name, ///< Log Message from the issue
-                  ((std::string)plugin_name)                     ///< Message parameters
-)
-/// @endcond LCOV_EXCL_STOP
-
 namespace dfmodules {
 
 /**

@@ -39,19 +39,20 @@ namespace dunedaq {
 /**
  * @brief A ERS Issue to report an HDF5 exception
  */
-ERS_DECLARE_ISSUE(dfmodules,          ///< Namespace
-                  HDF5Issue,          ///< Type of the Issue
-                  what,               ///< Log Message from the issue
-                  ((std::string)what) ///< Message parameters
-)
-
 ERS_DECLARE_ISSUE_BASE(dfmodules,
                        InvalidOperationMode,
                        appfwk::GeneralDAQModuleIssue,
-                       "Selected opearation mode \"" << selected_operation
-                                                     << "\" is NOT supported. Please update the configuration file.",
+                       "Selected operation mode \"" << selected_operation
+                                                    << "\" is NOT supported. Please update the configuration file.",
                        ((std::string)name),
                        ((std::string)selected_operation))
+
+ERS_DECLARE_ISSUE_BASE(dfmodules,
+                       FileOperationProblem,
+                       appfwk::GeneralDAQModuleIssue,
+                       "A problem was encountered when opening or closing file \"" << filename << "\"",
+                       ((std::string)name),
+                       ((std::string)filename))
 
 ERS_DECLARE_ISSUE_BASE(dfmodules,
                        InvalidHDF5Dataset,
@@ -62,12 +63,12 @@ ERS_DECLARE_ISSUE_BASE(dfmodules,
                        ((std::string)data_set)((std::string)filename))
 
 ERS_DECLARE_ISSUE_BASE(dfmodules,
-                       HDF5DataSetError,
+                       DataWritingProblem,
                        appfwk::GeneralDAQModuleIssue,
-                       "DataSet exception from HighFive library for DataSet name \""
-                         << data_set << "\", exception message is \"" << msgText << "\"",
+                       "A problem was encountered when writing DataSet \"" << data_set << "\" to file \"" << filename
+                                                                           << "\"",
                        ((std::string)name),
-                       ((std::string)data_set)((std::string)msgText))
+                       ((std::string)data_set)((std::string)filename))
 
 ERS_DECLARE_ISSUE_BASE(dfmodules,
                        InvalidOutputPath,
@@ -163,11 +164,11 @@ public:
     // m_file_ptr will be the handle to the Opened-File after a call to open_file_if_needed()
     try {
       open_file_if_needed(full_filename, HighFive::File::ReadOnly);
-    } catch (HighFive::Exception const& excpt) {
-      throw HDF5Issue(ERS_HERE, excpt.what(), excpt);
+    } catch (std::exception const& excpt) {
+      throw FileOperationProblem(ERS_HERE, get_name(), full_filename, excpt);
     } catch (...) { // NOLINT(runtime/exceptions)
       // NOLINT here because we *ARE* re-throwing the exception!
-      throw HDF5Issue(ERS_HERE, "Unknown exception thrown by HDF5");
+      throw FileOperationProblem(ERS_HERE, get_name(), full_filename);
     }
 
     std::vector<std::string> group_and_dataset_path_elements = m_key_translator.get_path_elements(key);
@@ -212,11 +213,11 @@ public:
     // m_file_ptr will be the handle to the Opened-File after a call to open_file_if_needed()
     try {
       open_file_if_needed(full_filename, HighFive::File::OpenOrCreate);
-    } catch (HighFive::Exception const& excpt) {
-      throw HDF5Issue(ERS_HERE, excpt.what(), excpt);
+    } catch (std::exception const& excpt) {
+      throw FileOperationProblem(ERS_HERE, get_name(), full_filename, excpt);
     } catch (...) { // NOLINT(runtime/exceptions)
       // NOLINT here because we *ARE* re-throwing the exception!
-      throw HDF5Issue(ERS_HERE, "Unknown exception thrown by HDF5");
+      throw FileOperationProblem(ERS_HERE, get_name(), full_filename);
     }
 
     // write the data block
@@ -251,11 +252,11 @@ public:
     // m_file_ptr will be the handle to the Opened-File after a call to open_file_if_needed()
     try {
       open_file_if_needed(full_filename, HighFive::File::OpenOrCreate);
-    } catch (HighFive::Exception const& excpt) {
-      throw HDF5Issue(ERS_HERE, excpt.what(), excpt);
+    } catch (std::exception const& excpt) {
+      throw FileOperationProblem(ERS_HERE, get_name(), full_filename, excpt);
     } catch (...) { // NOLINT(runtime/exceptions)
       // NOLINT here because we *ARE* re-throwing the exception!
-      throw HDF5Issue(ERS_HERE, "Unknown exception thrown by HDF5");
+      throw FileOperationProblem(ERS_HERE, get_name(), full_filename);
     }
 
     // write each data block
@@ -429,13 +430,11 @@ private:
       } else {
         throw InvalidHDF5Dataset(ERS_HERE, get_name(), dataset_name, m_file_ptr->getName());
       }
-    } catch (HighFive::DataSetException const& excpt) {
-      throw HDF5DataSetError(ERS_HERE, get_name(), dataset_name, excpt.what());
-    } catch (HighFive::Exception const& excpt) {
-      throw HDF5Issue(ERS_HERE, excpt.what(), excpt);
+    } catch (std::exception const& excpt) {
+      throw DataWritingProblem(ERS_HERE, get_name(), dataset_name, m_file_ptr->getName(), excpt);
     } catch (...) { // NOLINT(runtime/exceptions)
       // NOLINT here because we *ARE* re-throwing the exception!
-      throw HDF5Issue(ERS_HERE, "Unknown exception thrown by HDF5");
+      throw DataWritingProblem(ERS_HERE, get_name(), dataset_name, m_file_ptr->getName());
     }
 
     m_file_ptr->flush();
