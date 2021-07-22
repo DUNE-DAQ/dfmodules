@@ -9,7 +9,7 @@ local types = {
                      doc="A number representing a timestamp"),
     system_type_t : s.string("system_type_t"),
 
-    conf: s.record("ConfParams", [
+    conf: s.record("Conf", [
         s.field("system_type", self.system_type_t,
                     doc="The system type of the link"),
         s.field("apa_number", self.count, 0,

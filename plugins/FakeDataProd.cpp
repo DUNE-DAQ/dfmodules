@@ -77,7 +77,7 @@ FakeDataProd::do_conf(const data_t& payload)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
 
-  fakedataprod::ConfParams tmpConfig = payload.get<fakedataprod::ConfParams>();
+  fakedataprod::Conf tmpConfig = payload.get<fakedataprod::Conf>();
   m_geoid.system_type = dataformats::GeoID::string_to_system_type(tmpConfig.system_type);
   m_geoid.region_id = tmpConfig.apa_number;
   m_geoid.element_id = tmpConfig.link_number;
@@ -165,10 +165,11 @@ FakeDataProd::do_work(std::atomic<bool>& running_flag)
     data_fragment_ptr->set_run_number(m_run_number);
     data_fragment_ptr->set_element_id(m_geoid);
     data_fragment_ptr->set_error_bits(0);
-    data_fragment_ptr->set_type(dataformats::FragmentType::kFakeData);
+    data_fragment_ptr->set_type(dataformats::FragmentType::kTPCData);
     data_fragment_ptr->set_trigger_timestamp(data_request.trigger_timestamp);
     data_fragment_ptr->set_window_begin(data_request.window_begin);
     data_fragment_ptr->set_window_end(data_request.window_end);
+    data_fragment_ptr->set_sequence_number(data_request.sequence_number);
 
     if (m_response_delay > 0) {
       std::this_thread::sleep_for(std::chrono::nanoseconds(m_response_delay));
