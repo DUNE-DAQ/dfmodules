@@ -101,7 +101,7 @@ TPSetWriter::do_work(std::atomic<bool>& running_flag)
   triggeralgs::timestamp_t first_timestamp = 0;
   triggeralgs::timestamp_t last_timestamp = 0;
 
-  //uint32_t last_seqno = 0;
+  // uint32_t last_seqno = 0;
   dunedaq::readout::BufferedFileWriter<uint8_t> tpset_writer;
   size_t bytes_written = 0;
   int file_index = 0;
@@ -122,10 +122,10 @@ TPSetWriter::do_work(std::atomic<bool>& running_flag)
     }
 
     // Do some checks on the received TPSet
-    //if (last_seqno != 0 && tpset.seqno != last_seqno + 1) {
+    // if (last_seqno != 0 && tpset.seqno != last_seqno + 1) {
     //  TLOG() << "Missed TPSets: last_seqno=" << last_seqno << ", current seqno=" << tpset.seqno;
     //}
-    //last_seqno = tpset.seqno;
+    // last_seqno = tpset.seqno;
 
     if (tpset.start_time < last_timestamp) {
       TLOG() << "TPSets out of order: last start time " << last_timestamp << ", current start time "
@@ -156,7 +156,10 @@ TPSetWriter::do_work(std::atomic<bool>& running_flag)
       tpset_writer.open(work_oss.str(), 1024, "None", false);
     }
 
-    dataformats::Fragment frag(&tpset_bytes[0], tpset_bytes.size());
+    // dataformats::Fragment frag(&tpset_bytes[0], tpset_bytes.size());
+
+    int dummy_val = 0xdeadbeef;
+    dataformats::Fragment frag(&dummy_val, sizeof(dummy_val));
     frag.set_run_number(m_run_number);
     frag.set_window_begin(tpset.start_time);
     frag.set_window_end(tpset.end_time);
@@ -165,6 +168,7 @@ TPSetWriter::do_work(std::atomic<bool>& running_flag)
     geoid.region_id = tpset.origin.region_id;
     geoid.element_id = tpset.origin.element_id;
     frag.set_element_id(geoid);
+    frag.set_type(dataformats::FragmentType::kTriggerPrimitives);
 
     const uint8_t* fragment_storage_location = static_cast<const uint8_t*>(frag.get_storage_location());
     for (uint32_t idx = 0; idx < frag.get_size(); ++idx) {
