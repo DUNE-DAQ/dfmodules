@@ -12,7 +12,7 @@ find_package(HighFive REQUIRED)
 find_package(dfmessages REQUIRED)
 find_package(opmonlib REQUIRED)
 
-daq_codegen( datawriter.jsonnet hdf5datastore.jsonnet triggerrecordbuilder.jsonnet TEMPLATES Structs.hpp.j2 Nljs.hpp.j2 )
+daq_codegen( datawriter.jsonnet hdf5datastore.jsonnet triggerrecordbuilder.jsonnet fakedataprod.jsonnet TEMPLATES Structs.hpp.j2 Nljs.hpp.j2 )
 daq_codegen( *info.jsonnet DEP_PKGS opmonlib TEMPLATES opmonlib/InfoStructs.hpp.j2 opmonlib/InfoNljs.hpp.j2 )
 
 ##############################################################################
@@ -24,7 +24,7 @@ daq_add_plugin( HDF5DataStore      duneDataStore LINK_LIBRARIES logging::logging
 
 daq_add_plugin( DataWriter            duneDAQModule LINK_LIBRARIES dfmodules )
 daq_add_plugin( TriggerRecordBuilder  duneDAQModule LINK_LIBRARIES dfmodules )
-
+daq_add_plugin( FakeDataProd          duneDAQModule LINK_LIBRARIES dfmodules )
 
 
 ##############################################################################
