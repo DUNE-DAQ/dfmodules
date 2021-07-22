@@ -11,6 +11,7 @@
 
 #include "dataformats/Fragment.hpp"
 #include "dfmessages/DataRequest.hpp"
+#include "dfmessages/TimeSync.hpp"
 
 #include "appfwk/DAQModule.hpp"
 #include "appfwk/DAQSink.hpp"
@@ -51,19 +52,26 @@ private:
 
   // Threading
   dunedaq::appfwk::ThreadHelper m_thread;
+  dunedaq::appfwk::ThreadHelper m_timesync_thread;
   void do_work(std::atomic<bool>&);
+  void do_timesync(std::atomic<bool>&);
 
   // Configuration
   // size_t m_sleep_msec_while_running;
   std::chrono::milliseconds m_queue_timeout;
   dunedaq::dataformats::run_number_t m_run_number;
-  uint32_t m_fake_link_number; // NOLINT
+  dataformats::GeoID m_geoid;
+  uint64_t m_time_tick_diff;
+  uint64_t m_frame_size;
+  uint64_t m_response_delay;
 
   // Queue(s)
   using datareqsource_t = dunedaq::appfwk::DAQSource<dfmessages::DataRequest>;
   std::unique_ptr<datareqsource_t> m_data_request_input_queue;
   using datafragsink_t = dunedaq::appfwk::DAQSink<std::unique_ptr<dataformats::Fragment>>;
   std::unique_ptr<datafragsink_t> m_data_fragment_output_queue;
+  using timesyncsink_t = dunedaq::appfwk::DAQSink<dfmessages::TimeSync>;
+  std::unique_ptr<timesyncsink_t> m_timesync_output_queue;
 };
 } // namespace dfmodules
 } // namespace dunedaq
