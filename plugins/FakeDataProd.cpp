@@ -9,6 +9,7 @@
 #include "FakeDataProd.hpp"
 #include "dfmodules/CommonIssues.hpp"
 #include "dfmodules/fakedataprod/Nljs.hpp"
+#include "dfmodules/fakedataprodinfo/InfoNljs.hpp"
 
 #include "appfwk/DAQModuleHelper.hpp"
 #include "logging/Logging.hpp"
@@ -108,7 +109,18 @@ FakeDataProd::do_stop(const data_t& /*args*/)
   m_thread.stop_working_thread();
   m_timesync_thread.stop_working_thread();
   TLOG() << get_name() << " successfully stopped";
+  m_sent_fragments = 0;
+  m_received_requests = 0;
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_stop() method";
+}
+
+void
+FakeDataProd::get_info(opmonlib::InfoCollector& ci, int /*level*/)
+{
+  fakedataprodinfo::Info info;
+  info.requests_received = m_received_requests;
+  info.fragments_sent = m_sent_fragments;
+  ci.add(info);
 }
 
 void
@@ -141,6 +153,7 @@ FakeDataProd::do_work(std::atomic<bool>& running_flag)
     dfmessages::DataRequest data_request;
     try {
       m_data_request_input_queue->pop(data_request, m_queue_timeout);
+      m_received_requests++;
       ++receivedCount;
     } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
       // it is perfectly reasonable that there might be no data in the queue
@@ -182,6 +195,7 @@ FakeDataProd::do_work(std::atomic<bool>& running_flag)
       try {
         m_data_fragment_output_queue->push(std::move(data_fragment_ptr), m_queue_timeout);
         wasSentSuccessfully = true;
+        m_sent_fragments++;
       } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
         std::ostringstream oss_warn;
         oss_warn << "push to output queue \"" << m_data_fragment_output_queue->get_name() << "\"";

@@ -50,6 +50,8 @@ private:
   void do_start(const data_t&);
   void do_stop(const data_t&);
 
+  void get_info(opmonlib::InfoCollector& ci, int level) override;
+
   // Threading
   dunedaq::appfwk::ThreadHelper m_thread;
   dunedaq::appfwk::ThreadHelper m_timesync_thread;
@@ -72,6 +74,9 @@ private:
   std::unique_ptr<datafragsink_t> m_data_fragment_output_queue;
   using timesyncsink_t = dunedaq::appfwk::DAQSink<dfmessages::TimeSync>;
   std::unique_ptr<timesyncsink_t> m_timesync_output_queue;
+
+  std::atomic<uint64_t> m_received_requests { 0 };
+  std::atomic<uint64_t> m_sent_fragments { 0 };
 };
 } // namespace dfmodules
 } // namespace dunedaq
