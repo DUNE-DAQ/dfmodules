@@ -11,8 +11,13 @@ find_package(logging REQUIRED)
 find_package(HighFive REQUIRED)
 find_package(dfmessages REQUIRED)
 find_package(opmonlib REQUIRED)
-find_package(trigger REQUIRED)
+
+# 22-Jul-2021, KAB: all of the packages in this block are needed for the first version
+# of the TPSetWriter. Some of these may be able to be removed, at some point in time,
+# if we choose different tools for handling the TPSet writing.
 find_package(triggeralgs REQUIRED)
+find_package(timinglibs REQUIRED)
+find_package(trigger REQUIRED)
 find_package(serialization REQUIRED)
 find_package(readout REQUIRED)
 find_package(Boost COMPONENTS iostreams REQUIRED)
