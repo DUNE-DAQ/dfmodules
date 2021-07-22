@@ -206,6 +206,7 @@ FakeDataProd::do_work(std::atomic<bool>& running_flag)
           std::chrono::duration_cast<std::chrono::milliseconds>(m_queue_timeout).count()));
       }
     }
+    free(fake_data);
 
     // TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Start of sleep while waiting for run Stop";
     // std::this_thread::sleep_for(std::chrono::milliseconds(m_sleep_msec_while_running));
