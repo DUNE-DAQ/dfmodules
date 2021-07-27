@@ -63,14 +63,6 @@ ERS_DECLARE_ISSUE_BASE(dfmodules,
                        ((std::string)data_set)((std::string)filename))
 
 ERS_DECLARE_ISSUE_BASE(dfmodules,
-                       DataWritingProblem,
-                       appfwk::GeneralDAQModuleIssue,
-                       "A problem was encountered when writing DataSet \"" << data_set << "\" to file \"" << filename
-                                                                           << "\"",
-                       ((std::string)name),
-                       ((std::string)data_set)((std::string)filename))
-
-ERS_DECLARE_ISSUE_BASE(dfmodules,
                        InvalidOutputPath,
                        appfwk::GeneralDAQModuleIssue,
                        "The specified output destination, \"" << output_path
@@ -82,10 +74,10 @@ ERS_DECLARE_ISSUE_BASE(dfmodules,
                        InsufficientDiskSpace,
                        appfwk::GeneralDAQModuleIssue,
                        "There is insufficient free space on the disk associated with output file path \""
-                         << output_path << "\". There are " << free_bytes
-                         << " bytes free, and a single output file can take up to " << max_file_size_bytes << " bytes.",
+                         << path << "\". There are " << free_bytes << " bytes free, and the "
+                         << "required minimum is " << needed_bytes << " bytes based on " << criteria << ".",
                        ((std::string)name),
-                       ((std::string)output_path)((size_t)free_bytes)((size_t)max_file_size_bytes))
+                       ((std::string)path)((size_t)free_bytes)((size_t)needed_bytes)((std::string)criteria))
 
 ERS_DECLARE_ISSUE_BASE(dfmodules,
                        EmptyDataBlockList,
@@ -204,6 +196,19 @@ public:
    */
   virtual void write(const KeyedDataBlock& data_block)
   {
+    // check if there is sufficient space for this data block
+    size_t current_free_space = get_free_space(m_path);
+    if (current_free_space < (5 * data_block.m_data_size)) {
+      InsufficientDiskSpace issue(ERS_HERE,
+                                  get_name(),
+                                  m_path,
+                                  current_free_space,
+                                  (data_block.m_data_size),
+                                  "a multiple of the data block size");
+      std::string msg = "writing a data block to file " + m_file_ptr->getName();
+      throw RetryableDataStoreProblem(ERS_HERE, get_name(), msg, issue);
+    }
+
     // check if a new file should be opened for this data block
     increment_file_index_if_needed(data_block.m_data_size);
 
@@ -235,11 +240,20 @@ public:
       throw EmptyDataBlockList(ERS_HERE, get_name());
     }
 
-    // check if a new file should be opened for this set of data blocks
+    // check if there is sufficient space for these data blocks
     size_t sum_of_sizes = 0;
     for (auto& data_block : data_block_list) {
       sum_of_sizes += data_block.m_data_size;
     }
+    size_t current_free_space = get_free_space(m_path);
+    if (current_free_space < (5 * sum_of_sizes)) {
+      InsufficientDiskSpace issue(
+        ERS_HERE, get_name(), m_path, current_free_space, (5 * sum_of_sizes), "a multiple of the data block sizes");
+      std::string msg = "writing a list of data blocks to file " + m_file_ptr->getName();
+      throw RetryableDataStoreProblem(ERS_HERE, get_name(), msg, issue);
+    }
+
+    // check if a new file should be opened for this set of data blocks
     TLOG_DEBUG(TLVL_FILE_SIZE) << get_name() << ": Checking file size, recorded=" << m_recorded_size
                                << ", additional=" << sum_of_sizes << ", max=" << m_max_file_size;
     increment_file_index_if_needed(sum_of_sizes);
@@ -322,7 +336,8 @@ public:
                            << " bytes. This will be compared with the maximum size of a single file ("
                            << m_max_file_size << ") as a simple test to see if there is enough free space.";
     if (free_space < m_max_file_size) {
-      throw InsufficientDiskSpace(ERS_HERE, get_name(), m_path, free_space, m_max_file_size);
+      throw InsufficientDiskSpace(
+        ERS_HERE, get_name(), m_path, free_space, m_max_file_size, "the configured maximum size of a single file");
     }
 
     // create the timestamp substring that is part of unique-ifying the filename, for later use
@@ -354,13 +369,13 @@ public:
     if (m_file_ptr.get() != nullptr) {
       std::string full_filename = m_file_ptr->getName();
       try {
-	m_file_ptr->flush();
-	m_file_ptr.reset();
+        m_file_ptr->flush();
+        m_file_ptr.reset();
       } catch (std::exception const& excpt) {
-	throw FileOperationProblem(ERS_HERE, get_name(), full_filename, excpt);
+        throw FileOperationProblem(ERS_HERE, get_name(), full_filename, excpt);
       } catch (...) { // NOLINT(runtime/exceptions)
-	// NOLINT here because we *ARE* re-throwing the exception!
-	throw FileOperationProblem(ERS_HERE, get_name(), full_filename);
+        // NOLINT here because we *ARE* re-throwing the exception!
+        throw FileOperationProblem(ERS_HERE, get_name(), full_filename);
       }
     }
   }
@@ -441,10 +456,13 @@ private:
         throw InvalidHDF5Dataset(ERS_HERE, get_name(), dataset_name, m_file_ptr->getName());
       }
     } catch (std::exception const& excpt) {
-      throw DataWritingProblem(ERS_HERE, get_name(), dataset_name, m_file_ptr->getName(), excpt);
+      std::string description = "DataSet " + dataset_name;
+      std::string msg = "writing DataSet " + dataset_name + " to file " + m_file_ptr->getName();
+      throw GeneralDataStoreProblem(ERS_HERE, get_name(), msg, excpt);
     } catch (...) { // NOLINT(runtime/exceptions)
       // NOLINT here because we *ARE* re-throwing the exception!
-      throw DataWritingProblem(ERS_HERE, get_name(), dataset_name, m_file_ptr->getName());
+      std::string msg = "writing DataSet " + dataset_name + " to file " + m_file_ptr->getName();
+      throw GeneralDataStoreProblem(ERS_HERE, get_name(), msg);
     }
   }
 
@@ -511,6 +529,16 @@ private:
       TLOG_DEBUG(TLVL_BASIC) << get_name() << ": Pointer file to  " << m_basic_name_of_open_file
                              << " was already opened with open_flags " << std::to_string(m_open_flags_of_open_file);
     }
+  }
+
+  size_t get_free_space(const std::string& the_path)
+  {
+    struct statvfs vfs_results;
+    int retval = statvfs(the_path.c_str(), &vfs_results);
+    if (retval != 0) {
+      return 0;
+    }
+    return vfs_results.f_bsize * vfs_results.f_bavail;
   }
 };
 

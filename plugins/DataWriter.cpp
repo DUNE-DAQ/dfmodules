@@ -288,18 +288,37 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
 
       // write the TRH and the fragments as a set of data blocks
       if (m_data_storage_is_enabled) {
-        try {
-          m_data_writer->write(data_block_list);
-          ++m_records_written;
-          ++m_records_written_tot;
-          m_bytes_output += bytes_in_data_blocks;
-        } catch (const std::exception& excpt) {
-          ers::error(DataWritingProblem(ERS_HERE,
-                                        get_name(),
-                                        trigger_record_ptr->get_header_ref().get_trigger_number(),
-                                        trigger_record_ptr->get_header_ref().get_run_number(),
-                                        excpt));
+
+        bool should_retry = true;
+        int retry_wait_usec = 5000;
+	do {
+	  should_retry = false;
+          try {
+            m_data_writer->write(data_block_list);
+            ++m_records_written;
+            ++m_records_written_tot;
+            m_bytes_output += bytes_in_data_blocks;
+          } catch (const RetryableDataStoreProblem& excpt) {
+            should_retry = true;
+            ers::error(DataWritingProblem(ERS_HERE,
+                                          get_name(),
+                                          trigger_record_ptr->get_header_ref().get_trigger_number(),
+                                          trigger_record_ptr->get_header_ref().get_run_number(),
+                                          excpt));
+            retry_wait_usec *= 2;
+            if (retry_wait_usec > 500000) {
+              retry_wait_usec = 500000;
+            }
+            usleep(retry_wait_usec);
+          } catch (const std::exception& excpt) {
+            ers::error(DataWritingProblem(ERS_HERE,
+                                          get_name(),
+                                          trigger_record_ptr->get_header_ref().get_trigger_number(),
+                                          trigger_record_ptr->get_header_ref().get_run_number(),
+                                          excpt));
+          }
         }
+	while (should_retry && running_flag.load());
       }
     }
 
