@@ -54,7 +54,8 @@ void
 FakeDataProd::init(const data_t& init_data)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
-  auto qi = appfwk::queue_index(init_data, { "data_request_input_queue", "data_fragment_output_queue", "timesync_output_queue" });
+  auto qi = appfwk::queue_index(init_data,
+                                { "data_request_input_queue", "data_fragment_output_queue", "timesync_output_queue" });
   try {
     m_data_request_input_queue.reset(new datareqsource_t(qi["data_request_input_queue"].inst));
   } catch (const ers::Issue& excpt) {
@@ -124,20 +125,17 @@ FakeDataProd::get_info(opmonlib::InfoCollector& ci, int /*level*/)
 }
 
 void
-FakeDataProd::do_timesync(std::atomic<bool> & running_flag)
+FakeDataProd::do_timesync(std::atomic<bool>& running_flag)
 {
   while (running_flag.load()) {
     auto time_now = std::chrono::system_clock::now().time_since_epoch();
-    uint64_t current_timestamp = std::chrono::duration_cast<std::chrono::nanoseconds>(time_now).count(); // NOLINT (build/unsigned)
+    uint64_t current_timestamp =  // NOLINT (build/unsigned)
+      std::chrono::duration_cast<std::chrono::nanoseconds>(time_now).count();
     auto timesyncmsg = dfmessages::TimeSync(current_timestamp);
     try {
       m_timesync_output_queue->push(std::move(timesyncmsg));
     } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
-      ers::warning(dunedaq::appfwk::QueueTimeoutExpired(
-          ERS_HERE,
-          get_name(),
-          "Could not send timesync",
-          0));
+      ers::warning(dunedaq::appfwk::QueueTimeoutExpired(ERS_HERE, get_name(), "Could not send timesync", 0));
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
@@ -162,7 +160,8 @@ FakeDataProd::do_work(std::atomic<bool>& running_flag)
     }
 
     // num_frames_to_send = ⌈window_size / tick_diff⌉
-    size_t num_frames_to_send = (data_request.window_end - data_request.window_begin + m_time_tick_diff - 1) / m_time_tick_diff;
+    size_t num_frames_to_send =
+      (data_request.window_end - data_request.window_begin + m_time_tick_diff - 1) / m_time_tick_diff;
     size_t num_bytes_to_send = num_frames_to_send * m_frame_size;
 
     // We don't care about the content of the data, but the size should be correct
@@ -172,8 +171,7 @@ FakeDataProd::do_work(std::atomic<bool>& running_flag)
       TLOG_DEBUG(TLVL_WORK_STEPS) << "Could not allocate memory";
       continue;
     }
-    std::unique_ptr<dataformats::Fragment> data_fragment_ptr(
-      new dataformats::Fragment(fake_data, num_bytes_to_send));
+    std::unique_ptr<dataformats::Fragment> data_fragment_ptr(new dataformats::Fragment(fake_data, num_bytes_to_send));
     data_fragment_ptr->set_trigger_number(data_request.trigger_number);
     data_fragment_ptr->set_run_number(m_run_number);
     data_fragment_ptr->set_element_id(m_geoid);

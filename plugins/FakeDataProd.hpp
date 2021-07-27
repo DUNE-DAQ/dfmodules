@@ -64,7 +64,7 @@ private:
   dunedaq::dataformats::run_number_t m_run_number;
   dataformats::GeoID m_geoid;
   uint64_t m_time_tick_diff; // NOLINT (build/unsigned)
-  uint64_t m_frame_size; // NOLINT (build/unsigned)
+  uint64_t m_frame_size;     // NOLINT (build/unsigned)
   uint64_t m_response_delay; // NOLINT (build/unsigned)
 
   // Queue(s)
@@ -75,8 +75,8 @@ private:
   using timesyncsink_t = dunedaq::appfwk::DAQSink<dfmessages::TimeSync>;
   std::unique_ptr<timesyncsink_t> m_timesync_output_queue;
 
-  std::atomic<uint64_t> m_received_requests { 0 }; // NOLINT (build/unsigned)
-  std::atomic<uint64_t> m_sent_fragments { 0 }; // NOLINT (build/unsigned)
+  std::atomic<uint64_t> m_received_requests{ 0 }; // NOLINT (build/unsigned)
+  std::atomic<uint64_t> m_sent_fragments{ 0 };    // NOLINT (build/unsigned)
 };
 } // namespace dfmodules
 } // namespace dunedaq
