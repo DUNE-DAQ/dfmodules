@@ -18,7 +18,7 @@ def generate_boot(producer_spec: dict,
             "comment": "Application profile based on a full dbt runtime environment",
             "env": {
                "DBT_AREA_ROOT": "getenv",
-               "TRACE_FILE": "getenv"
+               "TRACE_FILE": "getenv:/tmp/trace_buffer_${HOSTNAME}_${USER}"
             },
             "cmd": [
                 "CMD_FAC=rest://localhost:${APP_PORT}",
@@ -38,7 +38,7 @@ def generate_boot(producer_spec: dict,
                 "LD_LIBRARY_PATH": "getenv",
                 "PATH": "getenv",
                 "DUNEDAQ_ERS_DEBUG_LEVEL": "1",
-                "TRACE_FILE": "getenv"
+                "TRACE_FILE": "getenv:/tmp/trace_buffer_${HOSTNAME}_${USER}"
             },
             "cmd": [
                 "CMD_FAC=rest://localhost:${APP_PORT}",
