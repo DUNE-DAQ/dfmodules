@@ -96,6 +96,8 @@ void
 FakeDataProd::do_start(const data_t& payload)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_start() method";
+  m_sent_fragments = 0;
+  m_received_requests = 0;
   m_run_number = payload.value<dunedaq::dataformats::run_number_t>("run", 0);
   m_thread.start_working_thread();
   m_timesync_thread.start_working_thread();
@@ -110,8 +112,6 @@ FakeDataProd::do_stop(const data_t& /*args*/)
   m_thread.stop_working_thread();
   m_timesync_thread.stop_working_thread();
   TLOG() << get_name() << " successfully stopped";
-  m_sent_fragments = 0;
-  m_received_requests = 0;
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_stop() method";
 }
 
@@ -166,10 +166,10 @@ FakeDataProd::do_work(std::atomic<bool>& running_flag)
 
     // We don't care about the content of the data, but the size should be correct
     void* fake_data = malloc(num_bytes_to_send);
-    // This should really not happen, handle this in a better way later
+
+    // This should really not happen
     if (fake_data == nullptr) {
-      TLOG_DEBUG(TLVL_WORK_STEPS) << "Could not allocate memory";
-      continue;
+      throw dunedaq::dataformats::MemoryAllocationFailed(ERS_HERE, num_bytes_to_send);
     }
     std::unique_ptr<dataformats::Fragment> data_fragment_ptr(new dataformats::Fragment(fake_data, num_bytes_to_send));
     data_fragment_ptr->set_trigger_number(data_request.trigger_number);
