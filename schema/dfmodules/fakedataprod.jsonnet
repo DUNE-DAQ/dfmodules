@@ -8,6 +8,7 @@ local types = {
     time : s.number("Time", "u8",
                      doc="A number representing a timestamp"),
     system_type_t : s.string("system_type_t"),
+    fragment_type_t : s.string("fragment_type_t"),
 
     conf: s.record("Conf", [
         s.field("system_type", self.system_type_t,
@@ -21,7 +22,9 @@ local types = {
         s.field("frame_size", self.count, 0,
                     doc="The size of a fake frame"),
         s.field("response_delay", self.time, 0,
-                    doc="Wait for this amount of ns before sending the fragment")
+                    doc="Wait for this amount of ns before sending the fragment"),
+        s.field("fragment_type", self.fragment_type_t,
+                    doc="Fragment type of the response")
     ], doc="FakeDataProd configuration"),
 
 };

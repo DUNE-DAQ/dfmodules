@@ -66,6 +66,7 @@ private:
   uint64_t m_time_tick_diff; // NOLINT (build/unsigned)
   uint64_t m_frame_size;     // NOLINT (build/unsigned)
   uint64_t m_response_delay; // NOLINT (build/unsigned)
+  dataformats::FragmentType m_fragment_type;
 
   // Queue(s)
   using datareqsource_t = dunedaq::appfwk::DAQSource<dfmessages::DataRequest>;

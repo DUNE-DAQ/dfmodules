@@ -86,6 +86,7 @@ FakeDataProd::do_conf(const data_t& payload)
   m_time_tick_diff = tmpConfig.time_tick_diff;
   m_frame_size = tmpConfig.frame_size;
   m_response_delay = tmpConfig.response_delay;
+  m_fragment_type = dataformats::string_to_fragment_type(tmpConfig.fragment_type);
 
   TLOG_DEBUG(TLVL_CONFIG) << get_name() << ": configured for link number " << m_geoid.element_id;
 
@@ -176,7 +177,7 @@ FakeDataProd::do_work(std::atomic<bool>& running_flag)
     data_fragment_ptr->set_run_number(m_run_number);
     data_fragment_ptr->set_element_id(m_geoid);
     data_fragment_ptr->set_error_bits(0);
-    data_fragment_ptr->set_type(dataformats::FragmentType::kTPCData);
+    data_fragment_ptr->set_type(m_fragment_type);
     data_fragment_ptr->set_trigger_timestamp(data_request.trigger_timestamp);
     data_fragment_ptr->set_window_begin(data_request.window_begin);
     data_fragment_ptr->set_window_end(data_request.window_end);
