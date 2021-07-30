@@ -65,6 +65,9 @@ private:
   int m_data_storage_prescale;
   int m_initial_tokens;
   dataformats::run_number_t m_run_number;
+  size_t m_min_write_retry_time_usec;
+  size_t m_max_write_retry_time_usec;
+  int m_write_retry_time_increase_factor;
 
   // Queue(s)
   using trigrecsource_t = dunedaq::appfwk::DAQSource<std::unique_ptr<dataformats::TriggerRecord>>;

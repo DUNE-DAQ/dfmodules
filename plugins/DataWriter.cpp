@@ -99,6 +99,12 @@ DataWriter::do_conf(const data_t& payload)
   TLOG_DEBUG(TLVL_CONFIG) << get_name() << ": initial_token_count is " << conf_params.initial_token_count;
   TLOG_DEBUG(TLVL_CONFIG) << get_name() << ": data_storage_prescale is " << m_data_storage_prescale;
   TLOG_DEBUG(TLVL_CONFIG) << get_name() << ": data_store_parameters are " << conf_params.data_store_parameters;
+  m_min_write_retry_time_usec = conf_params.min_write_retry_time_usec;
+  if (m_min_write_retry_time_usec < 1) {
+    m_min_write_retry_time_usec = 1;
+  }
+  m_max_write_retry_time_usec = conf_params.max_write_retry_time_usec;
+  m_write_retry_time_increase_factor = conf_params.write_retry_time_increase_factor;
 
   // create the DataStore instance here
   m_data_writer = make_data_store(payload["data_store_parameters"]);
@@ -290,7 +296,7 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
       if (m_data_storage_is_enabled) {
 
         bool should_retry = true;
-        int retry_wait_usec = 5000;
+        size_t retry_wait_usec = m_min_write_retry_time_usec;
         do {
           should_retry = false;
           try {
@@ -305,11 +311,11 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
                                           trigger_record_ptr->get_header_ref().get_trigger_number(),
                                           trigger_record_ptr->get_header_ref().get_run_number(),
                                           excpt));
-            retry_wait_usec *= 2;
-            if (retry_wait_usec > 500000) {
-              retry_wait_usec = 500000;
+            if (retry_wait_usec > m_max_write_retry_time_usec) {
+              retry_wait_usec = m_max_write_retry_time_usec;
             }
             usleep(retry_wait_usec);
+            retry_wait_usec *= m_write_retry_time_increase_factor;
           } catch (const std::exception& excpt) {
             ers::error(DataWritingProblem(ERS_HERE,
                                           get_name(),

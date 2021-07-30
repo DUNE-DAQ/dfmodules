@@ -126,6 +126,10 @@ public:
     m_path = m_config_params.directory_path;
     m_max_file_size = m_config_params.max_file_size_bytes;
     m_disable_unique_suffix = m_config_params.disable_unique_filename_suffix;
+    m_free_space_safety_factor_for_write = m_config_params.free_space_safety_factor_for_write;
+    if (m_free_space_safety_factor_for_write < 1.1) {
+      m_free_space_safety_factor_for_write = 1.1;
+    }
 
     m_file_index = 0;
     m_recorded_size = 0;
@@ -198,7 +202,7 @@ public:
   {
     // check if there is sufficient space for this data block
     size_t current_free_space = get_free_space(m_path);
-    if (current_free_space < (5 * data_block.m_data_size)) {
+    if (current_free_space < (m_free_space_safety_factor_for_write * data_block.m_data_size)) {
       InsufficientDiskSpace issue(ERS_HERE,
                                   get_name(),
                                   m_path,
@@ -246,9 +250,13 @@ public:
       sum_of_sizes += data_block.m_data_size;
     }
     size_t current_free_space = get_free_space(m_path);
-    if (current_free_space < (5 * sum_of_sizes)) {
-      InsufficientDiskSpace issue(
-        ERS_HERE, get_name(), m_path, current_free_space, (5 * sum_of_sizes), "a multiple of the data block sizes");
+    if (current_free_space < (m_free_space_safety_factor_for_write * sum_of_sizes)) {
+      InsufficientDiskSpace issue(ERS_HERE,
+                                  get_name(),
+                                  m_path,
+                                  current_free_space,
+                                  (m_free_space_safety_factor_for_write * sum_of_sizes),
+                                  "a multiple of the data block sizes");
       std::string msg = "writing a list of data blocks to file " + m_file_ptr->getName();
       throw RetryableDataStoreProblem(ERS_HERE, get_name(), msg, issue);
     }
@@ -406,6 +414,7 @@ private:
   std::string m_path;
   size_t m_max_file_size;
   bool m_disable_unique_suffix;
+  float m_free_space_safety_factor_for_write;
 
   HDF5KeyTranslator m_key_translator;
 
