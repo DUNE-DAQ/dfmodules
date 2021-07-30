@@ -291,8 +291,8 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
 
         bool should_retry = true;
         int retry_wait_usec = 5000;
-	do {
-	  should_retry = false;
+        do {
+          should_retry = false;
           try {
             m_data_writer->write(data_block_list);
             ++m_records_written;
@@ -317,8 +317,7 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
                                           trigger_record_ptr->get_header_ref().get_run_number(),
                                           excpt));
           }
-        }
-	while (should_retry && running_flag.load());
+        } while (should_retry && running_flag.load());
       }
     }
 
