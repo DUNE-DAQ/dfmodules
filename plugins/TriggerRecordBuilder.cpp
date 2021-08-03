@@ -686,7 +686,9 @@ bool TriggerRecordBuilder::send_trigger_record(const TriggerId &id,
   trigger_record_ptr_t temp_record(extract_trigger_record(id));
 
   bool wasSentSuccessfully = false;
-  while (!wasSentSuccessfully) {
+  bool non_atomic_running = running.load() ;
+  while ( (non_atomic_running    && (!wasSentSuccessfully)) || 
+	  ((!non_atomic_running) && sink.can_push() )        ) {
     try {
       sink.push(std::move(temp_record), m_queue_timeout);
       wasSentSuccessfully = true;
@@ -700,7 +702,9 @@ bool TriggerRecordBuilder::send_trigger_record(const TriggerId &id,
               .count()));
     }
 
-    if (!running.load())
+    non_atomic_running = running.load() ;
+
+    if (!non_atomic_running)
       break;
   } // push while loop
 
