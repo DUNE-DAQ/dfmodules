@@ -711,7 +711,8 @@ bool TriggerRecordBuilder::send_trigger_record(const TriggerId &id,
   } // push while loop
 
   if ( ! wasSentSuccessfully ) {
-    ++ m_abandoned_trigger_records;
+    ++m_abandoned_trigger_records;
+    m_lost_fragments+=temp_record->get_fragments_ref().size();
     ers::error(dunedaq::dfmodules::AbandonedTriggerDecision(ERS_HERE, id)); 
   }
 
