@@ -129,6 +129,7 @@ void TriggerRecordBuilder::get_info(opmonlib::InfoCollector &ci,
   i.fragments_in_the_book = m_fragment_counter.load();
   i.pending_fragments = m_pending_fragment_counter.load();
   i.timed_out_trigger_records = m_timed_out_trigger_records.load();
+  i.abandoned_trigger_records = m_abandoned_trigger_records.load();
   i.unexpected_fragments = m_unexpected_fragments.load();
   i.unexpected_trigger_decisions = m_unexpected_trigger_decisions.load();
   i.lost_fragments = m_lost_fragments.load();
@@ -245,6 +246,7 @@ void TriggerRecordBuilder::do_work(std::atomic<bool> &running_flag) {
   m_generated_trigger_records.store(0);
   m_fragment_counter.store(0);
   m_timed_out_trigger_records.store(0);
+  m_abandoned_trigger_records.store(0);
   m_unexpected_fragments.store(0);
   m_lost_fragments.store(0);
   m_invalid_requests.store(0);
@@ -707,6 +709,11 @@ bool TriggerRecordBuilder::send_trigger_record(const TriggerId &id,
     if (!non_atomic_running)
       break;
   } // push while loop
+
+  if ( ! wasSentSuccessfully ) {
+    ++ m_abandoned_trigger_records;
+    ers::error(dunedaq::dfmodules::AbandonedTriggerDecision(ERS_HERE, id)); 
+  }
 
   return wasSentSuccessfully;
 }
