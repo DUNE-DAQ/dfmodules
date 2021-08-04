@@ -53,7 +53,7 @@
 namespace dunedaq {
 
 /**
- * @brief A ERS Issue for DataStore creation failure
+ * @brief An ERS Issue for DataStore creation failure
  * @cond Doxygen doesn't like ERS macros LCOV_EXCL_START
  */
 ERS_DECLARE_ISSUE(dfmodules,               ///< Namespace
@@ -65,14 +65,25 @@ ERS_DECLARE_ISSUE(dfmodules,               ///< Namespace
 /// @endcond LCOV_EXCL_STOP
 
 /**
- * @brief A generic ERS Issue for DataStore writing failure
+ * @brief An ERS Issue for DataStore problems in which it is
+ * reasonable to retry the operation.
  * @cond Doxygen doesn't like ERS macros LCOV_EXCL_START
  */
-ERS_DECLARE_ISSUE(dfmodules,                                     ///< Namespace
-                  DataStoreWritingFailed,                        ///< Type of the Issue
-                  "Failed to write data using  " << plugin_name, ///< Log Message from the issue
-                  ((std::string)plugin_name)                     ///< Message parameters
-)
+ERS_DECLARE_ISSUE(dfmodules,
+                  RetryableDataStoreProblem,
+                  "Module " << mod_name << ": A problem was encountered when " << description,
+                  ((std::string)mod_name)((std::string)description))
+/// @endcond LCOV_EXCL_STOP
+
+/**
+ * @brief An ERS Issue for DataStore problems in which it is
+ * not clear whether retrying the operation might succeed or not.
+ * @cond Doxygen doesn't like ERS macros LCOV_EXCL_START
+ */
+ERS_DECLARE_ISSUE(dfmodules,
+                  GeneralDataStoreProblem,
+                  "Module " << mod_name << ": A problem was encountered when " << description,
+                  ((std::string)mod_name)((std::string)description))
 /// @endcond LCOV_EXCL_STOP
 
 namespace dfmodules {

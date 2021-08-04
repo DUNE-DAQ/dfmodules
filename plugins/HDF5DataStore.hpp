@@ -39,19 +39,20 @@ namespace dunedaq {
 /**
  * @brief A ERS Issue to report an HDF5 exception
  */
-ERS_DECLARE_ISSUE(dfmodules,          ///< Namespace
-                  HDF5Issue,          ///< Type of the Issue
-                  what,               ///< Log Message from the issue
-                  ((std::string)what) ///< Message parameters
-)
-
 ERS_DECLARE_ISSUE_BASE(dfmodules,
                        InvalidOperationMode,
                        appfwk::GeneralDAQModuleIssue,
-                       "Selected opearation mode \"" << selected_operation
-                                                     << "\" is NOT supported. Please update the configuration file.",
+                       "Selected operation mode \"" << selected_operation
+                                                    << "\" is NOT supported. Please update the configuration file.",
                        ((std::string)name),
                        ((std::string)selected_operation))
+
+ERS_DECLARE_ISSUE_BASE(dfmodules,
+                       FileOperationProblem,
+                       appfwk::GeneralDAQModuleIssue,
+                       "A problem was encountered when opening or closing file \"" << filename << "\"",
+                       ((std::string)name),
+                       ((std::string)filename))
 
 ERS_DECLARE_ISSUE_BASE(dfmodules,
                        InvalidHDF5Dataset,
@@ -60,14 +61,6 @@ ERS_DECLARE_ISSUE_BASE(dfmodules,
                                                                   << ")",
                        ((std::string)name),
                        ((std::string)data_set)((std::string)filename))
-
-ERS_DECLARE_ISSUE_BASE(dfmodules,
-                       HDF5DataSetError,
-                       appfwk::GeneralDAQModuleIssue,
-                       "DataSet exception from HighFive library for DataSet name \""
-                         << data_set << "\", exception message is \"" << msgText << "\"",
-                       ((std::string)name),
-                       ((std::string)data_set)((std::string)msgText))
 
 ERS_DECLARE_ISSUE_BASE(dfmodules,
                        InvalidOutputPath,
@@ -81,10 +74,10 @@ ERS_DECLARE_ISSUE_BASE(dfmodules,
                        InsufficientDiskSpace,
                        appfwk::GeneralDAQModuleIssue,
                        "There is insufficient free space on the disk associated with output file path \""
-                         << output_path << "\". There are " << free_bytes
-                         << " bytes free, and a single output file can take up to " << max_file_size_bytes << " bytes.",
+                         << path << "\". There are " << free_bytes << " bytes free, and the "
+                         << "required minimum is " << needed_bytes << " bytes based on " << criteria << ".",
                        ((std::string)name),
-                       ((std::string)output_path)((size_t)free_bytes)((size_t)max_file_size_bytes))
+                       ((std::string)path)((size_t)free_bytes)((size_t)needed_bytes)((std::string)criteria))
 
 ERS_DECLARE_ISSUE_BASE(dfmodules,
                        EmptyDataBlockList,
@@ -133,6 +126,10 @@ public:
     m_path = m_config_params.directory_path;
     m_max_file_size = m_config_params.max_file_size_bytes;
     m_disable_unique_suffix = m_config_params.disable_unique_filename_suffix;
+    m_free_space_safety_factor_for_write = m_config_params.free_space_safety_factor_for_write;
+    if (m_free_space_safety_factor_for_write < 1.1) {
+      m_free_space_safety_factor_for_write = 1.1;
+    }
 
     m_file_index = 0;
     m_recorded_size = 0;
@@ -163,11 +160,11 @@ public:
     // m_file_ptr will be the handle to the Opened-File after a call to open_file_if_needed()
     try {
       open_file_if_needed(full_filename, HighFive::File::ReadOnly);
-    } catch (HighFive::Exception const& excpt) {
-      throw HDF5Issue(ERS_HERE, excpt.what(), excpt);
+    } catch (std::exception const& excpt) {
+      throw FileOperationProblem(ERS_HERE, get_name(), full_filename, excpt);
     } catch (...) { // NOLINT(runtime/exceptions)
       // NOLINT here because we *ARE* re-throwing the exception!
-      throw HDF5Issue(ERS_HERE, "Unknown exception thrown by HDF5");
+      throw FileOperationProblem(ERS_HERE, get_name(), full_filename);
     }
 
     std::vector<std::string> group_and_dataset_path_elements = m_key_translator.get_path_elements(key);
@@ -203,6 +200,19 @@ public:
    */
   virtual void write(const KeyedDataBlock& data_block)
   {
+    // check if there is sufficient space for this data block
+    size_t current_free_space = get_free_space(m_path);
+    if (current_free_space < (m_free_space_safety_factor_for_write * data_block.m_data_size)) {
+      InsufficientDiskSpace issue(ERS_HERE,
+                                  get_name(),
+                                  m_path,
+                                  current_free_space,
+                                  (data_block.m_data_size),
+                                  "a multiple of the data block size");
+      std::string msg = "writing a data block to file " + m_file_ptr->getName();
+      throw RetryableDataStoreProblem(ERS_HERE, get_name(), msg, issue);
+    }
+
     // check if a new file should be opened for this data block
     increment_file_index_if_needed(data_block.m_data_size);
 
@@ -212,11 +222,11 @@ public:
     // m_file_ptr will be the handle to the Opened-File after a call to open_file_if_needed()
     try {
       open_file_if_needed(full_filename, HighFive::File::OpenOrCreate);
-    } catch (HighFive::Exception const& excpt) {
-      throw HDF5Issue(ERS_HERE, excpt.what(), excpt);
+    } catch (std::exception const& excpt) {
+      throw FileOperationProblem(ERS_HERE, get_name(), full_filename, excpt);
     } catch (...) { // NOLINT(runtime/exceptions)
       // NOLINT here because we *ARE* re-throwing the exception!
-      throw HDF5Issue(ERS_HERE, "Unknown exception thrown by HDF5");
+      throw FileOperationProblem(ERS_HERE, get_name(), full_filename);
     }
 
     // write the data block
@@ -234,11 +244,24 @@ public:
       throw EmptyDataBlockList(ERS_HERE, get_name());
     }
 
-    // check if a new file should be opened for this set of data blocks
+    // check if there is sufficient space for these data blocks
     size_t sum_of_sizes = 0;
     for (auto& data_block : data_block_list) {
       sum_of_sizes += data_block.m_data_size;
     }
+    size_t current_free_space = get_free_space(m_path);
+    if (current_free_space < (m_free_space_safety_factor_for_write * sum_of_sizes)) {
+      InsufficientDiskSpace issue(ERS_HERE,
+                                  get_name(),
+                                  m_path,
+                                  current_free_space,
+                                  (m_free_space_safety_factor_for_write * sum_of_sizes),
+                                  "a multiple of the data block sizes");
+      std::string msg = "writing a list of data blocks to file " + m_file_ptr->getName();
+      throw RetryableDataStoreProblem(ERS_HERE, get_name(), msg, issue);
+    }
+
+    // check if a new file should be opened for this set of data blocks
     TLOG_DEBUG(TLVL_FILE_SIZE) << get_name() << ": Checking file size, recorded=" << m_recorded_size
                                << ", additional=" << sum_of_sizes << ", max=" << m_max_file_size;
     increment_file_index_if_needed(sum_of_sizes);
@@ -251,11 +274,11 @@ public:
     // m_file_ptr will be the handle to the Opened-File after a call to open_file_if_needed()
     try {
       open_file_if_needed(full_filename, HighFive::File::OpenOrCreate);
-    } catch (HighFive::Exception const& excpt) {
-      throw HDF5Issue(ERS_HERE, excpt.what(), excpt);
+    } catch (std::exception const& excpt) {
+      throw FileOperationProblem(ERS_HERE, get_name(), full_filename, excpt);
     } catch (...) { // NOLINT(runtime/exceptions)
       // NOLINT here because we *ARE* re-throwing the exception!
-      throw HDF5Issue(ERS_HERE, "Unknown exception thrown by HDF5");
+      throw FileOperationProblem(ERS_HERE, get_name(), full_filename);
     }
 
     // write each data block
@@ -321,7 +344,8 @@ public:
                            << " bytes. This will be compared with the maximum size of a single file ("
                            << m_max_file_size << ") as a simple test to see if there is enough free space.";
     if (free_space < m_max_file_size) {
-      throw InsufficientDiskSpace(ERS_HERE, get_name(), m_path, free_space, m_max_file_size);
+      throw InsufficientDiskSpace(
+        ERS_HERE, get_name(), m_path, free_space, m_max_file_size, "the configured maximum size of a single file");
     }
 
     // create the timestamp substring that is part of unique-ifying the filename, for later use
@@ -351,8 +375,16 @@ public:
   void finish_with_run(dataformats::run_number_t /*run_number*/)
   {
     if (m_file_ptr.get() != nullptr) {
-      m_file_ptr->flush();
-      m_file_ptr.reset();
+      std::string full_filename = m_file_ptr->getName();
+      try {
+        m_file_ptr->flush();
+        m_file_ptr.reset();
+      } catch (std::exception const& excpt) {
+        throw FileOperationProblem(ERS_HERE, get_name(), full_filename, excpt);
+      } catch (...) { // NOLINT(runtime/exceptions)
+        // NOLINT here because we *ARE* re-throwing the exception!
+        throw FileOperationProblem(ERS_HERE, get_name(), full_filename);
+      }
     }
   }
 
@@ -382,6 +414,7 @@ private:
   std::string m_path;
   size_t m_max_file_size;
   bool m_disable_unique_suffix;
+  float m_free_space_safety_factor_for_write;
 
   HDF5KeyTranslator m_key_translator;
 
@@ -426,20 +459,20 @@ private:
         sub_group.createDataSet<char>(dataset_name, data_space, data_set_create_props, data_set_access_props);
       if (data_set.isValid()) {
         data_set.write_raw(static_cast<const char*>(data_block.get_data_start()));
+        m_file_ptr->flush();
+        m_recorded_size += data_block.m_data_size;
       } else {
         throw InvalidHDF5Dataset(ERS_HERE, get_name(), dataset_name, m_file_ptr->getName());
       }
-    } catch (HighFive::DataSetException const& excpt) {
-      throw HDF5DataSetError(ERS_HERE, get_name(), dataset_name, excpt.what());
-    } catch (HighFive::Exception const& excpt) {
-      throw HDF5Issue(ERS_HERE, excpt.what(), excpt);
+    } catch (std::exception const& excpt) {
+      std::string description = "DataSet " + dataset_name;
+      std::string msg = "writing DataSet " + dataset_name + " to file " + m_file_ptr->getName();
+      throw GeneralDataStoreProblem(ERS_HERE, get_name(), msg, excpt);
     } catch (...) { // NOLINT(runtime/exceptions)
       // NOLINT here because we *ARE* re-throwing the exception!
-      throw HDF5Issue(ERS_HERE, "Unknown exception thrown by HDF5");
+      std::string msg = "writing DataSet " + dataset_name + " to file " + m_file_ptr->getName();
+      throw GeneralDataStoreProblem(ERS_HERE, get_name(), msg);
     }
-
-    m_file_ptr->flush();
-    m_recorded_size += data_block.m_data_size;
   }
 
   void increment_file_index_if_needed(size_t size_of_next_write)
@@ -505,6 +538,16 @@ private:
       TLOG_DEBUG(TLVL_BASIC) << get_name() << ": Pointer file to  " << m_basic_name_of_open_file
                              << " was already opened with open_flags " << std::to_string(m_open_flags_of_open_file);
     }
+  }
+
+  size_t get_free_space(const std::string& the_path)
+  {
+    struct statvfs vfs_results;
+    int retval = statvfs(the_path.c_str(), &vfs_results);
+    if (retval != 0) {
+      return 0;
+    }
+    return vfs_results.f_bsize * vfs_results.f_bavail;
   }
 };
 

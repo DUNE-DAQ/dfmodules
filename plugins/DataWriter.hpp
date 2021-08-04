@@ -65,6 +65,9 @@ private:
   int m_data_storage_prescale;
   int m_initial_tokens;
   dataformats::run_number_t m_run_number;
+  size_t m_min_write_retry_time_usec;
+  size_t m_max_write_retry_time_usec;
+  int m_write_retry_time_increase_factor;
 
   // Queue(s)
   using trigrecsource_t = dunedaq::appfwk::DAQSource<std::unique_ptr<dataformats::TriggerRecord>>;
@@ -108,12 +111,19 @@ private:
 } // namespace dfmodules
 
 ERS_DECLARE_ISSUE_BASE(dfmodules,
-                       InvalidDataWriterError,
+                       InvalidDataWriter,
                        appfwk::GeneralDAQModuleIssue,
                        "A valid dataWriter instance is not available so it will not be possible to write data. A "
                        "likely cause for this is a skipped or missed Configure transition.",
                        ((std::string)name),
                        ERS_EMPTY)
+
+ERS_DECLARE_ISSUE_BASE(dfmodules,
+                       DataWritingProblem,
+                       appfwk::GeneralDAQModuleIssue,
+                       "A problem was encountered when writing TriggerRecord number " << trnum << " in run " << runnum,
+                       ((std::string)name),
+                       ((size_t)trnum)((size_t)runnum))
 
 } // namespace dunedaq
 
