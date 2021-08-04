@@ -23,8 +23,12 @@ import os
 if "MDAPP_INTEGTEST_SWTPG" in os.environ:
     confgen_arguments.append("--enable-software-tpg")
     expected_fragments_per_trigger_record*=2
+    print()
+    print("*** Software TPG is enabled ***")
 if "MDAPP_INTEGTEST_DQM" in os.environ:
     confgen_arguments.append("--enable-dqm")
+    print()
+    print("*** DQM is enabled ***")
 
 # The tests themselves
 
