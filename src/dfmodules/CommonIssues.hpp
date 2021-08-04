@@ -20,7 +20,7 @@
 
 namespace dunedaq {
 
-    // Disable coverage checking LCOV_EXCL_START
+// Disable coverage checking LCOV_EXCL_START
 
 ERS_DECLARE_ISSUE_BASE(dfmodules,
                        ProgressUpdate,
@@ -50,7 +50,14 @@ ERS_DECLARE_ISSUE_BASE(dfmodules,
                        ((std::string)name),
                        ((size_t)run_number))
 
-    // Re-enable coverage checking LCOV_EXCL_STOP
+ERS_DECLARE_ISSUE_BASE(dfmodules,
+                       ProblemDuringStop,
+                       appfwk::GeneralDAQModuleIssue,
+                       "A problem was enountered during the stopping of run " << run_number << ".",
+                       ((std::string)name),
+                       ((size_t)run_number))
+
+// Re-enable coverage checking LCOV_EXCL_STOP
 
 } // namespace dunedaq
 

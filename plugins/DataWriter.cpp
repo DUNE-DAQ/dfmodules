@@ -99,13 +99,19 @@ DataWriter::do_conf(const data_t& payload)
   TLOG_DEBUG(TLVL_CONFIG) << get_name() << ": initial_token_count is " << conf_params.initial_token_count;
   TLOG_DEBUG(TLVL_CONFIG) << get_name() << ": data_storage_prescale is " << m_data_storage_prescale;
   TLOG_DEBUG(TLVL_CONFIG) << get_name() << ": data_store_parameters are " << conf_params.data_store_parameters;
+  m_min_write_retry_time_usec = conf_params.min_write_retry_time_usec;
+  if (m_min_write_retry_time_usec < 1) {
+    m_min_write_retry_time_usec = 1;
+  }
+  m_max_write_retry_time_usec = conf_params.max_write_retry_time_usec;
+  m_write_retry_time_increase_factor = conf_params.write_retry_time_increase_factor;
 
   // create the DataStore instance here
   m_data_writer = make_data_store(payload["data_store_parameters"]);
 
   // ensure that we have a valid dataWriter instance
   if (m_data_writer.get() == nullptr) {
-    throw InvalidDataWriterError(ERS_HERE, get_name());
+    throw InvalidDataWriter(ERS_HERE, get_name());
   }
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
@@ -155,7 +161,11 @@ DataWriter::do_stop(const data_t& /*args*/)
   // I've put this call fairly late in this method so that any draining of queues
   // (or whatever) can take place before we finalize things in the DataStore.
   if (m_data_storage_is_enabled) {
-    m_data_writer->finish_with_run(m_run_number);
+    try {
+      m_data_writer->finish_with_run(m_run_number);
+    } catch (const std::exception& excpt) {
+      ers::error(ProblemDuringStop(ERS_HERE, get_name(), m_run_number, excpt));
+    }
   }
 
   TLOG() << get_name() << " successfully stopped for run number " << m_run_number;
@@ -187,7 +197,7 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
   if (m_data_writer.get() == nullptr) {
     // this check is done essentially to notify the user
     // in case the "start" has been called before the "conf"
-    ers::fatal(InvalidDataWriterError(ERS_HERE, get_name()));
+    ers::fatal(InvalidDataWriter(ERS_HERE, get_name()));
   }
 
   while (running_flag.load() || m_trigger_record_input_queue->can_pop()) {
@@ -284,14 +294,36 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
 
       // write the TRH and the fragments as a set of data blocks
       if (m_data_storage_is_enabled) {
-        try {
-          m_data_writer->write(data_block_list);
-          ++m_records_written;
-          ++m_records_written_tot;
-          m_bytes_output += bytes_in_data_blocks;
-        } catch (const ers::Issue& excpt) {
-          ers::error(DataStoreWritingFailed(ERS_HERE, m_data_writer->get_name(), excpt));
-        }
+
+        bool should_retry = true;
+        size_t retry_wait_usec = m_min_write_retry_time_usec;
+        do {
+          should_retry = false;
+          try {
+            m_data_writer->write(data_block_list);
+            ++m_records_written;
+            ++m_records_written_tot;
+            m_bytes_output += bytes_in_data_blocks;
+          } catch (const RetryableDataStoreProblem& excpt) {
+            should_retry = true;
+            ers::error(DataWritingProblem(ERS_HERE,
+                                          get_name(),
+                                          trigger_record_ptr->get_header_ref().get_trigger_number(),
+                                          trigger_record_ptr->get_header_ref().get_run_number(),
+                                          excpt));
+            if (retry_wait_usec > m_max_write_retry_time_usec) {
+              retry_wait_usec = m_max_write_retry_time_usec;
+            }
+            usleep(retry_wait_usec);
+            retry_wait_usec *= m_write_retry_time_increase_factor;
+          } catch (const std::exception& excpt) {
+            ers::error(DataWritingProblem(ERS_HERE,
+                                          get_name(),
+                                          trigger_record_ptr->get_header_ref().get_trigger_number(),
+                                          trigger_record_ptr->get_header_ref().get_run_number(),
+                                          excpt));
+          }
+        } while (should_retry && running_flag.load());
       }
     }
 

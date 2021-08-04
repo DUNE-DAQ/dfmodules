@@ -130,7 +130,7 @@ FakeDataProd::do_timesync(std::atomic<bool>& running_flag)
 {
   while (running_flag.load()) {
     auto time_now = std::chrono::system_clock::now().time_since_epoch();
-    uint64_t current_timestamp =  // NOLINT (build/unsigned)
+    uint64_t current_timestamp = // NOLINT (build/unsigned)
       std::chrono::duration_cast<std::chrono::nanoseconds>(time_now).count();
     auto timesyncmsg = dfmessages::TimeSync(current_timestamp);
     try {

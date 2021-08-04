@@ -9,6 +9,8 @@ local types = {
     count : s.number("Count", "i4",
                      doc="A count of not too many things"),
 
+    factor : s.number("Factor", "f4", doc="A float number of 4 bytes"),
+
     data_store_type: s.string( "DataStoreType", doc="Specific Data store implementation to be instantiated" ),
 
     data_store_name: s.string( "DataStoreName", doc="String to specify names for DataStores"),
@@ -68,6 +70,8 @@ local types = {
                 doc="Parameters that are use for the filenames of the HDF5 files"),
         s.field("file_layout_parameters", self.hdf5_file_layout_params,
                 doc="Parameters that are use for the layout of Groups and DataSets within the HDF5 file"),
+        s.field("free_space_safety_factor_for_write", self.factor, 5.0,
+                doc="The safety factor that should be used when determining if there is sufficient free disk space during write operations"),
     ], doc="HDF5DataStore configuration"),
 
 };
