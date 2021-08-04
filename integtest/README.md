@@ -2,7 +2,7 @@
 
 Here is the command for fetching an emulated frame data file:
 
-* `curl -o frames.bin -O https://cernbox.cern.ch/index.php/s/VAqNtn7bwuQtff3/download`
+* `curl -o frames.bin -O https://cernbox.cern.ch/index.php/s/7qNnuxD8igDOVJT/download`
 
 Here is a sample command for invoking a test:
 
