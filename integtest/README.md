@@ -6,7 +6,7 @@ Here is the command for fetching an emulated frame data file:
 
 Here is a sample command for invoking a test:
 
-* `pytest -s four_process_quick_test.py --frame-file `pwd`/frames.bin`
+* `pytest -s four_process_quick_test.py --frame-file $PWD/frames.bin`
 
 For reference, here are the ideas behind the existing tests:
 * four_process_quick_test.py - verify that data gets written in a short run
