@@ -147,6 +147,17 @@ ERS_DECLARE_ISSUE(dfmodules,                 ///< Namespace
                   ((dfmodules::TriggerId)trigger_id) ///< Message parameters
 )
 
+
+/**
+ * @brief Abandoned TR
+ */
+ERS_DECLARE_ISSUE(dfmodules,                 ///< Namespace
+                  AbandonedTriggerDecision,  ///< Issue class name
+                  "trigger ID " << trigger_id << " could not be sent to writing and it's lost" ,
+                  ((dfmodules::TriggerId)trigger_id) ///< Message parameters
+)
+
+
 /**
  * @brief Invalid System Type
  */
@@ -282,6 +293,8 @@ private:
   mutable std::atomic<metric_counter_type> m_run_received_trigger_decisions = {
       0}; // in the run
   mutable std::atomic<metric_counter_type> m_generated_trigger_records = {
+      0}; // in the run
+  mutable std::atomic<metric_counter_type> m_abandoned_trigger_records = {
       0}; // in the run
 
   mutable std::atomic<metric_counter_type> m_completed_trigger_records = {
