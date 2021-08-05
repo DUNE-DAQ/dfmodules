@@ -17,7 +17,7 @@ confgen_name="minidaqapp.nanorc.mdapp_multiru_gen"
 # output directory (the test framework handles that)
 confgen_arguments=[ "-d", "./frames.bin", "-o", ".", "-s", "10", "-n", str(number_of_data_producers), "-b", "1000", "-a", "1000", "--host-ru", "localhost"]
 # The commands to run in nanorc, as a list
-nanorc_command_list="boot init conf start 101 wait 1 resume wait 20 pause wait 1 stop wait 2 scrap terminate".split()
+nanorc_command_list="boot init conf start 101 wait 1 resume wait 20 pause wait 2 stop wait 2 scrap terminate".split()
 
 import os
 if "MDAPP_INTEGTEST_SWTPG" in os.environ:
