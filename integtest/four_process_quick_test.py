@@ -6,6 +6,9 @@ import integrationtest.log_file_checks as log_file_checks
 # Initialization
 number_of_data_producers=2
 expected_fragments_per_trigger_record=number_of_data_producers
+min_fragment_size_bytes=37200
+max_fragment_size_bytes=37200
+check_for_logfile_errors=True
 
 # The next three variable declarations *must* be present as globals in the test
 # file. They're read by the "fixtures" in conftest.py to determine how
@@ -23,10 +26,12 @@ import os
 if "MDAPP_INTEGTEST_SWTPG" in os.environ:
     confgen_arguments.append("--enable-software-tpg")
     expected_fragments_per_trigger_record*=2
+    min_fragment_size_bytes=80
     print()
     print("*** Software TPG is enabled ***")
 if "MDAPP_INTEGTEST_DQM" in os.environ:
     confgen_arguments.append("--enable-dqm")
+    check_for_logfile_errors=False
     print()
     print("*** DQM is enabled ***")
 
@@ -37,8 +42,9 @@ def test_nanorc_success(run_nanorc):
     assert run_nanorc.completed_process.returncode==0
 
 def test_log_files(run_nanorc):
-    # Check that there are no warnings or errors in the log files
-    assert log_file_checks.logs_are_error_free(run_nanorc.log_files)
+    if check_for_logfile_errors:
+        # Check that there are no warnings or errors in the log files
+        assert log_file_checks.logs_are_error_free(run_nanorc.log_files)
 
 def test_data_file(run_nanorc):
     # Run some tests on the output data file
@@ -48,4 +54,4 @@ def test_data_file(run_nanorc):
         data_file=data_file_checks.DataFile(run_nanorc.data_files[idx])
         assert data_file_checks.sanity_check(data_file)
         assert data_file_checks.check_link_presence(data_file, n_links=expected_fragments_per_trigger_record)
-        assert data_file_checks.check_fragment_sizes(data_file, min_frag_size=37200, max_frag_size=37200)
+        assert data_file_checks.check_fragment_sizes(data_file, min_frag_size=min_fragment_size_bytes, max_frag_size=max_fragment_size_bytes)

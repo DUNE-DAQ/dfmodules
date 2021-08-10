@@ -8,6 +8,7 @@ number_of_data_producers=5
 expected_fragments_per_trigger_record=number_of_data_producers*3
 min_fragment_size_bytes=37200
 max_fragment_size_bytes=37200
+check_for_logfile_errors=False
 
 # The next three variable declarations *must* be present as globals in the test
 # file. They're read by the "fixtures" in conftest.py to determine how
@@ -26,8 +27,14 @@ if "MDAPP_INTEGTEST_SWTPG" in os.environ:
     confgen_arguments.append("--enable-software-tpg")
     expected_fragments_per_trigger_record*=2
     min_fragment_size_bytes=80
+    check_for_logfile_errors=False
+    print()
+    print("*** Software TPG is enabled ***")
 if "MDAPP_INTEGTEST_DQM" in os.environ:
     confgen_arguments.append("--enable-dqm")
+    check_for_logfile_errors=False
+    print()
+    print("*** DQM is enabled ***")
 
 # The tests themselves
 
@@ -35,11 +42,10 @@ def test_nanorc_success(run_nanorc):
     # Check that nanorc completed correctly
     assert run_nanorc.completed_process.returncode==0
 
-# 29-Jul-2021, KAB: temporarily turn off the log file checks n this test because we tend
-# to get TimeSync push error messages when we abruptly stop a run
-#def test_log_files(run_nanorc):
-#    # Check that there are no warnings or errors in the log files
-#    assert log_file_checks.logs_are_error_free(run_nanorc.log_files)
+def test_log_files(run_nanorc):
+    if check_for_logfile_errors:
+        # Check that there are no warnings or errors in the log files
+        assert log_file_checks.logs_are_error_free(run_nanorc.log_files)
 
 def test_data_file(run_nanorc):
     # Run some tests on the output data file
