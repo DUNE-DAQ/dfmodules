@@ -8,6 +8,7 @@ number_of_data_producers=5
 expected_fragments_per_trigger_record=number_of_data_producers*3
 min_fragment_size_bytes=37200
 max_fragment_size_bytes=37200
+expected_number_of_files=7
 check_for_logfile_errors=False
 
 # The next three variable declarations *must* be present as globals in the test
@@ -27,6 +28,7 @@ if "MDAPP_INTEGTEST_SWTPG" in os.environ:
     confgen_arguments.append("--enable-software-tpg")
     expected_fragments_per_trigger_record*=2
     min_fragment_size_bytes=80
+    expected_number_of_files=12
     check_for_logfile_errors=False
     print()
     print("*** Software TPG is enabled ***")
@@ -49,7 +51,7 @@ def test_log_files(run_nanorc):
 
 def test_data_file(run_nanorc):
     # Run some tests on the output data file
-    assert len(run_nanorc.data_files)==7
+    assert len(run_nanorc.data_files)==expected_number_of_files
 
     for idx in range(len(run_nanorc.data_files)):
         data_file=data_file_checks.DataFile(run_nanorc.data_files[idx])
