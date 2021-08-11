@@ -9,7 +9,7 @@ expected_fragments_per_trigger_record=number_of_data_producers*3
 min_fragment_size_bytes=37200
 max_fragment_size_bytes=37200
 expected_number_of_files=7
-check_for_logfile_errors=False
+check_for_logfile_errors=True
 
 # The next three variable declarations *must* be present as globals in the test
 # file. They're read by the "fixtures" in conftest.py to determine how
@@ -29,7 +29,6 @@ if "MDAPP_INTEGTEST_SWTPG" in os.environ:
     expected_fragments_per_trigger_record*=2
     min_fragment_size_bytes=80
     expected_number_of_files=12
-    check_for_logfile_errors=False
     print()
     print("*** Software TPG is enabled ***")
 if "MDAPP_INTEGTEST_DQM" in os.environ:
