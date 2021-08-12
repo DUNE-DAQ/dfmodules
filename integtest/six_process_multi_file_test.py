@@ -22,9 +22,9 @@ confgen_name="minidaqapp.nanorc.mdapp_multiru_gen"
 # The arguments to pass to the config generator, excluding the json
 # output directory (the test framework handles that)
 confgen_arguments_base=[ "-d", "./frames.bin", "-o", ".", "-s", "10", "-n", str(number_of_data_producers), "-b", "1000", "-a", "1000", "--host-ru", "localhost", "--host-ru", "localhost", "--host-ru", "localhost", "-t", "10.0"]
-confgen_arguments=[ confgen_arguments_base, confgen_arguments_base+["--enable-software-tpg"], confgen_arguments_base+["--enable-dqm"] ]
+confgen_arguments=[ confgen_arguments_base, confgen_arguments_base+["--enable-software-tpg"] ]
 # The commands to run in nanorc, as a list
-nanorc_command_list="boot init conf start 101 resume wait 500 pause wait 2 stop wait 21 start 102 resume wait 350 pause wait 2 stop wait 21 scrap terminate".split()
+nanorc_command_list="boot init conf start 101 resume wait 440 pause wait 2 stop wait 21 start 102 resume wait 330 pause wait 2 stop wait 21 scrap terminate".split()
 
 # The tests themselves
 
