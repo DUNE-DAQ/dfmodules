@@ -145,7 +145,7 @@ TPSetWriter::do_work(std::atomic<bool>& running_flag)
 
     std::vector<uint8_t> tpset_bytes = dunedaq::serialization::serialize(
       tpset, dunedaq::serialization::SerializationType::kMsgPack); // NOLINT(build/unsigned)
-    TLOG() << "Size of serialized TPSet is " << tpset_bytes.size() << ", TPSet size is " << tpset.objects.size();
+    TLOG_DEBUG(9) << "Size of serialized TPSet is " << tpset_bytes.size() << ", TPSet size is " << tpset.objects.size();
 
     if (!tpset_writer.is_open()) {
       std::ostringstream work_oss;
