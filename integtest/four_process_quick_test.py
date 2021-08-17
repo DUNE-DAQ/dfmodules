@@ -9,7 +9,9 @@ run_duration=20  # seconds
 
 # Default values for validation parameters
 expected_number_of_data_files=1
-expected_fragments_per_trigger_record=number_of_data_producers
+expected_wib_fragments_per_tr=number_of_data_producers
+expected_rawtp_fragments_per_tr=0
+expected_triggertp_fragments_per_tr=0
 min_fragment_size_bytes=37200
 max_fragment_size_bytes=37200
 check_for_logfile_errors=True
@@ -43,11 +45,14 @@ def test_log_files(run_nanorc):
         assert log_file_checks.logs_are_error_free(run_nanorc.log_files)
 
 def test_data_file(run_nanorc):
-    local_expected_frags=expected_fragments_per_trigger_record
+    local_expected_wib_frags=expected_wib_fragments_per_tr
+    local_expected_rawtp_frags=expected_rawtp_fragments_per_tr
+    local_expected_triggertp_frags=expected_triggertp_fragments_per_tr
     local_min_frag_size=min_fragment_size_bytes
     local_max_frag_size=max_fragment_size_bytes
     if "--enable-software-tpg" in run_nanorc.confgen_arguments:
-        local_expected_frags*=2
+        local_expected_rawtp_frags=local_expected_wib_frags
+        local_expected_triggertp_frags=local_expected_wib_frags
         local_min_frag_size=80
 
     # Run some tests on the output data file
@@ -56,5 +61,7 @@ def test_data_file(run_nanorc):
     for idx in range(len(run_nanorc.data_files)):
         data_file=data_file_checks.DataFile(run_nanorc.data_files[idx])
         assert data_file_checks.sanity_check(data_file)
-        assert data_file_checks.check_link_presence(data_file, n_links=local_expected_frags)
+        assert data_file_checks.check_wib_fragment_presence(data_file, n_frags=local_expected_wib_frags)
+        assert data_file_checks.check_rawtp_fragment_presence(data_file, n_frags=local_expected_rawtp_frags)
+        assert data_file_checks.check_triggertp_fragment_presence(data_file, n_frags=local_expected_triggertp_frags)
         assert data_file_checks.check_fragment_sizes(data_file, min_frag_size=local_min_frag_size, max_frag_size=local_max_frag_size)
