@@ -37,8 +37,8 @@ public:
 
   HDF5KeyTranslator(/*OperationalEnvironmentType op_env_type*/)
   {
-    m_data_record_params = HDF5FormattingParameters::get_data_record_parameters(/*op_env_type,*/ s_current_version);
-    m_path_param_map = HDF5FormattingParameters::get_path_parameters(/*op_env_type,*/ s_current_version);
+    m_data_record_params = HDF5FormattingParameters::get_data_record_parameters(/*op_env_type,*/ get_current_version());
+    m_path_param_map = HDF5FormattingParameters::get_path_parameters(/*op_env_type,*/ get_current_version());
   }
 
   /**
@@ -110,7 +110,7 @@ public:
    * returned by this class. This is independent of the translations from HDF5 paths
    * to StorageKeys (that translation may support multiple versions).
    */
-  int get_current_version() { return s_current_version; }
+  int get_current_version() { return HDF5FormattingParameters::get_current_version(); }
 
   /**
    * @brief Translates the specified input parameters into the appropriate filename.

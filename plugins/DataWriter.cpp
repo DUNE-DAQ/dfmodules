@@ -276,7 +276,8 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
         }
 
         // add information about each Fragment to the list of data blocks to be stored
-        StorageKey::DataRecordGroupType group_type = get_group_type(frag_ptr->get_element_id().system_type);
+        StorageKey::DataRecordGroupType group_type =
+          get_group_type(frag_ptr->get_element_id().system_type, frag_ptr->get_fragment_type());
         StorageKey fragment_skey(frag_ptr->get_run_number(),
                                  frag_ptr->get_trigger_number(),
                                  group_type,

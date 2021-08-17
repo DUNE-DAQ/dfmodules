@@ -526,7 +526,7 @@ private:
         TLOG_DEBUG(TLVL_BASIC) << get_name() << "Created HDF5 file (" << unique_filename << ").";
 
         if (!m_file_ptr->hasAttribute("data_format_version")) {
-          int version = 1;
+          int version = m_key_translator.get_current_version();
           m_file_ptr->createAttribute("data_format_version", version);
         }
         if (!m_file_ptr->hasAttribute("operational_environment")) {

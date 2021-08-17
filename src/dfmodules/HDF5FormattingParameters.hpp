@@ -48,7 +48,7 @@ public:
     int number_of_digits_for_run_number;
   };
 
-  static int get_current_version_number(/*OperationalEnvironmentType op_env_type*/) { return 1; }
+  static int get_current_version(/*OperationalEnvironmentType op_env_type*/) { return 2; }
 
   static DataRecordParameters get_data_record_parameters(/*OperationalEnvironmentType op_env_type,*/
                                                          int /*param_version*/)
@@ -96,6 +96,14 @@ public:
     invalid_params.element_name_prefix = "Element";
     invalid_params.digits_for_element_number = 2;
     the_map[StorageKey::DataRecordGroupType::kInvalid] = invalid_params;
+
+    PathParameters tpc_tp_params;
+    tpc_tp_params.group_name_within_data_record = "TPC";
+    tpc_tp_params.region_name_prefix = "TP_APA";
+    tpc_tp_params.digits_for_region_number = 3;
+    tpc_tp_params.element_name_prefix = "Link";
+    tpc_tp_params.digits_for_element_number = 2;
+    the_map[StorageKey::DataRecordGroupType::kTPC_TP] = tpc_tp_params;
 
     return the_map;
   }
