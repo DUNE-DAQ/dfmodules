@@ -93,8 +93,13 @@ private:
   using geoid_system_type_t = dataformats::GeoID::SystemType;
   using key_group_type_t = StorageKey::DataRecordGroupType;
   std::map<geoid_system_type_t, key_group_type_t> m_system_type_to_group_type_mapping;
-  key_group_type_t get_group_type(geoid_system_type_t system_type)
+  key_group_type_t get_group_type(geoid_system_type_t system_type, dataformats::FragmentType frag_type)
   {
+    // 16-Aug-2021, KAB: ugly hack
+    if (system_type == geoid_system_type_t::kTPC && frag_type == dataformats::FragmentType::kTriggerPrimitives) {
+      return key_group_type_t::kTPC_TP;
+    }
+
     if (m_system_type_to_group_type_mapping.size() == 0) {
       m_system_type_to_group_type_mapping[geoid_system_type_t::kTPC] = key_group_type_t::kTPC;
       m_system_type_to_group_type_mapping[geoid_system_type_t::kPDS] = key_group_type_t::kPDS;

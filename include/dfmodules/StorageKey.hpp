@@ -35,6 +35,7 @@ public:
     kTPC = 2,
     kPDS = 3,
     kTrigger = 4,
+    kTPC_TP = 5,
     kInvalid = 0
   };
 
