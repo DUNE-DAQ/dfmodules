@@ -23,7 +23,6 @@ def sanity_check(datafile):
         print("Sanity-check passed")
     return passed
 
-# 17-Aug-2021, KAB: original test - kept for backward compatibility
 def check_link_presence(datafile, n_links):
     "Check that there are n_links links in each event in file"
     passed=True
@@ -37,46 +36,32 @@ def check_link_presence(datafile, n_links):
         print(f"{n_links} links present in all {datafile.n_events} events")
     return passed
 
-# 17-Aug-2021, KAB: test for TPC/WIB links
-def check_wib_fragment_presence(datafile, n_frags):
-    "Check that there are n_frags WIB Fragments in each event in file"
+# 18-Aug-2021, KAB: General-purposed test for fragment presence.  The idea behind this
+# test is that each type of fragment is tested individually, by calling this routine for
+# each type.  The test is driven by a set of parameters that describe both the fragments
+# to be tested (e.g. the HDF5 Group names) and the characteristics that they should have
+# (e.g. the number of fragments that should be present).
+#
+# The parameters that are required by the 'check_fragment_presence' routine are the following:
+# * fragment_type_description - descriptive text for the fragment type, e.g. "WIB" or "PDS" or "Raw TP"
+# * hdf5_groupss - the two HDF5 Groups in the DataSet path between the TriggerRecord identifier and
+#                 the DataSet name, e.g. "TPC/APA000" or "PDS/Region000"
+# * element_name_prefix - the prefix that is used to describe the detector element in the HDF5 DataSet
+#                         name, e.g. "Link" or "Element"
+# * element_number_offset - the offset that should be used for the element numbers for the fragments,
+#                           typically, this is zero, but it is currently non-zero for Raw_TP fragments
+# * expected_fragment_count - the expected number of fragments of this type
+def check_fragment_presence(datafile, params):
+    "Checking that there are {params['expected_fragment_count']} {params['fragment_type_description']} fragments in each event in file"
     passed=True
     for event in datafile.events:
-        for i in range(n_frags):
-            dataset_name=("Link%02d" % i)
-            if dataset_name not in datafile.h5file[event]["TPC/APA000"].keys():
+        for i in range(params['expected_fragment_count']):
+            dataset_name=(params['element_name_prefix'] + "%02d" % (i + params['element_number_offset']))
+            if dataset_name not in datafile.h5file[event][params['hdf5_groups']].keys():
                 passed=False
-                print(f"WIB Fragment for {dataset_name} not present in event {event}")
+                print(f"{params['fragment_type_description']} fragment for {dataset_name} not present in event {event}")
     if passed:
-        print(f"{n_frags} WIB Fragments present in all {datafile.n_events} events")
-    return passed
-
-# 17-Aug-2021, KAB: test for TPC/RawTP links
-def check_rawtp_fragment_presence(datafile, n_frags):
-    "Check that there are n_frags Raw TP Fragments in each event in file"
-    passed=True
-    for event in datafile.events:
-        for i in range(n_frags):
-            dataset_name=("Link%02d" % (i + n_frags))
-            if dataset_name not in datafile.h5file[event]["TPC/TP_APA000"].keys():
-                passed=False
-                print(f"Raw TP Fragment for {dataset_name} not present in event {event}")
-    if passed:
-        print(f"{n_frags} Raw TP Fragments present in all {datafile.n_events} events")
-    return passed
-
-# 17-Aug-2021, KAB: test for Trigger/TP Fragments
-def check_triggertp_fragment_presence(datafile, n_frags):
-    "Check that there are n_frags Trigger TP Fragments in each event in file"
-    passed=True
-    for event in datafile.events:
-        for i in range(n_frags):
-            dataset_name=("Element%02d" % i)
-            if dataset_name not in datafile.h5file[event]["Trigger/Region000"].keys():
-                passed=False
-                print(f"Trigger TP Fragment for {dataset_name} not present in event {event}")
-    if passed:
-        print(f"{n_frags} Trigger TP Fragments  present in all {datafile.n_events} events")
+        print(f"{params['expected_fragment_count']} {params['fragment_type_description']} fragments present in all {datafile.n_events} events")
     return passed
 
 def check_fragment_sizes(datafile, min_frag_size, max_frag_size):
@@ -90,4 +75,33 @@ def check_fragment_sizes(datafile, min_frag_size, max_frag_size):
                 print(f"Link {link} in event {event} has size {size}, outside range [{min_frag_size}, {max_frag_size}]")
     if passed:
         print(f"All links in {datafile.n_events} events have fragment sizes between {min_frag_size} and {max_frag_size}")
+    return passed
+
+# 18-Aug-2021, KAB: general-purposed test for fragment sizes.  The idea behind this
+# test is that each type of fragment is tested individually, by calling this routine for
+# each type.  The test is driven by a set of parameters that describe both the fragments
+# to be tested (e.g. the HDF5 Group names) and the characteristics that they should have
+# (e.g. the minimum and maximum fragment size).
+#
+# The parameters that are required by the 'check_fragment_presence' routine are the following:
+# * fragment_type_description - descriptive text for the fragment type, e.g. "WIB" or "PDS" or "Raw TP"
+# * hdf5_groupss - the two HDF5 Groups in the DataSet path between the TriggerRecord identifier and
+#                 the DataSet name, e.g. "TPC/APA000" or "PDS/Region000"
+# * element_name_prefix - the prefix that is used to describe the detector element in the HDF5 DataSet
+#                         name, e.g. "Link" or "Element"
+# * element_number_offset - the offset that should be used for the element numbers for the fragments,
+#                           typically, this is zero, but it is currently non-zero for Raw_TP fragments
+# * min_size_bytes - the minimum size of fragments of this type
+# * max_size_bytes - the maximum size of fragments of this type
+def check_fragment_size2(datafile, params):
+    "Check that every {params['fragment_type_description']} fragment size is between {params['min_size_bytes']} and {params['max_size_bytes']}"
+    passed=True
+    for event in datafile.events:
+        for frag in datafile.h5file[event][params['hdf5_groups']].values():
+            size=frag.shape[0]
+            if size<params['min_size_bytes'] or size>params['max_size_bytes']:
+                passed=False
+                print(f" {params['fragment_type_description']} fragment {frag.name} in event {event} has size {size}, outside range [{params['min_size_bytes']}, {params['max_size_bytes']}]")
+    if passed:
+        print(f"All {params['fragment_type_description']} fragments in {datafile.n_events} events have sizes between {params['min_size_bytes']} and {params['max_size_bytes']}")
     return passed
