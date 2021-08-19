@@ -17,7 +17,7 @@ wib1_frag_hsi_trig_params={"fragment_type_description": "WIB", "hdf5_groups": "T
 wib1_frag_multi_trig_params={"fragment_type_description": "WIB", "hdf5_groups": "TPC/APA000",
                              "element_name_prefix": "Link", "element_number_offset": 0,
                              "expected_fragment_count": number_of_data_producers,
-                             "min_size_bytes": 1000, "max_size_bytes": 37200}
+                             "min_size_bytes": 80, "max_size_bytes": 37200}
 wib2_frag_params={"fragment_type_description": "WIB2", "hdf5_groups": "TPC/APA000",
                   "element_name_prefix": "Link", "element_number_offset": 0,
                   "expected_fragment_count": number_of_data_producers,
