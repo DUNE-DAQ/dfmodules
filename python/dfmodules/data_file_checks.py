@@ -36,6 +36,33 @@ def check_link_presence(datafile, n_links):
         print(f"{n_links} links present in all {datafile.n_events} events")
     return passed
 
+# 18-Aug-2021, KAB: General-purposed test for fragment count.  The idea behind this
+# test is that each type of fragment is tested individually, by calling this routine for
+# each type.  The test is driven by a set of parameters that describe both the fragments
+# to be tested (e.g. the HDF5 Group names) and the characteristics that they should have
+# (e.g. the number of fragments that should be present).
+#
+# The parameters that are required by the 'check_fragment_presence' routine are the following:
+# * fragment_type_description - descriptive text for the fragment type, e.g. "WIB" or "PDS" or "Raw TP"
+# * hdf5_groupss - the two HDF5 Groups in the DataSet path between the TriggerRecord identifier and
+#                 the DataSet name, e.g. "TPC/APA000" or "PDS/Region000"
+# * element_name_prefix - the prefix that is used to describe the detector element in the HDF5 DataSet
+#                         name, e.g. "Link" or "Element"
+# * element_number_offset - the offset that should be used for the element numbers for the fragments,
+#                           typically, this is zero, but it is currently non-zero for Raw_TP fragments
+# * expected_fragment_count - the expected number of fragments of this type
+def check_fragment_count(datafile, params):
+    "Checking that there are {params['expected_fragment_count']} {params['fragment_type_description']} fragments in each event in file"
+    passed=True
+    for event in datafile.events:
+        fragments_present=len(datafile.h5file[event][params['hdf5_groups']].keys())
+        if fragments_present != params['expected_fragment_count']:
+            passed=False
+            print(f"Event {event} has an unexpected number of {params['fragment_type_description']} fragments: {fragments_present} (expected {params['expected_fragment_count']})")
+    if passed:
+        print(f"{params['fragment_type_description']} fragment count of {params['expected_fragment_count']} confirmed in all {datafile.n_events} events")
+    return passed
+
 # 18-Aug-2021, KAB: General-purposed test for fragment presence.  The idea behind this
 # test is that each type of fragment is tested individually, by calling this routine for
 # each type.  The test is driven by a set of parameters that describe both the fragments
