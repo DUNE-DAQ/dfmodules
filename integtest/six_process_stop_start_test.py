@@ -5,7 +5,7 @@ import integrationtest.log_file_checks as log_file_checks
 
 # Values that help determine the running conditions
 number_of_data_producers=5
-number_of_readout_apps=3  # also need to change the config below if we change this
+number_of_readout_apps=3
 run_duration=20  # seconds
 
 # Default values for validation parameters
@@ -36,7 +36,7 @@ triggertp_frag_params={"fragment_type_description": "Trigger TP", "hdf5_groups":
 confgen_name="minidaqapp.nanorc.mdapp_multiru_gen"
 # The arguments to pass to the config generator, excluding the json
 # output directory (the test framework handles that)
-confgen_arguments_base=[ "-d", "./frames.bin", "-o", ".", "-s", "10", "-n", str(number_of_data_producers), "-b", "1000", "-a", "1000", "--host-ru", "localhost", "--host-ru", "localhost", "--host-ru", "localhost"]
+confgen_arguments_base=[ "-d", "./frames.bin", "-o", ".", "-s", "10", "-n", str(number_of_data_producers), "-b", "1000", "-a", "1000"] + [ "--host-ru", "localhost" ] * number_of_readout_apps
 confgen_arguments={"WIB1_System": confgen_arguments_base,
                    "Software_TPG_System": confgen_arguments_base+["--enable-software-tpg"],
                    "DQM-enabled_System": confgen_arguments_base+["--enable-dqm"]}
