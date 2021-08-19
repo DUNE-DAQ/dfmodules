@@ -45,5 +45,6 @@ def test_data_file(run_nanorc):
     for idx in range(len(run_nanorc.data_files)):
         data_file=data_file_checks.DataFile(run_nanorc.data_files[idx])
         assert data_file_checks.sanity_check(data_file)
+        assert data_file_checks.check_fragment_count(data_file, wib1_frag_hsi_trig_params)
         assert data_file_checks.check_fragment_presence(data_file, wib1_frag_hsi_trig_params)
         assert data_file_checks.check_fragment_size2(data_file, wib1_frag_hsi_trig_params)

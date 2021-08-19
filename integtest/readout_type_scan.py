@@ -91,5 +91,6 @@ def test_data_file(run_nanorc):
         data_file=data_file_checks.DataFile(run_nanorc.data_files[idx])
         assert data_file_checks.sanity_check(data_file)
         for jdx in range(len(fragment_check_list)):
+            assert data_file_checks.check_fragment_count(data_file, fragment_check_list[jdx])
             assert data_file_checks.check_fragment_presence(data_file, fragment_check_list[jdx])
             assert data_file_checks.check_fragment_size2(data_file, fragment_check_list[jdx])
