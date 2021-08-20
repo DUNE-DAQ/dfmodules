@@ -2,3 +2,7 @@
 # moo-generated files
 Nljs.hpp
 Structs.hpp
+
+# integtest temporary files
+integtest/frames.bin
+integtest/__pycache__

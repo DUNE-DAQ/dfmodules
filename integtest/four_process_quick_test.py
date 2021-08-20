@@ -9,10 +9,11 @@ run_duration=20  # seconds
 
 # Default values for validation parameters
 expected_number_of_data_files=1
-expected_fragments_per_trigger_record=number_of_data_producers
-min_fragment_size_bytes=37200
-max_fragment_size_bytes=37200
 check_for_logfile_errors=True
+wib1_frag_hsi_trig_params={"fragment_type_description": "WIB", "hdf5_groups": "TPC/APA000",
+                           "element_name_prefix": "Link", "element_number_offset": 0,
+                           "expected_fragment_count": number_of_data_producers,
+                           "min_size_bytes": 37200, "max_size_bytes": 37200}
 
 # The next three variable declarations *must* be present as globals in the test
 # file. They're read by the "fixtures" in conftest.py to determine how
@@ -22,8 +23,7 @@ check_for_logfile_errors=True
 confgen_name="minidaqapp.nanorc.mdapp_multiru_gen"
 # The arguments to pass to the config generator, excluding the json
 # output directory (the test framework handles that)
-confgen_arguments_base=[ "-d", "./frames.bin", "-o", ".", "-s", "10", "-n", str(number_of_data_producers), "-b", "1000", "-a", "1000", "--host-ru", "localhost"]
-confgen_arguments=[ confgen_arguments_base, confgen_arguments_base+["--enable-software-tpg"], confgen_arguments_base+["--enable-dqm"] ]
+confgen_arguments=[ "-d", "./frames.bin", "-o", ".", "-s", "10", "-n", str(number_of_data_producers), "-b", "1000", "-a", "1000", "--host-ru", "localhost"]
 # The commands to run in nanorc, as a list
 nanorc_command_list="boot init conf start 101 wait 1 resume wait ".split() + [str(run_duration)] + "pause wait 2 stop wait 2 scrap terminate".split()
 
@@ -34,27 +34,17 @@ def test_nanorc_success(run_nanorc):
     assert run_nanorc.completed_process.returncode==0
 
 def test_log_files(run_nanorc):
-    local_check_flag=check_for_logfile_errors
-    if "--enable-dqm" in run_nanorc.confgen_arguments:
-        local_check_flag=False
-
-    if local_check_flag:
+    if check_for_logfile_errors:
         # Check that there are no warnings or errors in the log files
         assert log_file_checks.logs_are_error_free(run_nanorc.log_files)
 
 def test_data_file(run_nanorc):
-    local_expected_frags=expected_fragments_per_trigger_record
-    local_min_frag_size=min_fragment_size_bytes
-    local_max_frag_size=max_fragment_size_bytes
-    if "--enable-software-tpg" in run_nanorc.confgen_arguments:
-        local_expected_frags*=2
-        local_min_frag_size=80
-
     # Run some tests on the output data file
     assert len(run_nanorc.data_files)==expected_number_of_data_files
 
     for idx in range(len(run_nanorc.data_files)):
         data_file=data_file_checks.DataFile(run_nanorc.data_files[idx])
         assert data_file_checks.sanity_check(data_file)
-        assert data_file_checks.check_link_presence(data_file, n_links=local_expected_frags)
-        assert data_file_checks.check_fragment_sizes(data_file, min_frag_size=local_min_frag_size, max_frag_size=local_max_frag_size)
+        assert data_file_checks.check_fragment_count(data_file, wib1_frag_hsi_trig_params)
+        assert data_file_checks.check_fragment_presence(data_file, wib1_frag_hsi_trig_params)
+        assert data_file_checks.check_fragment_size2(data_file, wib1_frag_hsi_trig_params)
