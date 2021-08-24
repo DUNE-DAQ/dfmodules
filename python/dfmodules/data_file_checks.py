@@ -23,6 +23,17 @@ def sanity_check(datafile):
         print("Sanity-check passed")
     return passed
 
+def check_event_count(datafile, min_event_count, max_event_count):
+    "Check that the number of events is between min_event_count and max_event_count"
+    passed=True
+    event_count=len(datafile.events)
+    if event_count<min_event_count or event_count>max_event_count:
+        passed=False
+        print(f"Event count {event_count} is outside range [{min_event_count}, {max_event_count}]")
+    if passed:
+        print(f"Event count is between {min_event_count} and {max_event_count}")
+    return passed
+
 def check_link_presence(datafile, n_links):
     "Check that there are n_links links in each event in file"
     passed=True
