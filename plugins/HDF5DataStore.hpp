@@ -114,9 +114,7 @@ public:
     : DataStore(conf.value("name", "data_store"))
     , m_basic_name_of_open_file("")
     , m_open_flags_of_open_file(0)
-    , m_username_substring_for_filename("_UnknownUser")
     , m_timestamp_substring_for_filename("_UnknownTime")
-    , m_hashed_timeuser_substring_for_filename("_abcdef")
     , m_key_translator()
   {
     TLOG_DEBUG(TLVL_BASIC) << get_name() << ": Configuration: " << conf;
@@ -138,14 +136,6 @@ public:
         m_operation_mode != "all-per-file") {
 
       throw InvalidOperationMode(ERS_HERE, get_name(), m_operation_mode);
-    }
-
-    char* unp = getenv("USER");
-    if (unp != nullptr) {
-      std::string tmp_string(unp);
-      m_username_substring_for_filename = "_" + tmp_string;
-      TLOG_DEBUG(TLVL_BASIC) << get_name()
-			     << ": m_username_substring_for_filename: " << m_username_substring_for_filename;
     }
   }
 
@@ -356,13 +346,6 @@ public:
     TLOG_DEBUG(TLVL_BASIC) << get_name()
                            << ": m_timestamp_substring_for_filename: " << m_timestamp_substring_for_filename;
 
-    // the following code demonstrates how we could create a unique hash for use in the filename
-    std::string work_string = m_username_substring_for_filename + m_timestamp_substring_for_filename;
-    std::hash<std::string> string_hasher;
-    std::ostringstream oss_hex;
-    oss_hex << std::hex << string_hasher(work_string);
-    m_hashed_timeuser_substring_for_filename = "_" + oss_hex.str();
-
     m_file_index = 0;
     m_recorded_size = 0;
   }
@@ -400,9 +383,7 @@ private:
   std::string m_basic_name_of_open_file;
   unsigned m_open_flags_of_open_file;
 
-  std::string m_username_substring_for_filename;
   std::string m_timestamp_substring_for_filename;
-  std::string m_hashed_timeuser_substring_for_filename;
 
   // Total number of generated files
   size_t m_file_index;
@@ -495,24 +476,11 @@ private:
       std::string unique_filename = file_name;
       if (!m_disable_unique_suffix) {
         size_t ufn_len;
-        // username substring
-        ufn_len = unique_filename.length();
-        if (ufn_len > 6) {
-          unique_filename.insert(ufn_len - 5, m_username_substring_for_filename);
-        }
         // timestamp substring
         ufn_len = unique_filename.length();
         if (ufn_len > 6) {
           unique_filename.insert(ufn_len - 5, m_timestamp_substring_for_filename);
         }
-#if 0
-// KAB - skip this in favor of the individual username and timestamp fields, for now
-        // timestamp and username hash
-        ufn_len = unique_filename.length();
-        if (ufn_len > 6) {
-          unique_filename.insert(ufn_len - 5, m_hashed_timeuser_substring_for_filename);
-        }
-#endif
       }
 
       // opening file for the first time OR something changed in the name or the way of opening the file
