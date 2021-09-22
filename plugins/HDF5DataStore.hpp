@@ -141,10 +141,12 @@ public:
     }
 
     char* unp = getenv("USER");
-    std::string tmp_string(unp);
-    m_username_substring_for_filename = "_" + tmp_string;
-    TLOG_DEBUG(TLVL_BASIC) << get_name()
-                           << ": m_username_substring_for_filename: " << m_username_substring_for_filename;
+    if (unp != nullptr) {
+      std::string tmp_string(unp);
+      m_username_substring_for_filename = "_" + tmp_string;
+      TLOG_DEBUG(TLVL_BASIC) << get_name()
+			     << ": m_username_substring_for_filename: " << m_username_substring_for_filename;
+    }
   }
 
   virtual KeyedDataBlock read(const StorageKey& key)
