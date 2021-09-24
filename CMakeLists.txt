@@ -28,7 +28,7 @@ daq_codegen( *info.jsonnet DEP_PKGS opmonlib TEMPLATES opmonlib/InfoStructs.hpp.
 ##############################################################################
 daq_add_library( StorageKey.cpp TriggerDecisionForwarder.cpp TriggerInhibitAgent.cpp
                  LINK_LIBRARIES 
-                 ers::ers HighFive appfwk::appfwk logging::logging stdc++fs dfmessages::dfmessages )
+                 ers::ers HighFive appfwk::appfwk logging::logging stdc++fs dfmessages::dfmessages toolbox::toolbox)
 
 daq_add_plugin( HDF5DataStore      duneDataStore LINK_LIBRARIES logging::logging dataformats::dataformats HighFive appfwk::appfwk stdc++fs)
 
