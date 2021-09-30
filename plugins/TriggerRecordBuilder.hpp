@@ -130,15 +130,6 @@ ERS_DECLARE_ISSUE(
 )
 
 /**
- * @brief Unknown GeoID
- */
-ERS_DECLARE_ISSUE(dfmodules,    ///< Namespace
-                  UnknownGeoID, ///< Issue class name
-                  "Uknown GeoID: " << geo_id,
-                  ((dataformats::GeoID)geo_id) ///< Message parameters
-)
-
-/**
  * @brief Duplicate trigger decision
  */
 ERS_DECLARE_ISSUE(dfmodules,                 ///< Namespace
@@ -157,15 +148,6 @@ ERS_DECLARE_ISSUE(dfmodules,                 ///< Namespace
                   ((dfmodules::TriggerId)trigger_id) ///< Message parameters
 )
 
-
-/**
- * @brief Invalid System Type
- */
-ERS_DECLARE_ISSUE(dfmodules,         ///< Namespace
-                  InvalidSystemType, ///< Issue class name
-                  "Unknown system type " << type,
-                  ((std::string)type) ///< Message parameters
-)
 
 namespace dfmodules {
 
