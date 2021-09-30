@@ -139,6 +139,19 @@ RequestReceiver::get_info(opmonlib::InfoCollector& ci, int /*level*/)
   ci.add(info);
 }
 
+void
+RequestReceiver::dispatch_request(ipm::Receiver::Response message) const
+{
+  auto request = serialization::deserialize<dfmessages::DataRequest>(message.data);
+
+  auto component = request.request_information.component;
+  if (m_data_request_output_queues.count(component)) {
+    m_data_request_output_queues.at(component)->push(request, m_queue_timeout);
+  } else {
+    throw UnknownGeoID(ERS_HERE, component);
+  }
+}
+
 } // namespace dfmodules
 } // namespace dunedaq
 
