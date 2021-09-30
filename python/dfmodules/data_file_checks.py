@@ -23,15 +23,17 @@ def sanity_check(datafile):
         print("Sanity-check passed")
     return passed
 
-def check_event_count(datafile, min_event_count, max_event_count):
-    "Check that the number of events is between min_event_count and max_event_count"
+def check_event_count(datafile, expected_value, tolerance):
+    "Check that the number of events is within tolerance of expected_value"
     passed=True
     event_count=len(datafile.events)
+    min_event_count=expected_value-tolerance
+    max_event_count=expected_value+tolerance
     if event_count<min_event_count or event_count>max_event_count:
         passed=False
-        print(f"Event count {event_count} is outside range [{min_event_count}, {max_event_count}]")
+        print(f"Event count {event_count} is outside the tolerance of {tolerance} from an expected value of {expected_value}")
     if passed:
-        print(f"Event count is between {min_event_count} and {max_event_count}")
+        print(f"Event count is within a tolerance of {tolerance} from an expected value of {expected_value}")
     return passed
 
 def check_link_presence(datafile, n_links):
