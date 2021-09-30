@@ -622,13 +622,13 @@ unsigned int TriggerRecordBuilder::create_trigger_records_and_dispatch(
       dataReq.run_number = td.run_number;
       dataReq.trigger_timestamp = td.trigger_timestamp;
       dataReq.readout_type = td.readout_type;
-      dataReq.window_begin = component.window_begin;
-      dataReq.window_end = component.window_end;
+      dataReq.request_information = component;
 
       TLOG_DEBUG(TLVL_WORK_STEPS)
           << get_name() << ": TR " << slice_id << ": trig_timestamp "
-          << dataReq.trigger_timestamp << ": GeoID " << component.component
-          << ": window [" << dataReq.window_begin << ", " << dataReq.window_end
+          << dataReq.trigger_timestamp << ": GeoID " << component.component << ": window ["
+                                  << dataReq.request_information.window_begin << ", "
+                                  << dataReq.request_information.window_end
           << ']';
 
       dispatch_data_requests(dataReq, component.component, sinks, running);

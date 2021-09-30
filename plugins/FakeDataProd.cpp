@@ -161,8 +161,9 @@ FakeDataProd::do_work(std::atomic<bool>& running_flag)
     }
 
     // num_frames_to_send = ⌈window_size / tick_diff⌉
-    size_t num_frames_to_send =
-      (data_request.window_end - data_request.window_begin + m_time_tick_diff - 1) / m_time_tick_diff;
+    size_t num_frames_to_send = (data_request.request_information.window_end -
+                                 data_request.request_information.window_begin + m_time_tick_diff - 1) /
+      m_time_tick_diff;
     size_t num_bytes_to_send = num_frames_to_send * m_frame_size;
 
     // We don't care about the content of the data, but the size should be correct
@@ -179,8 +180,8 @@ FakeDataProd::do_work(std::atomic<bool>& running_flag)
     data_fragment_ptr->set_error_bits(0);
     data_fragment_ptr->set_type(m_fragment_type);
     data_fragment_ptr->set_trigger_timestamp(data_request.trigger_timestamp);
-    data_fragment_ptr->set_window_begin(data_request.window_begin);
-    data_fragment_ptr->set_window_end(data_request.window_end);
+    data_fragment_ptr->set_window_begin(data_request.request_information.window_begin);
+    data_fragment_ptr->set_window_end(data_request.request_information.window_end);
     data_fragment_ptr->set_sequence_number(data_request.sequence_number);
 
     if (m_response_delay > 0) {
