@@ -11,6 +11,7 @@ find_package(logging REQUIRED)
 find_package(HighFive REQUIRED)
 find_package(dfmessages REQUIRED)
 find_package(opmonlib REQUIRED)
+find_package(networkmanager REQUIRED)
 
 # 22-Jul-2021, KAB: all of the packages in this block are needed for the first version
 # of the TPSetWriter. Some of these may be able to be removed, at some point in time,
@@ -22,7 +23,7 @@ find_package(serialization REQUIRED)
 find_package(readout REQUIRED)
 find_package(Boost COMPONENTS iostreams REQUIRED)
 
-daq_codegen( datawriter.jsonnet hdf5datastore.jsonnet triggerrecordbuilder.jsonnet fakedataprod.jsonnet tpsetwriter.jsonnet TEMPLATES Structs.hpp.j2 Nljs.hpp.j2 )
+daq_codegen( datawriter.jsonnet hdf5datastore.jsonnet requestreceiver.jsonnet triggerrecordbuilder.jsonnet fakedataprod.jsonnet tpsetwriter.jsonnet TEMPLATES Structs.hpp.j2 Nljs.hpp.j2 )
 daq_codegen( *info.jsonnet DEP_PKGS opmonlib TEMPLATES opmonlib/InfoStructs.hpp.j2 opmonlib/InfoNljs.hpp.j2 )
 
 ##############################################################################
@@ -36,6 +37,7 @@ daq_add_plugin( DataWriter            duneDAQModule LINK_LIBRARIES dfmodules )
 daq_add_plugin( TriggerRecordBuilder  duneDAQModule LINK_LIBRARIES dfmodules )
 daq_add_plugin( TPSetWriter           duneDAQModule LINK_LIBRARIES dfmodules trigger::trigger serialization::serialization readout::readout Boost::iostreams )
 daq_add_plugin( FakeDataProd          duneDAQModule LINK_LIBRARIES dfmodules )
+daq_add_plugin( RequestReceiver       duneDAQModule LINK_LIBRARIES dfmodules networkmanager::networkmanager)
 
 ##############################################################################
 daq_add_unit_test( StorageKey_test          LINK_LIBRARIES dfmodules )
