@@ -11,13 +11,13 @@ local types = {
     connection_id : s.string("connection_id", doc="Connection Name to be used with NetworkManager"),
     system_type : s.string("system_type", doc="Parameter that configure TriggerRecordBuilder"),
 
-    geoidqueue : s.record("geoidinst", [s.field("region", self.region_number, doc="" ) , 
+    geoidconnection : s.record("geoidinst", [s.field("region", self.region_number, doc="" ) , 
                                         s.field("element", self.element_number, doc="" ), 
                                         s.field("system", self.system_type, doc="" ),
-                                        s.field("connection_name", self.connection_id doc="" ) ], 
+                                        s.field("connection_name", self.connection_id, doc="" ) ], 
                            doc="TriggerRecordBuilder configuration"),
 
-    mapgeoidconnections : s.sequence("mapgeoidconnections",  self.geoidqueue, doc="Map of geoids queues" ),
+    mapgeoidconnections : s.sequence("mapgeoidconnections",  self.geoidconnection, doc="Map of geoids queues" ),
 
 
     timeout: s.number( "Timeout", "u8", 
