@@ -660,7 +660,9 @@ bool TriggerRecordBuilder::dispatch_data_requests(
     } catch (const ers::Issue& excpt ) {
       std::ostringstream oss_warn;
       oss_warn << "Send to connection \"" << name << "\" failed";
-      ers::warning( excpt );
+      ers::warning( networkmanager::OperationFailed( ERS_HERE, 
+						     oss_warn.str(), 
+						     excpt ) ) ;
     }
   } while (!wasSentSuccessfully && running.load());
 
