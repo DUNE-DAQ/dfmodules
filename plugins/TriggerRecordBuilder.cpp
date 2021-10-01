@@ -15,6 +15,8 @@
 #include "dfmodules/triggerrecordbuilder/Structs.hpp"
 #include "logging/Logging.hpp"
 
+#include "networkmanager/NetworkManager.hpp" 
+
 #include <algorithm>
 #include <chrono>
 #include <cmath>
@@ -40,6 +42,7 @@ namespace dunedaq {
 namespace dfmodules {
 
 using dataformats::TriggerRecordErrorBits;
+using networkmanager::NetworkManager;
 
 TriggerRecordBuilder::TriggerRecordBuilder(const std::string &name)
     : dunedaq::appfwk::DAQModule(name),
@@ -105,17 +108,6 @@ void TriggerRecordBuilder::init(const data_t &init_data) {
     }
   }
 
-  // Test for valid output data request queues
-  for (const auto &qitem : ini.qinfos) {
-    if (qitem.name.rfind("data_request_") == 0) {
-      try {
-        datareqsink_t temp(qitem.inst);
-      } catch (const ers::Issue &excpt) {
-        throw InvalidQueueFatalError(ERS_HERE, get_name(), qitem.name, excpt);
-      }
-    }
-  }
-
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS)
       << get_name() << ": Exiting init() method";
 }
@@ -169,7 +161,7 @@ void TriggerRecordBuilder::do_conf(const data_t &payload) {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS)
       << get_name() << ": Entering do_conf() method";
 
-  m_map_geoid_queues.clear();
+  m_map_geoid_connections.clear();
 
   triggerrecordbuilder::ConfParams parsed_conf =
       payload.get<triggerrecordbuilder::ConfParams>();
@@ -187,7 +179,7 @@ void TriggerRecordBuilder::do_conf(const data_t &payload) {
     key.system_type = type;
     key.region_id = entry.region;
     key.element_id = entry.element;
-    m_map_geoid_queues[key] = entry.queueinstance;
+    m_map_geoid_connections[key] = entry.connection_name;
   }
 
   m_trigger_timeout = duration_type(parsed_conf.trigger_record_timeout_ms);
@@ -195,8 +187,8 @@ void TriggerRecordBuilder::do_conf(const data_t &payload) {
   m_loop_sleep = m_queue_timeout =
       std::chrono::milliseconds(parsed_conf.general_queue_timeout);
 
-  if (m_map_geoid_queues.size() > 1) {
-    m_loop_sleep /= (2. + log2(m_map_geoid_queues.size()));
+  if (m_map_geoid_connections.size() > 1) {
+    m_loop_sleep /= (2. + log2(m_map_geoid_connections.size()));
     if (m_loop_sleep.count() == 0)
       m_loop_sleep = m_queue_timeout =
           std::chrono::milliseconds(parsed_conf.general_queue_timeout);
@@ -261,12 +253,6 @@ void TriggerRecordBuilder::do_work(std::atomic<bool> &running_flag) {
         new fragment_source_t(m_fragment_source_names[i])));
   }
 
-  datareqsinkmap_t request_sinks;
-  for (auto const &entry : m_map_geoid_queues) {
-    request_sinks[entry.first] =
-        std::unique_ptr<datareqsink_t>(new datareqsink_t(entry.second));
-  }
-
   bool run_again = false;
 
   while (running_flag.load() || run_again) {
@@ -298,7 +284,7 @@ void TriggerRecordBuilder::do_work(std::atomic<bool> &running_flag) {
       ++m_run_received_trigger_decisions;
 
       book_updates = create_trigger_records_and_dispatch(
-                         temp_dec, request_sinks, running_flag) > 0;
+                         temp_dec, running_flag) > 0;
 
       break;
 
@@ -515,7 +501,7 @@ TriggerRecordBuilder::extract_trigger_record(const TriggerId &id) {
 }
 
 unsigned int TriggerRecordBuilder::create_trigger_records_and_dispatch(
-    const dfmessages::TriggerDecision &td, datareqsinkmap_t &sinks,
+    const dfmessages::TriggerDecision &td,
     std::atomic<bool> &running) {
 
   unsigned int new_tr_counter = 0;
@@ -631,7 +617,7 @@ unsigned int TriggerRecordBuilder::create_trigger_records_and_dispatch(
                                   << dataReq.request_information.window_end
           << ']';
 
-      dispatch_data_requests(dataReq, component.component, sinks, running);
+      dispatch_data_requests(dataReq, component.component, running);
 
     } // loop loop over component in the slice
 
@@ -642,39 +628,39 @@ unsigned int TriggerRecordBuilder::create_trigger_records_and_dispatch(
 
 bool TriggerRecordBuilder::dispatch_data_requests(
     const dfmessages::DataRequest &dr, const dataformats::GeoID &geo,
-    datareqsinkmap_t &sinks, std::atomic<bool> &running) const
+    std::atomic<bool> &running) const
 
 {
 
   // find the queue for geoid_req in the map
-  auto it_req = sinks.find(geo);
-  if (it_req == sinks.end()) {
+  auto it_req = m_map_geoid_connections.find(geo);
+  if (it_req == m_map_geoid_connections.end()) {
     // if geoid request is not valid. then trhow error and continue
     ers::error(dunedaq::dfmodules::UnknownGeoID(ERS_HERE, geo));
     ++m_invalid_requests;
     return false;
   }
-
+  
   // get the queue from map element
-  auto &queue = it_req->second;
+  auto & name = it_req->second;
 
   bool wasSentSuccessfully = false;
   do {
     TLOG_DEBUG(TLVL_WORK_STEPS)
         << get_name() << ": Pushing the DataRequest from trigger number "
-        << dr.trigger_number << " onto output queue :" << queue->get_name();
+        << dr.trigger_number << " onto connection :" << name ;
 
     // push data request into the corresponding queue
     try {
-      queue->push(dr, m_queue_timeout);
+      NetworkManager::get().send_to( name, 
+				     static_cast<const void*>( & dr ), 
+				     sizeof(dr), 
+				     m_queue_timeout ) ;
       wasSentSuccessfully = true;
-    } catch (const dunedaq::appfwk::QueueTimeoutExpired &excpt) {
+    } catch (const ers::Issue& excpt ) {
       std::ostringstream oss_warn;
-      oss_warn << "push to output queue \"" << queue->get_name() << "\"";
-      ers::warning(dunedaq::appfwk::QueueTimeoutExpired(
-          ERS_HERE, get_name(), oss_warn.str(),
-          std::chrono::duration_cast<std::chrono::milliseconds>(m_queue_timeout)
-              .count()));
+      oss_warn << "Send to connection \"" << name << "\" failed";
+      ers::warning( excpt );
     }
   } while (!wasSentSuccessfully && running.load());
 

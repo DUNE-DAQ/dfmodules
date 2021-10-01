@@ -181,9 +181,6 @@ protected:
   using trigger_decision_source_t =
       dunedaq::appfwk::DAQSource<dfmessages::TriggerDecision>;
   using datareqsink_t = dunedaq::appfwk::DAQSink<dfmessages::DataRequest>;
-  using datareqsinkmap_t =
-      std::map<dataformats::GeoID, std::unique_ptr<datareqsink_t>>;
-
   using fragment_source_t =
       dunedaq::appfwk::DAQSource<std::unique_ptr<dataformats::Fragment>>;
   using fragment_sources_t = std::vector<std::unique_ptr<fragment_source_t>>;
@@ -200,11 +197,10 @@ protected:
 
   unsigned int
   create_trigger_records_and_dispatch(const dfmessages::TriggerDecision &,
-                                      datareqsinkmap_t &,
                                       std::atomic<bool> &running);
 
   bool dispatch_data_requests(const dfmessages::DataRequest &,
-                              const dataformats::GeoID &, datareqsinkmap_t &,
+                              const dataformats::GeoID &, 
                               std::atomic<bool> &running) const;
 
   bool send_trigger_record(const TriggerId &, trigger_record_sink_t &,
@@ -236,7 +232,7 @@ private:
   // Output queues
   std::string m_trigger_record_sink_name;
   std::map<dataformats::GeoID, std::string>
-      m_map_geoid_queues; ///< Mappinng between GeoID and queues
+      m_map_geoid_connections; ///< Mappinng between GeoID and queues
 
   // bookeeping
   using clock_type = std::chrono::high_resolution_clock;
