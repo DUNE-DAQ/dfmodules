@@ -150,6 +150,7 @@ RequestReceiver::dispatch_request(ipm::Receiver::Response message) const
   } else {
     throw UnknownGeoID(ERS_HERE, component);
   }
+  m_received_requests++;
 }
 
 } // namespace dfmodules
