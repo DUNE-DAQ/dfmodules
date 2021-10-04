@@ -652,9 +652,12 @@ bool TriggerRecordBuilder::dispatch_data_requests(
 
     // push data request into the corresponding queue
     try {
+
+      auto serialised_request = dunedaq::serialization::serialize(dr, dunedaq::serialization::kMsgPack);
+      
       NetworkManager::get().send_to( name, 
-				     static_cast<const void*>( & dr ), 
-				     sizeof(dr), 
+				     static_cast<const void*>( serialised_request.data() ), 
+				     serialised_request.size(), 
 				     m_queue_timeout ) ;
       wasSentSuccessfully = true;
     } catch (const ers::Issue& excpt ) {
