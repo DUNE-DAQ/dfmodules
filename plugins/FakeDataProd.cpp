@@ -13,6 +13,7 @@
 
 #include "appfwk/DAQModuleHelper.hpp"
 #include "logging/Logging.hpp"
+#include "networkmanager/NetworkManager.hpp" 
 
 #include <chrono>
 #include <cstdlib>
@@ -187,7 +188,17 @@ FakeDataProd::do_work(std::atomic<bool>& running_flag)
     if (m_response_delay > 0) {
       std::this_thread::sleep_for(std::chrono::nanoseconds(m_response_delay));
     }
+ 
+    try {
+      networkmanager::NetworkManager::get().send_to(data_request.data_destination, static_cast<void*>(data_fragment_ptr.release()), num_bytes_to_send, std::chrono::milliseconds(10));
+    }
+    catch(ers::Issue &e) {
+      ers::warning(FragmentTransmissionFailed(ERS_HERE, get_name(), data_fragment_ptr->get_trigger_number()));
+    }
 
+
+
+    /*
     bool wasSentSuccessfully = false;
     while (!wasSentSuccessfully && running_flag.load()) {
       TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Pushing the Data Fragment for trigger number "
@@ -206,6 +217,8 @@ FakeDataProd::do_work(std::atomic<bool>& running_flag)
           std::chrono::duration_cast<std::chrono::milliseconds>(m_queue_timeout).count()));
       }
     }
+    */
+
     free(fake_data);
 
     // TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Start of sleep while waiting for run Stop";

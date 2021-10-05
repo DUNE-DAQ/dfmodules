@@ -23,6 +23,12 @@
 #include <vector>
 
 namespace dunedaq {
+
+ERS_DECLARE_ISSUE(dfmodules, FragmentTransmissionFailed, mod_name << " failed to send data for trigger number " << tr_num << ".",
+		  ((std::string) mod_name)
+                  ((int64_t) tr_num))
+
+
 namespace dfmodules {
 
 /**
