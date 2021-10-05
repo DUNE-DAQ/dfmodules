@@ -49,7 +49,7 @@ private:
 
   void get_info(opmonlib::InfoCollector& ci, int level) override;
 
-  void dispatch_request(ipm::Receiver::Response message) const;
+  void dispatch_request(ipm::Receiver::Response message);
 
   // Configuration
   std::chrono::milliseconds m_queue_timeout;
