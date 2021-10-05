@@ -140,7 +140,7 @@ RequestReceiver::get_info(opmonlib::InfoCollector& ci, int /*level*/)
 }
 
 void
-RequestReceiver::dispatch_request(ipm::Receiver::Response message) const
+RequestReceiver::dispatch_request(ipm::Receiver::Response message)
 {
   auto request = serialization::deserialize<dfmessages::DataRequest>(message.data);
 
