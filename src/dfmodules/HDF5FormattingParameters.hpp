@@ -89,6 +89,14 @@ public:
     trigger_params.digits_for_element_number = 2;
     the_map[StorageKey::DataRecordGroupType::kTrigger] = trigger_params;
 
+    PathParameters ndlartpc_params;
+    ndlartpc_params.group_name_within_data_record = "NDLArTPC";
+    ndlartpc_params.region_name_prefix = "Region";
+    ndlartpc_params.digits_for_region_number = 3;
+    ndlartpc_params.element_name_prefix = "Element";
+    ndlartpc_params.digits_for_element_number = 2;
+    the_map[StorageKey::DataRecordGroupType::kNDLArTPC] = ndlartpc_params;
+
     PathParameters invalid_params;
     invalid_params.group_name_within_data_record = "Invalid";
     invalid_params.region_name_prefix = "Region";
