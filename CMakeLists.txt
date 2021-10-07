@@ -23,8 +23,8 @@ find_package(serialization REQUIRED)
 find_package(readout REQUIRED)
 find_package(Boost COMPONENTS iostreams REQUIRED)
 
-daq_codegen( datawriter.jsonnet hdf5datastore.jsonnet requestreceiver.jsonnet triggerrecordbuilder.jsonnet fakedataprod.jsonnet tpsetwriter.jsonnet TEMPLATES Structs.hpp.j2 Nljs.hpp.j2 )
-daq_codegen( *info.jsonnet DEP_PKGS opmonlib TEMPLATES opmonlib/InfoStructs.hpp.j2 opmonlib/InfoNljs.hpp.j2 )
+daq_codegen( *.jsonnet TEMPLATES Structs.hpp.j2 Nljs.hpp.j2 )
+daq_codegen( info/*.jsonnet DEP_PKGS opmonlib TEMPLATES opmonlib/InfoStructs.hpp.j2 opmonlib/InfoNljs.hpp.j2 )
 
 ##############################################################################
 daq_add_library( StorageKey.cpp TriggerDecisionForwarder.cpp TriggerInhibitAgent.cpp
