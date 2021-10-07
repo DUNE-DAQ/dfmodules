@@ -38,6 +38,7 @@ daq_add_plugin( TriggerRecordBuilder  duneDAQModule LINK_LIBRARIES dfmodules net
 daq_add_plugin( TPSetWriter           duneDAQModule LINK_LIBRARIES dfmodules trigger::trigger serialization::serialization readout::readout Boost::iostreams )
 daq_add_plugin( FakeDataProd          duneDAQModule LINK_LIBRARIES dfmodules networkmanager::networkmanager)
 daq_add_plugin( RequestReceiver       duneDAQModule LINK_LIBRARIES dfmodules networkmanager::networkmanager)
+daq_add_plugin( FragmentReceiver       duneDAQModule LINK_LIBRARIES dfmodules networkmanager::networkmanager)
 
 ##############################################################################
 daq_add_unit_test( StorageKey_test          LINK_LIBRARIES dfmodules )

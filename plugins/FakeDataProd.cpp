@@ -44,7 +44,7 @@ FakeDataProd::FakeDataProd(const std::string& name)
   , m_queue_timeout(100)
   , m_run_number(0)
   , m_data_request_input_queue(nullptr)
-  , m_data_fragment_output_queue(nullptr)
+//  , m_data_fragment_output_queue(nullptr)
 {
   register_command("conf", &FakeDataProd::do_conf);
   register_command("start", &FakeDataProd::do_start);
@@ -56,17 +56,18 @@ FakeDataProd::init(const data_t& init_data)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
   auto qi = appfwk::queue_index(init_data,
-                                { "data_request_input_queue", "data_fragment_output_queue", "timesync_output_queue" });
+//                                { "data_request_input_queue", "data_fragment_output_queue", "timesync_output_queue" });
+                                { "data_request_input_queue", "timesync_output_queue" });
   try {
     m_data_request_input_queue.reset(new datareqsource_t(qi["data_request_input_queue"].inst));
   } catch (const ers::Issue& excpt) {
     throw InvalidQueueFatalError(ERS_HERE, get_name(), "data_request_input_queue", excpt);
   }
-  try {
-    m_data_fragment_output_queue.reset(new datafragsink_t(qi["data_fragment_output_queue"].inst));
-  } catch (const ers::Issue& excpt) {
-    throw InvalidQueueFatalError(ERS_HERE, get_name(), "data_fragment_output_queue", excpt);
-  }
+//  try {
+//    m_data_fragment_output_queue.reset(new datafragsink_t(qi["data_fragment_output_queue"].inst));
+//  } catch (const ers::Issue& excpt) {
+//    throw InvalidQueueFatalError(ERS_HERE, get_name(), "data_fragment_output_queue", excpt);
+//  }
   try {
     m_timesync_output_queue.reset(new timesyncsink_t(qi["timesync_output_queue"].inst));
   } catch (const ers::Issue& excpt) {

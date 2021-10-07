@@ -78,7 +78,7 @@ private:
   using datareqsource_t = dunedaq::appfwk::DAQSource<dfmessages::DataRequest>;
   std::unique_ptr<datareqsource_t> m_data_request_input_queue;
   using datafragsink_t = dunedaq::appfwk::DAQSink<std::unique_ptr<dataformats::Fragment>>;
-  std::unique_ptr<datafragsink_t> m_data_fragment_output_queue;
+  //std::unique_ptr<datafragsink_t> m_data_fragment_output_queue;
   using timesyncsink_t = dunedaq::appfwk::DAQSink<dfmessages::TimeSync>;
   std::unique_ptr<timesyncsink_t> m_timesync_output_queue;
 
