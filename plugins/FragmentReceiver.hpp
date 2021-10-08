@@ -59,9 +59,8 @@ private:
 
   // Queue(s)
   using fragmentsink_t = dunedaq::appfwk::DAQSink<std::unique_ptr<dataformats::Fragment>>;
-  std::map<dataformats::GeoID, std::unique_ptr<fragmentsink_t>> m_fragment_output_queues;
+  std::unique_ptr<fragmentsink_t> m_fragment_output_queue;
 
-  std::map<dataformats::GeoID, std::atomic<uint64_t>> m_received_fragments_by_geoid; // NOLINT (build/unsigned)
   size_t m_received_fragments{ 0 };
 };
 } // namespace dfmodules

@@ -44,7 +44,6 @@ FragmentReceiver::FragmentReceiver(const std::string& name)
   : dunedaq::appfwk::DAQModule(name)
   , m_queue_timeout(100)
   , m_run_number(0)
-  , m_fragment_output_queues()
 {
   register_command("conf", &FragmentReceiver::do_conf);
   register_command("start", &FragmentReceiver::do_start);
@@ -52,27 +51,9 @@ FragmentReceiver::FragmentReceiver(const std::string& name)
 }
 
 void
-FragmentReceiver::init(const data_t& init_data)
+FragmentReceiver::init(const data_t& )
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
-
-  //----------------------
-  // Get dynamic queues
-  //----------------------
-
-  // set names for the fragment queue(s)
-  auto ini = init_data.get<appfwk::app::ModInit>();
-
-  // Test for valid output data request queues
-  for (const auto& qitem : ini.qinfos) {
-    if (qitem.name.rfind("data_request_") == 0) {
-      try {
-        fragmentsink_t temp(qitem.inst);
-      } catch (const ers::Issue& excpt) {
-        throw InvalidQueueFatalError(ERS_HERE, get_name(), qitem.name, excpt);
-      }
-    }
-  }
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
@@ -82,24 +63,9 @@ FragmentReceiver::do_conf(const data_t& payload)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
 
-  m_fragment_output_queues.clear();
-
   fragmentreceiver::ConfParams parsed_conf = payload.get<fragmentreceiver::ConfParams>();
 
-  for (auto const& entry : parsed_conf.map) {
-
-    dataformats::GeoID::SystemType type = dataformats::GeoID::string_to_system_type(entry.system);
-
-    if (type == dataformats::GeoID::SystemType::kInvalid) {
-      throw InvalidSystemType(ERS_HERE, entry.system);
-    }
-
-    dataformats::GeoID key;
-    key.system_type = type;
-    key.region_id = entry.region;
-    key.element_id = entry.element;
-    m_fragment_output_queues[key] = std::unique_ptr<fragmentsink_t>(new fragmentsink_t(entry.queueinstance));
-  }
+  m_fragment_output_queue = std::unique_ptr<fragmentsink_t>(new fragmentsink_t(parsed_conf.output));
 
   m_queue_timeout = std::chrono::milliseconds(parsed_conf.general_queue_timeout);
   m_connection_name = parsed_conf.connection_name;
@@ -113,7 +79,6 @@ FragmentReceiver::do_start(const data_t& payload)
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_start() method";
 
   m_received_fragments = 0;
-  m_received_fragments_by_geoid.clear();
   m_run_number = payload.value<dunedaq::dataformats::run_number_t>("run", 0);
 
   networkmanager::NetworkManager::get().start_listening(
@@ -139,15 +104,6 @@ FragmentReceiver::get_info(opmonlib::InfoCollector& ci, int /*level*/)
 {
   fragmentreceiverinfo::Info info;
   info.fragments_received = m_received_fragments;
-  // TODO, Eric Flumerfelt <eflumerf@fnal.gov>, 07-Oct-2021: Is this something we want to support?
-  // for (auto& component : m_received_fragments_by_geoid) {
-  //   fragmentreceiverinfo::Component comp;
-  //   comp.system = dataformats::GeoID::system_type_to_string(component.first.system_type);
-  //   comp.region = component.first.region_id;
-  //   comp.element = component.first.element_id;
-  //   comp.fragments_received = component.second;
-  //   info.components.push_back(comp);
-  // }
   ci.add(info);
 }
 
@@ -155,14 +111,7 @@ void
 FragmentReceiver::dispatch_fragment(ipm::Receiver::Response message)
 {
   auto fragment = serialization::deserialize<std::unique_ptr<dataformats::Fragment>>(message.data);
-
-  auto component = fragment->get_element_id();
-  if (m_fragment_output_queues.count(component)) {
-    m_fragment_output_queues.at(component)->push(std::move(fragment), m_queue_timeout);
-  } else {
-    throw UnknownGeoID(ERS_HERE, component);
-  }
-  m_received_fragments_by_geoid[component]++;
+  m_fragment_output_queue->push(std::move(fragment), m_queue_timeout);
   m_received_fragments++;
 }
 
