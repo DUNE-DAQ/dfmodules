@@ -105,7 +105,6 @@ FakeDataProd::do_start(const data_t& payload)
   m_run_number = payload.value<dunedaq::dataformats::run_number_t>("run", 0);
   m_thread.start_working_thread();
   m_timesync_thread.start_working_thread();
-  TLOG() << get_name() << " successfully started for run number " << m_run_number;
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
 }
 
@@ -115,7 +114,6 @@ FakeDataProd::do_stop(const data_t& /*args*/)
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_stop() method";
   m_thread.stop_working_thread();
   m_timesync_thread.stop_working_thread();
-  TLOG() << get_name() << " successfully stopped";
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_stop() method";
 }
 
@@ -155,7 +153,6 @@ FakeDataProd::do_work(std::atomic<bool>& running_flag)
     dfmessages::DataRequest data_request;
     try {
       m_data_request_input_queue->pop(data_request, m_queue_timeout);
-      TLOG() << "Received data request " << data_request.trigger_number << " component " << data_request.request_information;
       m_received_requests++;
       ++receivedCount;
     } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
@@ -195,7 +192,6 @@ FakeDataProd::do_work(std::atomic<bool>& running_flag)
     }
  
     try {
-      TLOG() << "Send fragment for TR " << data_request.trigger_number << " to " << data_request.data_destination ;
       auto serialised_frag = dunedaq::serialization::serialize(std::move(data_fragment_ptr), dunedaq::serialization::kMsgPack);
       networkmanager::NetworkManager::get().send_to(data_request.data_destination, static_cast<const void*>(serialised_frag.data()), serialised_frag.size(), std::chrono::milliseconds(1000));
     }
