@@ -14,6 +14,7 @@
 #include "appfwk/DAQModuleHelper.hpp"
 #include "logging/Logging.hpp"
 #include "networkmanager/NetworkManager.hpp" 
+#include "dfmessages/Fragment_serialization.hpp"
 
 #include <chrono>
 #include <cstdlib>
@@ -154,6 +155,7 @@ FakeDataProd::do_work(std::atomic<bool>& running_flag)
     dfmessages::DataRequest data_request;
     try {
       m_data_request_input_queue->pop(data_request, m_queue_timeout);
+      TLOG() << "Received data request " << data_request.trigger_number << " component " << data_request.request_information;
       m_received_requests++;
       ++receivedCount;
     } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
@@ -173,7 +175,9 @@ FakeDataProd::do_work(std::atomic<bool>& running_flag)
 
     // This should really not happen
     if (fake_data == nullptr) {
-      throw dunedaq::dataformats::MemoryAllocationFailed(ERS_HERE, num_bytes_to_send);
+      ers::error(dunedaq::dataformats::MemoryAllocationFailed(ERS_HERE, num_bytes_to_send));
+      continue;
+      //throw dunedaq::dataformats::MemoryAllocationFailed(ERS_HERE, num_bytes_to_send);
     }
     std::unique_ptr<dataformats::Fragment> data_fragment_ptr(new dataformats::Fragment(fake_data, num_bytes_to_send));
     data_fragment_ptr->set_trigger_number(data_request.trigger_number);
@@ -191,13 +195,13 @@ FakeDataProd::do_work(std::atomic<bool>& running_flag)
     }
  
     try {
-      networkmanager::NetworkManager::get().send_to(data_request.data_destination, static_cast<void*>(data_fragment_ptr.release()), num_bytes_to_send, std::chrono::milliseconds(10));
+      TLOG() << "Send fragment for TR " << data_request.trigger_number << " to " << data_request.data_destination ;
+      auto serialised_frag = dunedaq::serialization::serialize(std::move(data_fragment_ptr), dunedaq::serialization::kMsgPack);
+      networkmanager::NetworkManager::get().send_to(data_request.data_destination, static_cast<const void*>(serialised_frag.data()), serialised_frag.size(), std::chrono::milliseconds(1000));
     }
     catch(ers::Issue &e) {
-      ers::warning(FragmentTransmissionFailed(ERS_HERE, get_name(), data_fragment_ptr->get_trigger_number()));
+      ers::warning(FragmentTransmissionFailed(ERS_HERE, get_name(), data_request.trigger_number, e));
     }
-
-
 
     /*
     bool wasSentSuccessfully = false;
@@ -220,7 +224,7 @@ FakeDataProd::do_work(std::atomic<bool>& running_flag)
     }
     */
 
-    free(fake_data);
+    //free(fake_data);
 
     // TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Start of sleep while waiting for run Stop";
     // std::this_thread::sleep_for(std::chrono::milliseconds(m_sleep_msec_while_running));

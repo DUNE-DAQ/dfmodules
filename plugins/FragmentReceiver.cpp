@@ -62,14 +62,13 @@ void
 FragmentReceiver::do_conf(const data_t& payload)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
-
   fragmentreceiver::ConfParams parsed_conf = payload.get<fragmentreceiver::ConfParams>();
 
-  m_fragment_output_queue = std::unique_ptr<fragmentsink_t>(new fragmentsink_t(parsed_conf.output));
+  m_fragment_output_queue = std::unique_ptr<fragmentsink_t>(new fragmentsink_t("data_fragments_q"));
 
   m_queue_timeout = std::chrono::milliseconds(parsed_conf.general_queue_timeout);
   m_connection_name = parsed_conf.connection_name;
-
+  
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
 }
 

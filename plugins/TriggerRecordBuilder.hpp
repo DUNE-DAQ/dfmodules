@@ -224,6 +224,7 @@ private:
   // Configuration
   std::chrono::milliseconds m_queue_timeout;
   std::chrono::milliseconds m_loop_sleep;
+  std::string m_reply_connection;
 
   // Input Queues
   std::string m_trigger_decision_source_name;

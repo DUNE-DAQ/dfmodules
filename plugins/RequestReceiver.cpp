@@ -102,6 +102,7 @@ RequestReceiver::do_conf(const data_t& payload)
 
   m_queue_timeout = std::chrono::milliseconds(parsed_conf.general_queue_timeout);
   m_connection_name = parsed_conf.connection_name;
+  std::cout << "Connection name is " << m_connection_name << std::endl; 
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
 }
@@ -116,7 +117,6 @@ RequestReceiver::do_start(const data_t& payload)
 
   networkmanager::NetworkManager::get().start_listening(m_connection_name, std::bind(&RequestReceiver::dispatch_request, this, std::placeholders::_1));
 
-  TLOG() << get_name() << " successfully started for run number " << m_run_number;
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
 }
 
@@ -143,12 +143,14 @@ void
 RequestReceiver::dispatch_request(ipm::Receiver::Response message)
 {
   auto request = serialization::deserialize<dfmessages::DataRequest>(message.data);
+  //TLOG() << "Received data request: " << request.trigger_number << " Component: " << request.request_information;
 
   auto component = request.request_information.component;
   if (m_data_request_output_queues.count(component)) {
+    //TLOG() << "Dispatch request to queue " << m_data_request_output_queues.at(component)->get_name();
     m_data_request_output_queues.at(component)->push(request, m_queue_timeout);
   } else {
-    throw UnknownGeoID(ERS_HERE, component);
+    ers::error(UnknownGeoID(ERS_HERE, component));
   }
   m_received_requests++;
 }

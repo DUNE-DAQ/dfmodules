@@ -198,6 +198,8 @@ void TriggerRecordBuilder::do_conf(const data_t &payload) {
          << ", loop = " << m_loop_sleep.count();
   m_max_time_window = parsed_conf.max_time_window;
 
+  m_reply_connection = parsed_conf.reply_connection_name;
+
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS)
       << get_name() << ": Exiting do_conf() method";
 }
@@ -609,7 +611,7 @@ unsigned int TriggerRecordBuilder::create_trigger_records_and_dispatch(
       dataReq.trigger_timestamp = td.trigger_timestamp;
       dataReq.readout_type = td.readout_type;
       dataReq.request_information = component;
-      dataReq.data_destination = "DataRequest_dataflow"; // FIXME: get this dynamically
+      dataReq.data_destination = m_reply_connection; 
       TLOG_DEBUG(TLVL_WORK_STEPS)
           << get_name() << ": TR " << slice_id << ": trig_timestamp "
           << dataReq.trigger_timestamp << ": GeoID " << component.component << ": window ["
