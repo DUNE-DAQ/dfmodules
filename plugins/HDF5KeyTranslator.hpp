@@ -35,16 +35,16 @@ namespace dunedaq {
 ERS_DECLARE_ISSUE_BASE(dfmodules,
                        InvalidHDF5GroupTypeConfigParams,
                        appfwk::GeneralDAQModuleIssue,
-                       "Invalid detector group type (\"" << group_type
-                       << "\") found in the configuration of the HDF5 internal layout.",
+                       "Invalid detector group type (\""
+                         << group_type << "\") found in the configuration of the HDF5 internal layout.",
                        ((std::string)name),
                        ((std::string)group_type))
 
 ERS_DECLARE_ISSUE_BASE(dfmodules,
                        RequestedHDF5GroupTypeNotFound,
                        appfwk::GeneralDAQModuleIssue,
-                       "Invalid detector group type (" << group_type
-                       << ") requested when attempting to determine the HDF5 Group and DataSet path.",
+                       "Invalid detector group type ("
+                         << group_type << ") requested when attempting to determine the HDF5 Group and DataSet path.",
                        ((std::string)name),
                        ((int)group_type))
 
@@ -73,17 +73,13 @@ public:
     for (const hdf5ds::PathParams& path_param_set : path_param_list) {
       if (path_param_set.detector_group_type == "TPC") {
         m_path_param_map[StorageKey::DataRecordGroupType::kTPC] = path_param_set;
-      }
-      else if (path_param_set.detector_group_type == "PDS") {
+      } else if (path_param_set.detector_group_type == "PDS") {
         m_path_param_map[StorageKey::DataRecordGroupType::kPDS] = path_param_set;
-      }
-      else if (path_param_set.detector_group_type == "Trigger") {
+      } else if (path_param_set.detector_group_type == "Trigger") {
         m_path_param_map[StorageKey::DataRecordGroupType::kTrigger] = path_param_set;
-      }
-      else if (path_param_set.detector_group_type == "TPC_TP") {
+      } else if (path_param_set.detector_group_type == "TPC_TP") {
         m_path_param_map[StorageKey::DataRecordGroupType::kTPC_TP] = path_param_set;
-      }
-      else {
+      } else {
         throw InvalidHDF5GroupTypeConfigParams(ERS_HERE, "HDF5KeyTranslator", path_param_set.detector_group_type);
       }
     }
@@ -170,8 +166,7 @@ public:
   /**
    * @brief Translates the specified input parameters into the appropriate filename.
    */
-  std::string get_file_name(const StorageKey& data_key,
-                            size_t file_index)
+  std::string get_file_name(const StorageKey& data_key, size_t file_index)
   {
     std::ostringstream work_oss;
     work_oss << m_config_params.directory_path;
@@ -211,7 +206,8 @@ public:
                << data_key.get_run_number();
       work_oss << "_";
       work_oss << m_config_params.filename_parameters.file_index_prefix;
-      work_oss << std::setw(m_config_params.filename_parameters.digits_for_file_index) << std::setfill('0') << file_index;
+      work_oss << std::setw(m_config_params.filename_parameters.digits_for_file_index) << std::setfill('0')
+               << file_index;
     }
 
     work_oss << ".hdf5";

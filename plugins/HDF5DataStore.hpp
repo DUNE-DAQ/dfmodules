@@ -260,8 +260,7 @@ public:
 
     // determine the filename from Storage Key + configuration parameters
     // (This assumes that all of the blocks have a data_key that puts them in the same file...)
-    std::string full_filename =
-      m_key_translator_ptr->get_file_name(data_block_list[0].m_data_key, m_file_index);
+    std::string full_filename = m_key_translator_ptr->get_file_name(data_block_list[0].m_data_key, m_file_index);
 
     // m_file_ptr will be the handle to the Opened-File after a call to open_file_if_needed()
     try {

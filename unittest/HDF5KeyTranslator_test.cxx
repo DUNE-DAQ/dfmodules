@@ -52,7 +52,7 @@ BOOST_AUTO_TEST_CASE(PathString)
   config_params.file_layout_parameters = layout_params;
 
   HDF5KeyTranslator translator(config_params);
-std::string path;
+  std::string path;
 
   StorageKey key1(101, 1, StorageKey::DataRecordGroupType::kTPC, 2, 3);
   path = translator.get_path_string(key1);
