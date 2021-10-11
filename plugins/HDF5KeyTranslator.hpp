@@ -17,6 +17,8 @@
 #include "dfmodules/hdf5datastore/Nljs.hpp"
 #include "dfmodules/hdf5datastore/Structs.hpp"
 
+#include "logging/Logging.hpp"
+
 #include "boost/algorithm/string.hpp"
 
 #include <iomanip>
@@ -28,6 +30,23 @@
 namespace hdf5ds = dunedaq::dfmodules::hdf5datastore;
 
 namespace dunedaq {
+
+ERS_DECLARE_ISSUE_BASE(dfmodules,
+                       InvalidHDF5GroupTypeConfigParams,
+                       appfwk::GeneralDAQModuleIssue,
+                       "Invalid detector group type (\"" << group_type
+                       << "\") found in the configuration of the HDF5 internal layout.",
+                       ((std::string)name),
+                       ((std::string)group_type))
+
+ERS_DECLARE_ISSUE_BASE(dfmodules,
+                       RequestedHDF5GroupTypeNotFound,
+                       appfwk::GeneralDAQModuleIssue,
+                       "Invalid detector group type (" << group_type
+                       << ") requested when attempting to determine the HDF5 Group and DataSet path.",
+                       ((std::string)name),
+                       ((int)group_type))
+
 namespace dfmodules {
 
 class HDF5KeyTranslator
@@ -63,6 +82,9 @@ public:
       else if (path_param_set.detector_group_type == "TPC_TP") {
         m_path_param_map[StorageKey::DataRecordGroupType::kTPC_TP] = path_param_set;
       }
+      else {
+        throw InvalidHDF5GroupTypeConfigParams(ERS_HERE, "HDF5KeyTranslator", path_param_set.detector_group_type);
+      }
     }
 
     m_config_params = config_params;
@@ -96,6 +118,12 @@ public:
   std::vector<std::string> get_path_elements(const StorageKey& data_key)
   {
     std::vector<std::string> path_list;
+
+    // verify that the requested detector group type is in our map of parameters
+    if (data_key.get_group_type() != StorageKey::DataRecordGroupType::kTriggerRecordHeader &&
+        m_path_param_map.count(data_key.get_group_type()) == 0) {
+      throw RequestedHDF5GroupTypeNotFound(ERS_HERE, "HDF5KeyTranslator", data_key.get_group_type());
+    }
 
     // add trigger number to the path
     std::ostringstream trigger_number_string;

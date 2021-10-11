@@ -107,7 +107,11 @@ DataWriter::do_conf(const data_t& payload)
   m_write_retry_time_increase_factor = conf_params.write_retry_time_increase_factor;
 
   // create the DataStore instance here
-  m_data_writer = make_data_store(payload["data_store_parameters"]);
+  try {
+    m_data_writer = make_data_store(payload["data_store_parameters"]);
+  } catch (const ers::Issue& excpt) {
+    throw UnableToConfigure(ERS_HERE, get_name(), excpt);
+  }
 
   // ensure that we have a valid dataWriter instance
   if (m_data_writer.get() == nullptr) {
