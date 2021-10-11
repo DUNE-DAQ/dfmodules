@@ -17,6 +17,7 @@
 #include "dfmodules/hdf5datastore/Nljs.hpp"
 #include "dfmodules/hdf5datastore/Structs.hpp"
 
+#include "appfwk/DAQModule.hpp"
 #include "logging/Logging.hpp"
 
 #include "boost/algorithm/string.hpp"
