@@ -104,6 +104,7 @@ private:
       m_system_type_to_group_type_mapping[geoid_system_type_t::kTPC] = key_group_type_t::kTPC;
       m_system_type_to_group_type_mapping[geoid_system_type_t::kPDS] = key_group_type_t::kPDS;
       m_system_type_to_group_type_mapping[geoid_system_type_t::kDataSelection] = key_group_type_t::kTrigger;
+      m_system_type_to_group_type_mapping[geoid_system_type_t::kNDLArTPC] = key_group_type_t::kNDLArTPC;
       m_system_type_to_group_type_mapping[geoid_system_type_t::kInvalid] = key_group_type_t::kInvalid;
     }
     auto map_iter = m_system_type_to_group_type_mapping.find(system_type);
