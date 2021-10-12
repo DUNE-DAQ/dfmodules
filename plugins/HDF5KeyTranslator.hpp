@@ -75,6 +75,8 @@ public:
         m_path_param_map[StorageKey::DataRecordGroupType::kTPC] = path_param_set;
       } else if (path_param_set.detector_group_type == "PDS") {
         m_path_param_map[StorageKey::DataRecordGroupType::kPDS] = path_param_set;
+      } else if (path_param_set.detector_group_type == "NDLArTPC") {
+        m_path_param_map[StorageKey::DataRecordGroupType::kNDLArTPC] = path_param_set;
       } else if (path_param_set.detector_group_type == "Trigger") {
         m_path_param_map[StorageKey::DataRecordGroupType::kTrigger] = path_param_set;
       } else if (path_param_set.detector_group_type == "TPC_TP") {
