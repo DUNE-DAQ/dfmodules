@@ -9,8 +9,9 @@ local types = {
                      doc="A number representing a timestamp"),
     system_type_t : s.string("system_type_t"),
     fragment_type_t : s.string("fragment_type_t"),
+    connection_name : s.string("ConnectionName", doc="Connection name to be used with NetworkManager"),
 
-    conf: s.record("Conf", [
+    conf: s.record("ConfParams", [
         s.field("system_type", self.system_type_t,
                     doc="The system type of the link"),
         s.field("apa_number", self.count, 0,
@@ -24,7 +25,9 @@ local types = {
         s.field("response_delay", self.time, 0,
                     doc="Wait for this amount of ns before sending the fragment"),
         s.field("fragment_type", self.fragment_type_t,
-                    doc="Fragment type of the response")
+                    doc="Fragment type of the response"),
+        s.field("timesync_channel", self.connection_name,
+                    doc="Location to send TimeSync messages")
     ], doc="FakeDataProd configuration"),
 
 };
