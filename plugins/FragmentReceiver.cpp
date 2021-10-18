@@ -51,7 +51,7 @@ FragmentReceiver::FragmentReceiver(const std::string& name)
 }
 
 void
-FragmentReceiver::init(const data_t& )
+FragmentReceiver::init(const data_t&)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
 
@@ -68,7 +68,9 @@ FragmentReceiver::do_conf(const data_t& payload)
 
   m_queue_timeout = std::chrono::milliseconds(parsed_conf.general_queue_timeout);
   m_connection_name = parsed_conf.connection_name;
-  
+
+  networkmanager::NetworkManager::get().start_listening(m_connection_name);
+
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
 }
 
@@ -80,7 +82,7 @@ FragmentReceiver::do_start(const data_t& payload)
   m_received_fragments = 0;
   m_run_number = payload.value<dunedaq::dataformats::run_number_t>("run", 0);
 
-  networkmanager::NetworkManager::get().start_listening(
+  networkmanager::NetworkManager::get().register_callback(
     m_connection_name, std::bind(&FragmentReceiver::dispatch_fragment, this, std::placeholders::_1));
 
   TLOG() << get_name() << " successfully started for run number " << m_run_number;
