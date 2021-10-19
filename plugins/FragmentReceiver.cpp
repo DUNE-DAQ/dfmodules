@@ -48,6 +48,7 @@ FragmentReceiver::FragmentReceiver(const std::string& name)
   register_command("conf", &FragmentReceiver::do_conf);
   register_command("start", &FragmentReceiver::do_start);
   register_command("stop", &FragmentReceiver::do_stop);
+  register_command("scrap", &FragmentReceiver::do_scrap);
 }
 
 void
@@ -94,10 +95,21 @@ FragmentReceiver::do_stop(const data_t& /*args*/)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_stop() method";
 
-  networkmanager::NetworkManager::get().stop_listening(m_connection_name);
+  networkmanager::NetworkManager::get().register_callback(m_connection_name, nullptr);
 
   TLOG() << get_name() << " successfully stopped";
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_stop() method";
+}
+
+void
+FragmentReceiver::do_scrap(const data_t& /*args*/)
+{
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_scrap() method";
+
+  networkmanager::NetworkManager::get().stop_listening(m_connection_name);
+
+  TLOG() << get_name() << " successfully stopped";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_scrap() method";
 }
 
 void
