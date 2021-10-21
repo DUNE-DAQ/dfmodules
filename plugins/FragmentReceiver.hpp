@@ -47,6 +47,7 @@ private:
   void do_conf(const data_t&);
   void do_start(const data_t&);
   void do_stop(const data_t&);
+  void do_scrap(const data_t&);
 
   void get_info(opmonlib::InfoCollector& ci, int level) override;
 
