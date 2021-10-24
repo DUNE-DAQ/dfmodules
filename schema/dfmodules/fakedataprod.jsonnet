@@ -9,7 +9,7 @@ local types = {
                      doc="A number representing a timestamp"),
     system_type_t : s.string("system_type_t"),
     fragment_type_t : s.string("fragment_type_t"),
-    connection_name : s.string("ConnectionName", doc="Connection name to be used with NetworkManager"),
+    netmgr_name : s.string("NetworkManagerName", doc="Connection or topic name to be used with NetworkManager"),
 
     conf: s.record("ConfParams", [
         s.field("system_type", self.system_type_t,
@@ -26,8 +26,10 @@ local types = {
                     doc="Wait for this amount of ns before sending the fragment"),
         s.field("fragment_type", self.fragment_type_t,
                     doc="Fragment type of the response"),
-        s.field("timesync_channel", self.connection_name,
-                    doc="Location to send TimeSync messages")
+        s.field("timesync_connection_name", self.netmgr_name,
+                    doc="Connection name to use for sending TimeSync messages"),
+        s.field("timesync_topic_name", self.netmgr_name, "Timesync",
+                    doc="Topic name to use for sending TimeSync messages")
     ], doc="FakeDataProd configuration"),
 
 };

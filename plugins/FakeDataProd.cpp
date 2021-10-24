@@ -80,7 +80,10 @@ FakeDataProd::do_conf(const data_t& payload)
   m_frame_size = tmpConfig.frame_size;
   m_response_delay = tmpConfig.response_delay;
   m_fragment_type = dataformats::string_to_fragment_type(tmpConfig.fragment_type);
-  m_timesync_address = tmpConfig.timesync_channel;
+  m_timesync_connection_name = tmpConfig.timesync_connection_name;
+  m_timesync_topic_name = tmpConfig.timesync_topic_name;
+
+  networkmanager::NetworkManager::get().start_publisher(m_timesync_connection_name);
 
   TLOG_DEBUG(TLVL_CONFIG) << get_name() << ": configured for link number " << m_geoid.element_id;
 
@@ -120,6 +123,7 @@ FakeDataProd::get_info(opmonlib::InfoCollector& ci, int /*level*/)
 void
 FakeDataProd::do_timesync(std::atomic<bool>& running_flag)
 {
+  int sent_count = 0;
   while (running_flag.load()) {
     auto time_now = std::chrono::system_clock::now().time_since_epoch();
     uint64_t current_timestamp = // NOLINT (build/unsigned)
@@ -127,15 +131,19 @@ FakeDataProd::do_timesync(std::atomic<bool>& running_flag)
     auto timesyncmsg = dfmessages::TimeSync(current_timestamp);
     try {
       auto serialised_timesync = dunedaq::serialization::serialize(timesyncmsg, dunedaq::serialization::kMsgPack);
-      networkmanager::NetworkManager::get().send_to(m_timesync_address,
+      networkmanager::NetworkManager::get().send_to(m_timesync_connection_name,
                                                     static_cast<const void*>(serialised_timesync.data()),
                                                     serialised_timesync.size(),
-                                                    std::chrono::milliseconds(500));
+                                                    std::chrono::milliseconds(500),
+                                                    m_timesync_topic_name);
+      ++sent_count;
     } catch (ers::Issue& excpt) {
-      ers::warning(TimeSyncTransmissionFailed(ERS_HERE, get_name(), m_timesync_address, excpt));
+      ers::warning(
+        TimeSyncTransmissionFailed(ERS_HERE, get_name(), m_timesync_connection_name, m_timesync_topic_name, excpt));
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
+  TLOG() << get_name() << ": sent " << sent_count << " TimeSync messages.";
 }
 
 void

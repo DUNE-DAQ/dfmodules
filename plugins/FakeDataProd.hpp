@@ -30,8 +30,8 @@ ERS_DECLARE_ISSUE(dfmodules,
 
 ERS_DECLARE_ISSUE(dfmodules,
                   TimeSyncTransmissionFailed,
-                  mod_name << " failed to send send TimeSync message to " << dest << ".",
-                  ((std::string)mod_name)((std::string)dest))
+                  mod_name << " failed to send send TimeSync message to " << dest << " with topic " << topic << ".",
+                  ((std::string)mod_name)((std::string)dest)((std::string)topic))
 
 namespace dfmodules {
 
@@ -77,7 +77,8 @@ private:
   uint64_t m_frame_size;     // NOLINT (build/unsigned)
   uint64_t m_response_delay; // NOLINT (build/unsigned)
   dataformats::FragmentType m_fragment_type;
-  std::string m_timesync_address;
+  std::string m_timesync_connection_name;
+  std::string m_timesync_topic_name;
 
   // Queue(s)
   using datareqsource_t = dunedaq::appfwk::DAQSource<dfmessages::DataRequest>;
