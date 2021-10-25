@@ -39,6 +39,7 @@ daq_add_plugin( TPSetWriter           duneDAQModule LINK_LIBRARIES dfmodules tri
 daq_add_plugin( FakeDataProd          duneDAQModule LINK_LIBRARIES dfmodules networkmanager::networkmanager)
 daq_add_plugin( RequestReceiver       duneDAQModule LINK_LIBRARIES dfmodules networkmanager::networkmanager)
 daq_add_plugin( FragmentReceiver       duneDAQModule LINK_LIBRARIES dfmodules networkmanager::networkmanager)
+daq_add_plugin( TriggerDecisionReceiver       duneDAQModule LINK_LIBRARIES dfmodules networkmanager::networkmanager)
 
 ##############################################################################
 daq_add_unit_test( StorageKey_test          LINK_LIBRARIES dfmodules )
