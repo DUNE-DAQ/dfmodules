@@ -48,6 +48,7 @@ RequestReceiver::RequestReceiver(const std::string& name)
   register_command("conf", &RequestReceiver::do_conf);
   register_command("start", &RequestReceiver::do_start);
   register_command("stop", &RequestReceiver::do_stop);
+  register_command("scrap", &RequestReceiver::do_scrap);
 }
 
 void
@@ -104,6 +105,8 @@ RequestReceiver::do_conf(const data_t& payload)
   m_connection_name = parsed_conf.connection_name;
   std::cout << "Connection name is " << m_connection_name << std::endl; 
 
+  networkmanager::NetworkManager::get().start_listening(m_connection_name);
+
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
 }
 
@@ -115,7 +118,7 @@ RequestReceiver::do_start(const data_t& payload)
   m_received_requests = 0;
   m_run_number = payload.value<dunedaq::dataformats::run_number_t>("run", 0);
 
-  networkmanager::NetworkManager::get().start_listening(m_connection_name, std::bind(&RequestReceiver::dispatch_request, this, std::placeholders::_1));
+  networkmanager::NetworkManager::get().register_callback(m_connection_name, std::bind(&RequestReceiver::dispatch_request, this, std::placeholders::_1));
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
 }
@@ -125,11 +128,23 @@ RequestReceiver::do_stop(const data_t& /*args*/)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_stop() method";
 
-  networkmanager::NetworkManager::get().stop_listening(m_connection_name);
+  networkmanager::NetworkManager::get().clear_callback(m_connection_name);
 
   TLOG() << get_name() << " successfully stopped";
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_stop() method";
 }
+
+void
+RequestReceiver::do_scrap(const data_t& /*args*/)
+{
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_scrap() method";
+
+  networkmanager::NetworkManager::get().stop_listening(m_connection_name);
+
+  TLOG() << get_name() << " successfully stopped";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_scrap() method";
+}
+
 
 void
 RequestReceiver::get_info(opmonlib::InfoCollector& ci, int /*level*/)

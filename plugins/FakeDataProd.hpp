@@ -11,7 +11,6 @@
 
 #include "dataformats/Fragment.hpp"
 #include "dfmessages/DataRequest.hpp"
-#include "dfmessages/TimeSync.hpp"
 
 #include "appfwk/DAQModule.hpp"
 #include "appfwk/DAQSink.hpp"
@@ -24,10 +23,15 @@
 
 namespace dunedaq {
 
-ERS_DECLARE_ISSUE(dfmodules, FragmentTransmissionFailed, mod_name << " failed to send data for trigger number " << tr_num << ".",
-		  ((std::string) mod_name)
-                  ((int64_t) tr_num))
+ERS_DECLARE_ISSUE(dfmodules,
+                  FragmentTransmissionFailed,
+                  mod_name << " failed to send data for trigger number " << tr_num << ".",
+                  ((std::string)mod_name)((int64_t)tr_num))
 
+ERS_DECLARE_ISSUE(dfmodules,
+                  TimeSyncTransmissionFailed,
+                  mod_name << " failed to send send TimeSync message to " << dest << " with topic " << topic << ".",
+                  ((std::string)mod_name)((std::string)dest)((std::string)topic))
 
 namespace dfmodules {
 
@@ -73,14 +77,12 @@ private:
   uint64_t m_frame_size;     // NOLINT (build/unsigned)
   uint64_t m_response_delay; // NOLINT (build/unsigned)
   dataformats::FragmentType m_fragment_type;
+  std::string m_timesync_connection_name;
+  std::string m_timesync_topic_name;
 
   // Queue(s)
   using datareqsource_t = dunedaq::appfwk::DAQSource<dfmessages::DataRequest>;
   std::unique_ptr<datareqsource_t> m_data_request_input_queue;
-  using datafragsink_t = dunedaq::appfwk::DAQSink<std::unique_ptr<dataformats::Fragment>>;
-  //std::unique_ptr<datafragsink_t> m_data_fragment_output_queue;
-  using timesyncsink_t = dunedaq::appfwk::DAQSink<dfmessages::TimeSync>;
-  std::unique_ptr<timesyncsink_t> m_timesync_output_queue;
 
   std::atomic<uint64_t> m_received_requests{ 0 }; // NOLINT (build/unsigned)
   std::atomic<uint64_t> m_sent_fragments{ 0 };    // NOLINT (build/unsigned)

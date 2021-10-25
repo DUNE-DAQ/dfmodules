@@ -12,9 +12,10 @@
 #include "dfmodules/fakedataprodinfo/InfoNljs.hpp"
 
 #include "appfwk/DAQModuleHelper.hpp"
-#include "logging/Logging.hpp"
-#include "networkmanager/NetworkManager.hpp" 
 #include "dfmessages/Fragment_serialization.hpp"
+#include "dfmessages/TimeSync.hpp"
+#include "logging/Logging.hpp"
+#include "networkmanager/NetworkManager.hpp"
 
 #include <chrono>
 #include <cstdlib>
@@ -56,23 +57,12 @@ void
 FakeDataProd::init(const data_t& init_data)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
-  auto qi = appfwk::queue_index(init_data,
-//                                { "data_request_input_queue", "data_fragment_output_queue", "timesync_output_queue" });
-                                { "data_request_input_queue", "timesync_output_queue" });
+  auto qi = appfwk::queue_index(init_data, { "data_request_input_queue" });
+
   try {
     m_data_request_input_queue.reset(new datareqsource_t(qi["data_request_input_queue"].inst));
   } catch (const ers::Issue& excpt) {
     throw InvalidQueueFatalError(ERS_HERE, get_name(), "data_request_input_queue", excpt);
-  }
-//  try {
-//    m_data_fragment_output_queue.reset(new datafragsink_t(qi["data_fragment_output_queue"].inst));
-//  } catch (const ers::Issue& excpt) {
-//    throw InvalidQueueFatalError(ERS_HERE, get_name(), "data_fragment_output_queue", excpt);
-//  }
-  try {
-    m_timesync_output_queue.reset(new timesyncsink_t(qi["timesync_output_queue"].inst));
-  } catch (const ers::Issue& excpt) {
-    throw InvalidQueueFatalError(ERS_HERE, get_name(), "timesync_output_queue", excpt);
   }
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
@@ -82,7 +72,7 @@ FakeDataProd::do_conf(const data_t& payload)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
 
-  fakedataprod::Conf tmpConfig = payload.get<fakedataprod::Conf>();
+  fakedataprod::ConfParams tmpConfig = payload.get<fakedataprod::ConfParams>();
   m_geoid.system_type = dataformats::GeoID::string_to_system_type(tmpConfig.system_type);
   m_geoid.region_id = tmpConfig.apa_number;
   m_geoid.element_id = tmpConfig.link_number;
@@ -90,6 +80,10 @@ FakeDataProd::do_conf(const data_t& payload)
   m_frame_size = tmpConfig.frame_size;
   m_response_delay = tmpConfig.response_delay;
   m_fragment_type = dataformats::string_to_fragment_type(tmpConfig.fragment_type);
+  m_timesync_connection_name = tmpConfig.timesync_connection_name;
+  m_timesync_topic_name = tmpConfig.timesync_topic_name;
+
+  networkmanager::NetworkManager::get().start_publisher(m_timesync_connection_name);
 
   TLOG_DEBUG(TLVL_CONFIG) << get_name() << ": configured for link number " << m_geoid.element_id;
 
@@ -129,18 +123,27 @@ FakeDataProd::get_info(opmonlib::InfoCollector& ci, int /*level*/)
 void
 FakeDataProd::do_timesync(std::atomic<bool>& running_flag)
 {
+  int sent_count = 0;
   while (running_flag.load()) {
     auto time_now = std::chrono::system_clock::now().time_since_epoch();
     uint64_t current_timestamp = // NOLINT (build/unsigned)
       std::chrono::duration_cast<std::chrono::nanoseconds>(time_now).count();
     auto timesyncmsg = dfmessages::TimeSync(current_timestamp);
     try {
-      m_timesync_output_queue->push(std::move(timesyncmsg));
-    } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
-      ers::warning(dunedaq::appfwk::QueueTimeoutExpired(ERS_HERE, get_name(), "Could not send timesync", 0));
+      auto serialised_timesync = dunedaq::serialization::serialize(timesyncmsg, dunedaq::serialization::kMsgPack);
+      networkmanager::NetworkManager::get().send_to(m_timesync_connection_name,
+                                                    static_cast<const void*>(serialised_timesync.data()),
+                                                    serialised_timesync.size(),
+                                                    std::chrono::milliseconds(500),
+                                                    m_timesync_topic_name);
+      ++sent_count;
+    } catch (ers::Issue& excpt) {
+      ers::warning(
+        TimeSyncTransmissionFailed(ERS_HERE, get_name(), m_timesync_connection_name, m_timesync_topic_name, excpt));
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
+  TLOG() << get_name() << ": sent " << sent_count << " TimeSync messages.";
 }
 
 void
@@ -164,7 +167,7 @@ FakeDataProd::do_work(std::atomic<bool>& running_flag)
     // num_frames_to_send = ⌈window_size / tick_diff⌉
     size_t num_frames_to_send = (data_request.request_information.window_end -
                                  data_request.request_information.window_begin + m_time_tick_diff - 1) /
-      m_time_tick_diff;
+                                m_time_tick_diff;
     size_t num_bytes_to_send = num_frames_to_send * m_frame_size;
 
     // We don't care about the content of the data, but the size should be correct
@@ -174,7 +177,7 @@ FakeDataProd::do_work(std::atomic<bool>& running_flag)
     if (fake_data == nullptr) {
       ers::error(dunedaq::dataformats::MemoryAllocationFailed(ERS_HERE, num_bytes_to_send));
       continue;
-      //throw dunedaq::dataformats::MemoryAllocationFailed(ERS_HERE, num_bytes_to_send);
+      // throw dunedaq::dataformats::MemoryAllocationFailed(ERS_HERE, num_bytes_to_send);
     }
     std::unique_ptr<dataformats::Fragment> data_fragment_ptr(new dataformats::Fragment(fake_data, num_bytes_to_send));
     data_fragment_ptr->set_trigger_number(data_request.trigger_number);
@@ -190,12 +193,14 @@ FakeDataProd::do_work(std::atomic<bool>& running_flag)
     if (m_response_delay > 0) {
       std::this_thread::sleep_for(std::chrono::nanoseconds(m_response_delay));
     }
- 
+
     try {
-      auto serialised_frag = dunedaq::serialization::serialize(std::move(data_fragment_ptr), dunedaq::serialization::kMsgPack);
-      networkmanager::NetworkManager::get().send_to(data_request.data_destination, static_cast<const void*>(serialised_frag.data()), serialised_frag.size(), std::chrono::milliseconds(1000));
-    }
-    catch(ers::Issue &e) {
+      auto serialised_frag = dunedaq::serialization::serialize(data_fragment_ptr, dunedaq::serialization::kMsgPack);
+      networkmanager::NetworkManager::get().send_to(data_request.data_destination,
+                                                    static_cast<const void*>(serialised_frag.data()),
+                                                    serialised_frag.size(),
+                                                    std::chrono::milliseconds(1000));
+    } catch (ers::Issue& e) {
       ers::warning(FragmentTransmissionFailed(ERS_HERE, get_name(), data_request.trigger_number, e));
     }
 
@@ -220,7 +225,7 @@ FakeDataProd::do_work(std::atomic<bool>& running_flag)
     }
     */
 
-    //free(fake_data);
+    // free(fake_data);
 
     // TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Start of sleep while waiting for run Stop";
     // std::this_thread::sleep_for(std::chrono::milliseconds(m_sleep_msec_while_running));
