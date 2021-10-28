@@ -63,7 +63,7 @@ ERS_DECLARE_ISSUE_BASE(dfmodules,
  */
 ERS_DECLARE_ISSUE(dfmodules,    ///< Namespace
                   UnknownGeoID, ///< Issue class name
-                  "Uknown GeoID: " << geo_id,
+                  "Unknown GeoID: " << geo_id,
                   ((dataformats::GeoID)geo_id) ///< Message parameters
 )
 
