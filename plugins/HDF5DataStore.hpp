@@ -115,11 +115,11 @@ public:
     , m_basic_name_of_open_file("")
     , m_open_flags_of_open_file(0)
     , m_timestamp_substring_for_filename("_UnknownTime")
-    , m_key_translator()
   {
     TLOG_DEBUG(TLVL_BASIC) << get_name() << ": Configuration: " << conf;
 
     m_config_params = conf.get<hdf5datastore::ConfParams>();
+    m_key_translator_ptr.reset(new HDF5KeyTranslator(m_config_params));
     m_operation_mode = m_config_params.mode;
     m_path = m_config_params.directory_path;
     m_max_file_size = m_config_params.max_file_size_bytes;
@@ -143,11 +143,11 @@ public:
   {
     TLOG_DEBUG(TLVL_BASIC) << get_name()
                            << ": going to read data block from triggerNumber/groupType/regionNumber/elementNumber "
-                           << m_key_translator.get_path_string(key) << " from file "
-                           << m_key_translator.get_file_name(key, m_config_params, m_file_index);
+                           << m_key_translator_ptr->get_path_string(key) << " from file "
+                           << m_key_translator_ptr->get_file_name(key, m_file_index);
 
     // opening the file from Storage Key + configuration parameters
-    std::string full_filename = m_key_translator.get_file_name(key, m_config_params, m_file_index);
+    std::string full_filename = m_key_translator_ptr->get_file_name(key, m_file_index);
 
     // m_file_ptr will be the handle to the Opened-File after a call to open_file_if_needed()
     try {
@@ -159,7 +159,7 @@ public:
       throw FileOperationProblem(ERS_HERE, get_name(), full_filename);
     }
 
-    std::vector<std::string> group_and_dataset_path_elements = m_key_translator.get_path_elements(key);
+    std::vector<std::string> group_and_dataset_path_elements = m_key_translator_ptr->get_path_elements(key);
 
     // const std::string dataset_name = std::to_string(key.get_element_number());
     const std::string dataset_name = group_and_dataset_path_elements.back();
@@ -209,7 +209,7 @@ public:
     increment_file_index_if_needed(data_block.m_data_size);
 
     // determine the filename from Storage Key + configuration parameters
-    std::string full_filename = m_key_translator.get_file_name(data_block.m_data_key, m_config_params, m_file_index);
+    std::string full_filename = m_key_translator_ptr->get_file_name(data_block.m_data_key, m_file_index);
 
     // m_file_ptr will be the handle to the Opened-File after a call to open_file_if_needed()
     try {
@@ -260,8 +260,7 @@ public:
 
     // determine the filename from Storage Key + configuration parameters
     // (This assumes that all of the blocks have a data_key that puts them in the same file...)
-    std::string full_filename =
-      m_key_translator.get_file_name(data_block_list[0].m_data_key, m_config_params, m_file_index);
+    std::string full_filename = m_key_translator_ptr->get_file_name(data_block_list[0].m_data_key, m_file_index);
 
     // m_file_ptr will be the handle to the Opened-File after a call to open_file_if_needed()
     try {
@@ -399,7 +398,7 @@ private:
   bool m_disable_unique_suffix;
   float m_free_space_safety_factor_for_write;
 
-  HDF5KeyTranslator m_key_translator;
+  std::unique_ptr<HDF5KeyTranslator> m_key_translator_ptr;
 
 #if 0
   std::vector<std::string> get_all_files() const
@@ -426,7 +425,7 @@ private:
                            << data_block.m_data_key.get_element_number();
 
     std::vector<std::string> group_and_dataset_path_elements =
-      m_key_translator.get_path_elements(data_block.m_data_key);
+      m_key_translator_ptr->get_path_elements(data_block.m_data_key);
 
     const std::string dataset_name = group_and_dataset_path_elements.back();
 
@@ -496,11 +495,11 @@ private:
         TLOG_DEBUG(TLVL_BASIC) << get_name() << "Created HDF5 file (" << unique_filename << ").";
 
         if (!m_file_ptr->hasAttribute("data_format_version")) {
-          int version = m_key_translator.get_current_version();
+          int version = m_key_translator_ptr->get_current_version();
           m_file_ptr->createAttribute("data_format_version", version);
         }
         if (!m_file_ptr->hasAttribute("operational_environment")) {
-          std::string op_env_type = "swtest";
+          std::string op_env_type = m_config_params.operational_environment;
           m_file_ptr->createAttribute("operational_environment", op_env_type);
         }
       }

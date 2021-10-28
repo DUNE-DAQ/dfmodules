@@ -78,11 +78,15 @@ private:
   // Worker(s)
   std::unique_ptr<DataStore> m_data_writer;
 
+  // Metrics
   std::atomic<uint64_t> m_records_received = { 0 };     // NOLINT(build/unsigned)
   std::atomic<uint64_t> m_records_received_tot = { 0 }; // NOLINT(build/unsigned)
   std::atomic<uint64_t> m_records_written = { 0 };      // NOLINT(build/unsigned)
   std::atomic<uint64_t> m_records_written_tot = { 0 };  // NOLINT(build/unsigned)
   std::atomic<uint64_t> m_bytes_output = { 0 };         // NOLINT(build/unsigned)
+
+  // Other
+  std::map<dataformats::trigger_number_t, size_t> m_seqno_counts;
 
   inline double elapsed_seconds(std::chrono::steady_clock::time_point then,
                                 std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now()) const
@@ -104,6 +108,7 @@ private:
       m_system_type_to_group_type_mapping[geoid_system_type_t::kTPC] = key_group_type_t::kTPC;
       m_system_type_to_group_type_mapping[geoid_system_type_t::kPDS] = key_group_type_t::kPDS;
       m_system_type_to_group_type_mapping[geoid_system_type_t::kDataSelection] = key_group_type_t::kTrigger;
+      m_system_type_to_group_type_mapping[geoid_system_type_t::kNDLArTPC] = key_group_type_t::kNDLArTPC;
       m_system_type_to_group_type_mapping[geoid_system_type_t::kInvalid] = key_group_type_t::kInvalid;
     }
     auto map_iter = m_system_type_to_group_type_mapping.find(system_type);

@@ -10,6 +10,8 @@ run_duration=20  # seconds
 # Default values for validation parameters
 expected_number_of_data_files=2
 check_for_logfile_errors=True
+expected_event_count=run_duration
+expected_event_count_tolerance=2
 wib1_frag_hsi_trig_params={"fragment_type_description": "WIB", "hdf5_groups": "TPC/APA000",
                            "element_name_prefix": "Link", "element_number_offset": 0,
                            "expected_fragment_count": number_of_data_producers,
@@ -58,8 +60,12 @@ def test_log_files(run_nanorc):
         assert log_file_checks.logs_are_error_free(run_nanorc.log_files)
 
 def test_data_file(run_nanorc):
+    local_expected_event_count=expected_event_count
+    local_event_count_tolerance=expected_event_count_tolerance
     fragment_check_list=[]
     if "--enable-software-tpg" in run_nanorc.confgen_arguments:
+        local_expected_event_count+=(270*number_of_data_producers*run_duration/100)
+        local_event_count_tolerance+=(10*number_of_data_producers*run_duration/100)
         fragment_check_list.append(wib1_frag_multi_trig_params)
         fragment_check_list.append(rawtp_frag_params)
         fragment_check_list.append(triggertp_frag_params)
@@ -72,6 +78,7 @@ def test_data_file(run_nanorc):
     for idx in range(len(run_nanorc.data_files)):
         data_file=data_file_checks.DataFile(run_nanorc.data_files[idx])
         assert data_file_checks.sanity_check(data_file)
+        assert data_file_checks.check_event_count(data_file, local_expected_event_count, local_event_count_tolerance)
         for jdx in range(len(fragment_check_list)):
             assert data_file_checks.check_fragment_count(data_file, fragment_check_list[jdx])
             assert data_file_checks.check_fragment_presence(data_file, fragment_check_list[jdx])

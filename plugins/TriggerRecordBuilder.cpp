@@ -522,7 +522,7 @@ unsigned int TriggerRecordBuilder::create_trigger_records_and_dispatch(
 
   dataformats::timestamp_diff_t tot_width = end - begin;
   dataformats::sequence_number_t max_sequence_number =
-      m_max_time_window > 0 ? tot_width / m_max_time_window : 0;
+    (m_max_time_window > 0 && tot_width > 0) ? ((tot_width-1) / m_max_time_window) : 0;
 
   TLOG_DEBUG(TLVL_WORK_STEPS)
       << get_name() << ": trig_number " << td.trigger_number << ": run_number "
