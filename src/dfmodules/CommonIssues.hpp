@@ -45,13 +45,6 @@ ERS_DECLARE_ISSUE_BASE(dfmodules,
                        ((std::string)group_name))
 
 ERS_DECLARE_ISSUE_BASE(dfmodules,
-                       UnableToConfigure,
-                       appfwk::GeneralDAQModuleIssue,
-                       "Unable to successfully configure.",
-                       ((std::string)name),
-                       ERS_EMPTY)
-
-ERS_DECLARE_ISSUE_BASE(dfmodules,
                        UnableToStart,
                        appfwk::GeneralDAQModuleIssue,
                        "Unable to start run " << run_number << ".",

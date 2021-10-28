@@ -23,58 +23,39 @@ BOOST_AUTO_TEST_SUITE(HDF5KeyTranslator_test)
 
 BOOST_AUTO_TEST_CASE(PathString)
 {
-  hdf5datastore::PathParams params1;
-  params1.detector_group_type = "TPC";
-  params1.detector_group_name = "TPC";
-  params1.region_name_prefix = "APA";
-  params1.digits_for_region_number = 3;
-  params1.element_name_prefix = "Link";
-  params1.digits_for_element_number = 2;
-
-  hdf5datastore::PathParams params2;
-  params2.detector_group_type = "PDS";
-  params2.detector_group_name = "PDS";
-  params2.region_name_prefix = "Region";
-  params2.digits_for_region_number = 2;
-  params2.element_name_prefix = "Element";
-  params2.digits_for_element_number = 1;
-
-  hdf5datastore::PathParamList param_list;
-  param_list.push_back(params1);
-  param_list.push_back(params2);
-
-  hdf5datastore::FileLayoutParams layout_params;
-  layout_params.trigger_record_name_prefix = "TrigRec";
-  layout_params.digits_for_trigger_number = 4;
-  layout_params.path_param_list = param_list;
-
-  hdf5datastore::ConfParams config_params;
-  config_params.file_layout_parameters = layout_params;
-
-  HDF5KeyTranslator translator(config_params);
   std::string path;
 
-  StorageKey key1(101, 1, StorageKey::DataRecordGroupType::kTPC, 2, 3);
+  HDF5KeyTranslator translator;
+
+  StorageKey key1(101, 1, StorageKey::DataRecordGroupType::kInvalid, 2, 3);
   path = translator.get_path_string(key1);
-  BOOST_REQUIRE_EQUAL(path, "TrigRec0001/TPC/APA002/Link03");
+  BOOST_REQUIRE_EQUAL(path, "TriggerRecord00001/Invalid/Region002/Element03");
 
-  StorageKey key2(101, 123456, StorageKey::DataRecordGroupType::kTPC, 6, 7);
+  StorageKey key2(101, 123456, StorageKey::DataRecordGroupType::kInvalid, 6, 7);
   path = translator.get_path_string(key2);
-  BOOST_REQUIRE_EQUAL(path, "TrigRec123456/TPC/APA006/Link07");
+  BOOST_REQUIRE_EQUAL(path, "TriggerRecord123456/Invalid/Region006/Element07");
 
-  StorageKey key3(101, 123, StorageKey::DataRecordGroupType::kPDS, 4567, 890);
+  StorageKey key3(101, 123, StorageKey::DataRecordGroupType::kInvalid, 4567, 890);
   path = translator.get_path_string(key3);
-  BOOST_REQUIRE_EQUAL(path, "TrigRec0123/PDS/Region4567/Element890");
+  BOOST_REQUIRE_EQUAL(path, "TriggerRecord00123/Invalid/Region4567/Element890");
 
-  StorageKey key4(101, 22, StorageKey::DataRecordGroupType::kPDS, 3, 4);
+  StorageKey key4(101, 22, StorageKey::DataRecordGroupType::kTPC, 33, 44);
   path = translator.get_path_string(key4);
-  BOOST_REQUIRE_EQUAL(path, "TrigRec0022/PDS/Region03/Element4");
+  BOOST_REQUIRE_EQUAL(path, "TriggerRecord00022/TPC/APA033/Link44");
 }
 
 #if 0
 BOOST_AUTO_TEST_CASE(PathElements)
 {
   std::vector<std::string> element_list;
+
+  hdf5datastore::HDF5DataStoreFileLayoutParams layout_params;
+  layout_params.trigger_record_name_prefix = "Test";
+  layout_params.digits_for_trigger_number = 4;
+  layout_params.apa_name_prefix = "Fake";
+  layout_params.digits_for_apa_number = 3;
+  layout_params.link_name_prefix = "Link";
+  layout_params.digits_for_link_number = 2;
 
   StorageKey key1(101, 1, "Invalid", 2, 3); // run number, trigger number, detector name, APA number, link number
   element_list = HDF5KeyTranslator::get_path_elements(key1, layout_params);

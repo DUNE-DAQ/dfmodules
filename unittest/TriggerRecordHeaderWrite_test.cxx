@@ -54,23 +54,6 @@ delete_files_matching_pattern(const std::string& path, const std::string& patter
   return file_list;
 }
 
-hdf5datastore::FileLayoutParams
-create_file_layout_params()
-{
-  hdf5datastore::PathParams params1;
-  params1.detector_group_type = "TPC";
-  params1.detector_group_name = "TPC";
-  params1.region_name_prefix = "APA";
-  params1.digits_for_region_number = 3;
-  params1.element_name_prefix = "Link";
-  params1.digits_for_element_number = 2;
-  hdf5datastore::PathParamList param_list;
-  param_list.push_back(params1);
-  hdf5datastore::FileLayoutParams layout_params;
-  layout_params.path_param_list = param_list;
-  return layout_params;
-}
-
 BOOST_AUTO_TEST_SUITE(TriggerRecordHeaderWrite_test)
 
 BOOST_AUTO_TEST_CASE(WriteOneFile)
@@ -96,7 +79,6 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
   config_params.mode = "all-per-file";
   config_params.max_file_size_bytes = 10000000; // much larger than what we expect, so no second file;
   config_params.filename_parameters.overall_prefix = file_prefix;
-  config_params.file_layout_parameters = create_file_layout_params();
   hdf5datastore::data_t hdf5ds_json;
   hdf5datastore::to_json(hdf5ds_json, config_params);
   std::unique_ptr<DataStore> data_store_ptr;
