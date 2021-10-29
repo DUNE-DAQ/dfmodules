@@ -34,7 +34,7 @@ namespace HDF5FileUtils {
  * @brief Retrieve top HDF5 group
  */
 HighFive::Group
-get_top_group(std::unique_ptr<HighFive::File>& file_ptr, const std::vector<std::string>& group_dataset)
+get_top_group(const HighFive::File* file_ptr, const std::vector<std::string>& group_dataset)
 {
   std::string top_level_group_name = group_dataset[0];
   HighFive::Group top_group = file_ptr->getGroup(top_level_group_name);
@@ -50,9 +50,7 @@ get_top_group(std::unique_ptr<HighFive::File>& file_ptr, const std::vector<std::
  * @brief Recursive function to create HDF5 sub-groups
  */
 HighFive::Group
-get_subgroup(std::unique_ptr<HighFive::File>& file_ptr,
-             const std::vector<std::string>& group_dataset,
-             bool create_if_needed)
+get_subgroup(HighFive::File* file_ptr, const std::vector<std::string>& group_dataset, bool create_if_needed)
 {
   std::string top_level_group_name = group_dataset[0];
   if (create_if_needed && !file_ptr->exist(top_level_group_name)) {
@@ -106,17 +104,17 @@ add_datasets_to_path(HighFive::Group parent_group, const std::string& parent_pat
  * @brief Fetches the list of all DataSet paths in the specified file.
  */
 std::vector<std::string>
-get_all_dataset_paths(const HighFive::File& hdf_file)
+get_all_dataset_paths(const HighFive::File* hdf_file_ptr)
 {
   std::vector<std::string> path_list;
 
-  std::vector<std::string> top_level_names = hdf_file.listObjectNames();
+  std::vector<std::string> top_level_names = hdf_file_ptr->listObjectNames();
   for (auto& top_level_name : top_level_names) {
-    HighFive::ObjectType top_level_type = hdf_file.getObjectType(top_level_name);
+    HighFive::ObjectType top_level_type = hdf_file_ptr->getObjectType(top_level_name);
     if (top_level_type == HighFive::ObjectType::Dataset) {
       path_list.push_back(top_level_name);
     } else if (top_level_type == HighFive::ObjectType::Group) {
-      HighFive::Group top_level_group = hdf_file.getGroup(top_level_name);
+      HighFive::Group top_level_group = hdf_file_ptr->getGroup(top_level_name);
       add_datasets_to_path(top_level_group, top_level_name, path_list);
     }
   }
