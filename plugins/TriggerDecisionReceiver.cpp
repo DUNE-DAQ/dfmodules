@@ -55,6 +55,11 @@ TriggerDecisionReceiver::init(const data_t&)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
 
+  auto qi = appfwk::queue_index(init_data, {"output"} ) ;
+
+  m_triggerdecision_output_queue =
+    std::unique_ptr<triggerdecisionsink_t>(new triggerdecisionsink_t(qi["output"].inst));  
+
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
 
@@ -63,9 +68,6 @@ TriggerDecisionReceiver::do_conf(const data_t& payload)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
   triggerdecisionreceiver::ConfParams parsed_conf = payload.get<triggerdecisionreceiver::ConfParams>();
-
-  m_triggerdecision_output_queue =
-    std::unique_ptr<triggerdecisionsink_t>(new triggerdecisionsink_t("tc_triggerdecisions_q"));
 
   m_queue_timeout = std::chrono::milliseconds(parsed_conf.general_queue_timeout);
   m_connection_name = parsed_conf.connection_name;
