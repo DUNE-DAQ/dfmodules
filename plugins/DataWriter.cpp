@@ -17,6 +17,7 @@
 #include "dataformats/Fragment.hpp"
 #include "dfmessages/TriggerDecision.hpp"
 #include "logging/Logging.hpp"
+#include "networkmanager/NetworkManager.hpp"
 #include "rcif/cmd/Nljs.hpp"
 
 #include <algorithm>
@@ -43,13 +44,14 @@ enum
 namespace dunedaq {
 namespace dfmodules {
 
+  using networkmanager::NetworkManager;
+
 DataWriter::DataWriter(const std::string& name)
   : dunedaq::appfwk::DAQModule(name)
   , m_thread(std::bind(&DataWriter::do_work, this, std::placeholders::_1))
   , m_queue_timeout(100)
   , m_data_storage_is_enabled(true)
   , m_trigger_record_input_queue(nullptr)
-  , m_trigger_decision_token_output_queue(nullptr)
 {
   register_command("conf", &DataWriter::do_conf);
   register_command("start", &DataWriter::do_start);
@@ -61,18 +63,13 @@ void
 DataWriter::init(const data_t& init_data)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
-  auto qi = appfwk::queue_index(init_data, { "trigger_record_input_queue", "token_output_queue" });
+  auto qi = appfwk::queue_index(init_data, { "trigger_record_input_queue"});
   try {
     m_trigger_record_input_queue.reset(new trigrecsource_t(qi["trigger_record_input_queue"].inst));
   } catch (const ers::Issue& excpt) {
     throw InvalidQueueFatalError(ERS_HERE, get_name(), "trigger_record_input_queue", excpt);
   }
 
-  try {
-    m_trigger_decision_token_output_queue.reset(new tokensink_t(qi["token_output_queue"].inst));
-  } catch (const ers::Issue& excpt) {
-    throw InvalidQueueFatalError(ERS_HERE, get_name(), "token_output_queue", excpt);
-  }
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
 
@@ -106,6 +103,7 @@ DataWriter::do_conf(const data_t& payload)
   }
   m_max_write_retry_time_usec = conf_params.max_write_retry_time_usec;
   m_write_retry_time_increase_factor = conf_params.write_retry_time_increase_factor;
+  m_trigger_decision_token_connection = conf_params.token_connection;
 
   // create the DataStore instance here
   try {
@@ -144,10 +142,17 @@ DataWriter::do_start(const data_t& payload)
   }
 
   m_seqno_counts.clear();
+  
   for (int ii = 0; ii < m_initial_tokens; ++ii) {
     dfmessages::TriggerDecisionToken token;
     token.run_number = m_run_number;
-    m_trigger_decision_token_output_queue->push(std::move(token));
+
+    auto serialised_token = dunedaq::serialization::serialize(token, dunedaq::serialization::kMsgPack);
+      
+    NetworkManager::get().send_to( m_trigger_decision_token_connection, 
+				   static_cast<const void*>( serialised_token.data() ), 
+				   serialised_token.size(), 
+				   m_queue_timeout ) ;
   }
 
   m_thread.start_working_thread(get_name());
@@ -365,8 +370,14 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
       dfmessages::TriggerDecisionToken token;
       token.run_number = m_run_number;
       token.trigger_number = trigger_record_ptr->get_header_ref().get_trigger_number();
-      m_trigger_decision_token_output_queue->push(std::move(token));
-    }
+    
+    auto serialised_token = dunedaq::serialization::serialize(token, dunedaq::serialization::kMsgPack);
+
+    NetworkManager::get().send_to( m_trigger_decision_token_connection,
+                                   static_cast<const void*>( serialised_token.data() ),
+                                   serialised_token.size(),
+                                   m_queue_timeout ) ;
+   } 
   }
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_work() method";
