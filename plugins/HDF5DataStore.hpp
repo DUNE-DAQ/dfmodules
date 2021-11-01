@@ -87,6 +87,14 @@ ERS_DECLARE_ISSUE_BASE(dfmodules,
                        ((std::string)name),
                        ERS_EMPTY)
 
+ERS_DECLARE_ISSUE_BASE(dfmodules,
+                       NullFilePointer,
+                       appfwk::GeneralDAQModuleIssue,
+                       "There was an attempt to create a FileHandle from a null file pointer. "
+                         << "This is not allowed because later uses of the file pointer assume that it is not null. ",
+                       ((std::string)name),
+                       ERS_EMPTY)
+
 // Re-enable coverage checking LCOV_EXCL_STOP
 namespace dfmodules {
 
@@ -100,8 +108,12 @@ public:
   inline static const std::string s_inprogress_filename_suffix = ".writing";
 
   explicit HDF5FileHandle(std::unique_ptr<HighFive::File> file_ptr)
-    : m_file_ptr(std::move(file_ptr))
-  {}
+  {
+    if (file_ptr.get() == nullptr) {
+      throw NullFilePointer(ERS_HERE, "HDF5FileHandle");
+    }
+    m_file_ptr = std::move(file_ptr);
+  }
 
   ~HDF5FileHandle()
   {
@@ -512,24 +524,33 @@ private:
         }
       }
 
+      // close an existing open file
+      if (m_file_handle.get() != nullptr) {
+        std::string open_filename = m_file_handle->get_file_ptr()->getName();
+        try {
+          m_file_handle.reset();
+        } catch (std::exception const& excpt) {
+          throw FileOperationProblem(ERS_HERE, get_name(), open_filename, excpt);
+        } catch (...) { // NOLINT(runtime/exceptions)
+          // NOLINT here because we *ARE* re-throwing the exception!
+          throw FileOperationProblem(ERS_HERE, get_name(), open_filename);
+        }
+      }
+
       // opening file for the first time OR something changed in the name or the way of opening the file
       TLOG_DEBUG(TLVL_BASIC) << get_name() << ": going to open file " << unique_filename << " with open_flags "
                              << std::to_string(open_flags);
       m_basic_name_of_open_file = file_name;
       m_open_flags_of_open_file = open_flags;
       unique_filename += HDF5FileHandle::s_inprogress_filename_suffix;
-      std::string open_filename = "None";
-      if (m_file_handle.get() != nullptr) {
-        open_filename = m_file_handle->get_file_ptr()->getName();
-      }
       try {
         std::unique_ptr<HighFive::File> tmp_file_ptr(new HighFive::File(unique_filename, open_flags));
         m_file_handle.reset(new HDF5FileHandle(std::move(tmp_file_ptr)));
       } catch (std::exception const& excpt) {
-        throw FileOperationProblem(ERS_HERE, get_name(), open_filename, excpt);
+        throw FileOperationProblem(ERS_HERE, get_name(), unique_filename, excpt);
       } catch (...) { // NOLINT(runtime/exceptions)
         // NOLINT here because we *ARE* re-throwing the exception!
-        throw FileOperationProblem(ERS_HERE, get_name(), open_filename);
+        throw FileOperationProblem(ERS_HERE, get_name(), unique_filename);
       }
 
       if (open_flags == HighFive::File::ReadOnly) {
