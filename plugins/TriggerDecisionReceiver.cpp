@@ -48,6 +48,7 @@ TriggerDecisionReceiver::TriggerDecisionReceiver(const std::string& name)
   register_command("conf", &TriggerDecisionReceiver::do_conf);
   register_command("start", &TriggerDecisionReceiver::do_start);
   register_command("stop", &TriggerDecisionReceiver::do_stop);
+  register_command("scrap", &TriggerDecisionReceiver::do_scrap);
 }
 
 void
@@ -96,10 +97,21 @@ TriggerDecisionReceiver::do_stop(const data_t& /*args*/)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_stop() method";
 
-  networkmanager::NetworkManager::get().stop_listening(m_connection_name);
+  networkmanager::NetworkManager::get().clear_callback(m_connection_name);
 
   TLOG() << get_name() << " successfully stopped";
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_stop() method";
+}
+
+void
+TriggerDecisionReceiver::do_scrap(const data_t& /*args*/)
+{
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_scrap() method";
+
+  networkmanager::NetworkManager::get().stop_listening(m_connection_name);
+
+  TLOG() << get_name() << " successfully scrapped";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_scrap() method";
 }
 
 void
