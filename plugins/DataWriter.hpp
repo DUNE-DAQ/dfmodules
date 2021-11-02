@@ -15,7 +15,7 @@
 #include "appfwk/DAQSink.hpp"
 #include "appfwk/DAQSource.hpp"
 #include "appfwk/ThreadHelper.hpp"
-#include "dataformats/TriggerRecord.hpp"
+#include "daqdataformats/TriggerRecord.hpp"
 #include "dfmessages/TriggerDecisionToken.hpp"
 
 #include <chrono>
@@ -64,13 +64,13 @@ private:
   bool m_data_storage_is_enabled;
   int m_data_storage_prescale;
   int m_initial_tokens;
-  dataformats::run_number_t m_run_number;
+  daqdataformats::run_number_t m_run_number;
   size_t m_min_write_retry_time_usec;
   size_t m_max_write_retry_time_usec;
   int m_write_retry_time_increase_factor;
 
   // Queue(s)
-  using trigrecsource_t = dunedaq::appfwk::DAQSource<std::unique_ptr<dataformats::TriggerRecord>>;
+  using trigrecsource_t = dunedaq::appfwk::DAQSource<std::unique_ptr<daqdataformats::TriggerRecord>>;
   std::unique_ptr<trigrecsource_t> m_trigger_record_input_queue;
   using tokensink_t = dunedaq::appfwk::DAQSink<dfmessages::TriggerDecisionToken>;
   std::unique_ptr<tokensink_t> m_trigger_decision_token_output_queue;
@@ -90,13 +90,13 @@ private:
     return std::chrono::duration_cast<std::chrono::seconds>(now - then).count();
   }
 
-  using geoid_system_type_t = dataformats::GeoID::SystemType;
+  using geoid_system_type_t = daqdataformats::GeoID::SystemType;
   using key_group_type_t = StorageKey::DataRecordGroupType;
   std::map<geoid_system_type_t, key_group_type_t> m_system_type_to_group_type_mapping;
-  key_group_type_t get_group_type(geoid_system_type_t system_type, dataformats::FragmentType frag_type)
+  key_group_type_t get_group_type(geoid_system_type_t system_type, daqdataformats::FragmentType frag_type)
   {
     // 16-Aug-2021, KAB: ugly hack
-    if (system_type == geoid_system_type_t::kTPC && frag_type == dataformats::FragmentType::kTriggerPrimitives) {
+    if (system_type == geoid_system_type_t::kTPC && frag_type == daqdataformats::FragmentType::kTriggerPrimitives) {
       return key_group_type_t::kTPC_TP;
     }
 

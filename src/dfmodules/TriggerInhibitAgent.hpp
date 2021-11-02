@@ -16,7 +16,7 @@
 #include "appfwk/DAQSource.hpp"
 #include "appfwk/NamedObject.hpp"
 #include "appfwk/ThreadHelper.hpp"
-#include "dataformats/Types.hpp"
+#include "daqdataformats/Types.hpp"
 #include "dfmessages/TriggerDecision.hpp"
 #include "dfmessages/TriggerInhibit.hpp"
 
@@ -58,7 +58,7 @@ public:
     m_threshold_for_inhibit.store(value);
   }
 
-  void set_latest_trigger_number(dataformats::trigger_number_t trig_num)
+  void set_latest_trigger_number(daqdataformats::trigger_number_t trig_num)
   {
     m_trigger_number_at_end_of_processing_chain.store(trig_num);
   }
@@ -77,8 +77,8 @@ private:
   std::unique_ptr<triginhsink_t> m_trigger_inhibit_sink;
 
   // Internal data
-  std::atomic<dataformats::trigger_number_t> m_trigger_number_at_start_of_processing_chain;
-  std::atomic<dataformats::trigger_number_t> m_trigger_number_at_end_of_processing_chain;
+  std::atomic<daqdataformats::trigger_number_t> m_trigger_number_at_start_of_processing_chain;
+  std::atomic<daqdataformats::trigger_number_t> m_trigger_number_at_end_of_processing_chain;
 };
 } // namespace dfmodules
 } // namespace dunedaq

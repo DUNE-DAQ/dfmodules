@@ -80,13 +80,13 @@ FakeDataProd::do_conf(const data_t& payload)
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
 
   fakedataprod::Conf tmpConfig = payload.get<fakedataprod::Conf>();
-  m_geoid.system_type = dataformats::GeoID::string_to_system_type(tmpConfig.system_type);
+  m_geoid.system_type = daqdataformats::GeoID::string_to_system_type(tmpConfig.system_type);
   m_geoid.region_id = tmpConfig.apa_number;
   m_geoid.element_id = tmpConfig.link_number;
   m_time_tick_diff = tmpConfig.time_tick_diff;
   m_frame_size = tmpConfig.frame_size;
   m_response_delay = tmpConfig.response_delay;
-  m_fragment_type = dataformats::string_to_fragment_type(tmpConfig.fragment_type);
+  m_fragment_type = daqdataformats::string_to_fragment_type(tmpConfig.fragment_type);
 
   TLOG_DEBUG(TLVL_CONFIG) << get_name() << ": configured for link number " << m_geoid.element_id;
 
@@ -99,7 +99,7 @@ FakeDataProd::do_start(const data_t& payload)
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_start() method";
   m_sent_fragments = 0;
   m_received_requests = 0;
-  m_run_number = payload.value<dunedaq::dataformats::run_number_t>("run", 0);
+  m_run_number = payload.value<dunedaq::daqdataformats::run_number_t>("run", 0);
   m_thread.start_working_thread();
   m_timesync_thread.start_working_thread();
   TLOG() << get_name() << " successfully started for run number " << m_run_number;
@@ -170,9 +170,9 @@ FakeDataProd::do_work(std::atomic<bool>& running_flag)
 
     // This should really not happen
     if (fake_data == nullptr) {
-      throw dunedaq::dataformats::MemoryAllocationFailed(ERS_HERE, num_bytes_to_send);
+      throw dunedaq::dfmodules::MemoryAllocationFailed(ERS_HERE, get_name(), num_bytes_to_send);
     }
-    std::unique_ptr<dataformats::Fragment> data_fragment_ptr(new dataformats::Fragment(fake_data, num_bytes_to_send));
+    std::unique_ptr<daqdataformats::Fragment> data_fragment_ptr(new daqdataformats::Fragment(fake_data, num_bytes_to_send));
     data_fragment_ptr->set_trigger_number(data_request.trigger_number);
     data_fragment_ptr->set_run_number(m_run_number);
     data_fragment_ptr->set_element_id(m_geoid);

@@ -14,7 +14,7 @@
 #include "dfmodules/datawriterinfo/InfoNljs.hpp"
 
 #include "appfwk/DAQModuleHelper.hpp"
-#include "dataformats/Fragment.hpp"
+#include "daqdataformats/Fragment.hpp"
 #include "dfmessages/TriggerDecision.hpp"
 #include "logging/Logging.hpp"
 #include "rcif/cmd/Nljs.hpp"
@@ -206,7 +206,7 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
 
   while (running_flag.load() || m_trigger_record_input_queue->can_pop()) {
 
-    std::unique_ptr<dataformats::TriggerRecord> trigger_record_ptr;
+    std::unique_ptr<daqdataformats::TriggerRecord> trigger_record_ptr;
 
     // receive the next TriggerRecord
     try {

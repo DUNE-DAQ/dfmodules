@@ -12,9 +12,9 @@
 #include "dfmodules/TriggerDecisionForwarder.hpp"
 #include "dfmodules/triggerrecordbuilderinfo/InfoNljs.hpp"
 
-#include "dataformats/Fragment.hpp"
-#include "dataformats/TriggerRecord.hpp"
-#include "dataformats/Types.hpp"
+#include "daqdataformats/Fragment.hpp"
+#include "daqdataformats/TriggerRecord.hpp"
+#include "daqdataformats/Types.hpp"
 #include "dfmessages/DataRequest.hpp"
 #include "dfmessages/TriggerDecision.hpp"
 #include "dfmessages/Types.hpp"
@@ -46,22 +46,22 @@ struct TriggerId {
   TriggerId() = default;
 
   explicit TriggerId(const dfmessages::TriggerDecision &td,
-                     dataformats::sequence_number_t s =
-                         dataformats::TypeDefaults::s_invalid_sequence_number)
+                     daqdataformats::sequence_number_t s =
+                         daqdataformats::TypeDefaults::s_invalid_sequence_number)
       : trigger_number(td.trigger_number), sequence_number(s),
         run_number(td.run_number) {
     ;
   }
-  explicit TriggerId(dataformats::Fragment &f)
+  explicit TriggerId(daqdataformats::Fragment &f)
       : trigger_number(f.get_trigger_number()),
         sequence_number(f.get_sequence_number()),
         run_number(f.get_run_number()) {
     ;
   }
 
-  dataformats::trigger_number_t trigger_number;
-  dataformats::sequence_number_t sequence_number;
-  dataformats::run_number_t run_number;
+  daqdataformats::trigger_number_t trigger_number;
+  daqdataformats::sequence_number_t sequence_number;
+  daqdataformats::run_number_t run_number;
 
   bool operator<(const TriggerId &other) const noexcept {
     return std::tuple(trigger_number, sequence_number, run_number) <
@@ -99,9 +99,9 @@ ERS_DECLARE_ISSUE(
     UnexpectedTriggerDecision, ///< Issue class name
     "Unexpected Trigger Decisions: " << trigger << '/' << decision_run
                                      << " while in run " << current_run,
-    ((dataformats::trigger_number_t)trigger)  ///< Message parameters
-    ((dataformats::run_number_t)decision_run) ///< Message parameters
-    ((dataformats::run_number_t)current_run)  ///< Message parameters
+    ((daqdataformats::trigger_number_t)trigger)  ///< Message parameters
+    ((daqdataformats::run_number_t)decision_run) ///< Message parameters
+    ((daqdataformats::run_number_t)current_run)  ///< Message parameters
 )
 
 /**
@@ -113,7 +113,7 @@ ERS_DECLARE_ISSUE(
     "trigger id: " << trigger_id << " generate at: " << trigger_timestamp
                    << " timed out",               ///< Message
     ((dfmodules::TriggerId)trigger_id)            ///< Message parameters
-    ((dataformats::timestamp_t)trigger_timestamp) ///< Message parameters
+    ((daqdataformats::timestamp_t)trigger_timestamp) ///< Message parameters
 )
 
 /**
@@ -125,8 +125,8 @@ ERS_DECLARE_ISSUE(
     "Unexpected Fragment for triggerID " << trigger_id << ", type "
                                          << fragment_type << ", " << geo_id,
     ((dfmodules::TriggerId)trigger_id)            ///< Message parameters
-    ((dataformats::fragment_type_t)fragment_type) ///< Message parameters
-    ((dataformats::GeoID)geo_id)                  ///< Message parameters
+    ((daqdataformats::fragment_type_t)fragment_type) ///< Message parameters
+    ((daqdataformats::GeoID)geo_id)                  ///< Message parameters
 )
 
 /**
@@ -135,7 +135,7 @@ ERS_DECLARE_ISSUE(
 ERS_DECLARE_ISSUE(dfmodules,    ///< Namespace
                   UnknownGeoID, ///< Issue class name
                   "Uknown GeoID: " << geo_id,
-                  ((dataformats::GeoID)geo_id) ///< Message parameters
+                  ((daqdataformats::GeoID)geo_id) ///< Message parameters
 )
 
 /**
@@ -200,13 +200,13 @@ protected:
       dunedaq::appfwk::DAQSource<dfmessages::TriggerDecision>;
   using datareqsink_t = dunedaq::appfwk::DAQSink<dfmessages::DataRequest>;
   using datareqsinkmap_t =
-      std::map<dataformats::GeoID, std::unique_ptr<datareqsink_t>>;
+      std::map<daqdataformats::GeoID, std::unique_ptr<datareqsink_t>>;
 
   using fragment_source_t =
-      dunedaq::appfwk::DAQSource<std::unique_ptr<dataformats::Fragment>>;
+      dunedaq::appfwk::DAQSource<std::unique_ptr<daqdataformats::Fragment>>;
   using fragment_sources_t = std::vector<std::unique_ptr<fragment_source_t>>;
 
-  using trigger_record_ptr_t = std::unique_ptr<dataformats::TriggerRecord>;
+  using trigger_record_ptr_t = std::unique_ptr<daqdataformats::TriggerRecord>;
   using trigger_record_sink_t = appfwk::DAQSink<trigger_record_ptr_t>;
 
   bool read_fragments(fragment_sources_t &, bool drain = false);
@@ -222,7 +222,7 @@ protected:
                                       std::atomic<bool> &running);
 
   bool dispatch_data_requests(const dfmessages::DataRequest &,
-                              const dataformats::GeoID &, datareqsinkmap_t &,
+                              const daqdataformats::GeoID &, datareqsinkmap_t &,
                               std::atomic<bool> &running) const;
 
   bool send_trigger_record(const TriggerId &, trigger_record_sink_t &,
@@ -253,7 +253,7 @@ private:
 
   // Output queues
   std::string m_trigger_record_sink_name;
-  std::map<dataformats::GeoID, std::string>
+  std::map<daqdataformats::GeoID, std::string>
       m_map_geoid_queues; ///< Mappinng between GeoID and queues
 
   // bookeeping
@@ -262,10 +262,10 @@ private:
       m_trigger_records;
 
   // Data request properties
-  dataformats::timestamp_diff_t m_max_time_window;
+  daqdataformats::timestamp_diff_t m_max_time_window;
 
   // Run information
-  std::unique_ptr<const dataformats::run_number_t> m_run_number = nullptr;
+  std::unique_ptr<const daqdataformats::run_number_t> m_run_number = nullptr;
 
   // book related metrics
   using metric_counter_type =
