@@ -87,14 +87,6 @@ ERS_DECLARE_ISSUE_BASE(dfmodules,
                        ((std::string)name),
                        ERS_EMPTY)
 
-ERS_DECLARE_ISSUE_BASE(dfmodules,
-                       NullFilePointer,
-                       appfwk::GeneralDAQModuleIssue,
-                       "There was an attempt to create a FileHandle from a null file pointer. "
-                         << "This is not allowed because later uses of the file pointer assume that it is not null. ",
-                       ((std::string)name),
-                       ERS_EMPTY)
-
 // Re-enable coverage checking LCOV_EXCL_STOP
 namespace dfmodules {
 
@@ -105,14 +97,11 @@ namespace dfmodules {
 class HDF5FileHandle
 {
 public:
-  inline static const std::string s_inprogress_filename_suffix = ".writing";
-
-  explicit HDF5FileHandle(std::unique_ptr<HighFive::File> file_ptr)
+  explicit HDF5FileHandle(const std::string& filename, unsigned open_flags)
+    : m_original_filename(filename)
   {
-    if (file_ptr.get() == nullptr) {
-      throw NullFilePointer(ERS_HERE, "HDF5FileHandle");
-    }
-    m_file_ptr = std::move(file_ptr);
+    std::string inprogress_filename = m_original_filename + s_inprogress_filename_suffix;
+    m_file_ptr.reset(new HighFive::File(inprogress_filename, open_flags));
   }
 
   ~HDF5FileHandle()
@@ -121,17 +110,17 @@ public:
       m_file_ptr->flush();
 
       std::string open_filename = m_file_ptr->getName();
-      std::string final_filename = open_filename;
-      int pos = open_filename.find(s_inprogress_filename_suffix);
-      final_filename.erase(pos);
-      std::filesystem::rename(open_filename, final_filename);
+      std::filesystem::rename(open_filename, m_original_filename);
 
-      m_file_ptr.reset(); // explicit destruction; not really needed...
+      m_file_ptr.reset(); // explicit destruction; not really needed, but nice to be clear...
     }
   }
 
   HighFive::File* get_file_ptr() const { return m_file_ptr.get(); }
 
+private:
+  inline static const std::string s_inprogress_filename_suffix = ".writing";
+  std::string m_original_filename;
   std::unique_ptr<HighFive::File> m_file_ptr;
 };
 
@@ -542,10 +531,8 @@ private:
                              << std::to_string(open_flags);
       m_basic_name_of_open_file = file_name;
       m_open_flags_of_open_file = open_flags;
-      unique_filename += HDF5FileHandle::s_inprogress_filename_suffix;
       try {
-        std::unique_ptr<HighFive::File> tmp_file_ptr(new HighFive::File(unique_filename, open_flags));
-        m_file_handle.reset(new HDF5FileHandle(std::move(tmp_file_ptr)));
+        m_file_handle.reset(new HDF5FileHandle(unique_filename, open_flags));
       } catch (std::exception const& excpt) {
         throw FileOperationProblem(ERS_HERE, get_name(), unique_filename, excpt);
       } catch (...) { // NOLINT(runtime/exceptions)
