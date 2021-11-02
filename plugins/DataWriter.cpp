@@ -36,6 +36,7 @@ enum
   TLVL_ENTER_EXIT_METHODS = 5,
   TLVL_CONFIG = 7,
   TLVL_WORK_STEPS = 10,
+  TLVL_SEQNO_MAP_CONTENTS = 13,
   TLVL_FRAGMENT_HEADER_DUMP = 17
 };
 
@@ -107,7 +108,11 @@ DataWriter::do_conf(const data_t& payload)
   m_write_retry_time_increase_factor = conf_params.write_retry_time_increase_factor;
 
   // create the DataStore instance here
-  m_data_writer = make_data_store(payload["data_store_parameters"]);
+  try {
+    m_data_writer = make_data_store(payload["data_store_parameters"]);
+  } catch (const ers::Issue& excpt) {
+    throw UnableToConfigure(ERS_HERE, get_name(), excpt);
+  }
 
   // ensure that we have a valid dataWriter instance
   if (m_data_writer.get() == nullptr) {
@@ -138,6 +143,7 @@ DataWriter::do_start(const data_t& payload)
     }
   }
 
+  m_seqno_counts.clear();
   for (int ii = 0; ii < m_initial_tokens; ++ii) {
     dfmessages::TriggerDecisionToken token;
     token.run_number = m_run_number;
@@ -210,7 +216,8 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
       ++m_records_received;
       ++m_records_received_tot;
       TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Popped the TriggerRecord for trigger number "
-                                  << trigger_record_ptr->get_header_ref().get_trigger_number()
+                                  << trigger_record_ptr->get_header_ref().get_trigger_number() << "."
+                                  << trigger_record_ptr->get_header_ref().get_sequence_number()
                                   << " off the input queue";
     } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
       // it is perfectly reasonable that there might be no data in the queue
@@ -328,10 +335,38 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
       }
     }
 
-    dfmessages::TriggerDecisionToken token;
-    token.run_number = m_run_number;
-    token.trigger_number = trigger_record_ptr->get_header_ref().get_trigger_number();
-    m_trigger_decision_token_output_queue->push(std::move(token));
+    bool send_trigger_complete_message = true;
+    if (trigger_record_ptr->get_header_ref().get_max_sequence_number() > 0) {
+      send_trigger_complete_message = false;
+      dataformats::trigger_number_t trigno = trigger_record_ptr->get_header_ref().get_trigger_number();
+      if (m_seqno_counts.count(trigno) > 0) {
+        ++m_seqno_counts[trigno];
+      } else {
+        m_seqno_counts[trigno] = 1;
+      }
+      // in the following comparison GT (>) is used since the counts are one-based and the
+      // max sequence number is zero-based.
+      if (m_seqno_counts[trigno] > trigger_record_ptr->get_header_ref().get_max_sequence_number()) {
+        send_trigger_complete_message = true;
+        m_seqno_counts.erase(trigno);
+      } else {
+        // by putting this TLOG call in an "else" clause, we avoid resurrecting the "trigno"
+        // entry in the map after erasing it above. In other words, if we move this TLOG outside
+        // the "else" clause, the map will forever increase in size.
+        TLOG_DEBUG(TLVL_SEQNO_MAP_CONTENTS) << get_name() << ": the sequence number count for trigger number " << trigno
+                                            << " is " << m_seqno_counts[trigno] << " (number of entries "
+                                            << "in the seqno map is " << m_seqno_counts.size() << ").";
+      }
+    }
+    if (send_trigger_complete_message) {
+      TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Pushing the TriggerDecisionToken for trigger number "
+                                  << trigger_record_ptr->get_header_ref().get_trigger_number()
+                                  << " onto the relevant output queue";
+      dfmessages::TriggerDecisionToken token;
+      token.run_number = m_run_number;
+      token.trigger_number = trigger_record_ptr->get_header_ref().get_trigger_number();
+      m_trigger_decision_token_output_queue->push(std::move(token));
+    }
   }
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_work() method";

@@ -37,7 +37,7 @@ def unpack_header(data_array, unpack_string, keys):
 
 
 def get_geo_id_type(i):
-    types = {1: 'TPC', 2: 'PDS', 3: 'DataSelection'}
+    types = {1: 'TPC', 2: 'PDS', 3: 'DataSelection', 4: 'NDLArTPC'}
     if i in types.keys():
         return types[i]
     else:
