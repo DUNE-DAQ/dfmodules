@@ -21,7 +21,7 @@ wib1_frag_multi_trig_params={"fragment_type_description": "WIB", "hdf5_groups": 
                              "expected_fragment_count": number_of_data_producers,
                              "min_size_bytes": 80, "max_size_bytes": 37200}
 rawtp_frag_params={"fragment_type_description": "Raw TP", "hdf5_groups": "TPC/TP_APA000",
-                   "element_name_prefix": "Link", "element_number_offset": number_of_data_producers,
+                   "element_name_prefix": "Link", "element_number_offset": 0,
                    "expected_fragment_count": number_of_data_producers,
                    "min_size_bytes": 80, "max_size_bytes": 80}
 triggertp_frag_params={"fragment_type_description": "Trigger TP", "hdf5_groups": "Trigger/Region000",
