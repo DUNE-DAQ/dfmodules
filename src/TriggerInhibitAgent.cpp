@@ -110,8 +110,8 @@ TriggerInhibitAgent::do_work(std::atomic<bool>& running_flag)
     // B) if so, whether an Inhibit should be asserted or cleared
     uint32_t threshold = m_threshold_for_inhibit.load(); // NOLINT
     if (threshold > 0) {
-      dataformats::trigger_number_t temp_trig_num_at_start = m_trigger_number_at_start_of_processing_chain.load();
-      dataformats::trigger_number_t temp_trig_num_at_end = m_trigger_number_at_end_of_processing_chain.load();
+      daqdataformats::trigger_number_t temp_trig_num_at_start = m_trigger_number_at_start_of_processing_chain.load();
+      daqdataformats::trigger_number_t temp_trig_num_at_end = m_trigger_number_at_end_of_processing_chain.load();
       if (temp_trig_num_at_start >= temp_trig_num_at_end &&
           (temp_trig_num_at_start - temp_trig_num_at_end) >= threshold) {
         if (current_state == free_state) {

@@ -350,7 +350,7 @@ public:
    *
    * This method may throw an exception if it finds a problem.
    */
-  void prepare_for_run(dataformats::run_number_t /*run_number*/)
+  void prepare_for_run(daqdataformats::run_number_t /*run_number*/)
   {
     struct statvfs vfs_results;
     TLOG_DEBUG(TLVL_BASIC) << get_name() << ": Preparing to get the statvfs results for path: \"" << m_path << "\"";
@@ -387,7 +387,7 @@ public:
    * cleanup or shutdown operations that are useful once the writes or
    * reads for a given run number have finished.
    */
-  void finish_with_run(dataformats::run_number_t /*run_number*/)
+  void finish_with_run(daqdataformats::run_number_t /*run_number*/)
   {
     if (m_file_handle.get() != nullptr) {
       std::string open_filename = m_file_handle->get_file_ptr()->getName();

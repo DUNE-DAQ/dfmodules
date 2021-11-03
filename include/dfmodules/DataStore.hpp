@@ -20,7 +20,7 @@
 #include "appfwk/NamedObject.hpp"
 #include "cetlib/BasicPluginFactory.h"
 #include "cetlib/compiler_macros.h"
-#include "dataformats/Types.hpp"
+#include "daqdataformats/Types.hpp"
 #include "logging/Logging.hpp"
 
 #include "nlohmann/json.hpp"
@@ -129,7 +129,7 @@ public:
    * This allows DataStore instances to make any preparations that will be
    * beneficial in advance of the first data blocks being written or read.
    */
-  virtual void prepare_for_run(dataformats::run_number_t run_number) = 0;
+  virtual void prepare_for_run(daqdataformats::run_number_t run_number) = 0;
 
   /**
    * @brief Informs the DataStore that writes or reads of data blocks associated
@@ -137,7 +137,7 @@ public:
    * This allows DataStore instances to do any cleanup or shutdown operations
    * that are useful once the writes or reads for a given run number have finished.
    */
-  virtual void finish_with_run(dataformats::run_number_t run_number) = 0;
+  virtual void finish_with_run(daqdataformats::run_number_t run_number) = 0;
 
 private:
   DataStore(const DataStore&) = delete;

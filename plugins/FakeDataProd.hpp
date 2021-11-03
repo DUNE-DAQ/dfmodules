@@ -9,7 +9,7 @@
 #ifndef DFMODULES_PLUGINS_FAKEDATAPROD_HPP_
 #define DFMODULES_PLUGINS_FAKEDATAPROD_HPP_
 
-#include "dataformats/Fragment.hpp"
+#include "daqdataformats/Fragment.hpp"
 #include "dfmessages/DataRequest.hpp"
 #include "dfmessages/TimeSync.hpp"
 
@@ -23,6 +23,17 @@
 #include <vector>
 
 namespace dunedaq {
+
+// Disable coverage checking LCOV_EXCL_START
+ERS_DECLARE_ISSUE_BASE(dfmodules,
+                       MemoryAllocationFailed,
+                       appfwk::GeneralDAQModuleIssue,
+                       "Malloc of " << bytes << " bytes failed",
+                       ((std::string)name),
+                       ((size_t)bytes))
+
+// Disable coverage checking LCOV_EXCL_STOP
+
 namespace dfmodules {
 
 /**
@@ -61,17 +72,17 @@ private:
   // Configuration
   // size_t m_sleep_msec_while_running;
   std::chrono::milliseconds m_queue_timeout;
-  dunedaq::dataformats::run_number_t m_run_number;
-  dataformats::GeoID m_geoid;
+  dunedaq::daqdataformats::run_number_t m_run_number;
+  daqdataformats::GeoID m_geoid;
   uint64_t m_time_tick_diff; // NOLINT (build/unsigned)
   uint64_t m_frame_size;     // NOLINT (build/unsigned)
   uint64_t m_response_delay; // NOLINT (build/unsigned)
-  dataformats::FragmentType m_fragment_type;
+  daqdataformats::FragmentType m_fragment_type;
 
   // Queue(s)
   using datareqsource_t = dunedaq::appfwk::DAQSource<dfmessages::DataRequest>;
   std::unique_ptr<datareqsource_t> m_data_request_input_queue;
-  using datafragsink_t = dunedaq::appfwk::DAQSink<std::unique_ptr<dataformats::Fragment>>;
+  using datafragsink_t = dunedaq::appfwk::DAQSink<std::unique_ptr<daqdataformats::Fragment>>;
   std::unique_ptr<datafragsink_t> m_data_fragment_output_queue;
   using timesyncsink_t = dunedaq::appfwk::DAQSink<dfmessages::TimeSync>;
   std::unique_ptr<timesyncsink_t> m_timesync_output_queue;
