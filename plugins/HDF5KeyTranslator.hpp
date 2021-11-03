@@ -60,12 +60,14 @@ public:
   {
     std::string trigger_record_name_prefix;
     int digits_for_trigger_number;
+    int digits_for_sequence_number;
   };
 
   HDF5KeyTranslator(const hdf5datastore::ConfParams& config_params)
   {
     m_data_record_params.trigger_record_name_prefix = config_params.file_layout_parameters.trigger_record_name_prefix;
     m_data_record_params.digits_for_trigger_number = config_params.file_layout_parameters.digits_for_trigger_number;
+    m_data_record_params.digits_for_sequence_number = config_params.file_layout_parameters.digits_for_sequence_number;
 
     m_current_version = config_params.version;
 
@@ -130,7 +132,8 @@ public:
                           << std::setw(m_data_record_params.digits_for_trigger_number) << std::setfill('0')
                           << data_key.get_trigger_number();
     if (data_key.m_max_sequence_number > 0) {
-      trigger_number_string << "." << data_key.m_this_sequence_number;
+      trigger_number_string << "." << std::setw(m_data_record_params.digits_for_sequence_number) << std::setfill('0')
+                            << data_key.m_this_sequence_number;
     }
     path_list.push_back(trigger_number_string.str());
 
