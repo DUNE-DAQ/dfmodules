@@ -4,9 +4,12 @@ name: build-develop
 # or API.
 on:
   push:
-    branches: [ develop ]
+    branches: 
+      - develop
+      - patch/*
     paths-ignore:
       - 'docs/**'
+      - '.github/**'
   pull_request:
     branches: [ develop ]
   schedule:
@@ -41,7 +44,7 @@ jobs:
       run: |
           source /cvmfs/dunedaq.opensciencegrid.org/setup_dunedaq.sh
           setup_dbt latest
-          dbt-create.sh -c -n last_successful dev
+          dbt-create.sh -n last_successful dev
           
     - name: checkout package for CI
       uses: actions/checkout@v2
