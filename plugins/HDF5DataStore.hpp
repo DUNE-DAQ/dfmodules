@@ -147,7 +147,7 @@ public:
     : DataStore(conf.value("name", "data_store"))
     , m_basic_name_of_open_file("")
     , m_open_flags_of_open_file(0)
-    , m_timestamp_substring_for_filename("_UnknownTime")
+    , m_run_number(0)
   {
     TLOG_DEBUG(TLVL_BASIC) << get_name() << ": Configuration: " << conf;
 
@@ -350,8 +350,10 @@ public:
    *
    * This method may throw an exception if it finds a problem.
    */
-  void prepare_for_run(daqdataformats::run_number_t /*run_number*/)
+  void prepare_for_run(daqdataformats::run_number_t run_number)
   {
+    m_run_number = run_number;
+
     struct statvfs vfs_results;
     TLOG_DEBUG(TLVL_BASIC) << get_name() << ": Preparing to get the statvfs results for path: \"" << m_path << "\"";
 
@@ -370,12 +372,6 @@ public:
         ERS_HERE, get_name(), m_path, free_space, m_max_file_size, "the configured maximum size of a single file");
     }
 
-    // create the timestamp substring that is part of unique-ifying the filename, for later use
-    time_t now = time(0);
-    m_timestamp_substring_for_filename = "_" + boost::posix_time::to_iso_string(boost::posix_time::from_time_t(now));
-    TLOG_DEBUG(TLVL_BASIC) << get_name()
-                           << ": m_timestamp_substring_for_filename: " << m_timestamp_substring_for_filename;
-
     m_file_index = 0;
     m_recorded_size = 0;
   }
@@ -393,9 +389,12 @@ public:
       std::string open_filename = m_file_handle->get_file_ptr()->getName();
       try {
         m_file_handle.reset();
+        m_run_number = 0;
       } catch (std::exception const& excpt) {
+        m_run_number = 0;
         throw FileOperationProblem(ERS_HERE, get_name(), open_filename, excpt);
       } catch (...) { // NOLINT(runtime/exceptions)
+        m_run_number = 0;
         // NOLINT here because we *ARE* re-throwing the exception!
         throw FileOperationProblem(ERS_HERE, get_name(), open_filename);
       }
@@ -411,8 +410,7 @@ private:
   std::unique_ptr<HDF5FileHandle> m_file_handle;
   std::string m_basic_name_of_open_file;
   unsigned m_open_flags_of_open_file;
-
-  std::string m_timestamp_substring_for_filename;
+  daqdataformats::run_number_t m_run_number;
 
   // Total number of generated files
   size_t m_file_index;
@@ -504,12 +502,16 @@ private:
 
       // 04-Feb-2021, KAB: adding unique substrings to the filename
       std::string unique_filename = file_name;
+      time_t now = time(0);
+      std::string file_creation_timestamp = boost::posix_time::to_iso_string(boost::posix_time::from_time_t(now));
       if (!m_disable_unique_suffix) {
         size_t ufn_len;
         // timestamp substring
         ufn_len = unique_filename.length();
-        if (ufn_len > 6) {
-          unique_filename.insert(ufn_len - 5, m_timestamp_substring_for_filename);
+        if (ufn_len > 6) { // len GT 6 gives us some confidence that we have at least x.hdf5
+          std::string timestamp_substring = "_" + file_creation_timestamp;
+          TLOG_DEBUG(TLVL_BASIC) << get_name() << ": timestamp substring for filename: " << timestamp_substring;
+          unique_filename.insert(ufn_len - 5, timestamp_substring);
         }
       }
 
@@ -552,6 +554,15 @@ private:
         if (!m_file_handle->get_file_ptr()->hasAttribute("operational_environment")) {
           std::string op_env_type = m_config_params.operational_environment;
           m_file_handle->get_file_ptr()->createAttribute("operational_environment", op_env_type);
+        }
+        if (!m_file_handle->get_file_ptr()->hasAttribute("run_number")) {
+          m_file_handle->get_file_ptr()->createAttribute("run_number", m_run_number);
+        }
+        if (!m_file_handle->get_file_ptr()->hasAttribute("file_index")) {
+          m_file_handle->get_file_ptr()->createAttribute("file_index", m_file_index);
+        }
+        if (!m_file_handle->get_file_ptr()->hasAttribute("creation_timestamp")) {
+          m_file_handle->get_file_ptr()->createAttribute("creation_timestamp", file_creation_timestamp);
         }
       }
     } else {
