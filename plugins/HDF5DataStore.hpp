@@ -170,6 +170,13 @@ public:
 
       throw InvalidOperationMode(ERS_HERE, get_name(), m_operation_mode);
     }
+
+    m_application_name = "Unknown";
+    char* appname_ptr = getenv("DUNEDAQ_APPLICATION_NAME");
+    if (appname_ptr != nullptr) {
+      std::string tmpstr(appname_ptr);
+      m_application_name = tmpstr;
+    }
   }
 
   virtual KeyedDataBlock read(const StorageKey& key)
@@ -411,6 +418,7 @@ private:
   std::string m_basic_name_of_open_file;
   unsigned m_open_flags_of_open_file;
   daqdataformats::run_number_t m_run_number;
+  std::string m_application_name;
 
   // Total number of generated files
   size_t m_file_index;
@@ -563,6 +571,9 @@ private:
         }
         if (!m_file_handle->get_file_ptr()->hasAttribute("creation_timestamp")) {
           m_file_handle->get_file_ptr()->createAttribute("creation_timestamp", file_creation_timestamp);
+        }
+        if (!m_file_handle->get_file_ptr()->hasAttribute("application_name")) {
+          m_file_handle->get_file_ptr()->createAttribute("application_name", m_application_name);
         }
       }
     } else {
