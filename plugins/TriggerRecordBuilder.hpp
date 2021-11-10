@@ -253,8 +253,8 @@ private:
 
   // Output queues
   std::string m_trigger_record_sink_name;
-  std::map<daqdataformats::GeoID, std::string>
-      m_map_geoid_queues; ///< Mappinng between GeoID and queues
+  std::map<daqdataformats::GeoID, std::string> m_map_geoid_queues; ///< Mappinng between GeoID and queues
+  std::map<std::string, std::string> m_dr_name_inst_map; // Map data request queue names to queue instances
 
   // bookeeping
   using clock_type = std::chrono::high_resolution_clock;

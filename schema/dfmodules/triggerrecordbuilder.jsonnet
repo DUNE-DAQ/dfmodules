@@ -8,13 +8,13 @@ local types = {
     element_number : s.number("element_number", "u4",
                      doc="Element container type for GeoID"),
 
-    queueid : s.string("queue_id", doc="Parameter that configure TriggerRecordBuilder's queues"),
+    queue_name : s.string("queue_name", doc="Parameter that configure TriggerRecordBuilder's queues"),
     system_type : s.string("system_type", doc="Parameter that configure TriggerRecordBuilder"),
 
     geoidqueue : s.record("geoidinst", [s.field("region", self.region_number, doc="" ) , 
                                         s.field("element", self.element_number, doc="" ), 
                                         s.field("system", self.system_type, doc="" ),
-                                        s.field("queueinstance", self.queueid, doc="" ) ], 
+                                        s.field("queuename", self.queue_name, doc="" ) ], 
                            doc="TriggerRecordBuilder configuration"),
 
     mapgeoidqueue : s.sequence("mapgeoidqueue",  self.geoidqueue, doc="Map of geoids queues" ),
