@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.12)
-project(dfmodules VERSION 2.3.0)
+project(dfmodules VERSION 2.3.2)
 
 find_package(daq-cmake REQUIRED)
 daq_setup_environment()
@@ -31,7 +31,7 @@ daq_add_library( StorageKey.cpp TriggerDecisionForwarder.cpp TriggerInhibitAgent
                  LINK_LIBRARIES 
                  ers::ers HighFive appfwk::appfwk logging::logging stdc++fs dfmessages::dfmessages toolbox::toolbox)
 
-daq_add_plugin( HDF5DataStore      duneDataStore LINK_LIBRARIES logging::logging dataformats::dataformats HighFive appfwk::appfwk stdc++fs)
+daq_add_plugin( HDF5DataStore      duneDataStore LINK_LIBRARIES logging::logging daqdataformats::daqdataformats HighFive appfwk::appfwk stdc++fs)
 
 daq_add_plugin( DataWriter            duneDAQModule LINK_LIBRARIES dfmodules )
 daq_add_plugin( TriggerRecordBuilder  duneDAQModule LINK_LIBRARIES dfmodules networkmanager::networkmanager )

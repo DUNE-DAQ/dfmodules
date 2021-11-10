@@ -41,7 +41,7 @@ enum {
 namespace dunedaq {
 namespace dfmodules {
 
-using dataformats::TriggerRecordErrorBits;
+using daqdataformats::TriggerRecordErrorBits;
 using networkmanager::NetworkManager;
 
 TriggerRecordBuilder::TriggerRecordBuilder(const std::string &name)
@@ -168,14 +168,14 @@ void TriggerRecordBuilder::do_conf(const data_t &payload) {
 
   for (auto const &entry : parsed_conf.map) {
 
-    dataformats::GeoID::SystemType type =
-        dataformats::GeoID::string_to_system_type(entry.system);
+    daqdataformats::GeoID::SystemType type =
+        daqdataformats::GeoID::string_to_system_type(entry.system);
 
-    if (type == dataformats::GeoID::SystemType::kInvalid) {
+    if (type == daqdataformats::GeoID::SystemType::kInvalid) {
       throw InvalidSystemType(ERS_HERE, entry.system);
     }
 
-    dataformats::GeoID key;
+    daqdataformats::GeoID key;
     key.system_type = type;
     key.region_id = entry.region;
     key.element_id = entry.element;
@@ -208,8 +208,8 @@ void TriggerRecordBuilder::do_start(const data_t &args) {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS)
       << get_name() << ": Entering do_start() method";
 
-  m_run_number.reset(new const dataformats::run_number_t(
-      args.at("run").get<dataformats::run_number_t>()));
+  m_run_number.reset(new const daqdataformats::run_number_t(
+      args.at("run").get<daqdataformats::run_number_t>()));
 
   m_thread.start_working_thread(get_name());
   TLOG() << get_name() << " successfully started";
@@ -403,7 +403,7 @@ bool TriggerRecordBuilder::read_fragments(fragment_sources_t &frag_sources,
 
     while (frag_sources[j]->can_pop()) {
 
-      std::unique_ptr<dataformats::Fragment> temp_fragment;
+      std::unique_ptr<daqdataformats::Fragment> temp_fragment;
 
       try {
         frag_sources[j]->pop(temp_fragment, m_queue_timeout);
@@ -425,12 +425,12 @@ bool TriggerRecordBuilder::read_fragments(fragment_sources_t &frag_sources,
       if (it != m_trigger_records.end()) {
 
         // check if the fragment has a GeoId that was desired
-        dataformats::TriggerRecordHeader &header =
+        daqdataformats::TriggerRecordHeader &header =
             it->second.second->get_header_ref();
 
         for (size_t i = 0; i < header.get_num_requested_components(); ++i) {
 
-          const dataformats::ComponentRequest &request = header[i];
+          const daqdataformats::ComponentRequest &request = header[i];
           if (request.component == temp_fragment->get_element_id()) {
             requested = true;
             break;
@@ -509,9 +509,9 @@ unsigned int TriggerRecordBuilder::create_trigger_records_and_dispatch(
   unsigned int new_tr_counter = 0;
 
   // check the whole time window
-  dataformats::timestamp_t begin =
-      std::numeric_limits<dataformats::timestamp_t>::max();
-  dataformats::timestamp_t end = 0;
+  daqdataformats::timestamp_t begin =
+      std::numeric_limits<daqdataformats::timestamp_t>::max();
+  daqdataformats::timestamp_t end = 0;
 
   for (const auto &component : td.components) {
     if (component.window_begin < begin)
@@ -520,8 +520,8 @@ unsigned int TriggerRecordBuilder::create_trigger_records_and_dispatch(
       end = component.window_end;
   }
 
-  dataformats::timestamp_diff_t tot_width = end - begin;
-  dataformats::sequence_number_t max_sequence_number =
+  daqdataformats::timestamp_diff_t tot_width = end - begin;
+  daqdataformats::sequence_number_t max_sequence_number =
     (m_max_time_window > 0 && tot_width > 0) ? ((tot_width-1) / m_max_time_window) : 0;
 
   TLOG_DEBUG(TLVL_WORK_STEPS)
@@ -533,12 +533,12 @@ unsigned int TriggerRecordBuilder::create_trigger_records_and_dispatch(
   m_trigger_decision_width += tot_width;
 
   // create the trigger records
-  for (dataformats::sequence_number_t sequence = 0;
+  for (daqdataformats::sequence_number_t sequence = 0;
        sequence <= max_sequence_number; 
        ++sequence) {
 
-    dataformats::timestamp_t slice_begin = begin + sequence * m_max_time_window;
-    dataformats::timestamp_t slice_end =
+    daqdataformats::timestamp_t slice_begin = begin + sequence * m_max_time_window;
+    daqdataformats::timestamp_t slice_end =
         m_max_time_window > 0 ? std::min(slice_begin + m_max_time_window, end)
                               : end;
 
@@ -551,12 +551,12 @@ unsigned int TriggerRecordBuilder::create_trigger_records_and_dispatch(
       if (component.window_end <= slice_begin)
         continue;
 
-      dataformats::timestamp_t new_begin =
+      daqdataformats::timestamp_t new_begin =
           std::max(slice_begin, component.window_begin);
-      dataformats::timestamp_t new_end =
+      daqdataformats::timestamp_t new_end =
           std::min(slice_end, component.window_end);
 
-      dataformats::ComponentRequest temp(component.component, new_begin,
+      daqdataformats::ComponentRequest temp(component.component, new_begin,
                                          new_end);
       slice_components.push_back(temp);
 
@@ -583,8 +583,8 @@ unsigned int TriggerRecordBuilder::create_trigger_records_and_dispatch(
         std::make_pair(clock_type::now(), trigger_record_ptr_t());
     ;
     trigger_record_ptr_t &trp = entry.second;
-    trp.reset(new dataformats::TriggerRecord(slice_components));
-    dataformats::TriggerRecord &tr = *trp;
+    trp.reset(new daqdataformats::TriggerRecord(slice_components));
+    daqdataformats::TriggerRecord &tr = *trp;
 
     tr.get_header_ref().set_trigger_number(td.trigger_number);
     tr.get_header_ref().set_sequence_number(sequence);
@@ -629,7 +629,8 @@ unsigned int TriggerRecordBuilder::create_trigger_records_and_dispatch(
 }
 
 bool TriggerRecordBuilder::dispatch_data_requests(
-    const dfmessages::DataRequest &dr, const dataformats::GeoID &geo,
+  const dfmessages::DataRequest& dr,
+  const daqdataformats::GeoID& geo,
     std::atomic<bool> &running) const
 
 {
@@ -728,7 +729,7 @@ bool TriggerRecordBuilder::check_stale_requests(trigger_record_sink_t &sink,
     for (auto it = m_trigger_records.begin(); it != m_trigger_records.end();
          ++it) {
 
-      dataformats::TriggerRecord &tr = *it->second.second;
+      daqdataformats::TriggerRecord &tr = *it->second.second;
 
       auto tr_time = clock_type::now() - it->second.first;
 

@@ -14,7 +14,7 @@
 #include "dfmodules/datawriterinfo/InfoNljs.hpp"
 
 #include "appfwk/DAQModuleHelper.hpp"
-#include "dataformats/Fragment.hpp"
+#include "daqdataformats/Fragment.hpp"
 #include "dfmessages/TriggerDecision.hpp"
 #include "logging/Logging.hpp"
 #include "networkmanager/NetworkManager.hpp"
@@ -213,7 +213,7 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
 
   while (running_flag.load() || m_trigger_record_input_queue->can_pop()) {
 
-    std::unique_ptr<dataformats::TriggerRecord> trigger_record_ptr;
+    std::unique_ptr<daqdataformats::TriggerRecord> trigger_record_ptr;
 
     // receive the next TriggerRecord
     try {
@@ -343,7 +343,7 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
     bool send_trigger_complete_message = true;
     if (trigger_record_ptr->get_header_ref().get_max_sequence_number() > 0) {
       send_trigger_complete_message = false;
-      dataformats::trigger_number_t trigno = trigger_record_ptr->get_header_ref().get_trigger_number();
+      daqdataformats::trigger_number_t trigno = trigger_record_ptr->get_header_ref().get_trigger_number();
       if (m_seqno_counts.count(trigno) > 0) {
         ++m_seqno_counts[trigno];
       } else {
