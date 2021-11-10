@@ -253,6 +253,7 @@ private:
 
   // Output queues
   std::string m_trigger_record_sink_name;
+  std::map<std::string, std::string> m_dr_name_inst_map; // Map data request queue names to queue instances
   std::map<dataformats::GeoID, std::string>
       m_map_geoid_queues; ///< Mappinng between GeoID and queues
 

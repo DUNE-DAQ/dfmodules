@@ -110,6 +110,7 @@ void TriggerRecordBuilder::init(const data_t &init_data) {
     if (qitem.name.rfind("data_request_") == 0) {
       try {
         datareqsink_t temp(qitem.inst);
+        m_dr_name_inst_map[qitem.name] = qitem.inst;
       } catch (const ers::Issue &excpt) {
         throw InvalidQueueFatalError(ERS_HERE, get_name(), qitem.name, excpt);
       }
@@ -187,7 +188,7 @@ void TriggerRecordBuilder::do_conf(const data_t &payload) {
     key.system_type = type;
     key.region_id = entry.region;
     key.element_id = entry.element;
-    m_map_geoid_queues[key] = entry.queueinstance;
+    m_map_geoid_queues[key] = m_dr_name_inst_map[entry.queuename];
   }
 
   m_trigger_timeout = duration_type(parsed_conf.trigger_record_timeout_ms);
