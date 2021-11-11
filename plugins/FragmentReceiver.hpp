@@ -9,7 +9,7 @@
 #ifndef DFMODULES_PLUGINS_REQUESTRECEIVER_HPP_
 #define DFMODULES_PLUGINS_REQUESTRECEIVER_HPP_
 
-#include "dataformats/Fragment.hpp"
+#include "daqdataformats/Fragment.hpp"
 
 #include "appfwk/DAQModule.hpp"
 #include "appfwk/DAQSink.hpp"
@@ -55,11 +55,11 @@ private:
 
   // Configuration
   std::chrono::milliseconds m_queue_timeout;
-  dunedaq::dataformats::run_number_t m_run_number;
+  dunedaq::daqdataformats::run_number_t m_run_number;
   std::string m_connection_name;
 
   // Queue(s)
-  using fragmentsink_t = dunedaq::appfwk::DAQSink<std::unique_ptr<dataformats::Fragment>>;
+  using fragmentsink_t = dunedaq::appfwk::DAQSink<std::unique_ptr<daqdataformats::Fragment>>;
   std::unique_ptr<fragmentsink_t> m_fragment_output_queue;
 
   size_t m_received_fragments{ 0 };

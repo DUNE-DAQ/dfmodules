@@ -81,7 +81,7 @@ FragmentReceiver::do_start(const data_t& payload)
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_start() method";
 
   m_received_fragments = 0;
-  m_run_number = payload.value<dunedaq::dataformats::run_number_t>("run", 0);
+  m_run_number = payload.value<dunedaq::daqdataformats::run_number_t>("run", 0);
 
   networkmanager::NetworkManager::get().register_callback(
     m_connection_name, std::bind(&FragmentReceiver::dispatch_fragment, this, std::placeholders::_1));
@@ -123,7 +123,7 @@ FragmentReceiver::get_info(opmonlib::InfoCollector& ci, int /*level*/)
 void
 FragmentReceiver::dispatch_fragment(ipm::Receiver::Response message)
 {
-  auto fragment = serialization::deserialize<std::unique_ptr<dataformats::Fragment>>(message.data);
+  auto fragment = serialization::deserialize<std::unique_ptr<daqdataformats::Fragment>>(message.data);
   m_fragment_output_queue->push(std::move(fragment), m_queue_timeout);
   m_received_fragments++;
 }

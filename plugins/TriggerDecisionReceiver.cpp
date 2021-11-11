@@ -83,7 +83,7 @@ TriggerDecisionReceiver::do_start(const data_t& payload)
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_start() method";
 
   m_received_triggerdecisions = 0;
-  m_run_number = payload.value<dunedaq::dataformats::run_number_t>("run", 0);
+  m_run_number = payload.value<dunedaq::daqdataformats::run_number_t>("run", 0);
 
   networkmanager::NetworkManager::get().register_callback(
     m_connection_name, std::bind(&TriggerDecisionReceiver::dispatch_triggerdecision, this, std::placeholders::_1));

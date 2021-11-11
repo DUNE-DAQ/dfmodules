@@ -130,15 +130,6 @@ ERS_DECLARE_ISSUE(
 )
 
 /**
- * @brief Unknown GeoID
- */
-ERS_DECLARE_ISSUE(dfmodules,    ///< Namespace
-                  UnknownGeoID, ///< Issue class name
-                  "Uknown GeoID: " << geo_id,
-                  ((daqdataformats::GeoID)geo_id) ///< Message parameters
-)
-
-/**
  * @brief Duplicate trigger decision
  */
 ERS_DECLARE_ISSUE(dfmodules,                 ///< Namespace

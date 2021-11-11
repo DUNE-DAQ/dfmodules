@@ -88,13 +88,13 @@ RequestReceiver::do_conf(const data_t& payload)
 
   for (auto const& entry : parsed_conf.map) {
 
-    dataformats::GeoID::SystemType type = dataformats::GeoID::string_to_system_type(entry.system);
+    daqdataformats::GeoID::SystemType type = daqdataformats::GeoID::string_to_system_type(entry.system);
 
-    if (type == dataformats::GeoID::SystemType::kInvalid) {
+    if (type == daqdataformats::GeoID::SystemType::kInvalid) {
       throw InvalidSystemType(ERS_HERE, entry.system);
     }
 
-    dataformats::GeoID key;
+    daqdataformats::GeoID key;
     key.system_type = type;
     key.region_id = entry.region;
     key.element_id = entry.element;
@@ -116,7 +116,7 @@ RequestReceiver::do_start(const data_t& payload)
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_start() method";
 
   m_received_requests = 0;
-  m_run_number = payload.value<dunedaq::dataformats::run_number_t>("run", 0);
+  m_run_number = payload.value<dunedaq::daqdataformats::run_number_t>("run", 0);
 
   networkmanager::NetworkManager::get().register_callback(m_connection_name, std::bind(&RequestReceiver::dispatch_request, this, std::placeholders::_1));
 

@@ -55,7 +55,7 @@ private:
 
   // Configuration
   std::chrono::milliseconds m_queue_timeout;
-  dunedaq::dataformats::run_number_t m_run_number;
+  dunedaq::daqdataformats::run_number_t m_run_number;
   std::string m_connection_name;
 
   // Queue(s)

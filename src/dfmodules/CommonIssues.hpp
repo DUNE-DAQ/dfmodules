@@ -13,7 +13,7 @@
 #define DFMODULES_SRC_DFMODULES_COMMONISSUES_HPP_
 
 #include "appfwk/DAQModule.hpp" // should eventually include "logging/Logging.hpp"
-#include "dataformats/GeoID.hpp"
+#include "daqdataformats/GeoID.hpp"
 #include "ers/Issue.hpp"
 #include "logging/Logging.hpp" // this should eventually be included in appfwk
 
@@ -71,7 +71,7 @@ ERS_DECLARE_ISSUE_BASE(dfmodules,
 ERS_DECLARE_ISSUE(dfmodules,    ///< Namespace
                   UnknownGeoID, ///< Issue class name
                   "Unknown GeoID: " << geo_id,
-                  ((dataformats::GeoID)geo_id) ///< Message parameters
+                  ((daqdataformats::GeoID)geo_id) ///< Message parameters
 )
 
 /**

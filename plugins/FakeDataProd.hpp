@@ -85,24 +85,13 @@ private:
   uint64_t m_time_tick_diff; // NOLINT (build/unsigned)
   uint64_t m_frame_size;     // NOLINT (build/unsigned)
   uint64_t m_response_delay; // NOLINT (build/unsigned)
-<<<<<<< HEAD
-  dataformats::FragmentType m_fragment_type;
+  daqdataformats::FragmentType m_fragment_type;
   std::string m_timesync_connection_name;
   std::string m_timesync_topic_name;
-=======
-  daqdataformats::FragmentType m_fragment_type;
->>>>>>> origin/patch/2.8.2
 
   // Queue(s)
   using datareqsource_t = dunedaq::appfwk::DAQSource<dfmessages::DataRequest>;
   std::unique_ptr<datareqsource_t> m_data_request_input_queue;
-<<<<<<< HEAD
-=======
-  using datafragsink_t = dunedaq::appfwk::DAQSink<std::unique_ptr<daqdataformats::Fragment>>;
-  std::unique_ptr<datafragsink_t> m_data_fragment_output_queue;
-  using timesyncsink_t = dunedaq::appfwk::DAQSink<dfmessages::TimeSync>;
-  std::unique_ptr<timesyncsink_t> m_timesync_output_queue;
->>>>>>> origin/patch/2.8.2
 
   std::atomic<uint64_t> m_received_requests{ 0 }; // NOLINT (build/unsigned)
   std::atomic<uint64_t> m_sent_fragments{ 0 };    // NOLINT (build/unsigned)

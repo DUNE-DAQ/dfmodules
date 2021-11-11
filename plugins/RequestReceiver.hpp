@@ -54,12 +54,12 @@ private:
 
   // Configuration
   std::chrono::milliseconds m_queue_timeout;
-  dunedaq::dataformats::run_number_t m_run_number;
+  dunedaq::daqdataformats::run_number_t m_run_number;
   std::string m_connection_name;
 
   // Queue(s)
   using datareqsink_t = dunedaq::appfwk::DAQSink<dfmessages::DataRequest>;
-  std::map<dataformats::GeoID, std::unique_ptr<datareqsink_t>> m_data_request_output_queues;
+  std::map<daqdataformats::GeoID, std::unique_ptr<datareqsink_t>> m_data_request_output_queues;
 
   std::atomic<uint64_t> m_received_requests{ 0 }; // NOLINT (build/unsigned)
 };
