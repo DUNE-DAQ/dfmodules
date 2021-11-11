@@ -1,17 +1,14 @@
-name: build-develop
+name: build-patch-2.8.2
 
 # Controls when the action will run. Workflow runs when manually triggered using the UI
 # or API.
 on:
   push:
     branches: 
-      - develop
-      - patch/*
+      - patch/2.8.2
     paths-ignore:
       - 'docs/**'
       - '.github/**'
-  pull_request:
-    branches: [ develop ]
   schedule:
     - cron: "0 7 * * *"
 
@@ -50,6 +47,7 @@ jobs:
       uses: actions/checkout@v2
       with:
         path: ${{ github.repository }}
+        ref: patch/2.8.2
     
     - name: setup build env, build and lint the repo against the development release
       run: |
