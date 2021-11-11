@@ -11,7 +11,7 @@
 
 #include "appfwk/DAQModuleHelper.hpp"
 #include "appfwk/app/Nljs.hpp"
-#include "dataformats/Fragment.hpp"
+#include "daqdataformats/Fragment.hpp"
 #include "logging/Logging.hpp"
 #include "rcif/cmd/Nljs.hpp"
 #include "readout/utils/BufferedFileWriter.hpp"
@@ -156,19 +156,19 @@ TPSetWriter::do_work(std::atomic<bool>& running_flag)
       tpset_writer.open(work_oss.str(), 1024, "None", false);
     }
 
-    // dataformats::Fragment frag(&tpset_bytes[0], tpset_bytes.size());
+    // daqdataformats::Fragment frag(&tpset_bytes[0], tpset_bytes.size());
 
     int dummy_val = 0xdeadbeef;
-    dataformats::Fragment frag(&dummy_val, sizeof(dummy_val));
+    daqdataformats::Fragment frag(&dummy_val, sizeof(dummy_val));
     frag.set_run_number(m_run_number);
     frag.set_window_begin(tpset.start_time);
     frag.set_window_end(tpset.end_time);
-    dataformats::GeoID geoid;
+    daqdataformats::GeoID geoid;
     geoid.system_type = tpset.origin.system_type;
     geoid.region_id = tpset.origin.region_id;
     geoid.element_id = tpset.origin.element_id;
     frag.set_element_id(geoid);
-    frag.set_type(dataformats::FragmentType::kTriggerPrimitives);
+    frag.set_type(daqdataformats::FragmentType::kTriggerPrimitives);
 
     const uint8_t* fragment_storage_location = static_cast<const uint8_t*>(frag.get_storage_location());
     for (uint32_t idx = 0; idx < frag.get_size(); ++idx) {

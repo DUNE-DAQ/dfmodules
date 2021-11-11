@@ -91,9 +91,42 @@ ERS_DECLARE_ISSUE_BASE(dfmodules,
 namespace dfmodules {
 
 /**
+ * @brief HDF5FileHandle is a small helper class that takes care
+ * of common actions on HighFive::File instances.
+ */
+class HDF5FileHandle
+{
+public:
+  explicit HDF5FileHandle(const std::string& filename, unsigned open_flags)
+    : m_original_filename(filename)
+  {
+    std::string inprogress_filename = m_original_filename + s_inprogress_filename_suffix;
+    m_file_ptr.reset(new HighFive::File(inprogress_filename, open_flags));
+  }
+
+  ~HDF5FileHandle()
+  {
+    if (m_file_ptr.get() != nullptr) {
+      m_file_ptr->flush();
+
+      std::string open_filename = m_file_ptr->getName();
+      std::filesystem::rename(open_filename, m_original_filename);
+
+      m_file_ptr.reset(); // explicit destruction; not really needed, but nice to be clear...
+    }
+  }
+
+  HighFive::File* get_file_ptr() const { return m_file_ptr.get(); }
+
+private:
+  inline static const std::string s_inprogress_filename_suffix = ".writing";
+  std::string m_original_filename;
+  std::unique_ptr<HighFive::File> m_file_ptr;
+};
+
+/**
  * @brief HDF5DataStore creates an HDF5 instance
  * of the DataStore class
- *
  */
 class HDF5DataStore : public DataStore
 {
@@ -114,7 +147,7 @@ public:
     : DataStore(conf.value("name", "data_store"))
     , m_basic_name_of_open_file("")
     , m_open_flags_of_open_file(0)
-    , m_timestamp_substring_for_filename("_UnknownTime")
+    , m_run_number(0)
   {
     TLOG_DEBUG(TLVL_BASIC) << get_name() << ": Configuration: " << conf;
 
@@ -137,6 +170,13 @@ public:
 
       throw InvalidOperationMode(ERS_HERE, get_name(), m_operation_mode);
     }
+
+    m_application_name = "Unknown";
+    char* appname_ptr = getenv("DUNEDAQ_APPLICATION_NAME");
+    if (appname_ptr != nullptr) {
+      std::string tmpstr(appname_ptr);
+      m_application_name = tmpstr;
+    }
   }
 
   virtual KeyedDataBlock read(const StorageKey& key)
@@ -149,7 +189,6 @@ public:
     // opening the file from Storage Key + configuration parameters
     std::string full_filename = m_key_translator_ptr->get_file_name(key, m_file_index);
 
-    // m_file_ptr will be the handle to the Opened-File after a call to open_file_if_needed()
     try {
       open_file_if_needed(full_filename, HighFive::File::ReadOnly);
     } catch (std::exception const& excpt) {
@@ -166,7 +205,8 @@ public:
 
     KeyedDataBlock data_block(key);
 
-    HighFive::Group hdf5_group = HDF5FileUtils::get_subgroup(m_file_ptr, group_and_dataset_path_elements, false);
+    HighFive::Group hdf5_group =
+      HDF5FileUtils::get_subgroup(m_file_handle->get_file_ptr(), group_and_dataset_path_elements, false);
 
     try { // to determine if the dataset exists in the group and copy it to membuffer
       HighFive::DataSet data_set = hdf5_group.getDataSet(dataset_name);
@@ -201,7 +241,7 @@ public:
                                   current_free_space,
                                   (data_block.m_data_size),
                                   "a multiple of the data block size");
-      std::string msg = "writing a data block to file " + m_file_ptr->getName();
+      std::string msg = "writing a data block to file " + m_file_handle->get_file_ptr()->getName();
       throw RetryableDataStoreProblem(ERS_HERE, get_name(), msg, issue);
     }
 
@@ -211,7 +251,6 @@ public:
     // determine the filename from Storage Key + configuration parameters
     std::string full_filename = m_key_translator_ptr->get_file_name(data_block.m_data_key, m_file_index);
 
-    // m_file_ptr will be the handle to the Opened-File after a call to open_file_if_needed()
     try {
       open_file_if_needed(full_filename, HighFive::File::OpenOrCreate);
     } catch (std::exception const& excpt) {
@@ -249,7 +288,7 @@ public:
                                   current_free_space,
                                   (m_free_space_safety_factor_for_write * sum_of_sizes),
                                   "a multiple of the data block sizes");
-      std::string msg = "writing a list of data blocks to file " + m_file_ptr->getName();
+      std::string msg = "writing a list of data blocks to file " + m_file_handle->get_file_ptr()->getName();
       throw RetryableDataStoreProblem(ERS_HERE, get_name(), msg, issue);
     }
 
@@ -262,7 +301,6 @@ public:
     // (This assumes that all of the blocks have a data_key that puts them in the same file...)
     std::string full_filename = m_key_translator_ptr->get_file_name(data_block_list[0].m_data_key, m_file_index);
 
-    // m_file_ptr will be the handle to the Opened-File after a call to open_file_if_needed()
     try {
       open_file_if_needed(full_filename, HighFive::File::OpenOrCreate);
     } catch (std::exception const& excpt) {
@@ -319,8 +357,10 @@ public:
    *
    * This method may throw an exception if it finds a problem.
    */
-  void prepare_for_run(dataformats::run_number_t /*run_number*/)
+  void prepare_for_run(daqdataformats::run_number_t run_number)
   {
+    m_run_number = run_number;
+
     struct statvfs vfs_results;
     TLOG_DEBUG(TLVL_BASIC) << get_name() << ": Preparing to get the statvfs results for path: \"" << m_path << "\"";
 
@@ -339,12 +379,6 @@ public:
         ERS_HERE, get_name(), m_path, free_space, m_max_file_size, "the configured maximum size of a single file");
     }
 
-    // create the timestamp substring that is part of unique-ifying the filename, for later use
-    time_t now = time(0);
-    m_timestamp_substring_for_filename = "_" + boost::posix_time::to_iso_string(boost::posix_time::from_time_t(now));
-    TLOG_DEBUG(TLVL_BASIC) << get_name()
-                           << ": m_timestamp_substring_for_filename: " << m_timestamp_substring_for_filename;
-
     m_file_index = 0;
     m_recorded_size = 0;
   }
@@ -356,18 +390,20 @@ public:
    * cleanup or shutdown operations that are useful once the writes or
    * reads for a given run number have finished.
    */
-  void finish_with_run(dataformats::run_number_t /*run_number*/)
+  void finish_with_run(daqdataformats::run_number_t /*run_number*/)
   {
-    if (m_file_ptr.get() != nullptr) {
-      std::string full_filename = m_file_ptr->getName();
+    if (m_file_handle.get() != nullptr) {
+      std::string open_filename = m_file_handle->get_file_ptr()->getName();
       try {
-        m_file_ptr->flush();
-        m_file_ptr.reset();
+        m_file_handle.reset();
+        m_run_number = 0;
       } catch (std::exception const& excpt) {
-        throw FileOperationProblem(ERS_HERE, get_name(), full_filename, excpt);
+        m_run_number = 0;
+        throw FileOperationProblem(ERS_HERE, get_name(), open_filename, excpt);
       } catch (...) { // NOLINT(runtime/exceptions)
+        m_run_number = 0;
         // NOLINT here because we *ARE* re-throwing the exception!
-        throw FileOperationProblem(ERS_HERE, get_name(), full_filename);
+        throw FileOperationProblem(ERS_HERE, get_name(), open_filename);
       }
     }
   }
@@ -378,11 +414,11 @@ private:
   HDF5DataStore(HDF5DataStore&&) = delete;
   HDF5DataStore& operator=(HDF5DataStore&&) = delete;
 
-  std::unique_ptr<HighFive::File> m_file_ptr;
+  std::unique_ptr<HDF5FileHandle> m_file_handle;
   std::string m_basic_name_of_open_file;
   unsigned m_open_flags_of_open_file;
-
-  std::string m_timestamp_substring_for_filename;
+  daqdataformats::run_number_t m_run_number;
+  std::string m_application_name;
 
   // Total number of generated files
   size_t m_file_index;
@@ -423,13 +459,14 @@ private:
                            << data_block.m_data_key.get_group_type() << " and region/element number "
                            << data_block.m_data_key.get_region_number() << " / "
                            << data_block.m_data_key.get_element_number();
+    HighFive::File* hdf_file_ptr = m_file_handle->get_file_ptr();
 
     std::vector<std::string> group_and_dataset_path_elements =
       m_key_translator_ptr->get_path_elements(data_block.m_data_key);
 
     const std::string dataset_name = group_and_dataset_path_elements.back();
 
-    HighFive::Group sub_group = HDF5FileUtils::get_subgroup(m_file_ptr, group_and_dataset_path_elements, true);
+    HighFive::Group sub_group = HDF5FileUtils::get_subgroup(hdf_file_ptr, group_and_dataset_path_elements, true);
 
     // Create dataset
     HighFive::DataSpace data_space = HighFive::DataSpace({ data_block.m_data_size, 1 });
@@ -441,18 +478,18 @@ private:
         sub_group.createDataSet<char>(dataset_name, data_space, data_set_create_props, data_set_access_props);
       if (data_set.isValid()) {
         data_set.write_raw(static_cast<const char*>(data_block.get_data_start()));
-        m_file_ptr->flush();
+        hdf_file_ptr->flush();
         m_recorded_size += data_block.m_data_size;
       } else {
-        throw InvalidHDF5Dataset(ERS_HERE, get_name(), dataset_name, m_file_ptr->getName());
+        throw InvalidHDF5Dataset(ERS_HERE, get_name(), dataset_name, hdf_file_ptr->getName());
       }
     } catch (std::exception const& excpt) {
       std::string description = "DataSet " + dataset_name;
-      std::string msg = "writing DataSet " + dataset_name + " to file " + m_file_ptr->getName();
+      std::string msg = "writing DataSet " + dataset_name + " to file " + hdf_file_ptr->getName();
       throw GeneralDataStoreProblem(ERS_HERE, get_name(), msg, excpt);
     } catch (...) { // NOLINT(runtime/exceptions)
       // NOLINT here because we *ARE* re-throwing the exception!
-      std::string msg = "writing DataSet " + dataset_name + " to file " + m_file_ptr->getName();
+      std::string msg = "writing DataSet " + dataset_name + " to file " + hdf_file_ptr->getName();
       throw GeneralDataStoreProblem(ERS_HERE, get_name(), msg);
     }
   }
@@ -468,17 +505,34 @@ private:
   void open_file_if_needed(const std::string& file_name, unsigned open_flags = HighFive::File::ReadOnly)
   {
 
-    if (m_file_ptr.get() == nullptr || m_basic_name_of_open_file.compare(file_name) ||
+    if (m_file_handle.get() == nullptr || m_basic_name_of_open_file.compare(file_name) ||
         m_open_flags_of_open_file != open_flags) {
 
       // 04-Feb-2021, KAB: adding unique substrings to the filename
       std::string unique_filename = file_name;
+      time_t now = time(0);
+      std::string file_creation_timestamp = boost::posix_time::to_iso_string(boost::posix_time::from_time_t(now));
       if (!m_disable_unique_suffix) {
         size_t ufn_len;
         // timestamp substring
         ufn_len = unique_filename.length();
-        if (ufn_len > 6) {
-          unique_filename.insert(ufn_len - 5, m_timestamp_substring_for_filename);
+        if (ufn_len > 6) { // len GT 6 gives us some confidence that we have at least x.hdf5
+          std::string timestamp_substring = "_" + file_creation_timestamp;
+          TLOG_DEBUG(TLVL_BASIC) << get_name() << ": timestamp substring for filename: " << timestamp_substring;
+          unique_filename.insert(ufn_len - 5, timestamp_substring);
+        }
+      }
+
+      // close an existing open file
+      if (m_file_handle.get() != nullptr) {
+        std::string open_filename = m_file_handle->get_file_ptr()->getName();
+        try {
+          m_file_handle.reset();
+        } catch (std::exception const& excpt) {
+          throw FileOperationProblem(ERS_HERE, get_name(), open_filename, excpt);
+        } catch (...) { // NOLINT(runtime/exceptions)
+          // NOLINT here because we *ARE* re-throwing the exception!
+          throw FileOperationProblem(ERS_HERE, get_name(), open_filename);
         }
       }
 
@@ -487,20 +541,39 @@ private:
                              << std::to_string(open_flags);
       m_basic_name_of_open_file = file_name;
       m_open_flags_of_open_file = open_flags;
-      m_file_ptr.reset(new HighFive::File(unique_filename, open_flags));
+      try {
+        m_file_handle.reset(new HDF5FileHandle(unique_filename, open_flags));
+      } catch (std::exception const& excpt) {
+        throw FileOperationProblem(ERS_HERE, get_name(), unique_filename, excpt);
+      } catch (...) { // NOLINT(runtime/exceptions)
+        // NOLINT here because we *ARE* re-throwing the exception!
+        throw FileOperationProblem(ERS_HERE, get_name(), unique_filename);
+      }
 
       if (open_flags == HighFive::File::ReadOnly) {
         TLOG_DEBUG(TLVL_BASIC) << get_name() << "Opened HDF5 file read-only.";
       } else {
         TLOG_DEBUG(TLVL_BASIC) << get_name() << "Created HDF5 file (" << unique_filename << ").";
 
-        if (!m_file_ptr->hasAttribute("data_format_version")) {
+        if (!m_file_handle->get_file_ptr()->hasAttribute("data_format_version")) {
           int version = m_key_translator_ptr->get_current_version();
-          m_file_ptr->createAttribute("data_format_version", version);
+          m_file_handle->get_file_ptr()->createAttribute("data_format_version", version);
         }
-        if (!m_file_ptr->hasAttribute("operational_environment")) {
+        if (!m_file_handle->get_file_ptr()->hasAttribute("operational_environment")) {
           std::string op_env_type = m_config_params.operational_environment;
-          m_file_ptr->createAttribute("operational_environment", op_env_type);
+          m_file_handle->get_file_ptr()->createAttribute("operational_environment", op_env_type);
+        }
+        if (!m_file_handle->get_file_ptr()->hasAttribute("run_number")) {
+          m_file_handle->get_file_ptr()->createAttribute("run_number", m_run_number);
+        }
+        if (!m_file_handle->get_file_ptr()->hasAttribute("file_index")) {
+          m_file_handle->get_file_ptr()->createAttribute("file_index", m_file_index);
+        }
+        if (!m_file_handle->get_file_ptr()->hasAttribute("creation_timestamp")) {
+          m_file_handle->get_file_ptr()->createAttribute("creation_timestamp", file_creation_timestamp);
+        }
+        if (!m_file_handle->get_file_ptr()->hasAttribute("application_name")) {
+          m_file_handle->get_file_ptr()->createAttribute("application_name", m_application_name);
         }
       }
     } else {
