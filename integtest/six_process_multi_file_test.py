@@ -35,7 +35,7 @@ triggertp_frag_params={"fragment_type_description": "Trigger TP", "hdf5_groups":
 confgen_name="minidaqapp.nanorc.mdapp_multiru_gen"
 # The arguments to pass to the config generator, excluding the json
 # output directory (the test framework handles that)
-confgen_arguments_base=[ "-d", "./frames.bin", "-o", ".", "-s", "10", "-n", str(number_of_data_producers), "-b", "1000", "-a", "1000", "-t", "10.0"] + [ "--host-ru", "localhost" ] * number_of_readout_apps
+confgen_arguments_base=[ "-d", "./frames.bin", "-o", ".", "-s", "10", "-n", str(number_of_data_producers), "-b", "1000", "-a", "1000", "-t", "10.0", "--max-file-size", "1074000000"] + [ "--host-ru", "localhost" ] * number_of_readout_apps
 confgen_arguments={"WIB1_System": confgen_arguments_base,
                    "Software_TPG_System": confgen_arguments_base+["--enable-software-tpg"]}
 # The commands to run in nanorc, as a list
@@ -69,6 +69,7 @@ def test_data_file(run_nanorc):
     for idx in range(len(run_nanorc.data_files)):
         data_file=data_file_checks.DataFile(run_nanorc.data_files[idx])
         assert data_file_checks.sanity_check(data_file)
+        assert data_file_checks.check_file_attributes(data_file)
         for jdx in range(len(fragment_check_list)):
             assert data_file_checks.check_fragment_count(data_file, fragment_check_list[jdx])
             assert data_file_checks.check_fragment_presence(data_file, fragment_check_list[jdx])
