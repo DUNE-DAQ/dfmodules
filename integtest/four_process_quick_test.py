@@ -12,8 +12,8 @@ expected_number_of_data_files=1
 check_for_logfile_errors=True
 expected_event_count=run_duration
 expected_event_count_tolerance=2
-wib1_frag_hsi_trig_params={"fragment_type_description": "WIB", "hdf5_groups": "TPC/APA000",
-                           "element_name_prefix": "Link", "element_number_offset": 0,
+wib1_frag_hsi_trig_params={"fragment_type_description": "WIB",
+                           "hdf5_detector_group": "TPC", "hdf5_region_prefix": "APA",
                            "expected_fragment_count": number_of_data_producers,
                            "min_size_bytes": 37200, "max_size_bytes": 37200}
 
@@ -50,5 +50,4 @@ def test_data_file(run_nanorc):
         assert data_file_checks.check_file_attributes(data_file)
         assert data_file_checks.check_event_count(data_file, expected_event_count, expected_event_count_tolerance)
         assert data_file_checks.check_fragment_count(data_file, wib1_frag_hsi_trig_params)
-        assert data_file_checks.check_fragment_presence(data_file, wib1_frag_hsi_trig_params)
-        assert data_file_checks.check_fragment_size2(data_file, wib1_frag_hsi_trig_params)
+        assert data_file_checks.check_fragment_sizes(data_file, wib1_frag_hsi_trig_params)
