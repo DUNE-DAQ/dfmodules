@@ -18,14 +18,14 @@ console = Console()
 import click
 
 @click.command(context_settings=CONTEXT_SETTINGS)
-@click.option('-t', '--check-tps', default=True, help="Check for TPSet Fragments in output")
+@click.option('-t', '--skip-tps', is_flag=True, help="Skip check for TPSet Fragments in output")
 @click.option('-n', '--number-of-data-producers', default=2, help="Number of links in output")
 @click.option('-l', '--check-for-logfile-errors', default=True, help="Whether to check for errors in the log files")
 @click.option('-d', '--run_duration', default=60, help="How long the runs lasted")
 @click.option('--trigger-rate', default=1, help="The trigger rate, in Hz")
 @click.argument('run_dir', type=click.Path(exists=True), default=os.curdir)
 
-def cli(check_tps, number_of_data_producers, check_for_logfile_errors, run_duration, trigger_rate, run_dir):
+def cli(skip_tps, number_of_data_producers, check_for_logfile_errors, run_duration, trigger_rate, run_dir):
 
     dirfiles = [ join(run_dir, f) for f in os.listdir(run_dir) if os.path.isfile(f) ]
     log_files = [ f for f in dirfiles if "log_" in f]
@@ -82,7 +82,7 @@ def cli(check_tps, number_of_data_producers, check_for_logfile_errors, run_durat
        local_expected_event_count = expected_event_count
        local_event_count_tolerance = expected_event_count_tolerance
        fragment_check_list = []
-       if check_tps:
+       if not skip_tps:
            local_expected_event_count+=(270 * number_of_data_producers * run_duration / 100)
            local_event_count_tolerance+=(10 * number_of_data_producers * run_duration / 100)
            fragment_check_list.append(wib1_frag_multi_trig_params)
