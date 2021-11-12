@@ -12,28 +12,28 @@ expected_number_of_data_files=1
 check_for_logfile_errors=True
 expected_event_count=run_duration
 expected_event_count_tolerance=2
-wib1_frag_hsi_trig_params={"fragment_type_description": "WIB", "hdf5_groups": "TPC/APA000",
-                           "element_name_prefix": "Link", "element_number_offset": 0,
+wib1_frag_hsi_trig_params={"fragment_type_description": "WIB",
+                           "hdf5_detector_group": "TPC", "hdf5_region_prefix": "APA",
                            "expected_fragment_count": number_of_data_producers,
                            "min_size_bytes": 37200, "max_size_bytes": 37200}
-wib1_frag_multi_trig_params={"fragment_type_description": "WIB", "hdf5_groups": "TPC/APA000",
-                             "element_name_prefix": "Link", "element_number_offset": 0,
+wib1_frag_multi_trig_params={"fragment_type_description": "WIB",
+                             "hdf5_detector_group": "TPC", "hdf5_region_prefix": "APA",
                              "expected_fragment_count": number_of_data_producers,
                              "min_size_bytes": 80, "max_size_bytes": 37200}
-wib2_frag_params={"fragment_type_description": "WIB2", "hdf5_groups": "TPC/APA000",
-                  "element_name_prefix": "Link", "element_number_offset": 0,
+wib2_frag_params={"fragment_type_description": "WIB2",
+                  "hdf5_detector_group": "TPC", "hdf5_region_prefix": "APA",
                   "expected_fragment_count": number_of_data_producers,
                   "min_size_bytes": 29000, "max_size_bytes": 30000}
-pds_frag_params={"fragment_type_description": "PDS", "hdf5_groups": "PDS/Region000",
-                 "element_name_prefix": "Element", "element_number_offset": 0,
+pds_frag_params={"fragment_type_description": "PDS",
+                 "hdf5_detector_group": "PDS", "hdf5_region_prefix": "Region",
                  "expected_fragment_count": number_of_data_producers,
                  "min_size_bytes": 80, "max_size_bytes": 36000}
-rawtp_frag_params={"fragment_type_description": "Raw TP", "hdf5_groups": "TPC/TP_APA000",
-                   "element_name_prefix": "Link", "element_number_offset": number_of_data_producers,
+rawtp_frag_params={"fragment_type_description": "Raw TP",
+                   "hdf5_detector_group": "TPC", "hdf5_region_prefix": "TP_APA",
                    "expected_fragment_count": number_of_data_producers,
                    "min_size_bytes": 80, "max_size_bytes": 80}
-triggertp_frag_params={"fragment_type_description": "Trigger TP", "hdf5_groups": "Trigger/Region000",
-                       "element_name_prefix": "Element", "element_number_offset": 0,
+triggertp_frag_params={"fragment_type_description": "Trigger TP",
+                       "hdf5_detector_group": "Trigger", "hdf5_region_prefix": "Region",
                        "expected_fragment_count": number_of_data_producers,
                        "min_size_bytes": 80, "max_size_bytes": 80}
 
@@ -96,8 +96,8 @@ def test_data_file(run_nanorc):
     for idx in range(len(run_nanorc.data_files)):
         data_file=data_file_checks.DataFile(run_nanorc.data_files[idx])
         assert data_file_checks.sanity_check(data_file)
+        assert data_file_checks.check_file_attributes(data_file)
         assert data_file_checks.check_event_count(data_file, local_expected_event_count, local_event_count_tolerance)
         for jdx in range(len(fragment_check_list)):
             assert data_file_checks.check_fragment_count(data_file, fragment_check_list[jdx])
-            assert data_file_checks.check_fragment_presence(data_file, fragment_check_list[jdx])
-            assert data_file_checks.check_fragment_size2(data_file, fragment_check_list[jdx])
+            assert data_file_checks.check_fragment_sizes(data_file, fragment_check_list[jdx])

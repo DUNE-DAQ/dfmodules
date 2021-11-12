@@ -10,20 +10,20 @@ number_of_readout_apps=3
 # Default values for validation parameters
 expected_number_of_data_files=5
 check_for_logfile_errors=True
-wib1_frag_hsi_trig_params={"fragment_type_description": "WIB", "hdf5_groups": "TPC/APA000",
-                           "element_name_prefix": "Link", "element_number_offset": 0,
+wib1_frag_hsi_trig_params={"fragment_type_description": "WIB",
+                           "hdf5_detector_group": "TPC", "hdf5_region_prefix": "APA",
                            "expected_fragment_count": (number_of_data_producers*number_of_readout_apps),
                            "min_size_bytes": 37200, "max_size_bytes": 37200}
-wib1_frag_multi_trig_params={"fragment_type_description": "WIB", "hdf5_groups": "TPC/APA000",
-                             "element_name_prefix": "Link", "element_number_offset": 0,
+wib1_frag_multi_trig_params={"fragment_type_description": "WIB",
+                             "hdf5_detector_group": "TPC", "hdf5_region_prefix": "APA",
                              "expected_fragment_count": (number_of_data_producers*number_of_readout_apps),
                              "min_size_bytes": 80, "max_size_bytes": 37200}
-rawtp_frag_params={"fragment_type_description": "Raw TP", "hdf5_groups": "TPC/TP_APA000",
-                   "element_name_prefix": "Link", "element_number_offset": (number_of_data_producers*number_of_readout_apps),
+rawtp_frag_params={"fragment_type_description": "Raw TP",
+                   "hdf5_detector_group": "TPC", "hdf5_region_prefix": "TP_APA",
                    "expected_fragment_count": (number_of_data_producers*number_of_readout_apps),
                    "min_size_bytes": 80, "max_size_bytes": 80}
-triggertp_frag_params={"fragment_type_description": "Trigger TP", "hdf5_groups": "Trigger/Region000",
-                       "element_name_prefix": "Element", "element_number_offset": 0,
+triggertp_frag_params={"fragment_type_description": "Trigger TP",
+                       "hdf5_detector_group": "Trigger", "hdf5_region_prefix": "Region",
                        "expected_fragment_count": (number_of_data_producers*number_of_readout_apps),
                        "min_size_bytes": 80, "max_size_bytes": 80}
 
@@ -35,7 +35,7 @@ triggertp_frag_params={"fragment_type_description": "Trigger TP", "hdf5_groups":
 confgen_name="minidaqapp.nanorc.mdapp_multiru_gen"
 # The arguments to pass to the config generator, excluding the json
 # output directory (the test framework handles that)
-confgen_arguments_base=[ "-d", "./frames.bin", "-o", ".", "-s", "10", "-n", str(number_of_data_producers), "-b", "1000", "-a", "1000", "-t", "10.0"] + [ "--host-ru", "localhost" ] * number_of_readout_apps
+confgen_arguments_base=[ "-d", "./frames.bin", "-o", ".", "-s", "10", "-n", str(number_of_data_producers), "-b", "1000", "-a", "1000", "-t", "10.0", "--max-file-size", "1074000000"] + [ "--host-ru", "localhost" ] * number_of_readout_apps
 confgen_arguments={"WIB1_System": confgen_arguments_base,
                    "Software_TPG_System": confgen_arguments_base+["--enable-software-tpg"]}
 # The commands to run in nanorc, as a list
@@ -69,7 +69,7 @@ def test_data_file(run_nanorc):
     for idx in range(len(run_nanorc.data_files)):
         data_file=data_file_checks.DataFile(run_nanorc.data_files[idx])
         assert data_file_checks.sanity_check(data_file)
+        assert data_file_checks.check_file_attributes(data_file)
         for jdx in range(len(fragment_check_list)):
             assert data_file_checks.check_fragment_count(data_file, fragment_check_list[jdx])
-            assert data_file_checks.check_fragment_presence(data_file, fragment_check_list[jdx])
-            assert data_file_checks.check_fragment_size2(data_file, fragment_check_list[jdx])
+            assert data_file_checks.check_fragment_sizes(data_file, fragment_check_list[jdx])
