@@ -1,4 +1,6 @@
 import h5py
+import os.path
+import re
 
 class DataFile:
     def __init__(self, filename):
@@ -21,6 +23,47 @@ def sanity_check(datafile):
             passed=False
     if passed:
         print("Sanity-check passed")
+    return passed
+
+def check_file_attributes(datafile):
+    "Check that the expected Attributes exist within the data file"
+    passed=True
+    base_filename = os.path.basename(datafile.h5file.filename)
+    expected_attribute_names = ["application_name", "creation_timestamp", "data_format_version", "file_index", "operational_environment", "run_number"]
+    for expected_attr_name in expected_attribute_names:
+        if expected_attr_name not in datafile.h5file.attrs.keys():
+            passed=False
+            print(f"Attribute '{expected_attr_name}' not found in file {base_filename}")
+        elif expected_attr_name == "run_number":
+            # value from the Attribute
+            attr_value = datafile.h5file.attrs.get(expected_attr_name)
+            # value from the filename
+            pattern = r"_run\d+_"
+            match_obj = re.search(pattern, base_filename)
+            if match_obj:
+                filename_value = int(re.sub('run','',re.sub('_','',match_obj.group(0))))
+                if attr_value != filename_value:
+                    passed=False
+                    print(f"The value in Attribute '{expected_attr_name}' ({attr_value}) does not match the value in the filename ({base_filename})")
+        elif expected_attr_name == "file_index":
+            # value from the Attribute
+            attr_value = datafile.h5file.attrs.get(expected_attr_name)
+            # value from the filename
+            pattern = r"_\d+_"
+            match_obj = re.search(pattern, base_filename)
+            if match_obj:
+                filename_value = int(re.sub('_','',match_obj.group(0)))
+                if attr_value != filename_value:
+                    passed=False
+                    print(f"The value in Attribute '{expected_attr_name}' ({attr_value}) does not match the value in the filename ({base_filename})")
+        elif expected_attr_name == "creation_timestamp":
+            attr_value = datafile.h5file.attrs.get(expected_attr_name)
+            pattern = f".*{attr_value}.*"
+            if not re.match(pattern, base_filename):
+                passed=False
+                print(f"The value in Attribute '{expected_attr_name}' ({attr_value}) does not match the value in the filename ({base_filename})")
+    if passed:
+        print(f"All Attribute tests passed for file {base_filename}")
     return passed
 
 def check_event_count(datafile, expected_value, tolerance):
