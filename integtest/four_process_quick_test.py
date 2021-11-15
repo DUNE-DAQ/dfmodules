@@ -38,7 +38,7 @@ def test_nanorc_success(run_nanorc):
 def test_log_files(run_nanorc):
     if check_for_logfile_errors:
         # Check that there are no warnings or errors in the log files
-        assert log_file_checks.logs_are_error_free(run_nanorc.log_files)
+        assert log_file_checks.logs_are_error_free(run_nanorc.log_files, True, True)
 
 def test_data_file(run_nanorc):
     # Run some tests on the output data file
