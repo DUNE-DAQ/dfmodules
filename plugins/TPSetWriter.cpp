@@ -14,7 +14,7 @@
 #include "daqdataformats/Fragment.hpp"
 #include "logging/Logging.hpp"
 #include "rcif/cmd/Nljs.hpp"
-#include "toolbox/BufferedFileWriter.hpp"
+#include "readout/utils/BufferedFileWriter.hpp"
 #include "serialization/Serialization.hpp"
 #include "triggeralgs/Types.hpp"
 
@@ -102,7 +102,7 @@ TPSetWriter::do_work(std::atomic<bool>& running_flag)
   triggeralgs::timestamp_t last_timestamp = 0;
 
   // uint32_t last_seqno = 0;
-  dunedaq::toolbox::BufferedFileWriter<uint8_t> tpset_writer;
+  dunedaq::readout::BufferedFileWriter tpset_writer;
   size_t bytes_written = 0;
   int file_index = 0;
 
@@ -170,14 +170,13 @@ TPSetWriter::do_work(std::atomic<bool>& running_flag)
     frag.set_element_id(geoid);
     frag.set_type(daqdataformats::FragmentType::kTriggerPrimitives);
 
-    const uint8_t* fragment_storage_location = static_cast<const uint8_t*>(frag.get_storage_location());
-    for (uint32_t idx = 0; idx < frag.get_size(); ++idx) {
-      tpset_writer.write(*fragment_storage_location++);
-    }
+    tpset_writer.write(static_cast<const char*>(frag.get_storage_location()), frag.get_size());
+    
     size_t num_longwords = 1 + ((frag.get_size() - 1) / sizeof(int64_t));
     size_t padding = (num_longwords * sizeof(int64_t)) - frag.get_size();
+    char zero = 0;
     for (uint32_t idx = 0; idx < padding; ++idx) {
-      tpset_writer.write(0x0);
+      tpset_writer.write(&zero, 1);
     }
     bytes_written += frag.get_size() + padding;
     if (m_max_file_size > 0 && bytes_written > m_max_file_size) {
