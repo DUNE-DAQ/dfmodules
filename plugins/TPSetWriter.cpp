@@ -14,7 +14,7 @@
 #include "daqdataformats/Fragment.hpp"
 #include "logging/Logging.hpp"
 #include "rcif/cmd/Nljs.hpp"
-#include "readout/utils/BufferedFileWriter.hpp"
+#include "readoutlibs/utils/BufferedFileWriter.hpp"
 #include "serialization/Serialization.hpp"
 #include "triggeralgs/Types.hpp"
 
@@ -102,7 +102,7 @@ TPSetWriter::do_work(std::atomic<bool>& running_flag)
   triggeralgs::timestamp_t last_timestamp = 0;
 
   // uint32_t last_seqno = 0;
-  dunedaq::readout::BufferedFileWriter tpset_writer;
+  dunedaq::readoutlibs::BufferedFileWriter tpset_writer;
   size_t bytes_written = 0;
   int file_index = 0;
 
