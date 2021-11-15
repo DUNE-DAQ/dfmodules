@@ -1,4 +1,6 @@
 import pytest
+import os
+import re
 
 import dfmodules.data_file_checks as data_file_checks
 import integrationtest.log_file_checks as log_file_checks
@@ -36,6 +38,9 @@ triggertp_frag_params={"fragment_type_description": "Trigger TP",
                        "hdf5_detector_group": "Trigger", "hdf5_region_prefix": "Region",
                        "expected_fragment_count": number_of_data_producers,
                        "min_size_bytes": 80, "max_size_bytes": 80}
+ignored_logfile_problems={"dqm": ["client will not be able to connect to Kafka cluster",
+                                  "Unexpected Trigger Decision", "Unexpected Fragment"],
+                          "trigger": ["zipped_tpset_q: Unable to push within timeout period"]}
 
 # The next three variable declarations *must* be present as globals in the test
 # file. They're read by the "fixtures" in conftest.py to determine how
@@ -58,17 +63,23 @@ nanorc_command_list="boot init conf start 101 wait 1 resume wait ".split() + [st
 # The tests themselves
 
 def test_nanorc_success(run_nanorc):
+    current_test=os.environ.get('PYTEST_CURRENT_TEST')
+    match_obj = re.search(r".*\[(.+)\].*", current_test)
+    if match_obj:
+        current_test = match_obj.group(1)
+    banner_line = re.sub(".", "=", current_test)
+    print(banner_line)
+    print(current_test)
+    print(banner_line)
     # Check that nanorc completed correctly
     assert run_nanorc.completed_process.returncode==0
 
 def test_log_files(run_nanorc):
     local_check_flag=check_for_logfile_errors
-    if "--enable-dqm" in run_nanorc.confgen_arguments:
-        local_check_flag=False
 
     if local_check_flag:
         # Check that there are no warnings or errors in the log files
-        assert log_file_checks.logs_are_error_free(run_nanorc.log_files)
+        assert log_file_checks.logs_are_error_free(run_nanorc.log_files, True, True, ignored_logfile_problems)
 
 def test_data_file(run_nanorc):
     local_expected_event_count=expected_event_count
