@@ -20,7 +20,7 @@ find_package(triggeralgs REQUIRED)
 find_package(timinglibs REQUIRED)
 find_package(trigger REQUIRED)
 find_package(serialization REQUIRED)
-find_package(readout REQUIRED)
+find_package(readoutlibs REQUIRED)
 find_package(Boost COMPONENTS iostreams REQUIRED)
 
 daq_codegen( *.jsonnet TEMPLATES Structs.hpp.j2 Nljs.hpp.j2 )
@@ -35,7 +35,7 @@ daq_add_plugin( HDF5DataStore      duneDataStore LINK_LIBRARIES logging::logging
 
 daq_add_plugin( DataWriter            duneDAQModule LINK_LIBRARIES dfmodules )
 daq_add_plugin( TriggerRecordBuilder  duneDAQModule LINK_LIBRARIES dfmodules networkmanager::networkmanager )
-daq_add_plugin( TPSetWriter           duneDAQModule LINK_LIBRARIES dfmodules trigger::trigger serialization::serialization readout::readout Boost::iostreams )
+daq_add_plugin( TPSetWriter           duneDAQModule LINK_LIBRARIES dfmodules trigger::trigger serialization::serialization readoutlibs::readoutlibs Boost::iostreams )
 daq_add_plugin( FakeDataProd          duneDAQModule LINK_LIBRARIES dfmodules networkmanager::networkmanager)
 daq_add_plugin( RequestReceiver       duneDAQModule LINK_LIBRARIES dfmodules networkmanager::networkmanager)
 daq_add_plugin( FragmentReceiver       duneDAQModule LINK_LIBRARIES dfmodules networkmanager::networkmanager)
