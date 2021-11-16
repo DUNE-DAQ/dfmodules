@@ -208,7 +208,7 @@ TPSetWriter::do_work(std::atomic<bool>& running_flag)
   TLOG() << "Received " << n_tpset_received << " TPSets in " << time_ms << "ms. " << rate_hz
          << " TPSet/s. Inferred clock frequency " << inferred_clock_frequency << "Hz";
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_work() method";
-}
+} // NOLINT Function length
 
 } // namespace dfmodules
 } // namespace dunedaq
