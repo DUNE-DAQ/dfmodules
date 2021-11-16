@@ -103,7 +103,7 @@ RequestReceiver::do_conf(const data_t& payload)
 
   m_queue_timeout = std::chrono::milliseconds(parsed_conf.general_queue_timeout);
   m_connection_name = parsed_conf.connection_name;
-  std::cout << "Connection name is " << m_connection_name << std::endl;
+  TLOG() << "Connection name is " << m_connection_name << std::endl;
 
   networkmanager::NetworkManager::get().start_listening(m_connection_name);
 

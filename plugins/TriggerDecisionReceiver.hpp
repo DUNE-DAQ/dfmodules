@@ -6,7 +6,7 @@
  * received with this code.
  */
 
-#ifndef DFMODULES_PLUGINS_TRIGGERDECISIOMRECEIVER_HPP_
+#ifndef DFMODULES_PLUGINS_TRIGGERDECISIONRECEIVER_HPP_
 #define DFMODULES_PLUGINS_TRIGGERDECISIONRECEIVER_HPP_
 
 #include "dfmessages/TriggerDecision.hpp"

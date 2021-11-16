@@ -6,8 +6,8 @@
  * received with this code.
  */
 
-#ifndef DFMODULES_PLUGINS_REQUESTRECEIVER_HPP_
-#define DFMODULES_PLUGINS_REQUESTRECEIVER_HPP_
+#ifndef DFMODULES_PLUGINS_FRAGMENTRECEIVER_HPP_
+#define DFMODULES_PLUGINS_FRAGMENTRECEIVER_HPP_
 
 #include "daqdataformats/Fragment.hpp"
 
@@ -67,4 +67,4 @@ private:
 } // namespace dfmodules
 } // namespace dunedaq
 
-#endif // DFMODULES_PLUGINS_REQUESTRECEIVER_HPP_
+#endif // DFMODULES_PLUGINS_FRAGMENTRECEIVER_HPP_

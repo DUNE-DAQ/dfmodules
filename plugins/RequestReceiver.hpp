@@ -15,6 +15,7 @@
 #include "appfwk/DAQSink.hpp"
 #include "ipm/Receiver.hpp"
 
+#include <map>
 #include <memory>
 #include <string>
 #include <vector>

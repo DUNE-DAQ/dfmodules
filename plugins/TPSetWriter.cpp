@@ -22,6 +22,8 @@
 
 #include <chrono>
 #include <sstream>
+#include <string>
+#include <vector>
 
 enum
 {
@@ -143,8 +145,9 @@ TPSetWriter::do_work(std::atomic<bool>& running_flag)
       }
     }
 
-    std::vector<uint8_t> tpset_bytes = dunedaq::serialization::serialize(
-      tpset, dunedaq::serialization::SerializationType::kMsgPack); // NOLINT(build/unsigned)
+    // NOLINTNEXTLINE(build/unsigned)
+    std::vector<uint8_t> tpset_bytes =
+      dunedaq::serialization::serialize(tpset, dunedaq::serialization::SerializationType::kMsgPack);
     TLOG_DEBUG(9) << "Size of serialized TPSet is " << tpset_bytes.size() << ", TPSet size is " << tpset.objects.size();
 
     if (!tpset_writer.is_open()) {
@@ -175,7 +178,7 @@ TPSetWriter::do_work(std::atomic<bool>& running_flag)
     size_t num_longwords = 1 + ((frag.get_size() - 1) / sizeof(int64_t));
     size_t padding = (num_longwords * sizeof(int64_t)) - frag.get_size();
     char zero = 0;
-    for (uint32_t idx = 0; idx < padding; ++idx) {
+    for (uint32_t idx = 0; idx < padding; ++idx) { // NOLINT(build/unsigned)
       tpset_writer.write(&zero, 1);
     }
     bytes_written += frag.get_size() + padding;

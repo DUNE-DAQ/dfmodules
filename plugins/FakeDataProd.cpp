@@ -46,7 +46,6 @@ FakeDataProd::FakeDataProd(const std::string& name)
   , m_queue_timeout(100)
   , m_run_number(0)
   , m_data_request_input_queue(nullptr)
-//  , m_data_fragment_output_queue(nullptr)
 {
   register_command("conf", &FakeDataProd::do_conf);
   register_command("start", &FakeDataProd::do_start);
@@ -202,33 +201,6 @@ FakeDataProd::do_work(std::atomic<bool>& running_flag)
     } catch (ers::Issue& e) {
       ers::warning(FragmentTransmissionFailed(ERS_HERE, get_name(), data_request.trigger_number, e));
     }
-
-    /*
-    bool wasSentSuccessfully = false;
-    while (!wasSentSuccessfully && running_flag.load()) {
-      TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Pushing the Data Fragment for trigger number "
-                                  << data_fragment_ptr->get_trigger_number() << " onto the output queue";
-      try {
-        m_data_fragment_output_queue->push(std::move(data_fragment_ptr), m_queue_timeout);
-        wasSentSuccessfully = true;
-        m_sent_fragments++;
-      } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
-        std::ostringstream oss_warn;
-        oss_warn << "push to output queue \"" << m_data_fragment_output_queue->get_name() << "\"";
-        ers::warning(dunedaq::appfwk::QueueTimeoutExpired(
-          ERS_HERE,
-          get_name(),
-          oss_warn.str(),
-          std::chrono::duration_cast<std::chrono::milliseconds>(m_queue_timeout).count()));
-      }
-    }
-    */
-
-    // free(fake_data);
-
-    // TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Start of sleep while waiting for run Stop";
-    // std::this_thread::sleep_for(std::chrono::milliseconds(m_sleep_msec_while_running));
-    // TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": End of sleep while waiting for run Stop";
   }
 
   std::ostringstream oss_summ;
