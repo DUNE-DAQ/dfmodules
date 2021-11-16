@@ -35,10 +35,13 @@ public:
    */
   explicit TriggerDecisionReceiver(const std::string& name);
 
-  TriggerDecisionReceiver(const TriggerDecisionReceiver&) = delete;            ///< TriggerDecisionReceiver is not copy-constructible
-  TriggerDecisionReceiver& operator=(const TriggerDecisionReceiver&) = delete; ///< TriggerDecisionReceiver is not copy-assignable
-  TriggerDecisionReceiver(TriggerDecisionReceiver&&) = delete;                 ///< TriggerDecisionReceiver is not move-constructible
-  TriggerDecisionReceiver& operator=(TriggerDecisionReceiver&&) = delete;      ///< TriggerDecisionReceiver is not move-assignable
+  TriggerDecisionReceiver(const TriggerDecisionReceiver&) =
+    delete; ///< TriggerDecisionReceiver is not copy-constructible
+  TriggerDecisionReceiver& operator=(const TriggerDecisionReceiver&) =
+    delete;                                                    ///< TriggerDecisionReceiver is not copy-assignable
+  TriggerDecisionReceiver(TriggerDecisionReceiver&&) = delete; ///< TriggerDecisionReceiver is not move-constructible
+  TriggerDecisionReceiver& operator=(TriggerDecisionReceiver&&) =
+    delete; ///< TriggerDecisionReceiver is not move-assignable
 
   void init(const data_t&) override;
 

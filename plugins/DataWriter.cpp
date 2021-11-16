@@ -44,7 +44,7 @@ enum
 namespace dunedaq {
 namespace dfmodules {
 
-  using networkmanager::NetworkManager;
+using networkmanager::NetworkManager;
 
 DataWriter::DataWriter(const std::string& name)
   : dunedaq::appfwk::DAQModule(name)
@@ -63,7 +63,7 @@ void
 DataWriter::init(const data_t& init_data)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
-  auto qi = appfwk::queue_index(init_data, { "trigger_record_input_queue"});
+  auto qi = appfwk::queue_index(init_data, { "trigger_record_input_queue" });
   try {
     m_trigger_record_input_queue.reset(new trigrecsource_t(qi["trigger_record_input_queue"].inst));
   } catch (const ers::Issue& excpt) {
@@ -142,17 +142,17 @@ DataWriter::do_start(const data_t& payload)
   }
 
   m_seqno_counts.clear();
-  
+
   for (int ii = 0; ii < m_initial_tokens; ++ii) {
     dfmessages::TriggerDecisionToken token;
     token.run_number = m_run_number;
 
     auto serialised_token = dunedaq::serialization::serialize(token, dunedaq::serialization::kMsgPack);
-      
-    NetworkManager::get().send_to( m_trigger_decision_token_connection, 
-				   static_cast<const void*>( serialised_token.data() ), 
-				   serialised_token.size(), 
-				   m_queue_timeout ) ;
+
+    NetworkManager::get().send_to(m_trigger_decision_token_connection,
+                                  static_cast<const void*>(serialised_token.data()),
+                                  serialised_token.size(),
+                                  m_queue_timeout);
   }
 
   m_thread.start_working_thread(get_name());
@@ -370,14 +370,14 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
       dfmessages::TriggerDecisionToken token;
       token.run_number = m_run_number;
       token.trigger_number = trigger_record_ptr->get_header_ref().get_trigger_number();
-    
-    auto serialised_token = dunedaq::serialization::serialize(token, dunedaq::serialization::kMsgPack);
 
-    NetworkManager::get().send_to( m_trigger_decision_token_connection,
-                                   static_cast<const void*>( serialised_token.data() ),
-                                   serialised_token.size(),
-                                   m_queue_timeout ) ;
-   } 
+      auto serialised_token = dunedaq::serialization::serialize(token, dunedaq::serialization::kMsgPack);
+
+      NetworkManager::get().send_to(m_trigger_decision_token_connection,
+                                    static_cast<const void*>(serialised_token.data()),
+                                    serialised_token.size(),
+                                    m_queue_timeout);
+    }
   }
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_work() method";

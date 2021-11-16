@@ -177,7 +177,8 @@ FakeDataProd::do_work(std::atomic<bool>& running_flag)
     if (fake_data == nullptr) {
       throw dunedaq::dfmodules::MemoryAllocationFailed(ERS_HERE, get_name(), num_bytes_to_send);
     }
-    std::unique_ptr<daqdataformats::Fragment> data_fragment_ptr(new daqdataformats::Fragment(fake_data, num_bytes_to_send));
+    std::unique_ptr<daqdataformats::Fragment> data_fragment_ptr(
+      new daqdataformats::Fragment(fake_data, num_bytes_to_send));
     data_fragment_ptr->set_trigger_number(data_request.trigger_number);
     data_fragment_ptr->set_run_number(m_run_number);
     data_fragment_ptr->set_element_id(m_geoid);

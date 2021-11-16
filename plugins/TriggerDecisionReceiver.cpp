@@ -52,14 +52,13 @@ TriggerDecisionReceiver::TriggerDecisionReceiver(const std::string& name)
 }
 
 void
-TriggerDecisionReceiver::init(const data_t & data )
+TriggerDecisionReceiver::init(const data_t& data)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
 
-  auto qi = appfwk::queue_index(data, {"output"} ) ;
+  auto qi = appfwk::queue_index(data, { "output" });
 
-  m_triggerdecision_output_queue =
-    std::unique_ptr<triggerdecisionsink_t>(new triggerdecisionsink_t(qi["output"].inst));  
+  m_triggerdecision_output_queue = std::unique_ptr<triggerdecisionsink_t>(new triggerdecisionsink_t(qi["output"].inst));
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }

@@ -171,7 +171,7 @@ TPSetWriter::do_work(std::atomic<bool>& running_flag)
     frag.set_type(daqdataformats::FragmentType::kTriggerPrimitives);
 
     tpset_writer.write(static_cast<const char*>(frag.get_storage_location()), frag.get_size());
-    
+
     size_t num_longwords = 1 + ((frag.get_size() - 1) / sizeof(int64_t));
     size_t padding = (num_longwords * sizeof(int64_t)) - frag.get_size();
     char zero = 0;

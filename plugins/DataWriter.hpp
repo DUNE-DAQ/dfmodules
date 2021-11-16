@@ -14,9 +14,9 @@
 #include "appfwk/DAQModule.hpp"
 #include "appfwk/DAQSink.hpp"
 #include "appfwk/DAQSource.hpp"
-#include "toolbox/ThreadHelper.hpp"
 #include "daqdataformats/TriggerRecord.hpp"
 #include "dfmessages/TriggerDecisionToken.hpp"
+#include "toolbox/ThreadHelper.hpp"
 
 #include <chrono>
 #include <map>
