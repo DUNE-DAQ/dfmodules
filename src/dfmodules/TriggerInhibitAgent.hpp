@@ -15,10 +15,10 @@
 #include "appfwk/DAQSink.hpp"
 #include "appfwk/DAQSource.hpp"
 #include "appfwk/NamedObject.hpp"
+#include "appfwk/ThreadHelper.hpp"
 #include "daqdataformats/Types.hpp"
 #include "dfmessages/TriggerDecision.hpp"
 #include "dfmessages/TriggerInhibit.hpp"
-#include "toolbox/ThreadHelper.hpp"
 
 #include <atomic>
 #include <chrono>
@@ -65,7 +65,7 @@ public:
 
 private:
   // Threading
-  dunedaq::toolbox::ThreadHelper m_thread;
+  dunedaq::appfwk::ThreadHelper m_thread;
   void do_work(std::atomic<bool>&);
 
   // Configuration

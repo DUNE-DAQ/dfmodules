@@ -15,7 +15,7 @@
 #include "appfwk/DAQModule.hpp"
 #include "appfwk/DAQSink.hpp"
 #include "appfwk/DAQSource.hpp"
-#include "toolbox/ThreadHelper.hpp"
+#include "appfwk/ThreadHelper.hpp"
 
 #include <memory>
 #include <string>
@@ -72,8 +72,8 @@ private:
   void get_info(opmonlib::InfoCollector& ci, int level) override;
 
   // Threading
-  dunedaq::toolbox::ThreadHelper m_thread;
-  dunedaq::toolbox::ThreadHelper m_timesync_thread;
+  dunedaq::appfwk::ThreadHelper m_thread;
+  dunedaq::appfwk::ThreadHelper m_timesync_thread;
   void do_work(std::atomic<bool>&);
   void do_timesync(std::atomic<bool>&);
 
