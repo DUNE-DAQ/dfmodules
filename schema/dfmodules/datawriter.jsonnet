@@ -4,7 +4,7 @@ local s = moo.oschema.schema(ns);
 
 local types = {
     count : s.number("Count", "i4", doc="A count of not too many things"),
-
+    connection_name : s.string("connection_name"),
     dsparams: s.any("DataStoreParams", doc="Parameters that configure a data store"),
 
     flag: s.boolean("Flag", doc="Parameter that can be used to enable or disable functionality"),
@@ -24,6 +24,8 @@ local types = {
 		doc="The maximum time between retries of data writes, in microseconds"),
 	s.field("write_retry_time_increase_factor", self.count, "2",
 		doc="The factor that is used to increase the time between subsequent retries of data writes"),
+	s.field("token_connection", self.connection_name, "", 
+	         doc="Connection details to send trigger tockens to trigger modules")
     ], doc="DataWriter configuration parameters"),
 
 };

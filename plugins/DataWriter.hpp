@@ -72,8 +72,9 @@ private:
   // Queue(s)
   using trigrecsource_t = dunedaq::appfwk::DAQSource<std::unique_ptr<daqdataformats::TriggerRecord>>;
   std::unique_ptr<trigrecsource_t> m_trigger_record_input_queue;
-  using tokensink_t = dunedaq::appfwk::DAQSink<dfmessages::TriggerDecisionToken>;
-  std::unique_ptr<tokensink_t> m_trigger_decision_token_output_queue;
+
+  // Connection(s)
+  std::string m_trigger_decision_token_connection;
 
   // Worker(s)
   std::unique_ptr<DataStore> m_data_writer;
