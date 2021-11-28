@@ -43,16 +43,18 @@ ignored_logfile_problems={"dqm": ["client will not be able to connect to Kafka c
 confgen_name="minidaqapp.nanorc.mdapp_multiru_gen"
 # The arguments to pass to the config generator, excluding the json
 # output directory (the test framework handles that)
-confgen_arguments_base=[ "-d", "./frames.bin", "-o", ".", "-s", "10", "-n", str(number_of_data_producers), "-b", "1000", "-a", "1000"] + [ "--host-ru", "localhost" ] * number_of_readout_apps
+confgen_arguments_base=[ "-d", "./frames.bin", "-o", ".", "-s", "10", "-n", str(number_of_data_producers), "-b", "1000", "-a", "1000", "--latency-buffer-size", "50000"] + [ "--host-ru", "localhost" ] * number_of_readout_apps
 confgen_arguments={"WIB1_System": confgen_arguments_base,
                    "Software_TPG_System": confgen_arguments_base+["--enable-software-tpg"],
-                   "DQM-enabled_System": confgen_arguments_base+["--enable-dqm"]}
+                   "DQM_System": confgen_arguments_base+["--enable-dqm"],
+                   "Software_TPG_and_DQM_System": confgen_arguments_base+["--enable-software-tpg", "--enable-dqm"]
+                  }
 # The commands to run in nanorc, as a list
 nanorc_command_list="boot init conf".split()
-nanorc_command_list+="start                 101 wait ".split() + [str(run_duration)] + "stop --stop-wait 2 wait 12".split()
-nanorc_command_list+="start --resume-wait 4 102 wait ".split() + [str(run_duration)] + "stop               wait 12".split()
-nanorc_command_list+="start --resume-wait 2 103 wait ".split() + [str(run_duration)] + "stop --stop-wait 1 wait 12".split()
-nanorc_command_list+="start --resume-wait 1 104 wait ".split() + [str(run_duration)] + "stop --stop-wait 4 wait 12".split()
+nanorc_command_list+="start                 101 wait ".split() + [str(run_duration)] + "stop --stop-wait 2 wait 2".split()
+nanorc_command_list+="start --resume-wait 4 102 wait ".split() + [str(run_duration)] + "stop               wait 2".split()
+nanorc_command_list+="start --resume-wait 2 103 wait ".split() + [str(run_duration)] + "stop --stop-wait 1 wait 2".split()
+nanorc_command_list+="start --resume-wait 1 104 wait ".split() + [str(run_duration)] + "stop --stop-wait 4 wait 2".split()
 nanorc_command_list+="scrap terminate".split()
 
 # The tests themselves

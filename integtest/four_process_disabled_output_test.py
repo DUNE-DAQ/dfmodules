@@ -1,4 +1,6 @@
 import pytest
+import os
+import re
 
 import dfmodules.data_file_checks as data_file_checks
 import integrationtest.log_file_checks as log_file_checks
@@ -37,7 +39,7 @@ triggertp_frag_params={"fragment_type_description": "Trigger TP",
 confgen_name="minidaqapp.nanorc.mdapp_multiru_gen"
 # The arguments to pass to the config generator, excluding the json
 # output directory (the test framework handles that)
-confgen_arguments_base=[ "-d", "./frames.bin", "-o", ".", "-s", "10", "-n", str(number_of_data_producers), "-b", "1000", "-a", "1000", "--host-ru", "localhost"]
+confgen_arguments_base=[ "-d", "./frames.bin", "-o", ".", "-s", "10", "-n", str(number_of_data_producers), "-b", "1000", "-a", "1000", "--latency-buffer-size", "50000", "--host-ru", "localhost"]
 confgen_arguments={"WIB1_System": confgen_arguments_base,
                    "Software_TPG_System": confgen_arguments_base+["--enable-software-tpg"]}
 # The commands to run in nanorc, as a list
@@ -51,13 +53,21 @@ nanorc_command_list+="scrap terminate".split()
 # The tests themselves
 
 def test_nanorc_success(run_nanorc):
+    current_test=os.environ.get('PYTEST_CURRENT_TEST')
+    match_obj = re.search(r".*\[(.+)\].*", current_test)
+    if match_obj:
+        current_test = match_obj.group(1)
+    banner_line = re.sub(".", "=", current_test)
+    print(banner_line)
+    print(current_test)
+    print(banner_line)
     # Check that nanorc completed correctly
     assert run_nanorc.completed_process.returncode==0
 
 def test_log_files(run_nanorc):
     if check_for_logfile_errors:
         # Check that there are no warnings or errors in the log files
-        assert log_file_checks.logs_are_error_free(run_nanorc.log_files, True, True)
+        assert log_file_checks.logs_are_error_free(run_nanorc.log_files)
 
 def test_data_file(run_nanorc):
     local_expected_event_count=expected_event_count
