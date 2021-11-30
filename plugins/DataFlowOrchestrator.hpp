@@ -13,7 +13,6 @@
 
 #include "appfwk/DAQModule.hpp"
 #include "appfwk/DAQSink.hpp"
-#include "ipm/Receiver.hpp"
 
 #include <map>
 #include <memory>
@@ -51,18 +50,24 @@ private:
 
   void get_info(opmonlib::InfoCollector& ci, int level) override;
 
-  void dispatch_request(ipm::Receiver::Response message);
+  void receive_tokens(ipm::Receiver::Response message);
+
+  void dispatch_request( dfmessages::DataRequest && );
+
 
   // Configuration
   std::chrono::milliseconds m_queue_timeout;
   dunedaq::daqdataformats::run_number_t m_run_number;
-  std::string m_connection_name;
+  int32_t initial_tokens;
+  std::string td_connection_name = "";
+  std::string token_connection_name = "";
 
   // Queue(s)
-  using datareqsink_t = dunedaq::appfwk::DAQSink<dfmessages::DataRequest>;
-  std::map<daqdataformats::GeoID, std::unique_ptr<datareqsink_t>> m_data_request_output_queues;
+  using datareqsource_t = dunedaq::appfwk::DAQSource<dfmessages::DataRequest>;
+  std::unique_ptr<datareqsource_t> m_data_request_queue = nullptr ;
 
-  std::atomic<uint64_t> m_received_requests{ 0 }; // NOLINT (build/unsigned)
+  std::atomic<uint64_t> m_received_tokenss{ 0 }; // NOLINT (build/unsigned)
+  std::atomic<uint64_t> m_sent_requests{ 0 }; // NOLINT (build/unsigned)
 };
 } // namespace dfmodules
 } // namespace dunedaq

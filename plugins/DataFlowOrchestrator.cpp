@@ -43,7 +43,7 @@ DataFlowOrchestrator::DataFlowOrchestrator(const std::string& name)
   : dunedaq::appfwk::DAQModule(name)
   , m_queue_timeout(100)
   , m_run_number(0)
-  , m_data_request_output_queues()
+  , initial_tokens(1)
 {
   register_command("conf", &DataFlowOrchestrator::do_conf);
   register_command("start", &DataFlowOrchestrator::do_start);
@@ -57,21 +57,17 @@ DataFlowOrchestrator::init(const data_t& init_data)
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
 
   //----------------------
-  // Get dynamic queues
+  // Get queue
   //----------------------
 
-  // set names for the fragment queue(s)
-  auto ini = init_data.get<appfwk::app::ModInit>();
+  auto qi = appfwk::queue_index(init_data, { "trigger_decision_queue"} ) ;
 
-  // Test for valid output data request queues
-  for (const auto& qitem : ini.qinfos) {
-    if (qitem.name.rfind("data_request_") == 0) {
-      try {
-        datareqsink_t temp(qitem.inst);
-      } catch (const ers::Issue& excpt) {
-        throw InvalidQueueFatalError(ERS_HERE, get_name(), qitem.name, excpt);
-      }
-    }
+  try {
+    auto temp_info = qi["trigger_decision_queue"];
+    std::string temp_name = temp_info.inst;
+    m_data_request_queue.reset( new datareqsource_t(temp_name) );
+  } catch (const ers::Issue& excpt) {
+    throw InvalidQueueFatalError(ERS_HERE, get_name(), "trigger_decision_input_queue", excpt);
   }
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
@@ -84,7 +80,7 @@ DataFlowOrchestrator::do_conf(const data_t& payload)
 
   m_data_request_output_queues.clear();
 
-  requestreceiver::ConfParams parsed_conf = payload.get<requestreceiver::ConfParams>();
+  datafloworchestrator::ConfParams parsed_conf = payload.get<datafloworchestrator::ConfParams>();
 
   for (auto const& entry : parsed_conf.map) {
 
@@ -149,7 +145,7 @@ DataFlowOrchestrator::do_scrap(const data_t& /*args*/)
 void
 DataFlowOrchestrator::get_info(opmonlib::InfoCollector& ci, int /*level*/)
 {
-  requestreceiverinfo::Info info;
+  datafloworchestratorinfo::Info info;
   info.requests_received = m_received_requests;
   ci.add(info);
 }
