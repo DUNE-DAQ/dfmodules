@@ -233,24 +233,6 @@ dispatch( dfmessages::TriggerDecision && decision ) {
   return wasSentSuccessfully;
 }
 
-void
-DataFlowOrchestrator::dispatch_request(ipm::Receiver::Response message)
-{
-  auto request = serialization::deserialize<dfmessages::DataRequest>(message.data);
-  TLOG_DEBUG(10) << get_name() << "Received data request: " << request.trigger_number
-                 << " Component: " << request.request_information;
-
-  auto component = request.request_information.component;
-  if (m_data_request_output_queues.count(component)) {
-    TLOG_DEBUG(10) << get_name() << "Dispatch request to queue "
-                   << m_data_request_output_queues.at(component)->get_name();
-    m_data_request_output_queues.at(component)->push(request, m_queue_timeout);
-  } else {
-    ers::error(UnknownGeoID(ERS_HERE, component));
-  }
-  m_received_requests++;
-}
-
 } // namespace dfmodules
 } // namespace dunedaq
 
