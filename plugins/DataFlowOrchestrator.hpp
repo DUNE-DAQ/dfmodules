@@ -10,9 +10,11 @@
 #define DFMODULES_PLUGINS_DATAFLOWORCHESTRATOR_HPP_
 
 #include "dfmessages/DataRequest.hpp"
+#include "dfmessages/TriggerDecision.hpp"
+#include "ipm/Receiver.hpp"
 
 #include "appfwk/DAQModule.hpp"
-#include "appfwk/DAQSink.hpp"
+#include "appfwk/DAQSource.hpp"
 
 #include <map>
 #include <memory>
@@ -34,10 +36,11 @@ public:
    */
   explicit DataFlowOrchestrator(const std::string& name);
 
-  DataFlowOrchestrator(const DataFlowOrchestrator&) = delete;            ///< DataFlowOrchestrator is not copy-constructible
-  DataFlowOrchestrator& operator=(const DataFlowOrchestrator&) = delete; ///< DataFlowOrchestrator is not copy-assignable
-  DataFlowOrchestrator(DataFlowOrchestrator&&) = delete;                 ///< DataFlowOrchestrator is not move-constructible
-  DataFlowOrchestrator& operator=(DataFlowOrchestrator&&) = delete;      ///< DataFlowOrchestrator is not move-assignable
+  DataFlowOrchestrator(const DataFlowOrchestrator&) = delete; ///< DataFlowOrchestrator is not copy-constructible
+  DataFlowOrchestrator& operator=(const DataFlowOrchestrator&) =
+    delete;                                                         ///< DataFlowOrchestrator is not copy-assignable
+  DataFlowOrchestrator(DataFlowOrchestrator&&) = delete;            ///< DataFlowOrchestrator is not move-constructible
+  DataFlowOrchestrator& operator=(DataFlowOrchestrator&&) = delete; ///< DataFlowOrchestrator is not move-assignable
 
   void init(const data_t&) override;
 
@@ -50,14 +53,13 @@ private:
 
   void get_info(opmonlib::InfoCollector& ci, int level) override;
 
-  void send_initial_triggers() noexcept ;
+  void send_initial_triggers();
 
-  bool extract_a_decision( dfmessages::TriggerDecision & ) noexcept ;
+  bool extract_a_decision(dfmessages::TriggerDecision&);
 
-  void receive_tokens(ipm::Receiver::Response message) noexcept ;
+  void receive_tokens(ipm::Receiver::Response message);
 
-  bool dispatch( dfmessages::TriggerDecision && ) noexcept ;
-
+  bool dispatch(dfmessages::TriggerDecision&&);
 
   // Configuration
   std::chrono::milliseconds m_queue_timeout;
@@ -68,11 +70,11 @@ private:
 
   // Queue(s)
   using triggerdecisionsource_t = dunedaq::appfwk::DAQSource<dfmessages::TriggerDecision>;
-  std::unique_ptr<datareqsource_t> m_data_request_queue = nullptr ;
+  std::unique_ptr<triggerdecisionsource_t> m_trigger_decision_queue = nullptr;
 
-  std::atomic<bool>     m_is_running{false};
+  std::atomic<bool> m_is_running{ false };
   std::atomic<uint64_t> m_received_tokens{ 0 }; // NOLINT (build/unsigned)
-  std::atomic<uint64_t> m_sent_requests{ 0 }; // NOLINT (build/unsigned)
+  std::atomic<uint64_t> m_sent_decisions{ 0 };   // NOLINT (build/unsigned)
 };
 } // namespace dfmodules
 } // namespace dunedaq
