@@ -13,6 +13,7 @@
 #define DFMODULES_SRC_DFMODULES_COMMONISSUES_HPP_
 
 #include "appfwk/DAQModule.hpp" // should eventually include "logging/Logging.hpp"
+#include "daqdataformats/GeoID.hpp"
 #include "ers/Issue.hpp"
 #include "logging/Logging.hpp" // this should eventually be included in appfwk
 
@@ -64,6 +65,23 @@ ERS_DECLARE_ISSUE_BASE(dfmodules,
                        ((std::string)name),
                        ((size_t)run_number))
 
+/**
+ * @brief Unknown GeoID
+ */
+ERS_DECLARE_ISSUE(dfmodules,    ///< Namespace
+                  UnknownGeoID, ///< Issue class name
+                  "Unknown GeoID: " << geo_id,
+                  ((daqdataformats::GeoID)geo_id) ///< Message parameters
+)
+
+/**
+ * @brief Invalid System Type
+ */
+ERS_DECLARE_ISSUE(dfmodules,         ///< Namespace
+                  InvalidSystemType, ///< Issue class name
+                  "Unknown system type " << type,
+                  ((std::string)type) ///< Message parameters
+)
 // Re-enable coverage checking LCOV_EXCL_STOP
 
 } // namespace dunedaq

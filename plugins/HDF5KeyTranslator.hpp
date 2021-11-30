@@ -46,7 +46,7 @@ ERS_DECLARE_ISSUE_BASE(dfmodules,
                        "Invalid detector group type ("
                          << group_type << ") requested when attempting to determine the HDF5 Group and DataSet path.",
                        ((std::string)name),
-                       ((int)group_type))
+                       ((int)group_type)) // NOLINT
 
 namespace dfmodules {
 
@@ -63,7 +63,7 @@ public:
     int digits_for_sequence_number;
   };
 
-  HDF5KeyTranslator(const hdf5datastore::ConfParams& config_params)
+  explicit HDF5KeyTranslator(const hdf5datastore::ConfParams& config_params)
   {
     m_data_record_params.trigger_record_name_prefix = config_params.file_layout_parameters.trigger_record_name_prefix;
     m_data_record_params.digits_for_trigger_number = config_params.file_layout_parameters.digits_for_trigger_number;

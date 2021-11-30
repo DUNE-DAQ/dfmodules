@@ -8,8 +8,8 @@
  * received with this code.
  */
 
-#ifndef DFMODULES_TEST_PLUGINS_TPSETWRITER_HPP_
-#define DFMODULES_TEST_PLUGINS_TPSETWRITER_HPP_
+#ifndef DFMODULES_PLUGINS_TPSETWRITER_HPP_
+#define DFMODULES_PLUGINS_TPSETWRITER_HPP_
 
 #include "appfwk/DAQModule.hpp"
 #include "appfwk/DAQSource.hpp"
@@ -17,6 +17,7 @@
 #include "trigger/TPSet.hpp"
 
 #include <memory>
+#include <string>
 
 namespace dunedaq {
 namespace dfmodules {
@@ -63,4 +64,4 @@ private:
 } // namespace dfmodules
 } // namespace dunedaq
 
-#endif // DFMODULES_TEST_PLUGINS_TPSETWRITER_HPP_
+#endif // DFMODULES_PLUGINS_TPSETWRITER_HPP_
