@@ -50,23 +50,28 @@ private:
 
   void get_info(opmonlib::InfoCollector& ci, int level) override;
 
-  void receive_tokens(ipm::Receiver::Response message);
+  void send_initial_triggers() noexcept ;
 
-  void dispatch_request( dfmessages::DataRequest && );
+  bool extract_a_decision( dfmessages::TriggerDecision & ) noexcept ;
+
+  void receive_tokens(ipm::Receiver::Response message) noexcept ;
+
+  bool dispatch( dfmessages::TriggerDecision && ) noexcept ;
 
 
   // Configuration
   std::chrono::milliseconds m_queue_timeout;
   dunedaq::daqdataformats::run_number_t m_run_number;
-  int32_t initial_tokens;
-  std::string td_connection_name = "";
-  std::string token_connection_name = "";
+  int32_t m_initial_tokens;
+  std::string m_td_connection_name = "";
+  std::string m_token_connection_name = "";
 
   // Queue(s)
-  using datareqsource_t = dunedaq::appfwk::DAQSource<dfmessages::DataRequest>;
+  using triggerdecisionsource_t = dunedaq::appfwk::DAQSource<dfmessages::TriggerDecision>;
   std::unique_ptr<datareqsource_t> m_data_request_queue = nullptr ;
 
-  std::atomic<uint64_t> m_received_tokenss{ 0 }; // NOLINT (build/unsigned)
+  std::atomic<bool>     m_is_running{false};
+  std::atomic<uint64_t> m_received_tokens{ 0 }; // NOLINT (build/unsigned)
   std::atomic<uint64_t> m_sent_requests{ 0 }; // NOLINT (build/unsigned)
 };
 } // namespace dfmodules
