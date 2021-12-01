@@ -107,7 +107,9 @@ DataFlowOrchestrator::do_start(const data_t& payload)
 
   m_is_running.store(true);
 
-  std::async(std::launch::async, std::bind(&DataFlowOrchestrator::send_initial_triggers, this));
+  TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Sending initial triggers";
+  auto initial_tokens_thread = std::thread(&DataFlowOrchestrator::send_initial_triggers, this);
+  initial_tokens_thread.detach();
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
 }
@@ -119,9 +121,9 @@ DataFlowOrchestrator::do_stop(const data_t& /*args*/)
 
   m_is_running.store(false);
 
-  while ( m_trigger_decision_queue -> can_pop() ) {
+  while (m_trigger_decision_queue->can_pop()) {
     dfmessages::TriggerDecision decision;
-    if ( extract_a_decision(decision) ) {
+    if (extract_a_decision(decision)) {
       dispatch(std::move(decision));
     }
   }
@@ -156,6 +158,7 @@ DataFlowOrchestrator::get_info(opmonlib::InfoCollector& ci, int /*level*/)
 void
 DataFlowOrchestrator::send_initial_triggers()
 {
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering send_initial_triggers() method";
 
   for (decltype(m_initial_tokens) i = 0; (i < m_initial_tokens) && m_is_running.load();) {
 
@@ -167,6 +170,7 @@ DataFlowOrchestrator::send_initial_triggers()
       }
     }
   }
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting send_initial_triggers() method";
 }
 
 bool
@@ -200,7 +204,6 @@ DataFlowOrchestrator::receive_tokens(ipm::Receiver::Response message)
 
   auto token = serialization::deserialize<dfmessages::TriggerDecisionToken>(message.data);
   ++m_received_tokens;
-  
 
   if (token.run_number == m_run_number) {
 
@@ -216,6 +219,7 @@ bool
 DataFlowOrchestrator::dispatch(dfmessages::TriggerDecision&& decision)
 {
 
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering dispatch() method";
   auto serialised_decision = dunedaq::serialization::serialize(decision, dunedaq::serialization::kMsgPack);
 
   bool wasSentSuccessfully = false;
@@ -223,9 +227,9 @@ DataFlowOrchestrator::dispatch(dfmessages::TriggerDecision&& decision)
 
     try {
       networkmanager::NetworkManager::get().send_to(m_td_connection_name,
-                                    static_cast<const void*>(serialised_decision.data()),
-                                    serialised_decision.size(),
-                                    m_queue_timeout);
+                                                    static_cast<const void*>(serialised_decision.data()),
+                                                    serialised_decision.size(),
+                                                    m_queue_timeout);
       wasSentSuccessfully = true;
       ++m_sent_decisions;
     } catch (const ers::Issue& excpt) {
@@ -236,6 +240,7 @@ DataFlowOrchestrator::dispatch(dfmessages::TriggerDecision&& decision)
 
   } while (!wasSentSuccessfully && m_is_running.load());
 
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting dispatch() method";
   return wasSentSuccessfully;
 }
 
