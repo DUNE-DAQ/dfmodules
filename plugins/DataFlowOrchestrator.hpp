@@ -75,6 +75,7 @@ private:
   std::atomic<bool> m_is_running{ false };
   std::atomic<uint64_t> m_received_tokens{ 0 }; // NOLINT (build/unsigned)
   std::atomic<uint64_t> m_sent_decisions{ 0 };   // NOLINT (build/unsigned)
+  std::atomic<uint64_t> m_received_decisions{ 0 };   // NOLINT (build/unsigned)
 };
 } // namespace dfmodules
 } // namespace dunedaq

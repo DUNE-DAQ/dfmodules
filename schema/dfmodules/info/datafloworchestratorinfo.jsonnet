@@ -10,6 +10,7 @@ local info = {
 
    info: s.record("Info", [
        s.field("tokens_received", self.uint8, 0, doc="Number of received tokens"),
+       s.field("decisions_received", self.uint8, 0, doc="Number of trigger decisions obtained from trigger"),
        s.field("decisions_sent", self.uint8, 0, doc="Number of sent trigger decisions"),
    ], doc="Data Flow Orchestrator information")
 };

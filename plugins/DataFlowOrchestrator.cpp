@@ -147,8 +147,9 @@ void
 DataFlowOrchestrator::get_info(opmonlib::InfoCollector& ci, int /*level*/)
 {
   datafloworchestratorinfo::Info info;
-  info.tokens_received = m_received_tokens;
-  info.decisions_sent = m_sent_decisions;
+  info.tokens_received = m_received_tokens.exchange(0);
+  info.decisions_sent = m_sent_decisions.exchange(0);
+  info.decisions_received = m_received_decisions.exchange(0);
   ci.add(info);
 }
 
@@ -181,6 +182,7 @@ DataFlowOrchestrator::extract_a_decision(dfmessages::TriggerDecision& decision)
       TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Popped the Trigger Decision with number "
                                   << decision.trigger_number << " off the input queue";
       got_something = true;
+      ++m_received_decisions;
     } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
       // it is perfectly reasonable that there might be no data in the queue
       // some fraction of the times that we check, so we just continue on and try again
@@ -197,6 +199,8 @@ DataFlowOrchestrator::receive_tokens(ipm::Receiver::Response message)
 {
 
   auto token = serialization::deserialize<dfmessages::TriggerDecisionToken>(message.data);
+  ++m_received_tokens;
+  
 
   if (token.run_number == m_run_number) {
 
@@ -223,6 +227,7 @@ DataFlowOrchestrator::dispatch(dfmessages::TriggerDecision&& decision)
                                     serialised_decision.size(),
                                     m_queue_timeout);
       wasSentSuccessfully = true;
+      ++m_sent_decisions;
     } catch (const ers::Issue& excpt) {
       std::ostringstream oss_warn;
       oss_warn << "Send to connection \"" << m_td_connection_name << "\" failed";
