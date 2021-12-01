@@ -119,6 +119,13 @@ DataFlowOrchestrator::do_stop(const data_t& /*args*/)
 
   m_is_running.store(false);
 
+  while ( m_trigger_decision_queue -> can_pop() ) {
+    dfmessages::TriggerDecision decision;
+    if ( extract_a_decision(decision) ) {
+      dispatch(std::move(decision));
+    }
+  }
+
   networkmanager::NetworkManager::get().clear_callback(m_token_connection_name);
 
   TLOG() << get_name() << " successfully stopped";
