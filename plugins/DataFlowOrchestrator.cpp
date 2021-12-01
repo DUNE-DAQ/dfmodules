@@ -160,7 +160,8 @@ DataFlowOrchestrator::send_initial_triggers()
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering send_initial_triggers() method";
 
-  for (decltype(m_initial_tokens) i = 0; (i < m_initial_tokens) && m_is_running.load();) {
+  decltype(m_initial_tokens) i = 0 ;
+  for (; (i < m_initial_tokens) && m_is_running.load();) {
 
     dfmessages::TriggerDecision decision;
     if (extract_a_decision(decision)) {
@@ -170,6 +171,8 @@ DataFlowOrchestrator::send_initial_triggers()
       }
     }
   }
+
+  ers::info( TriggerInjected(ERS_HERE,i));
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting send_initial_triggers() method";
 }
 

@@ -9,6 +9,8 @@
 #ifndef DFMODULES_PLUGINS_DATAFLOWORCHESTRATOR_HPP_
 #define DFMODULES_PLUGINS_DATAFLOWORCHESTRATOR_HPP_
 
+#include "dfmodules/datafloworchestrator/Structs.hpp"
+
 #include "dfmessages/DataRequest.hpp"
 #include "dfmessages/TriggerDecision.hpp"
 #include "ipm/Receiver.hpp"
@@ -22,6 +24,11 @@
 #include <vector>
 
 namespace dunedaq {
+
+  ERS_DECLARE_ISSUE(dfmodules, TriggerInjected, "Injected " << count << " triggers in the system", 
+		  ((decltype(dfmodules::datafloworchestrator::ConfParams::initial_token_count))count))
+
+
 namespace dfmodules {
 
 /**
@@ -64,7 +71,7 @@ private:
   // Configuration
   std::chrono::milliseconds m_queue_timeout;
   dunedaq::daqdataformats::run_number_t m_run_number;
-  int32_t m_initial_tokens;
+  decltype(datafloworchestrator::ConfParams::initial_token_count) m_initial_tokens;
   std::string m_td_connection_name = "";
   std::string m_token_connection_name = "";
 
