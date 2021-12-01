@@ -21,7 +21,7 @@ find_package(triggeralgs REQUIRED)
 find_package(trigger REQUIRED)
 find_package(serialization REQUIRED)
 find_package(readoutlibs REQUIRED)
-find_package(Boost COMPONENTS iostreams REQUIRED)
+find_package(Boost COMPONENTS iostreams unit_test_framework REQUIRED)
 
 daq_codegen( *.jsonnet TEMPLATES Structs.hpp.j2 Nljs.hpp.j2 )
 daq_codegen( info/*.jsonnet DEP_PKGS opmonlib TEMPLATES opmonlib/InfoStructs.hpp.j2 opmonlib/InfoNljs.hpp.j2 )
