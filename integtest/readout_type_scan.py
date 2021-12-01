@@ -40,7 +40,9 @@ triggertp_frag_params={"fragment_type_description": "Trigger TP",
                        "min_size_bytes": 80, "max_size_bytes": 80}
 ignored_logfile_problems={"dqm": ["client will not be able to connect to Kafka cluster",
                                   "Unexpected Trigger Decision", "Unexpected Fragment"],
-                          "trigger": ["zipped_tpset_q: Unable to push within timeout period"]}
+                          "trigger": ["zipped_tpset_q: Unable to push within timeout period"],
+                          "ruemu": ["Configuration Error: Binary file contains more data than expected"],
+                         }
 
 # The next three variable declarations *must* be present as globals in the test
 # file. They're read by the "fixtures" in conftest.py to determine how
