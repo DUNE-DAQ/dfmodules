@@ -161,11 +161,11 @@ def check_fragment_sizes(datafile, params):
 def check_link_presence(datafile, n_links):
     "Check that there are n_links links in each event in file"
     passed=False
-    print("The check_link_presence test has been deprecated. Please use check_fragment_count instead."
+    print("The check_link_presence test has been deprecated. Please use check_fragment_count instead.")
     return passed
 
 def check_fragment_presence(datafile, params):
     "Checking that there are the expected fragments in each event in file"
     passed=False
-    print("The check_fragment_presence test has been deprecated. Please use check_fragment_count instead."
+    print("The check_fragment_presence test has been deprecated. Please use check_fragment_count instead.")
     return passed
