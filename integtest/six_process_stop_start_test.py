@@ -6,7 +6,7 @@ import dfmodules.data_file_checks as data_file_checks
 import integrationtest.log_file_checks as log_file_checks
 
 # Values that help determine the running conditions
-number_of_data_producers=5
+number_of_data_producers=3
 number_of_readout_apps=3
 run_duration=20  # seconds
 
@@ -33,7 +33,9 @@ triggertp_frag_params={"fragment_type_description": "Trigger TP",
                        "min_size_bytes": 80, "max_size_bytes": 80}
 ignored_logfile_problems={"dqm": ["client will not be able to connect to Kafka cluster",
                                   "Unexpected Trigger Decision", "Unexpected Fragment"],
-                          "trigger": ["zipped_tpset_q: Unable to push within timeout period"]}
+                          "trigger": ["zipped_tpset_q: Unable to push within timeout period"],
+                          "ruemu": [r"Trigger Matching result with empty fragment: TS match result on link .+Requestor=\S+fragx_dqm"],
+                         }
 
 # The next three variable declarations *must* be present as globals in the test
 # file. They're read by the "fixtures" in conftest.py to determine how
@@ -43,7 +45,7 @@ ignored_logfile_problems={"dqm": ["client will not be able to connect to Kafka c
 confgen_name="minidaqapp.nanorc.mdapp_multiru_gen"
 # The arguments to pass to the config generator, excluding the json
 # output directory (the test framework handles that)
-confgen_arguments_base=[ "-d", "./frames.bin", "-o", ".", "-s", "10", "-n", str(number_of_data_producers), "-b", "1000", "-a", "1000", "--latency-buffer-size", "50000"] + [ "--host-ru", "localhost" ] * number_of_readout_apps
+confgen_arguments_base=[ "-d", "./frames.bin", "-o", ".", "-s", "10", "-n", str(number_of_data_producers), "-b", "1000", "-a", "1000"] + [ "--host-ru", "localhost" ] * number_of_readout_apps
 confgen_arguments={"WIB1_System": confgen_arguments_base,
                    "Software_TPG_System": confgen_arguments_base+["--enable-software-tpg"],
                    "DQM_System": confgen_arguments_base+["--enable-dqm"],

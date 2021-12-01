@@ -50,7 +50,7 @@ ignored_logfile_problems={"dqm": ["client will not be able to connect to Kafka c
 confgen_name="minidaqapp.nanorc.mdapp_multiru_gen"
 # The arguments to pass to the config generator, excluding the json
 # output directory (the test framework handles that)
-confgen_arguments_base=[ "-d", "./frames.bin", "-o", ".", "-s", "10", "-n", str(number_of_data_producers), "-b", "1000", "-a", "1000", "--latency-buffer-size", "50000", "--host-ru", "localhost"]
+confgen_arguments_base=[ "-d", "./frames.bin", "-o", ".", "-s", "10", "-n", str(number_of_data_producers), "-b", "1000", "-a", "1000", "--host-ru", "localhost"]
 confgen_arguments={"WIB1_System": confgen_arguments_base, 
                    "Software_TPG_System": confgen_arguments_base+["--enable-software-tpg"], 
                    "DQM_System": confgen_arguments_base+["--enable-dqm"], 
