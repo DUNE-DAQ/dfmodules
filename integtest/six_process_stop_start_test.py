@@ -53,10 +53,10 @@ confgen_arguments={"WIB1_System": confgen_arguments_base,
                   }
 # The commands to run in nanorc, as a list
 nanorc_command_list="boot init conf".split()
-nanorc_command_list+="start                 101 wait ".split() + [str(run_duration)] + "stop --stop-wait 2 wait 2".split()
-nanorc_command_list+="start --resume-wait 4 102 wait ".split() + [str(run_duration)] + "stop               wait 2".split()
-nanorc_command_list+="start --resume-wait 2 103 wait ".split() + [str(run_duration)] + "stop --stop-wait 1 wait 2".split()
-nanorc_command_list+="start --resume-wait 1 104 wait ".split() + [str(run_duration)] + "stop --stop-wait 4 wait 2".split()
+nanorc_command_list+="start                 101 wait ".split() + [str(run_duration)] + "stop --stop-wait 2 wait 12".split()
+nanorc_command_list+="start --resume-wait 4 102 wait ".split() + [str(run_duration)] + "stop               wait 12".split()
+nanorc_command_list+="start --resume-wait 2 103 wait ".split() + [str(run_duration)] + "stop --stop-wait 1 wait 12".split()
+nanorc_command_list+="start --resume-wait 1 104 wait ".split() + [str(run_duration)] + "stop --stop-wait 4 wait 12".split()
 nanorc_command_list+="scrap terminate".split()
 
 # The tests themselves
