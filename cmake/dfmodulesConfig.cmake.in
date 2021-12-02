@@ -11,6 +11,16 @@ find_dependency(HighFive)
 find_dependency(appfwk)
 find_dependency(dfmessages)
 find_dependency(logging)
+find_dependency(ers)
+find_dependency(dfmessages)
+find_dependency(networkmanager)
+find_dependency(opmonlib)
+find_dependency(triggeralgs)
+find_dependency(trigger)
+find_dependency(serialization)
+find_dependency(readoutlibs)
+find_dependency(Boost COMPONENTS iostreams)
+
 
 # Figure out whether or not this dependency is an installed package or
 # in repo form
