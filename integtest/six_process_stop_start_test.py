@@ -1,10 +1,12 @@
 import pytest
+import os
+import re
 
 import dfmodules.data_file_checks as data_file_checks
 import integrationtest.log_file_checks as log_file_checks
 
 # Values that help determine the running conditions
-number_of_data_producers=5
+number_of_data_producers=3
 number_of_readout_apps=3
 run_duration=20  # seconds
 
@@ -29,6 +31,11 @@ triggertp_frag_params={"fragment_type_description": "Trigger TP",
                        "hdf5_detector_group": "Trigger", "hdf5_region_prefix": "Region",
                        "expected_fragment_count": (number_of_data_producers*number_of_readout_apps),
                        "min_size_bytes": 80, "max_size_bytes": 80}
+ignored_logfile_problems={"dqm": ["client will not be able to connect to Kafka cluster",
+                                  "Unexpected Trigger Decision", "Unexpected Fragment"],
+                          "trigger": ["zipped_tpset_q: Unable to push within timeout period"],
+                          "ruemu": [r"Trigger Matching result with empty fragment: TS match result on link .+Requestor=\S+fragx_dqm"],
+                         }
 
 # The next three variable declarations *must* be present as globals in the test
 # file. They're read by the "fixtures" in conftest.py to determine how
@@ -41,7 +48,9 @@ confgen_name="minidaqapp.nanorc.mdapp_multiru_gen"
 confgen_arguments_base=[ "-d", "./frames.bin", "-o", ".", "-s", "10", "-n", str(number_of_data_producers), "-b", "1000", "-a", "1000"] + [ "--host-ru", "localhost" ] * number_of_readout_apps
 confgen_arguments={"WIB1_System": confgen_arguments_base,
                    "Software_TPG_System": confgen_arguments_base+["--enable-software-tpg"],
-                   "DQM-enabled_System": confgen_arguments_base+["--enable-dqm"]}
+                   "DQM_System": confgen_arguments_base+["--enable-dqm"],
+                   "Software_TPG_and_DQM_System": confgen_arguments_base+["--enable-software-tpg", "--enable-dqm"]
+                  }
 # The commands to run in nanorc, as a list
 nanorc_command_list="boot init conf".split()
 nanorc_command_list+="start                 101 wait ".split() + [str(run_duration)] + "stop --stop-wait 2 wait 12".split()
@@ -53,17 +62,23 @@ nanorc_command_list+="scrap terminate".split()
 # The tests themselves
 
 def test_nanorc_success(run_nanorc):
+    current_test=os.environ.get('PYTEST_CURRENT_TEST')
+    match_obj = re.search(r".*\[(.+)\].*", current_test)
+    if match_obj:
+        current_test = match_obj.group(1)
+    banner_line = re.sub(".", "=", current_test)
+    print(banner_line)
+    print(current_test)
+    print(banner_line)
     # Check that nanorc completed correctly
     assert run_nanorc.completed_process.returncode==0
 
 def test_log_files(run_nanorc):
     local_check_flag=check_for_logfile_errors
-    if "--enable-dqm" in run_nanorc.confgen_arguments:
-        local_check_flag=False
 
     if local_check_flag:
         # Check that there are no warnings or errors in the log files
-        assert log_file_checks.logs_are_error_free(run_nanorc.log_files)
+        assert log_file_checks.logs_are_error_free(run_nanorc.log_files, True, True, ignored_logfile_problems)
 
 def test_data_file(run_nanorc):
     local_expected_event_count=expected_event_count
