@@ -58,6 +58,8 @@ public:
   void complete_assignment(daqdataformats::trigger_number_t trigger_number,
                            std::function<void(nlohmann::json&)> metadata_fun = nullptr);
 
+  std::chrono::microseconds average_latency(std::chrono::steady_clock::time_point since) const;
+
 private:
   std::atomic<size_t> m_num_slots;
   std::list<std::shared_ptr<AssignedTriggerDecision>> m_assigned_trigger_decisions;
@@ -65,6 +67,7 @@ private:
 
   // TODO: Eric Flumerfelt <eflumerf@github.com> 03-Dec-2021: Replace with circular buffer
   std::list<std::pair<std::chrono::steady_clock::time_point, std::chrono::microseconds>> m_latency_info;
+  mutable std::mutex m_latency_info_mutex;
 
   nlohmann::json m_metadata;
   std::string m_connection_name;

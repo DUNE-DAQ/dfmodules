@@ -11,12 +11,15 @@
 
 #include "dfmodules/datafloworchestrator/Structs.hpp"
 
+#include "dfmodules/DataflowApplicationData.hpp"
+
 #include "dfmessages/DataRequest.hpp"
 #include "dfmessages/TriggerDecision.hpp"
 #include "ipm/Receiver.hpp"
 
 #include "appfwk/DAQModule.hpp"
 #include "appfwk/DAQSource.hpp"
+#include "appfwk/ThreadHelper.hpp"
 
 #include <map>
 #include <memory>
@@ -25,9 +28,10 @@
 
 namespace dunedaq {
 
-  ERS_DECLARE_ISSUE(dfmodules, TriggerInjected, "Injected " << count << " triggers in the system", 
-		  ((decltype(dfmodules::datafloworchestrator::ConfParams::initial_token_count))count))
-
+ERS_DECLARE_ISSUE(dfmodules,
+                  TriggerInjected,
+                  "Injected " << count << " triggers in the system",
+                  ((decltype(dfmodules::datafloworchestrator::ConfParams::initial_token_count))count))
 
 namespace dfmodules {
 
@@ -51,6 +55,12 @@ public:
 
   void init(const data_t&) override;
 
+protected:
+  virtual std::shared_ptr<AssignedTriggerDecision> find_slot(dfmessages::TriggerDecision decision);
+
+  std::map<std::string, DataflowApplicationData> m_dataflow_availability;
+  std::function<void(nlohmann::json&)> m_metadata_function;
+
 private:
   // Commands
   void do_conf(const data_t&);
@@ -58,33 +68,40 @@ private:
   void do_stop(const data_t&);
   void do_scrap(const data_t&);
 
+  void do_work(std::atomic<bool>& run_flag);
+
   void get_info(opmonlib::InfoCollector& ci, int level) override;
 
-  void send_initial_triggers();
-
-  bool extract_a_decision(dfmessages::TriggerDecision&);
-
-  void receive_tokens(ipm::Receiver::Response message);
-
-  bool dispatch(dfmessages::TriggerDecision&&);
+  void receive_token(ipm::Receiver::Response message);
+  bool has_slot() const;
+  bool extract_a_decision(dfmessages::TriggerDecision& decision, std::atomic<bool>& run_flag);
+  bool dispatch(dfmessages::TriggerDecision decision,
+                std::shared_ptr<AssignedTriggerDecision> assignment_info,
+                std::atomic<bool>& run_flag);
 
   // Configuration
   std::chrono::milliseconds m_queue_timeout;
   dunedaq::daqdataformats::run_number_t m_run_number;
-  decltype(datafloworchestrator::ConfParams::initial_token_count) m_initial_tokens;
-  std::string m_td_connection_name = "";
-  std::string m_token_connection_name = "";
+  std::string m_token_connection_name;
 
   // Queue(s)
   using triggerdecisionsource_t = dunedaq::appfwk::DAQSource<dfmessages::TriggerDecision>;
   std::unique_ptr<triggerdecisionsource_t> m_trigger_decision_queue = nullptr;
 
-  std::atomic<bool> m_is_running{ false };
-  std::atomic<uint64_t> m_received_tokens{ 0 }; // NOLINT (build/unsigned)
-  std::atomic<uint64_t> m_sent_decisions{ 0 };   // NOLINT (build/unsigned)
-  std::atomic<uint64_t> m_received_decisions{ 0 };   // NOLINT (build/unsigned)
+  // Coordination
+  appfwk::ThreadHelper m_working_thread;
+  std::condition_variable m_slot_available_cv;
+  mutable std::mutex m_slot_available_mutex;
+
+  // Statistics
+  std::atomic<uint64_t> m_received_tokens{ 0 };    // NOLINT (build/unsigned)
+  std::atomic<uint64_t> m_sent_decisions{ 0 };     // NOLINT (build/unsigned)
+  std::atomic<uint64_t> m_received_decisions{ 0 }; // NOLINT (build/unsigned)
+  std::atomic<uint64_t> m_dataflow_busy{ 0 };
+  std::atomic<uint64_t> m_waiting_for_decision{ 0 };
+  std::atomic<uint64_t> m_dfo_busy{ 0 };
 };
 } // namespace dfmodules
 } // namespace dunedaq
 
-#endif // DFMODULES_PLUGINS_REQUESTRECEIVER_HPP_
+#endif // DFMODULES_PLUGINS_DATAFLOWORCHESTRATOR_HPP_

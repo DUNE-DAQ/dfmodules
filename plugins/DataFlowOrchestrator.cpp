@@ -45,7 +45,7 @@ DataFlowOrchestrator::DataFlowOrchestrator(const std::string& name)
   : dunedaq::appfwk::DAQModule(name)
   , m_queue_timeout(100)
   , m_run_number(0)
-  , m_initial_tokens(1)
+  , m_working_thread(std::bind(&DataFlowOrchestrator::do_work, this, std::placeholders::_1))
 {
   register_command("conf", &DataFlowOrchestrator::do_conf);
   register_command("start", &DataFlowOrchestrator::do_start);
@@ -84,9 +84,6 @@ DataFlowOrchestrator::do_conf(const data_t& payload)
 
   m_queue_timeout = std::chrono::milliseconds(parsed_conf.general_queue_timeout);
 
-  m_initial_tokens = parsed_conf.initial_token_count;
-
-  m_td_connection_name = parsed_conf.td_connection;
   m_token_connection_name = parsed_conf.token_connection;
 
   networkmanager::NetworkManager::get().start_listening(m_token_connection_name);
@@ -103,13 +100,9 @@ DataFlowOrchestrator::do_start(const data_t& payload)
   m_run_number = payload.value<dunedaq::daqdataformats::run_number_t>("run", 0);
 
   networkmanager::NetworkManager::get().register_callback(
-    m_token_connection_name, std::bind(&DataFlowOrchestrator::receive_tokens, this, std::placeholders::_1));
+    m_token_connection_name, std::bind(&DataFlowOrchestrator::receive_token, this, std::placeholders::_1));
 
-  m_is_running.store(true);
-
-  TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Sending initial triggers";
-  auto initial_tokens_thread = std::thread(&DataFlowOrchestrator::send_initial_triggers, this);
-  initial_tokens_thread.detach();
+  m_working_thread.start_working_thread();
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
 }
@@ -119,14 +112,7 @@ DataFlowOrchestrator::do_stop(const data_t& /*args*/)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_stop() method";
 
-  m_is_running.store(false);
-
-  while (m_trigger_decision_queue->can_pop()) {
-    dfmessages::TriggerDecision decision;
-    if (extract_a_decision(decision)) {
-      dispatch(std::move(decision));
-    }
-  }
+  m_working_thread.stop_working_thread();
 
   networkmanager::NetworkManager::get().clear_callback(m_token_connection_name);
 
@@ -146,44 +132,81 @@ DataFlowOrchestrator::do_scrap(const data_t& /*args*/)
 }
 
 void
+DataFlowOrchestrator::do_work(std::atomic<bool>& run_flag)
+{
+  std::chrono::steady_clock::time_point slot_available, assignment_possible;
+  auto assignment_complete = std::chrono::steady_clock::now();
+
+  while (run_flag.load()) {
+    if (has_slot()) {
+      slot_available = std::chrono::steady_clock::now();
+      dfmessages::TriggerDecision decision;
+      auto res = extract_a_decision(decision, run_flag);
+      if (res) {
+        assignment_possible = std::chrono::steady_clock::now();
+        auto assignment = find_slot(decision);
+        dispatch(decision, assignment, run_flag);
+        m_dataflow_busy +=
+          std::chrono::duration_cast<std::chrono::microseconds>(slot_available - assignment_complete).count();
+        assignment_complete = std::chrono::steady_clock::now();
+        m_waiting_for_decision +=
+          std::chrono::duration_cast<std::chrono::microseconds>(assignment_possible - slot_available).count();
+        m_dfo_busy +=
+          std::chrono::duration_cast<std::chrono::microseconds>(assignment_complete - assignment_possible).count();
+      }
+    } else {
+      auto lk = std::unique_lock<std::mutex>(m_slot_available_mutex);
+      m_slot_available_cv.wait_for(lk, std::chrono::milliseconds(1), [&]() { return has_slot(); });
+    }
+  }
+  dfmessages::TriggerDecision decision;
+  while (extract_a_decision(decision, run_flag)) {
+    auto assignment = find_slot(decision);
+    dispatch(decision, assignment, run_flag);
+  }
+}
+
+void
 DataFlowOrchestrator::get_info(opmonlib::InfoCollector& ci, int /*level*/)
 {
   datafloworchestratorinfo::Info info;
   info.tokens_received = m_received_tokens.exchange(0);
   info.decisions_sent = m_sent_decisions.exchange(0);
   info.decisions_received = m_received_decisions.exchange(0);
+  info.dataflow_busy = m_dataflow_busy.exchange(0);
+  info.waiting_for_decision = m_waiting_for_decision.exchange(0);
+  info.dfo_busy = m_dfo_busy.exchange(0);
   ci.add(info);
 }
 
 void
-DataFlowOrchestrator::send_initial_triggers()
+DataFlowOrchestrator::receive_token(ipm::Receiver::Response message)
 {
-  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering send_initial_triggers() method";
+  auto token = serialization::deserialize<dfmessages::TriggerDecisionToken>(message.data);
+  ++m_received_tokens;
 
-  decltype(m_initial_tokens) i = 0 ;
-  for (; (i < m_initial_tokens) && m_is_running.load();) {
-
-    dfmessages::TriggerDecision decision;
-    if (extract_a_decision(decision)) {
-
-      if (dispatch(std::move(decision))) {
-        ++i;
-      }
-    }
+  if (token.run_number == m_run_number) {
+    m_dataflow_availability[token.decision_destination].complete_assignment(token.trigger_number, m_metadata_function);
+    m_slot_available_cv.notify_all();
   }
-
-  ers::info( TriggerInjected(ERS_HERE,i));
-  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting send_initial_triggers() method";
 }
 
 bool
-DataFlowOrchestrator::extract_a_decision(dfmessages::TriggerDecision& decision)
+DataFlowOrchestrator::has_slot() const
 {
+  for (auto& dfapp : m_dataflow_availability) {
+    if (dfapp.second.has_slot())
+      return true;
+  }
+  return false;
+}
 
+bool
+DataFlowOrchestrator::extract_a_decision(dfmessages::TriggerDecision& decision, std::atomic<bool>& run_flag)
+{
   bool got_something = false;
 
   do {
-
     try {
       m_trigger_decision_queue->pop(decision, m_queue_timeout);
       TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Popped the Trigger Decision with number "
@@ -196,30 +219,14 @@ DataFlowOrchestrator::extract_a_decision(dfmessages::TriggerDecision& decision)
       continue;
     }
 
-  } while (!got_something && m_is_running.load());
+  } while (!got_something && run_flag.load());
 
   return got_something;
 }
-
-void
-DataFlowOrchestrator::receive_tokens(ipm::Receiver::Response message)
-{
-
-  auto token = serialization::deserialize<dfmessages::TriggerDecisionToken>(message.data);
-  ++m_received_tokens;
-
-  if (token.run_number == m_run_number) {
-
-    dfmessages::TriggerDecision decision;
-    if (extract_a_decision(decision)) {
-
-      dispatch(std::move(decision));
-    }
-  }
-}
-
 bool
-DataFlowOrchestrator::dispatch(dfmessages::TriggerDecision&& decision)
+DataFlowOrchestrator::dispatch(dfmessages::TriggerDecision decision,
+                               std::shared_ptr<AssignedTriggerDecision> assignment_info,
+                               std::atomic<bool>& run_flag)
 {
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering dispatch() method";
@@ -229,7 +236,7 @@ DataFlowOrchestrator::dispatch(dfmessages::TriggerDecision&& decision)
   do {
 
     try {
-      networkmanager::NetworkManager::get().send_to(m_td_connection_name,
+      networkmanager::NetworkManager::get().send_to(assignment_info->connection_name,
                                                     static_cast<const void*>(serialised_decision.data()),
                                                     serialised_decision.size(),
                                                     m_queue_timeout);
@@ -237,11 +244,11 @@ DataFlowOrchestrator::dispatch(dfmessages::TriggerDecision&& decision)
       ++m_sent_decisions;
     } catch (const ers::Issue& excpt) {
       std::ostringstream oss_warn;
-      oss_warn << "Send to connection \"" << m_td_connection_name << "\" failed";
+      oss_warn << "Send to connection \"" << assignment_info->connection_name << "\" failed";
       ers::warning(networkmanager::OperationFailed(ERS_HERE, oss_warn.str(), excpt));
     }
 
-  } while (!wasSentSuccessfully && m_is_running.load());
+  } while (!wasSentSuccessfully && run_flag.load());
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting dispatch() method";
   return wasSentSuccessfully;

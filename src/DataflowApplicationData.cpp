@@ -53,10 +53,14 @@ DataflowApplicationData::complete_assignment(daqdataformats::trigger_number_t tr
   if (dec_ptr == nullptr)
     throw AssignedTriggerDecisionNotFound(ERS_HERE, trigger_number, m_connection_name);
   auto now = std::chrono::steady_clock::now();
-  m_latency_info.emplace_back(now, std::chrono::duration_cast<std::chrono::microseconds>(now - dec_ptr->assigned_time));
+  {
+    auto lk = std::lock_guard<std::mutex>(m_latency_info_mutex);
+    m_latency_info.emplace_back(now,
+                                std::chrono::duration_cast<std::chrono::microseconds>(now - dec_ptr->assigned_time));
 
-  if (m_latency_info.size() > 1000)
-    m_latency_info.pop_front();
+    if (m_latency_info.size() > 1000)
+      m_latency_info.pop_front();
+  }
 
   if (metadata_fun)
     metadata_fun(m_metadata);
@@ -68,6 +72,23 @@ DataflowApplicationData::add_assignment(daqdataformats::trigger_number_t trigger
   auto lk = std::lock_guard<std::mutex>(m_assigned_trigger_decisions_mutex);
   m_assigned_trigger_decisions.push_back(std::make_shared<AssignedTriggerDecision>(trigger_number, m_connection_name));
   return m_assigned_trigger_decisions.back();
+}
+
+std::chrono::microseconds
+DataflowApplicationData::average_latency(std::chrono::steady_clock::time_point since) const
+{
+  auto lk = std::lock_guard<std::mutex>(m_latency_info_mutex);
+  std::chrono::microseconds sum;
+  size_t count;
+  for (auto it = m_latency_info.rbegin(); it != m_latency_info.rend(); ++it) {
+    if (it->first < since)
+      break;
+
+    count++;
+    sum += it->second;
+  }
+
+  return sum / count;
 }
 
 } // namespace dfmodules
