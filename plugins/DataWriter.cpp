@@ -92,9 +92,7 @@ DataWriter::do_conf(const data_t& payload)
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
 
   datawriter::ConfParams conf_params = payload.get<datawriter::ConfParams>();
-  m_initial_tokens = conf_params.initial_token_count;
   m_data_storage_prescale = conf_params.data_storage_prescale;
-  TLOG_DEBUG(TLVL_CONFIG) << get_name() << ": initial_token_count is " << conf_params.initial_token_count;
   TLOG_DEBUG(TLVL_CONFIG) << get_name() << ": data_storage_prescale is " << m_data_storage_prescale;
   TLOG_DEBUG(TLVL_CONFIG) << get_name() << ": data_store_parameters are " << conf_params.data_store_parameters;
   m_min_write_retry_time_usec = conf_params.min_write_retry_time_usec;
@@ -104,6 +102,7 @@ DataWriter::do_conf(const data_t& payload)
   m_max_write_retry_time_usec = conf_params.max_write_retry_time_usec;
   m_write_retry_time_increase_factor = conf_params.write_retry_time_increase_factor;
   m_trigger_decision_token_connection = conf_params.token_connection;
+  m_trigger_decision_connection = conf_params.decision_connection;
 
   // create the DataStore instance here
   try {
@@ -142,18 +141,6 @@ DataWriter::do_start(const data_t& payload)
   }
 
   m_seqno_counts.clear();
-
-  for (int ii = 0; ii < m_initial_tokens; ++ii) {
-    dfmessages::TriggerDecisionToken token;
-    token.run_number = m_run_number;
-
-    auto serialised_token = dunedaq::serialization::serialize(token, dunedaq::serialization::kMsgPack);
-
-    NetworkManager::get().send_to(m_trigger_decision_token_connection,
-                                  static_cast<const void*>(serialised_token.data()),
-                                  serialised_token.size(),
-                                  m_queue_timeout);
-  }
 
   m_thread.start_working_thread(get_name());
 
@@ -370,6 +357,7 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
       dfmessages::TriggerDecisionToken token;
       token.run_number = m_run_number;
       token.trigger_number = trigger_record_ptr->get_header_ref().get_trigger_number();
+      token.decision_destination = m_trigger_decision_connection;
 
       auto serialised_token = dunedaq::serialization::serialize(token, dunedaq::serialization::kMsgPack);
 

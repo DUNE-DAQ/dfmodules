@@ -82,6 +82,10 @@ DataFlowOrchestrator::do_conf(const data_t& payload)
 
   datafloworchestrator::ConfParams parsed_conf = payload.get<datafloworchestrator::ConfParams>();
 
+  for (auto& app : parsed_conf.dataflow_applications) {
+    m_dataflow_availability[app.decision_connection] = DataflowApplicationData(app.decision_connection, app.capacity);
+  }
+
   m_queue_timeout = std::chrono::milliseconds(parsed_conf.general_queue_timeout);
 
   m_token_connection_name = parsed_conf.token_connection;

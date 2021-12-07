@@ -63,7 +63,6 @@ private:
   std::chrono::milliseconds m_queue_timeout;
   bool m_data_storage_is_enabled;
   int m_data_storage_prescale;
-  int m_initial_tokens;
   daqdataformats::run_number_t m_run_number;
   size_t m_min_write_retry_time_usec;
   size_t m_max_write_retry_time_usec;
@@ -75,6 +74,7 @@ private:
 
   // Connection(s)
   std::string m_trigger_decision_token_connection;
+  std::string m_trigger_decision_connection;
 
   // Worker(s)
   std::unique_ptr<DataStore> m_data_writer;

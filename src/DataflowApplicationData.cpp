@@ -14,6 +14,38 @@
 namespace dunedaq {
 namespace dfmodules {
 
+DataflowApplicationData::DataflowApplicationData(std::string connection_name, size_t capacity)
+  : m_num_slots(capacity)
+  , m_connection_name(connection_name)
+{}
+
+DataflowApplicationData::DataflowApplicationData(DataflowApplicationData&& other)
+{
+  m_num_slots = other.m_num_slots.load();
+  m_connection_name = std::move(other.m_connection_name);
+
+  m_assigned_trigger_decisions = std::move(other.m_assigned_trigger_decisions);
+
+  m_latency_info = std::move(other.m_latency_info);
+
+  m_metadata = std::move(other.m_metadata);
+}
+
+DataflowApplicationData&
+DataflowApplicationData::operator=(DataflowApplicationData&& other)
+{
+  m_num_slots = other.m_num_slots.load();
+  m_connection_name = std::move(other.m_connection_name);
+
+  m_assigned_trigger_decisions = std::move(other.m_assigned_trigger_decisions);
+
+  m_latency_info = std::move(other.m_latency_info);
+
+  m_metadata = std::move(other.m_metadata);
+
+  return *this;
+}
+
 std::shared_ptr<AssignedTriggerDecision>
 DataflowApplicationData::extract_assignment(daqdataformats::trigger_number_t trigger_number)
 {
@@ -78,8 +110,8 @@ std::chrono::microseconds
 DataflowApplicationData::average_latency(std::chrono::steady_clock::time_point since) const
 {
   auto lk = std::lock_guard<std::mutex>(m_latency_info_mutex);
-  std::chrono::microseconds sum;
-  size_t count;
+  std::chrono::microseconds sum = std::chrono::microseconds(0);
+  size_t count = 0;
   for (auto it = m_latency_info.rbegin(); it != m_latency_info.rend(); ++it) {
     if (it->first < since)
       break;

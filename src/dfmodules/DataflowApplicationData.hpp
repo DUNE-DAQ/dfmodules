@@ -49,6 +49,14 @@ struct AssignedTriggerDecision
 class DataflowApplicationData
 {
 public:
+  DataflowApplicationData() = default;
+  DataflowApplicationData(std::string connection_name, size_t capacity);
+
+  DataflowApplicationData(DataflowApplicationData const&) = delete;
+  DataflowApplicationData(DataflowApplicationData &&);
+  DataflowApplicationData& operator=(DataflowApplicationData const&) = delete;
+  DataflowApplicationData& operator=(DataflowApplicationData &&) ;
+
   bool has_slot() const { return m_num_slots.load() > m_assigned_trigger_decisions.size(); }
   size_t available_slots() const { return m_num_slots.load() - m_assigned_trigger_decisions.size(); }
 

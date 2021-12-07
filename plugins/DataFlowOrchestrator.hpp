@@ -27,13 +27,7 @@
 #include <vector>
 
 namespace dunedaq {
-
-ERS_DECLARE_ISSUE(dfmodules,
-                  TriggerInjected,
-                  "Injected " << count << " triggers in the system",
-                  ((decltype(dfmodules::datafloworchestrator::ConfParams::initial_token_count))count))
-
-namespace dfmodules {
+    namespace dfmodules {
 
 /**
  * @brief DataFlowOrchestrator distributes triggers according to the availability of the DF apps in the system
