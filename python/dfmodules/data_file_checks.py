@@ -160,54 +160,12 @@ def check_fragment_sizes(datafile, params):
 
 def check_link_presence(datafile, n_links):
     "Check that there are n_links links in each event in file"
-    passed=True
-    for event in datafile.events:
-        for i in range(n_links):
-            link_name=("Link%02d" % i)
-            if link_name not in datafile.h5file[event]["TPC/APA000"].keys():
-                passed=False
-                print(f"Link {link_name} not present in event {event}")
-    if passed:
-        print(f"{n_links} links present in all {datafile.n_events} events")
+    passed=False
+    print("The check_link_presence test has been deprecated. Please use check_fragment_count instead.")
     return passed
 
-def check_fragment_sizes_old(datafile, min_frag_size, max_frag_size):
-    "Check that every fragment is between min_frag_size and max_frag_size"
-    passed=True
-    for event in datafile.events:
-        for link in datafile.h5file[event]["TPC/APA000"].values():
-            size=link.shape[0]
-            if size<min_frag_size or size>max_frag_size:
-                passed=False
-                print(f"Link {link} in event {event} has size {size}, outside range [{min_frag_size}, {max_frag_size}]")
-    if passed:
-        print(f"All links in {datafile.n_events} events have fragment sizes between {min_frag_size} and {max_frag_size}")
-    return passed
-
-
-# 18-Aug-2021, KAB: General-purposed test for fragment presence.  The idea behind this test
-# is that each type of fragment can be tested individually, by calling this routine for
-# each type.  The test is driven by a set of parameters that describe both the fragments
-# to be tested (e.g. the HDF5 Group names) and the characteristics that they should have
-# (e.g. the number of fragments that should be present).
-#
-# The parameters that are required by this routine are the following:
-# * fragment_type_description - descriptive text for the fragment type, e.g. "WIB" or "PDS" or "Raw TP"
-# * hdf5_detector_group - the HDF5 Group in the DataSet path just below the TriggerRecord identifier,
-#                         e.g. "TPC" or "PDS"
-# * hdf5_region_prefix - the prefix that should be used to identify the desired "region" in the DataSet path,
-#                        e.g. "APA" or "Region" or "TP_APA"
-# * expected_fragment_count - the expected number of fragments of this type
 def check_fragment_presence(datafile, params):
-    "Checking that there are {params['expected_fragment_count']} {params['fragment_type_description']} fragments in each event in file"
-    passed=True
-    for event in datafile.events:
-        for i in range(params['expected_fragment_count']):
-            dataset_name=(params['element_name_prefix'] + "%02d" % (i + params['element_number_offset']))
-            if dataset_name not in datafile.h5file[event][params['hdf5_groups']].keys():
-                passed=False
-                print(f"{params['fragment_type_description']} fragment for {dataset_name} not present in event {event}")
-    if passed:
-        print(f"{params['expected_fragment_count']} {params['fragment_type_description']} fragments present in all {datafile.n_events} events")
+    "Checking that there are the expected fragments in each event in file"
+    passed=False
+    print("The check_fragment_presence test has been deprecated. Please use check_fragment_count instead.")
     return passed
-

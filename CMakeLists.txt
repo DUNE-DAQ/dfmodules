@@ -4,10 +4,9 @@ project(dfmodules VERSION 2.3.2)
 find_package(daq-cmake REQUIRED)
 daq_setup_environment()
 
-# 08-Sep-2020, KAB: the inclusion of the appfwk package brings in several other packages,
-# include ERS, TRACE, and Boost
 find_package(appfwk REQUIRED)
 find_package(logging REQUIRED)
+find_package(ers REQUIRED)
 find_package(HighFive REQUIRED)
 find_package(dfmessages REQUIRED)
 find_package(opmonlib REQUIRED)
@@ -16,12 +15,13 @@ find_package(networkmanager REQUIRED)
 # 22-Jul-2021, KAB: all of the packages in this block are needed for the first version
 # of the TPSetWriter. Some of these may be able to be removed, at some point in time,
 # if we choose different tools for handling the TPSet writing.
+
+# JCF, Dec-1-2021: removed timinglibs
 find_package(triggeralgs REQUIRED)
-find_package(timinglibs REQUIRED)
 find_package(trigger REQUIRED)
 find_package(serialization REQUIRED)
 find_package(readoutlibs REQUIRED)
-find_package(Boost COMPONENTS iostreams REQUIRED)
+find_package(Boost COMPONENTS iostreams unit_test_framework REQUIRED)
 
 daq_codegen( *.jsonnet TEMPLATES Structs.hpp.j2 Nljs.hpp.j2 )
 daq_codegen( info/*.jsonnet DEP_PKGS opmonlib TEMPLATES opmonlib/InfoStructs.hpp.j2 opmonlib/InfoNljs.hpp.j2 )
