@@ -170,6 +170,26 @@ DataFlowOrchestrator::do_work(std::atomic<bool>& run_flag)
   }
 }
 
+std::shared_ptr<AssignedTriggerDecision>
+DataFlowOrchestrator::find_slot(dfmessages::TriggerDecision decision)
+{
+  static std::map<std::string, DataflowApplicationData>::iterator last_selected_dfapp = m_dataflow_availability.begin();
+
+  std::shared_ptr<AssignedTriggerDecision> output = nullptr;
+
+  while (output == nullptr) {
+    ++last_selected_dfapp;
+    if (last_selected_dfapp == m_dataflow_availability.end())
+      last_selected_dfapp = m_dataflow_availability.begin();
+
+    if (last_selected_dfapp->second.has_slot()) {
+      output = last_selected_dfapp->second.add_assignment(decision.trigger_number);
+    }
+  }
+
+  return output;
+}
+
 void
 DataFlowOrchestrator::get_info(opmonlib::InfoCollector& ci, int /*level*/)
 {
