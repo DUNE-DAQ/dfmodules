@@ -39,6 +39,8 @@ enum
 };
 
 namespace dunedaq {
+
+    ERS_DECLARE_ISSUE(dfmodules, ExtraTriggerDecisionsProcessed, "There were " << count << " trigger decisions processed after the DFO received stop", ((size_t)count))
 namespace dfmodules {
 
 DataFlowOrchestrator::DataFlowOrchestrator(const std::string& name)
@@ -54,23 +56,9 @@ DataFlowOrchestrator::DataFlowOrchestrator(const std::string& name)
 }
 
 void
-DataFlowOrchestrator::init(const data_t& init_data)
+DataFlowOrchestrator::init(const data_t& /*init_data*/)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
-
-  //----------------------
-  // Get queue
-  //----------------------
-
-  auto qi = appfwk::queue_index(init_data, { "trigger_decision_queue" });
-
-  try {
-    auto temp_info = qi["trigger_decision_queue"];
-    std::string temp_name = temp_info.inst;
-    m_trigger_decision_queue.reset(new triggerdecisionsource_t(temp_name));
-  } catch (const ers::Issue& excpt) {
-    throw InvalidQueueFatalError(ERS_HERE, get_name(), "trigger_decision_input_queue", excpt);
-  }
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
@@ -89,6 +77,7 @@ DataFlowOrchestrator::do_conf(const data_t& payload)
   m_queue_timeout = std::chrono::milliseconds(parsed_conf.general_queue_timeout);
 
   m_token_connection_name = parsed_conf.token_connection;
+  m_trigger_decision_input_connection_name = parsed_conf.trigger_decision_connection;
 
   networkmanager::NetworkManager::get().start_listening(m_token_connection_name);
 
@@ -163,10 +152,16 @@ DataFlowOrchestrator::do_work(std::atomic<bool>& run_flag)
       m_slot_available_cv.wait_for(lk, std::chrono::milliseconds(1), [&]() { return has_slot(); });
     }
   }
+  size_t after_stop_tds_processed = 0;
   dfmessages::TriggerDecision decision;
   while (extract_a_decision(decision, run_flag)) {
     auto assignment = find_slot(decision);
     dispatch(decision, assignment, run_flag);
+    after_stop_tds_processed++;
+  }
+
+  if (after_stop_tds_processed > 0) {
+    ers::warning(ExtraTriggerDecisionsProcessed(ERS_HERE, after_stop_tds_processed));
   }
 }
 
@@ -232,12 +227,16 @@ DataFlowOrchestrator::extract_a_decision(dfmessages::TriggerDecision& decision, 
 
   do {
     try {
-      m_trigger_decision_queue->pop(decision, m_queue_timeout);
-      TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Popped the Trigger Decision with number "
-                                  << decision.trigger_number << " off the input queue";
-      got_something = true;
-      ++m_received_decisions;
-    } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
+      auto res = networkmanager::NetworkManager::get().receive_from(m_trigger_decision_input_connection_name, m_queue_timeout);
+      if (res.data.size() > 0) {
+        decision =
+          dunedaq::serialization::deserialize<dfmessages::TriggerDecision>(res.data);
+        TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Popped the Trigger Decision with number "
+                                    << decision.trigger_number << " off the input queue";
+        got_something = true;
+        ++m_received_decisions;
+      }
+    } catch (const dunedaq::ipm::ReceiveTimeoutExpired& excpt) {
       // it is perfectly reasonable that there might be no data in the queue
       // some fraction of the times that we check, so we just continue on and try again
       continue;
