@@ -1,25 +1,25 @@
 /**
- * @file DataflowApplicationData.cpp DataflowApplicationData Class Implementation
+ * @file TriggerRecordBuilderData.cpp TriggerRecordBuilderData Class Implementation
  *
- * The DataflowApplicationData class represents the current state of a dataflow application's Trigger Record buffers for
- * use by the DFO.
+ * The TriggerRecordBuilderData class represents the current state of a dataflow application's Trigger Record buffers
+ * for use by the DFO.
  *
  * This is part of the DUNE DAQ Application Framework, copyright 2020.
  * Licensing/copyright details are in the COPYING file that you should have
  * received with this code.
  */
 
-#include "dfmodules/DataflowApplicationData.hpp"
+#include "dfmodules/TriggerRecordBuilderData.hpp"
 
 namespace dunedaq {
 namespace dfmodules {
 
-DataflowApplicationData::DataflowApplicationData(std::string connection_name, size_t capacity)
+TriggerRecordBuilderData::TriggerRecordBuilderData(std::string connection_name, size_t capacity)
   : m_num_slots(capacity)
   , m_connection_name(connection_name)
 {}
 
-DataflowApplicationData::DataflowApplicationData(DataflowApplicationData&& other)
+TriggerRecordBuilderData::TriggerRecordBuilderData(TriggerRecordBuilderData&& other)
 {
   m_num_slots = other.m_num_slots.load();
   m_connection_name = std::move(other.m_connection_name);
@@ -31,8 +31,8 @@ DataflowApplicationData::DataflowApplicationData(DataflowApplicationData&& other
   m_metadata = std::move(other.m_metadata);
 }
 
-DataflowApplicationData&
-DataflowApplicationData::operator=(DataflowApplicationData&& other)
+TriggerRecordBuilderData&
+TriggerRecordBuilderData::operator=(TriggerRecordBuilderData&& other)
 {
   m_num_slots = other.m_num_slots.load();
   m_connection_name = std::move(other.m_connection_name);
@@ -47,12 +47,12 @@ DataflowApplicationData::operator=(DataflowApplicationData&& other)
 }
 
 std::shared_ptr<AssignedTriggerDecision>
-DataflowApplicationData::extract_assignment(daqdataformats::trigger_number_t trigger_number)
+TriggerRecordBuilderData::extract_assignment(daqdataformats::trigger_number_t trigger_number)
 {
   std::shared_ptr<AssignedTriggerDecision> dec_ptr;
   auto lk = std::lock_guard<std::mutex>(m_assigned_trigger_decisions_mutex);
   for (auto it = m_assigned_trigger_decisions.begin(); it != m_assigned_trigger_decisions.end(); ++it) {
-    if ((*it)->trigger_number == trigger_number) {
+    if ((*it)->decision.trigger_number == trigger_number) {
       dec_ptr = *it;
       m_assigned_trigger_decisions.erase(it);
       break;
@@ -63,11 +63,11 @@ DataflowApplicationData::extract_assignment(daqdataformats::trigger_number_t tri
 }
 
 std::shared_ptr<AssignedTriggerDecision>
-DataflowApplicationData::get_assignment(daqdataformats::trigger_number_t trigger_number) const
+TriggerRecordBuilderData::get_assignment(daqdataformats::trigger_number_t trigger_number) const
 {
   auto lk = std::lock_guard<std::mutex>(m_assigned_trigger_decisions_mutex);
   for (auto ptr : m_assigned_trigger_decisions) {
-    if (ptr->trigger_number == trigger_number) {
+    if (ptr->decision.trigger_number == trigger_number) {
       return ptr;
     }
   }
@@ -76,8 +76,8 @@ DataflowApplicationData::get_assignment(daqdataformats::trigger_number_t trigger
 }
 
 void
-DataflowApplicationData::complete_assignment(daqdataformats::trigger_number_t trigger_number,
-                                             std::function<void(nlohmann::json&)> metadata_fun)
+TriggerRecordBuilderData::complete_assignment(daqdataformats::trigger_number_t trigger_number,
+                                              std::function<void(nlohmann::json&)> metadata_fun)
 {
 
   auto dec_ptr = extract_assignment(trigger_number);
@@ -99,15 +99,20 @@ DataflowApplicationData::complete_assignment(daqdataformats::trigger_number_t tr
 }
 
 std::shared_ptr<AssignedTriggerDecision>
-DataflowApplicationData::add_assignment(daqdataformats::trigger_number_t trigger_number)
+TriggerRecordBuilderData::make_assignment(dfmessages::TriggerDecision decision)
+{
+  return std::make_shared<AssignedTriggerDecision>(decision, m_connection_name);
+}
+
+void
+TriggerRecordBuilderData::add_assignment(std::shared_ptr<AssignedTriggerDecision> assignment)
 {
   auto lk = std::lock_guard<std::mutex>(m_assigned_trigger_decisions_mutex);
-  m_assigned_trigger_decisions.push_back(std::make_shared<AssignedTriggerDecision>(trigger_number, m_connection_name));
-  return m_assigned_trigger_decisions.back();
+  m_assigned_trigger_decisions.push_back(assignment);
 }
 
 std::chrono::microseconds
-DataflowApplicationData::average_latency(std::chrono::steady_clock::time_point since) const
+TriggerRecordBuilderData::average_latency(std::chrono::steady_clock::time_point since) const
 {
   auto lk = std::lock_guard<std::mutex>(m_latency_info_mutex);
   std::chrono::microseconds sum = std::chrono::microseconds(0);

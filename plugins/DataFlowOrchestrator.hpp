@@ -11,7 +11,7 @@
 
 #include "dfmodules/datafloworchestrator/Structs.hpp"
 
-#include "dfmodules/DataflowApplicationData.hpp"
+#include "dfmodules/TriggerRecordBuilderData.hpp"
 
 #include "dfmessages/DataRequest.hpp"
 #include "dfmessages/TriggerDecision.hpp"
@@ -52,7 +52,7 @@ public:
 protected:
   virtual std::shared_ptr<AssignedTriggerDecision> find_slot(dfmessages::TriggerDecision decision);
 
-  std::map<std::string, DataflowApplicationData> m_dataflow_availability;
+  std::map<std::string, TriggerRecordBuilderData> m_dataflow_availability;
   std::function<void(nlohmann::json&)> m_metadata_function;
 
 private:
@@ -66,17 +66,18 @@ private:
 
   void get_info(opmonlib::InfoCollector& ci, int level) override;
 
-  void receive_token(ipm::Receiver::Response message);
+  void receive_trigger_complete_token(ipm::Receiver::Response message);
   bool has_slot() const;
   bool extract_a_decision(dfmessages::TriggerDecision& decision, std::atomic<bool>& run_flag);
-  bool dispatch(dfmessages::TriggerDecision decision,
-                std::shared_ptr<AssignedTriggerDecision> assignment_info,
+  bool dispatch(std::shared_ptr<AssignedTriggerDecision> assignment,
                 std::atomic<bool>& run_flag);
+  void assign_trigger_decision(std::shared_ptr<AssignedTriggerDecision> assignment);
 
   // Configuration
   std::chrono::milliseconds m_queue_timeout;
   dunedaq::daqdataformats::run_number_t m_run_number;
   std::string m_token_connection_name;
+  size_t m_td_send_retries;
 
   // Queue(s)
   using triggerdecisionsource_t = dunedaq::appfwk::DAQSource<dfmessages::TriggerDecision>;
