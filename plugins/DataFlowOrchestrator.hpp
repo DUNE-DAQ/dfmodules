@@ -77,7 +77,10 @@ private:
   std::chrono::milliseconds m_queue_timeout;
   dunedaq::daqdataformats::run_number_t m_run_number;
   std::string m_token_connection_name;
-  std::string m_trigger_decision_input_connection_name;
+
+  // Queue(s)
+  using triggerdecisionsource_t = dunedaq::appfwk::DAQSource<dfmessages::TriggerDecision>;
+  std::unique_ptr<triggerdecisionsource_t> m_trigger_decision_queue = nullptr;
 
   // Coordination
   appfwk::ThreadHelper m_working_thread;

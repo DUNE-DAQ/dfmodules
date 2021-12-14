@@ -18,8 +18,6 @@ local types = {
     conf: s.record("ConfParams", [
         s.field("token_connection", self.connection_name, "", 
 	         doc="Connection details to receive job-completed messsages"),	
-        s.field("trigger_decision_connection", self.connection_name, "", 
-	         doc="Connection details to receive trigger decision messsages"),	
         s.field("general_queue_timeout", self.timeout, 100, 
 	        doc="General indication for timeout"),
         s.field("dataflow_applications", self.appconfigs, doc="Configuration for Dataflow Applications")
