@@ -20,6 +20,7 @@
 #include "appfwk/DAQModule.hpp"
 #include "appfwk/DAQSource.hpp"
 #include "appfwk/ThreadHelper.hpp"
+#include "logging/Logging.hpp"
 
 #include <map>
 #include <memory>
@@ -27,6 +28,9 @@
 #include <vector>
 
 namespace dunedaq {
+
+    ERS_DECLARE_ISSUE(dfmodules, TriggerRecordBuilderAppUpdate, "TriggerRecordBuilder app " << connection_name << ": " << message, ((std::string)connection_name)((std::string)message))
+
     namespace dfmodules {
 
 /**
