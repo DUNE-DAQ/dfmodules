@@ -156,10 +156,10 @@ TPSetWriter::do_work(std::atomic<bool>& running_flag)
       tpset_writer.open(work_oss.str(), 1024, "None", false);
     }
 
-    // daqdataformats::Fragment frag(&tpset_bytes[0], tpset_bytes.size());
+    daqdataformats::Fragment frag(&tpset_bytes[0], tpset_bytes.size());
 
-    int dummy_val = 0xdeadbeef;
-    daqdataformats::Fragment frag(&dummy_val, sizeof(dummy_val));
+    // int dummy_val = 0xdeadbeef;
+    // daqdataformats::Fragment frag(&dummy_val, sizeof(dummy_val));
     frag.set_run_number(m_run_number);
     frag.set_window_begin(tpset.start_time);
     frag.set_window_end(tpset.end_time);
