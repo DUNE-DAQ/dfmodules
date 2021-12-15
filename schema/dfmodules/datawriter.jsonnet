@@ -12,8 +12,6 @@ local types = {
     run_number: s.number("RunNumber", dtype="u8", doc="Run Number"),
 
     conf: s.record("ConfParams", [
-        s.field("initial_token_count", self.count, "5",
-                doc="Number of tokens to send at the start of the run"),
         s.field("data_storage_prescale", self.count, "1",
                 doc="Prescale value for writing TriggerRecords to storage"),
         s.field("data_store_parameters", self.dsparams,
@@ -25,7 +23,8 @@ local types = {
 	s.field("write_retry_time_increase_factor", self.count, "2",
 		doc="The factor that is used to increase the time between subsequent retries of data writes"),
 	s.field("token_connection", self.connection_name, "", 
-	         doc="Connection details to send trigger tockens to trigger modules")
+	         doc="Connection details to send trigger tokens to trigger modules"),
+    s.field("decision_connection", self.connection_name, "", doc="Connection details to put in tokens for TriggerDecisions")
     ], doc="DataWriter configuration parameters"),
 
 };

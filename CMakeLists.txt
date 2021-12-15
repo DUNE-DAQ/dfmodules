@@ -27,13 +27,14 @@ daq_codegen( *.jsonnet TEMPLATES Structs.hpp.j2 Nljs.hpp.j2 )
 daq_codegen( info/*.jsonnet DEP_PKGS opmonlib TEMPLATES opmonlib/InfoStructs.hpp.j2 opmonlib/InfoNljs.hpp.j2 )
 
 ##############################################################################
-daq_add_library( StorageKey.cpp TriggerDecisionForwarder.cpp TriggerInhibitAgent.cpp
+daq_add_library( StorageKey.cpp TriggerDecisionForwarder.cpp TriggerInhibitAgent.cpp TriggerRecordBuilderData.cpp
                  LINK_LIBRARIES 
                  ers::ers HighFive appfwk::appfwk logging::logging stdc++fs dfmessages::dfmessages utilities::utilities)
 
 daq_add_plugin( HDF5DataStore      duneDataStore LINK_LIBRARIES logging::logging daqdataformats::daqdataformats HighFive appfwk::appfwk stdc++fs)
 
-daq_add_plugin( DataWriter            duneDAQModule LINK_LIBRARIES dfmodules )
+daq_add_plugin( DataWriter            duneDAQModule LINK_LIBRARIES dfmodules networkmanager::networkmanager )
+daq_add_plugin( DataFlowOrchestrator  duneDAQModule LINK_LIBRARIES dfmodules networkmanager::networkmanager )
 daq_add_plugin( TriggerRecordBuilder  duneDAQModule LINK_LIBRARIES dfmodules networkmanager::networkmanager )
 daq_add_plugin( TPSetWriter           duneDAQModule LINK_LIBRARIES dfmodules trigger::trigger serialization::serialization readoutlibs::readoutlibs Boost::iostreams )
 daq_add_plugin( FakeDataProd          duneDAQModule LINK_LIBRARIES dfmodules networkmanager::networkmanager)

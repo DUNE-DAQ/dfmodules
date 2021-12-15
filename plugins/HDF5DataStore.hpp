@@ -512,8 +512,13 @@ private:
       std::string unique_filename = file_name;
       time_t now = time(0);
       std::string file_creation_timestamp = boost::posix_time::to_iso_string(boost::posix_time::from_time_t(now));
+      // app_name substring
+      size_t ufn_len = unique_filename.length();
+      if (ufn_len > 6) { // len GT 6 gives us some confidence that we have at least x.hdf5
+        std::string appname_substring = "_" + m_application_name;
+        unique_filename.insert(ufn_len - 5, appname_substring);
+      }
       if (!m_disable_unique_suffix) {
-        size_t ufn_len;
         // timestamp substring
         ufn_len = unique_filename.length();
         if (ufn_len > 6) { // len GT 6 gives us some confidence that we have at least x.hdf5
