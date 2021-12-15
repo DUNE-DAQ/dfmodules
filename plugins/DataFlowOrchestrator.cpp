@@ -158,6 +158,8 @@ DataFlowOrchestrator::do_work(std::atomic<bool>& run_flag)
             assign_trigger_decision(assignment);
             break;
           } else {
+            ers::error(
+              TriggerRecordBuilderAppUpdate(ERS_HERE, assignment->connection_name, "Could not send Trigger Decision"));
             m_dataflow_availability[assignment->connection_name].set_in_error(true);
           }
         }
@@ -184,8 +186,7 @@ DataFlowOrchestrator::do_work(std::atomic<bool>& run_flag)
 std::shared_ptr<AssignedTriggerDecision>
 DataFlowOrchestrator::find_slot(dfmessages::TriggerDecision decision)
 {
-  static std::map<std::string, TriggerRecordBuilderData>::iterator last_selected_trb =
-    m_dataflow_availability.begin();
+  static std::map<std::string, TriggerRecordBuilderData>::iterator last_selected_trb = m_dataflow_availability.begin();
 
   std::shared_ptr<AssignedTriggerDecision> output = nullptr;
 
@@ -223,7 +224,11 @@ DataFlowOrchestrator::receive_trigger_complete_token(ipm::Receiver::Response mes
 
   if (token.run_number == m_run_number) {
     m_dataflow_availability[token.decision_destination].complete_assignment(token.trigger_number, m_metadata_function);
-    m_dataflow_availability[token.decision_destination].set_in_error(false);
+
+    if (m_dataflow_availability[token.decision_destination].is_in_error()) {
+      TLOG() << TriggerRecordBuilderAppUpdate(ERS_HERE, token.decision_destination, "Has reconnected");
+      m_dataflow_availability[token.decision_destination].set_in_error(false);
+    }
     m_slot_available_cv.notify_all();
   }
 }

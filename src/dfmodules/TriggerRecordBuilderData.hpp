@@ -70,6 +70,7 @@ public:
 
   std::chrono::microseconds average_latency(std::chrono::steady_clock::time_point since) const;
 
+  bool is_in_error() const { return m_in_error.load(); }
   void set_in_error(bool err) { m_in_error = err; }
 
 private:
