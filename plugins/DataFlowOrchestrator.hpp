@@ -66,12 +66,12 @@ private:
 
   void get_info(opmonlib::InfoCollector& ci, int level) override;
 
-  void receive_trigger_complete_token(ipm::Receiver::Response message);
-  bool has_slot() const;
+  virtual void receive_trigger_complete_token(ipm::Receiver::Response message);
+  virtual bool has_slot() const;
   bool extract_a_decision(dfmessages::TriggerDecision& decision, std::atomic<bool>& run_flag);
   bool dispatch(std::shared_ptr<AssignedTriggerDecision> assignment,
                 std::atomic<bool>& run_flag);
-  void assign_trigger_decision(std::shared_ptr<AssignedTriggerDecision> assignment);
+  virtual void assign_trigger_decision(std::shared_ptr<AssignedTriggerDecision> assignment);
 
   // Configuration
   std::chrono::milliseconds m_queue_timeout;
