@@ -11,6 +11,13 @@
 
 #include "dfmodules/TriggerRecordBuilderData.hpp"
 
+#include "logging/Logging.hpp"
+
+/**
+ * @brief Name used by TRACE TLOG calls from this source file
+ */
+#define TRACE_NAME "TRBData" // NOLINT
+
 namespace dunedaq {
 namespace dfmodules {
 
@@ -109,6 +116,7 @@ TriggerRecordBuilderData::add_assignment(std::shared_ptr<AssignedTriggerDecision
 {
   auto lk = std::lock_guard<std::mutex>(m_assigned_trigger_decisions_mutex);
   m_assigned_trigger_decisions.push_back(assignment);
+  TLOG_DEBUG(13) << "Size of assigned_trigger_decision list is " << m_assigned_trigger_decisions.size();
 }
 
 std::chrono::microseconds
