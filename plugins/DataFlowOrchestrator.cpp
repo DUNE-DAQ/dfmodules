@@ -146,9 +146,13 @@ DataFlowOrchestrator::do_work(std::atomic<bool>& run_flag)
     if (has_slot()) {
       slot_available = std::chrono::steady_clock::now();
       dfmessages::TriggerDecision decision;
-      auto res = extract_a_decision(decision, run_flag);
+      auto res = extract_a_decision(decision);
       if (res) {
         assignment_possible = std::chrono::steady_clock::now();
+
+        m_waiting_for_decision +=
+          std::chrono::duration_cast<std::chrono::microseconds>(assignment_possible - slot_available).count();
+	
         while (run_flag.load()) {
 
           auto assignment = find_slot(decision);
@@ -166,18 +170,20 @@ DataFlowOrchestrator::do_work(std::atomic<bool>& run_flag)
         m_dataflow_busy +=
           std::chrono::duration_cast<std::chrono::microseconds>(slot_available - assignment_complete).count();
         assignment_complete = std::chrono::steady_clock::now();
-        m_waiting_for_decision +=
-          std::chrono::duration_cast<std::chrono::microseconds>(assignment_possible - slot_available).count();
         m_dfo_busy +=
           std::chrono::duration_cast<std::chrono::microseconds>(assignment_complete - assignment_possible).count();
+      } else { // failed at extracting the decisions
+	m_waiting_for_decision +=
+          std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - slot_available).count();
       }
+      
     } else {
       auto lk = std::unique_lock<std::mutex>(m_slot_available_mutex);
       m_slot_available_cv.wait_for(lk, std::chrono::milliseconds(1), [&]() { return has_slot(); });
     }
   }
   dfmessages::TriggerDecision decision;
-  while (extract_a_decision(decision, run_flag)) {
+  while (extract_a_decision(decision)) {
     auto assignment = find_slot(decision);
     dispatch(assignment, run_flag);
   }
@@ -244,24 +250,21 @@ DataFlowOrchestrator::has_slot() const
 }
 
 bool
-DataFlowOrchestrator::extract_a_decision(dfmessages::TriggerDecision& decision, std::atomic<bool>& run_flag)
+DataFlowOrchestrator::extract_a_decision(dfmessages::TriggerDecision& decision)
 {
   bool got_something = false;
 
-  do {
-    try {
-      m_trigger_decision_queue->pop(decision, m_queue_timeout);
-      TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Popped the Trigger Decision with number "
-                                  << decision.trigger_number << " off the input queue";
-      got_something = true;
-      ++m_received_decisions;
-    } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
-      // it is perfectly reasonable that there might be no data in the queue
-      // some fraction of the times that we check, so we just continue on and try again
-      continue;
-    }
-
-  } while (!got_something && run_flag.load());
+  try {
+    m_trigger_decision_queue->pop(decision, m_queue_timeout);
+    TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Popped the Trigger Decision with number "
+				<< decision.trigger_number << " off the input queue";
+    got_something = true;
+    ++m_received_decisions;
+  } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
+    // it is perfectly reasonable that there might be no data in the queue
+    // some fraction of the times that we check, so we just return that the 
+    // extraction failed
+  }
 
   return got_something;
 }
