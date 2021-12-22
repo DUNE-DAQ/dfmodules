@@ -11,17 +11,16 @@
 #include "dfmodules/KeyedDataBlock.hpp"
 #include "dfmodules/StorageKey.hpp"
 #include "dfmodules/datawriter/Nljs.hpp"
+#include "dfmodules/datawriterinfo/InfoNljs.hpp"
 
 #include "appfwk/DAQModuleHelper.hpp"
-#include "dataformats/Fragment.hpp"
+#include "daqdataformats/Fragment.hpp"
 #include "dfmessages/TriggerDecision.hpp"
-#include "dfmessages/TriggerInhibit.hpp"
-
-#include "TRACE/trace.h"
-#include "ers/ers.h"
+#include "logging/Logging.hpp"
+#include "networkmanager/NetworkManager.hpp"
+#include "rcif/cmd/Nljs.hpp"
 
 #include <algorithm>
-#include <chrono>
 #include <cstdlib>
 #include <memory>
 #include <string>
@@ -32,20 +31,27 @@
 /**
  * @brief Name used by TRACE TLOG calls from this source file
  */
-#define TRACE_NAME "DataWriter"                   // NOLINT
-#define TLVL_ENTER_EXIT_METHODS TLVL_DEBUG + 5    // NOLINT
-#define TLVL_CONFIG TLVL_DEBUG + 7                // NOLINT
-#define TLVL_WORK_STEPS TLVL_DEBUG + 10           // NOLINT
-#define TLVL_FRAGMENT_HEADER_DUMP TLVL_DEBUG + 17 // NOLINT
+//#define TRACE_NAME "DataWriter"                   // NOLINT This is the default
+enum
+{
+  TLVL_ENTER_EXIT_METHODS = 5,
+  TLVL_CONFIG = 7,
+  TLVL_WORK_STEPS = 10,
+  TLVL_SEQNO_MAP_CONTENTS = 13,
+  TLVL_FRAGMENT_HEADER_DUMP = 17
+};
 
 namespace dunedaq {
 namespace dfmodules {
 
+using networkmanager::NetworkManager;
+
 DataWriter::DataWriter(const std::string& name)
   : dunedaq::appfwk::DAQModule(name)
-  , thread_(std::bind(&DataWriter::do_work, this, std::placeholders::_1))
-  , queueTimeout_(100)
-  , triggerRecordInputQueue_(nullptr)
+  , m_thread(std::bind(&DataWriter::do_work, this, std::placeholders::_1))
+  , m_queue_timeout(100)
+  , m_data_storage_is_enabled(true)
+  , m_trigger_record_input_queue(nullptr)
 {
   register_command("conf", &DataWriter::do_conf);
   register_command("start", &DataWriter::do_start);
@@ -56,188 +62,314 @@ DataWriter::DataWriter(const std::string& name)
 void
 DataWriter::init(const data_t& init_data)
 {
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
-  auto qi = appfwk::qindex(
-    init_data, { "trigger_record_input_queue", "trigger_decision_for_inhibit", "trigger_inhibit_output_queue" });
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
+  auto qi = appfwk::queue_index(init_data, { "trigger_record_input_queue" });
   try {
-    triggerRecordInputQueue_.reset(new trigrecsource_t(qi["trigger_record_input_queue"].inst));
+    m_trigger_record_input_queue.reset(new trigrecsource_t(qi["trigger_record_input_queue"].inst));
   } catch (const ers::Issue& excpt) {
     throw InvalidQueueFatalError(ERS_HERE, get_name(), "trigger_record_input_queue", excpt);
   }
 
-  using trigdecsource_t = dunedaq::appfwk::DAQSource<dfmessages::TriggerDecision>;
-  std::unique_ptr<trigdecsource_t> trig_dec_queue_for_inh;
-  try {
-    trig_dec_queue_for_inh.reset(new trigdecsource_t(qi["trigger_decision_for_inhibit"].inst));
-  } catch (const ers::Issue& excpt) {
-    throw InvalidQueueFatalError(ERS_HERE, get_name(), "trigger_decision_for_inhibit", excpt);
-  }
-  using triginhsink_t = dunedaq::appfwk::DAQSink<dfmessages::TriggerInhibit>;
-  std::unique_ptr<triginhsink_t> trig_inh_output_queue;
-  try {
-    trig_inh_output_queue.reset(new triginhsink_t(qi["trigger_inhibit_output_queue"].inst));
-  } catch (const ers::Issue& excpt) {
-    throw InvalidQueueFatalError(ERS_HERE, get_name(), "trigger_inhibit_output_queue", excpt);
-  }
-  trigger_inhibit_agent_.reset(
-    new TriggerInhibitAgent(get_name(), std::move(trig_dec_queue_for_inh), std::move(trig_inh_output_queue)));
-
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
 
+void
+DataWriter::get_info(opmonlib::InfoCollector& ci, int /*level*/)
+{
+  datawriterinfo::Info dwi;
+
+  dwi.records_received = m_records_received_tot.load();
+  dwi.new_records_received = m_records_received.exchange(0);
+  dwi.records_written = m_records_written_tot.load();
+  dwi.new_records_written = m_records_written.exchange(0);
+  dwi.bytes_output = m_bytes_output.load();
+
+  ci.add(dwi);
+}
 void
 DataWriter::do_conf(const data_t& payload)
 {
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
 
   datawriter::ConfParams conf_params = payload.get<datawriter::ConfParams>();
-  trigger_inhibit_agent_->set_threshold_for_inhibit(conf_params.threshold_for_inhibit);
-  TLOG(TLVL_CONFIG) << get_name() << ": threshold_for_inhibit is " << conf_params.threshold_for_inhibit;
-  TLOG(TLVL_CONFIG) << get_name() << ": data_store_parameters are " << conf_params.data_store_parameters;
+  m_data_storage_prescale = conf_params.data_storage_prescale;
+  TLOG_DEBUG(TLVL_CONFIG) << get_name() << ": data_storage_prescale is " << m_data_storage_prescale;
+  TLOG_DEBUG(TLVL_CONFIG) << get_name() << ": data_store_parameters are " << conf_params.data_store_parameters;
+  m_min_write_retry_time_usec = conf_params.min_write_retry_time_usec;
+  if (m_min_write_retry_time_usec < 1) {
+    m_min_write_retry_time_usec = 1;
+  }
+  m_max_write_retry_time_usec = conf_params.max_write_retry_time_usec;
+  m_write_retry_time_increase_factor = conf_params.write_retry_time_increase_factor;
+  m_trigger_decision_token_connection = conf_params.token_connection;
+  m_trigger_decision_connection = conf_params.decision_connection;
 
   // create the DataStore instance here
-  data_writer_ = makeDataStore(payload["data_store_parameters"]);
+  try {
+    m_data_writer = make_data_store(payload["data_store_parameters"]);
+  } catch (const ers::Issue& excpt) {
+    throw UnableToConfigure(ERS_HERE, get_name(), excpt);
+  }
 
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
+  // ensure that we have a valid dataWriter instance
+  if (m_data_writer.get() == nullptr) {
+    throw InvalidDataWriter(ERS_HERE, get_name());
+  }
+
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
 }
 
 void
-DataWriter::do_start(const data_t& /*args*/)
+DataWriter::do_start(const data_t& payload)
 {
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_start() method";
-  trigger_inhibit_agent_->start_checking();
-  thread_.start_working_thread();
-  ERS_LOG(get_name() << " successfully started");
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_start() method";
+
+  rcif::cmd::StartParams start_params = payload.get<rcif::cmd::StartParams>();
+  m_data_storage_is_enabled = (!start_params.disable_data_storage);
+  m_run_number = start_params.run;
+
+  // 04-Feb-2021, KAB: added this call to allow DataStore to prepare for the run.
+  // I've put this call fairly early in this method because it could throw an
+  // exception and abort the run start.  And, it seems sensible to avoid starting
+  // threads, etc. if we throw an exception.
+  if (m_data_storage_is_enabled) {
+    try {
+      m_data_writer->prepare_for_run(m_run_number);
+    } catch (const ers::Issue& excpt) {
+      throw UnableToStart(ERS_HERE, get_name(), m_run_number, excpt);
+    }
+  }
+
+  m_seqno_counts.clear();
+
+  m_thread.start_working_thread(get_name());
+
+  TLOG() << get_name() << " successfully started for run number " << m_run_number;
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
 }
 
 void
 DataWriter::do_stop(const data_t& /*args*/)
 {
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_stop() method";
-  trigger_inhibit_agent_->stop_checking();
-  thread_.stop_working_thread();
-  ERS_LOG(get_name() << " successfully stopped");
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_stop() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_stop() method";
+
+  m_thread.stop_working_thread();
+
+  // 04-Feb-2021, KAB: added this call to allow DataStore to finish up with this run.
+  // I've put this call fairly late in this method so that any draining of queues
+  // (or whatever) can take place before we finalize things in the DataStore.
+  if (m_data_storage_is_enabled) {
+    try {
+      m_data_writer->finish_with_run(m_run_number);
+    } catch (const std::exception& excpt) {
+      ers::error(ProblemDuringStop(ERS_HERE, get_name(), m_run_number, excpt));
+    }
+  }
+
+  TLOG() << get_name() << " successfully stopped for run number " << m_run_number;
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_stop() method";
 }
 
 void
 DataWriter::do_scrap(const data_t& /*payload*/)
 {
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_scrap() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_scrap() method";
 
   // clear/reset the DataStore instance here
-  data_writer_.reset();
+  m_data_writer.reset();
 
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_scrap() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_scrap() method";
 }
 
 void
 DataWriter::do_work(std::atomic<bool>& running_flag)
 {
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() method";
-  int32_t received_count = 0;
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() method";
+  m_records_received = 0;
+  m_records_received_tot = 0;
+  m_records_written = 0;
+  m_records_written_tot = 0;
+  m_bytes_output = 0;
 
   // ensure that we have a valid dataWriter instance
-  if (data_writer_.get() == nullptr) {
-    throw InvalidDataWriterError(ERS_HERE, get_name());
+  if (m_data_writer.get() == nullptr) {
+    // this check is done essentially to notify the user
+    // in case the "start" has been called before the "conf"
+    ers::fatal(InvalidDataWriter(ERS_HERE, get_name()));
   }
 
-  while (running_flag.load()) {
-    std::unique_ptr<dataformats::TriggerRecord> trigRecPtr;
+  while (running_flag.load() || m_trigger_record_input_queue->can_pop()) {
+
+    std::unique_ptr<daqdataformats::TriggerRecord> trigger_record_ptr;
 
     // receive the next TriggerRecord
     try {
-      triggerRecordInputQueue_->pop(trigRecPtr, queueTimeout_);
-      ++received_count;
-      TLOG(TLVL_WORK_STEPS) << get_name() << ": Popped the TriggerRecord for trigger number "
-                            << trigRecPtr->get_header().get_trigger_number() << " off the input queue";
+      m_trigger_record_input_queue->pop(trigger_record_ptr, m_queue_timeout);
+      ++m_records_received;
+      ++m_records_received_tot;
+      TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Popped the TriggerRecord for trigger number "
+                                  << trigger_record_ptr->get_header_ref().get_trigger_number() << "."
+                                  << trigger_record_ptr->get_header_ref().get_sequence_number()
+                                  << " off the input queue";
     } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
       // it is perfectly reasonable that there might be no data in the queue
       // some fraction of the times that we check, so we just continue on and try again
       continue;
     }
 
-    // if we received a TriggerRecord, print out some debug information, if requested
+    // 03-Feb-2021, KAB: adding support for a data-storage prescale.
+    // In this "if" statement, I deliberately compare the result of (N mod prescale) to 1
+    // instead of zero, since I think that it would be nice to always get the first event
+    // written out.
+    if (m_data_storage_prescale <= 1 || ((m_records_received_tot.load() % m_data_storage_prescale) == 1)) {
+      std::vector<KeyedDataBlock> data_block_list;
+      uint64_t bytes_in_data_blocks = 0; // NOLINT(build/unsigned)
 
-    // First store the trigger record header
-    void* trh_ptr = trigRecPtr->get_header().get_storage_location();
-    size_t trh_size = trigRecPtr->get_header().get_total_size_bytes();
-    // Apa number and link number in trh_key
-    // are not taken into account for the Trigger
-    StorageKey trh_key(trigRecPtr->get_header().get_run_number(),
-                       trigRecPtr->get_header().get_trigger_number(),
-                       "TriggerRecordHeader",
-                       1,
-                       1);
-    KeyedDataBlock trh_block(trh_key);
-    trh_block.unowned_data_start = trh_ptr;
-    trh_block.data_size = trh_size;
-    data_writer_->write(trh_block);
+      // First deal with the trigger record header
+      const void* trh_ptr = trigger_record_ptr->get_header_ref().get_storage_location();
+      size_t trh_size = trigger_record_ptr->get_header_ref().get_total_size_bytes();
+      // Apa number and link number in trh_key
+      // are not taken into account for the Trigger
+      StorageKey trh_key(trigger_record_ptr->get_header_ref().get_run_number(),
+                         trigger_record_ptr->get_header_ref().get_trigger_number(),
+                         StorageKey::DataRecordGroupType::kTriggerRecordHeader,
+                         1,
+                         1);
+      trh_key.m_this_sequence_number = trigger_record_ptr->get_header_ref().get_sequence_number();
+      trh_key.m_max_sequence_number = trigger_record_ptr->get_header_ref().get_max_sequence_number();
+      KeyedDataBlock trh_block(trh_key);
+      trh_block.m_unowned_data_start = trh_ptr;
+      trh_block.m_data_size = trh_size;
+      bytes_in_data_blocks += trh_block.m_data_size;
+      data_block_list.emplace_back(std::move(trh_block));
 
-    // Write the fragments
-    const auto& frag_vec = trigRecPtr->get_fragments();
-    for (const auto& frag_ptr : frag_vec) {
-      TLOG(TLVL_FRAGMENT_HEADER_DUMP) << get_name() << ": Partial(?) contents of the Fragment from link "
-                                      << frag_ptr->get_link_id().link_number;
-      const size_t number_of_32bit_values_per_row = 5;
-      const size_t max_number_of_rows = 5;
-      int number_of_32bit_values_to_print =
-        std::min((number_of_32bit_values_per_row * max_number_of_rows),
-                 (static_cast<size_t>(frag_ptr->get_size()) / sizeof(uint32_t)));               // NOLINT
-      const uint32_t* mem_ptr = static_cast<const uint32_t*>(frag_ptr->get_storage_location()); // NOLINT
-      std::ostringstream oss_hexdump;
-      for (int idx = 0; idx < number_of_32bit_values_to_print; ++idx) {
-        if ((idx % number_of_32bit_values_per_row) == 0) {
-          oss_hexdump << "32-bit offset " << std::setw(2) << std::setfill(' ') << idx << ":" << std::hex;
+      // Loop over the fragments
+      const auto& frag_vec = trigger_record_ptr->get_fragments_ref();
+      for (const auto& frag_ptr : frag_vec) {
+
+        // print out some debug information, if requested
+        TLOG_DEBUG(TLVL_FRAGMENT_HEADER_DUMP)
+          << get_name() << ": Partial(?) contents of the Fragment from link " << frag_ptr->get_element_id();
+        const size_t number_of_32bit_values_per_row = 5;
+        const size_t max_number_of_rows = 5;
+        int number_of_32bit_values_to_print =
+          std::min((number_of_32bit_values_per_row * max_number_of_rows),
+                   (static_cast<size_t>(frag_ptr->get_size()) / sizeof(uint32_t)));               // NOLINT
+        const uint32_t* mem_ptr = static_cast<const uint32_t*>(frag_ptr->get_storage_location()); // NOLINT
+        std::ostringstream oss_hexdump;
+        for (int idx = 0; idx < number_of_32bit_values_to_print; ++idx) {
+          if ((idx % number_of_32bit_values_per_row) == 0) {
+            oss_hexdump << "32-bit offset " << std::setw(2) << std::setfill(' ') << idx << ":" << std::hex;
+          }
+          oss_hexdump << " 0x" << std::setw(8) << std::setfill('0') << *mem_ptr;
+          ++mem_ptr;
+          if (((idx + 1) % number_of_32bit_values_per_row) == 0) {
+            oss_hexdump << std::dec;
+            TLOG_DEBUG(TLVL_FRAGMENT_HEADER_DUMP) << get_name() << ": " << oss_hexdump.str();
+            oss_hexdump.str("");
+            oss_hexdump.clear();
+          }
         }
-        oss_hexdump << " 0x" << std::setw(8) << std::setfill('0') << *mem_ptr;
-        ++mem_ptr;
-        if (((idx + 1) % number_of_32bit_values_per_row) == 0) {
-          oss_hexdump << std::dec;
-          TLOG(TLVL_FRAGMENT_HEADER_DUMP) << get_name() << ": " << oss_hexdump.str();
-          oss_hexdump.str("");
-          oss_hexdump.clear();
+        if (oss_hexdump.str().length() > 0) {
+          TLOG_DEBUG(TLVL_FRAGMENT_HEADER_DUMP) << get_name() << ": " << oss_hexdump.str();
         }
-      }
-      if (oss_hexdump.str().length() > 0) {
-        TLOG(TLVL_FRAGMENT_HEADER_DUMP) << get_name() << ": " << oss_hexdump.str();
+
+        // add information about each Fragment to the list of data blocks to be stored
+        StorageKey::DataRecordGroupType group_type =
+          get_group_type(frag_ptr->get_element_id().system_type, frag_ptr->get_fragment_type());
+        StorageKey fragment_skey(frag_ptr->get_run_number(),
+                                 frag_ptr->get_trigger_number(),
+                                 group_type,
+                                 frag_ptr->get_element_id().region_id,
+                                 frag_ptr->get_element_id().element_id);
+        fragment_skey.m_this_sequence_number = frag_ptr->get_sequence_number();
+        fragment_skey.m_max_sequence_number = trigger_record_ptr->get_header_ref().get_max_sequence_number();
+        KeyedDataBlock data_block(fragment_skey);
+        data_block.m_unowned_data_start = frag_ptr->get_storage_location();
+        data_block.m_data_size = frag_ptr->get_size();
+        bytes_in_data_blocks += data_block.m_data_size;
+
+        data_block_list.emplace_back(std::move(data_block));
       }
 
-      // write each Fragment to the DataStore
-      // //StorageKey fragment_skey(trigRecPtr->get_run_number(), trigRecPtr->get_trigger_number, "FELIX",
-      StorageKey fragment_skey(frag_ptr->get_run_number(),
-                               frag_ptr->get_trigger_number(),
-                               "FELIX",
-                               frag_ptr->get_link_id().apa_number,
-                               frag_ptr->get_link_id().link_number);
-      KeyedDataBlock data_block(fragment_skey);
-      data_block.unowned_data_start = frag_ptr->get_storage_location();
-      data_block.data_size = frag_ptr->get_size();
+      // write the TRH and the fragments as a set of data blocks
+      if (m_data_storage_is_enabled) {
 
-      // data_block.unowned_trigger_record_header =
-      // data_block.trh_size =
-      data_writer_->write(data_block);
+        bool should_retry = true;
+        size_t retry_wait_usec = m_min_write_retry_time_usec;
+        do {
+          should_retry = false;
+          try {
+            m_data_writer->write(data_block_list);
+            ++m_records_written;
+            ++m_records_written_tot;
+            m_bytes_output += bytes_in_data_blocks;
+          } catch (const RetryableDataStoreProblem& excpt) {
+            should_retry = true;
+            ers::error(DataWritingProblem(ERS_HERE,
+                                          get_name(),
+                                          trigger_record_ptr->get_header_ref().get_trigger_number(),
+                                          trigger_record_ptr->get_header_ref().get_run_number(),
+                                          excpt));
+            if (retry_wait_usec > m_max_write_retry_time_usec) {
+              retry_wait_usec = m_max_write_retry_time_usec;
+            }
+            usleep(retry_wait_usec);
+            retry_wait_usec *= m_write_retry_time_increase_factor;
+          } catch (const std::exception& excpt) {
+            ers::error(DataWritingProblem(ERS_HERE,
+                                          get_name(),
+                                          trigger_record_ptr->get_header_ref().get_trigger_number(),
+                                          trigger_record_ptr->get_header_ref().get_run_number(),
+                                          excpt));
+          }
+        } while (should_retry && running_flag.load());
+      }
     }
 
-    // progress updates
-    if ((received_count % 3) == 0) {
-      std::ostringstream oss_prog;
-      oss_prog << ": Processing trigger number " << trigRecPtr->get_header().get_trigger_number() << ", this is one of "
-               << received_count << " trigger records received so far.";
-      ers::log(ProgressUpdate(ERS_HERE, get_name(), oss_prog.str()));
+    bool send_trigger_complete_message = true;
+    if (trigger_record_ptr->get_header_ref().get_max_sequence_number() > 0) {
+      send_trigger_complete_message = false;
+      daqdataformats::trigger_number_t trigno = trigger_record_ptr->get_header_ref().get_trigger_number();
+      if (m_seqno_counts.count(trigno) > 0) {
+        ++m_seqno_counts[trigno];
+      } else {
+        m_seqno_counts[trigno] = 1;
+      }
+      // in the following comparison GT (>) is used since the counts are one-based and the
+      // max sequence number is zero-based.
+      if (m_seqno_counts[trigno] > trigger_record_ptr->get_header_ref().get_max_sequence_number()) {
+        send_trigger_complete_message = true;
+        m_seqno_counts.erase(trigno);
+      } else {
+        // by putting this TLOG call in an "else" clause, we avoid resurrecting the "trigno"
+        // entry in the map after erasing it above. In other words, if we move this TLOG outside
+        // the "else" clause, the map will forever increase in size.
+        TLOG_DEBUG(TLVL_SEQNO_MAP_CONTENTS) << get_name() << ": the sequence number count for trigger number " << trigno
+                                            << " is " << m_seqno_counts[trigno] << " (number of entries "
+                                            << "in the seqno map is " << m_seqno_counts.size() << ").";
+      }
     }
+    if (send_trigger_complete_message) {
+      TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Pushing the TriggerDecisionToken for trigger number "
+                                  << trigger_record_ptr->get_header_ref().get_trigger_number()
+                                  << " onto the relevant output queue";
+      dfmessages::TriggerDecisionToken token;
+      token.run_number = m_run_number;
+      token.trigger_number = trigger_record_ptr->get_header_ref().get_trigger_number();
+      token.decision_destination = m_trigger_decision_connection;
 
-    // tell the TriggerInhibitAgent the trigger_number of this TriggerRecord so that
-    // it can check whether an Inhibit needs to be asserted or cleared.
-    trigger_inhibit_agent_->set_latest_trigger_number(trigRecPtr->get_header().get_trigger_number());
+      auto serialised_token = dunedaq::serialization::serialize(token, dunedaq::serialization::kMsgPack);
+
+      NetworkManager::get().send_to(m_trigger_decision_token_connection,
+                                    static_cast<const void*>(serialised_token.data()),
+                                    serialised_token.size(),
+                                    m_queue_timeout);
+    }
   }
 
-  std::ostringstream oss_summ;
-  oss_summ << ": Exiting the do_work() method, received trigger record messages for " << received_count << " triggers.";
-  ers::log(ProgressUpdate(ERS_HERE, get_name(), oss_summ.str()));
-  TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_work() method";
-}
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_work() method";
+} // NOLINT(readability/fn_size)
 
 } // namespace dfmodules
 } // namespace dunedaq

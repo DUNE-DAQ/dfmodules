@@ -9,7 +9,7 @@
 #ifndef DFMODULES_PLUGINS_FAKEDATAPROD_HPP_
 #define DFMODULES_PLUGINS_FAKEDATAPROD_HPP_
 
-#include "dataformats/Fragment.hpp"
+#include "daqdataformats/Fragment.hpp"
 #include "dfmessages/DataRequest.hpp"
 
 #include "appfwk/DAQModule.hpp"
@@ -22,6 +22,26 @@
 #include <vector>
 
 namespace dunedaq {
+
+// Disable coverage checking LCOV_EXCL_START
+ERS_DECLARE_ISSUE(dfmodules,
+                  FragmentTransmissionFailed,
+                  mod_name << " failed to send data for trigger number " << tr_num << ".",
+                  ((std::string)mod_name)((int64_t)tr_num))
+
+ERS_DECLARE_ISSUE(dfmodules,
+                  TimeSyncTransmissionFailed,
+                  mod_name << " failed to send send TimeSync message to " << dest << " with topic " << topic << ".",
+                  ((std::string)mod_name)((std::string)dest)((std::string)topic))
+ERS_DECLARE_ISSUE_BASE(dfmodules,
+                       MemoryAllocationFailed,
+                       appfwk::GeneralDAQModuleIssue,
+                       "Malloc of " << bytes << " bytes failed",
+                       ((std::string)name),
+                       ((size_t)bytes))
+
+// Disable coverage checking LCOV_EXCL_STOP
+
 namespace dfmodules {
 
 /**
@@ -49,21 +69,32 @@ private:
   void do_start(const data_t&);
   void do_stop(const data_t&);
 
+  void get_info(opmonlib::InfoCollector& ci, int level) override;
+
   // Threading
-  dunedaq::appfwk::ThreadHelper thread_;
+  dunedaq::appfwk::ThreadHelper m_thread;
+  dunedaq::appfwk::ThreadHelper m_timesync_thread;
   void do_work(std::atomic<bool>&);
+  void do_timesync(std::atomic<bool>&);
 
   // Configuration
-  // size_t sleepMsecWhileRunning_;
-  std::chrono::milliseconds queueTimeout_;
-  dunedaq::dataformats::run_number_t run_number_;
-  uint32_t fake_link_number_; // NOLINT
+  // size_t m_sleep_msec_while_running;
+  std::chrono::milliseconds m_queue_timeout;
+  dunedaq::daqdataformats::run_number_t m_run_number;
+  daqdataformats::GeoID m_geoid;
+  uint64_t m_time_tick_diff; // NOLINT (build/unsigned)
+  uint64_t m_frame_size;     // NOLINT (build/unsigned)
+  uint64_t m_response_delay; // NOLINT (build/unsigned)
+  daqdataformats::FragmentType m_fragment_type;
+  std::string m_timesync_connection_name;
+  std::string m_timesync_topic_name;
 
   // Queue(s)
   using datareqsource_t = dunedaq::appfwk::DAQSource<dfmessages::DataRequest>;
-  std::unique_ptr<datareqsource_t> dataRequestInputQueue_;
-  using datafragsink_t = dunedaq::appfwk::DAQSink<std::unique_ptr<dataformats::Fragment>>;
-  std::unique_ptr<datafragsink_t> dataFragmentOutputQueue_;
+  std::unique_ptr<datareqsource_t> m_data_request_input_queue;
+
+  std::atomic<uint64_t> m_received_requests{ 0 }; // NOLINT (build/unsigned)
+  std::atomic<uint64_t> m_sent_fragments{ 0 };    // NOLINT (build/unsigned)
 };
 } // namespace dfmodules
 } // namespace dunedaq

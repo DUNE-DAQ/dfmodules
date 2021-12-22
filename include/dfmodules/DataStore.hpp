@@ -16,12 +16,15 @@
 #define DFMODULES_INCLUDE_DFMODULES_DATASTORE_HPP_
 
 #include "dfmodules/KeyedDataBlock.hpp"
-#include "ers/ers.h"
-#include <appfwk/NamedObject.hpp>
-#include <nlohmann/json.hpp>
 
-#include <cetlib/BasicPluginFactory.h>
-#include <cetlib/compiler_macros.h>
+#include "appfwk/NamedObject.hpp"
+#include "cetlib/BasicPluginFactory.h"
+#include "cetlib/compiler_macros.h"
+#include "daqdataformats/Types.hpp"
+#include "logging/Logging.hpp"
+
+#include "nlohmann/json.hpp"
+
 #include <chrono>
 #include <cstddef>
 #include <memory>
@@ -29,6 +32,7 @@
 #include <vector>
 
 #ifndef EXTERN_C_FUNC_DECLARE_START
+// NOLINTNEXTLINE(build/define_used)
 #define EXTERN_C_FUNC_DECLARE_START                                                                                    \
   extern "C"                                                                                                           \
   {
@@ -37,6 +41,7 @@
  * @brief Declare the function that will be called by the plugin loader
  * @param klass Class to be defined as a DUNE IPM Receiver
  */
+// NOLINTNEXTLINE(build/define_used)
 #define DEFINE_DUNE_DATA_STORE(klass)                                                                                  \
   EXTERN_C_FUNC_DECLARE_START                                                                                          \
   std::unique_ptr<dunedaq::dfmodules::DataStore> make(const nlohmann::json& conf)                                      \
@@ -48,7 +53,8 @@
 namespace dunedaq {
 
 /**
- * @brief A ERS Issue for DataStore creation failure
+ * @brief An ERS Issue for DataStore creation failure
+ * @cond Doxygen doesn't like ERS macros LCOV_EXCL_START
  */
 ERS_DECLARE_ISSUE(dfmodules,               ///< Namespace
                   DataStoreCreationFailed, ///< Type of the Issue
@@ -56,6 +62,29 @@ ERS_DECLARE_ISSUE(dfmodules,               ///< Namespace
                                                 << conf,           ///< Log Message from the issue
                   ((std::string)plugin_name)((nlohmann::json)conf) ///< Message parameters
 )
+/// @endcond LCOV_EXCL_STOP
+
+/**
+ * @brief An ERS Issue for DataStore problems in which it is
+ * reasonable to retry the operation.
+ * @cond Doxygen doesn't like ERS macros LCOV_EXCL_START
+ */
+ERS_DECLARE_ISSUE(dfmodules,
+                  RetryableDataStoreProblem,
+                  "Module " << mod_name << ": A problem was encountered when " << description,
+                  ((std::string)mod_name)((std::string)description))
+/// @endcond LCOV_EXCL_STOP
+
+/**
+ * @brief An ERS Issue for DataStore problems in which it is
+ * not clear whether retrying the operation might succeed or not.
+ * @cond Doxygen doesn't like ERS macros LCOV_EXCL_START
+ */
+ERS_DECLARE_ISSUE(dfmodules,
+                  GeneralDataStoreProblem,
+                  "Module " << mod_name << ": A problem was encountered when " << description,
+                  ((std::string)mod_name)((std::string)description))
+/// @endcond LCOV_EXCL_STOP
 
 namespace dfmodules {
 
@@ -74,27 +103,41 @@ public:
   {}
 
   /**
-   * @brief Setup the DataStore for reading/writign.
-   * @param directory path and filename.
+   * @brief Writes the specified data payload into the DataStore.
+   * @param data_block Data block to write.
    */
-  virtual void setup(const size_t eventId) = 0;
+  virtual void write(const KeyedDataBlock& data_block) = 0;
 
   /**
-   * @brief Writes the specified data payload into the DataStore.
-   * @param dataBlock Data block to write.
+   * @brief Writes the specified set of data blocks into the DataStore.
+   * @param data_block_list List of data blocks to write.
    */
-  virtual void write(const KeyedDataBlock& dataBlock) = 0;
+  virtual void write(const std::vector<KeyedDataBlock>& data_block_list) = 0;
 
   /**
    * @brief Returns the list of all keys that currently existing in the DataStore
    * @return list of StorageKeys
    */
-  virtual std::vector<StorageKey> getAllExistingKeys() const = 0;
+  virtual std::vector<StorageKey> get_all_existing_keys() const = 0;
 
-  // Ideas for future work...
-  // virtual void write(const std::vector<KeyedDataBlock>& dataBlockList) = 0;
   virtual KeyedDataBlock read(const StorageKey& key) = 0;
   // virtual std::vector<KeyedDataBlock> read(const std::vector<StorageKey>& key) = 0;
+
+  /**
+   * @brief Informs the DataStore that writes or reads of data blocks associated
+   * with the specified run number will soon be requested.
+   * This allows DataStore instances to make any preparations that will be
+   * beneficial in advance of the first data blocks being written or read.
+   */
+  virtual void prepare_for_run(daqdataformats::run_number_t run_number) = 0;
+
+  /**
+   * @brief Informs the DataStore that writes or reads of data blocks associated
+   * with the specified run number have finished, for now.
+   * This allows DataStore instances to do any cleanup or shutdown operations
+   * that are useful once the writes or reads for a given run number have finished.
+   */
+  virtual void finish_with_run(daqdataformats::run_number_t run_number) = 0;
 
 private:
   DataStore(const DataStore&) = delete;
@@ -111,7 +154,7 @@ private:
  * @return unique_ptr to created DataStore instance
  */
 inline std::unique_ptr<DataStore>
-makeDataStore(const std::string& type, const nlohmann::json& conf)
+make_data_store(const std::string& type, const nlohmann::json& conf)
 {
   static cet::BasicPluginFactory bpf("duneDataStore", "make"); // NOLINT
 
@@ -132,9 +175,9 @@ makeDataStore(const std::string& type, const nlohmann::json& conf)
  * @return unique_ptr to created DataStore instance
  */
 inline std::unique_ptr<DataStore>
-makeDataStore(const nlohmann::json& conf)
+make_data_store(const nlohmann::json& conf)
 {
-  return makeDataStore(conf["type"].get<std::string>(), conf);
+  return make_data_store(conf["type"].get<std::string>(), conf);
 }
 
 } // namespace dfmodules

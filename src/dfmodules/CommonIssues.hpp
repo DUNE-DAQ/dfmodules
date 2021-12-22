@@ -12,12 +12,16 @@
 #ifndef DFMODULES_SRC_DFMODULES_COMMONISSUES_HPP_
 #define DFMODULES_SRC_DFMODULES_COMMONISSUES_HPP_
 
-#include "appfwk/DAQModule.hpp"
-#include "ers/Issue.h"
+#include "appfwk/DAQModule.hpp" // should eventually include "logging/Logging.hpp"
+#include "daqdataformats/GeoID.hpp"
+#include "ers/Issue.hpp"
+#include "logging/Logging.hpp" // this should eventually be included in appfwk
 
 #include <string>
 
 namespace dunedaq {
+
+// Disable coverage checking LCOV_EXCL_START
 
 ERS_DECLARE_ISSUE_BASE(dfmodules,
                        ProgressUpdate,
@@ -29,16 +33,56 @@ ERS_DECLARE_ISSUE_BASE(dfmodules,
 ERS_DECLARE_ISSUE_BASE(dfmodules,
                        InvalidQueueFatalError,
                        appfwk::GeneralDAQModuleIssue,
-                       "The " << queueType << " queue was not successfully created.",
+                       "The " << queue_type << " queue was not successfully created.",
                        ((std::string)name),
-                       ((std::string)queueType))
+                       ((std::string)queue_type))
 
 ERS_DECLARE_ISSUE_BASE(dfmodules,
                        InvalidHDF5Group,
                        appfwk::GeneralDAQModuleIssue,
-                       "The HDF5 Group associated with name \"" << groupName << "\" is invalid. ",
+                       "The HDF5 Group associated with name \"" << group_name << "\" is invalid.",
                        ((std::string)name),
-                       ((std::string)groupName))
+                       ((std::string)group_name))
+
+ERS_DECLARE_ISSUE_BASE(dfmodules,
+                       UnableToConfigure,
+                       appfwk::GeneralDAQModuleIssue,
+                       "Unable to successfully configure.",
+                       ((std::string)name),
+                       ERS_EMPTY)
+
+ERS_DECLARE_ISSUE_BASE(dfmodules,
+                       UnableToStart,
+                       appfwk::GeneralDAQModuleIssue,
+                       "Unable to start run " << run_number << ".",
+                       ((std::string)name),
+                       ((size_t)run_number))
+
+ERS_DECLARE_ISSUE_BASE(dfmodules,
+                       ProblemDuringStop,
+                       appfwk::GeneralDAQModuleIssue,
+                       "A problem was enountered during the stopping of run " << run_number << ".",
+                       ((std::string)name),
+                       ((size_t)run_number))
+
+/**
+ * @brief Unknown GeoID
+ */
+ERS_DECLARE_ISSUE(dfmodules,    ///< Namespace
+                  UnknownGeoID, ///< Issue class name
+                  "Unknown GeoID: " << geo_id,
+                  ((daqdataformats::GeoID)geo_id) ///< Message parameters
+)
+
+/**
+ * @brief Invalid System Type
+ */
+ERS_DECLARE_ISSUE(dfmodules,         ///< Namespace
+                  InvalidSystemType, ///< Issue class name
+                  "Unknown system type " << type,
+                  ((std::string)type) ///< Message parameters
+)
+// Re-enable coverage checking LCOV_EXCL_STOP
 
 } // namespace dunedaq
 

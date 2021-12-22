@@ -10,13 +10,16 @@
 #define DFMODULES_PLUGINS_DATAWRITER_HPP_
 
 #include "dfmodules/DataStore.hpp"
-#include "dfmodules/TriggerInhibitAgent.hpp"
 
 #include "appfwk/DAQModule.hpp"
+#include "appfwk/DAQSink.hpp"
 #include "appfwk/DAQSource.hpp"
 #include "appfwk/ThreadHelper.hpp"
-#include "dataformats/TriggerRecord.hpp"
+#include "daqdataformats/TriggerRecord.hpp"
+#include "dfmessages/TriggerDecisionToken.hpp"
 
+#include <chrono>
+#include <map>
 #include <memory>
 #include <string>
 #include <vector>
@@ -42,6 +45,7 @@ public:
   DataWriter& operator=(DataWriter&&) = delete;      ///< DataWriter is not move-assignable
 
   void init(const data_t&) override;
+  void get_info(opmonlib::InfoCollector& ci, int level) override;
 
 private:
   // Commands
@@ -51,30 +55,86 @@ private:
   void do_scrap(const data_t&);
 
   // Threading
-  dunedaq::appfwk::ThreadHelper thread_;
+  dunedaq::appfwk::ThreadHelper m_thread;
   void do_work(std::atomic<bool>&);
 
   // Configuration
-  // size_t sleepMsecWhileRunning_;
-  std::chrono::milliseconds queueTimeout_;
+  // size_t m_sleep_msec_while_running;
+  std::chrono::milliseconds m_queue_timeout;
+  bool m_data_storage_is_enabled;
+  int m_data_storage_prescale;
+  daqdataformats::run_number_t m_run_number;
+  size_t m_min_write_retry_time_usec;
+  size_t m_max_write_retry_time_usec;
+  int m_write_retry_time_increase_factor;
 
   // Queue(s)
-  using trigrecsource_t = dunedaq::appfwk::DAQSource<std::unique_ptr<dataformats::TriggerRecord>>;
-  std::unique_ptr<trigrecsource_t> triggerRecordInputQueue_;
+  using trigrecsource_t = dunedaq::appfwk::DAQSource<std::unique_ptr<daqdataformats::TriggerRecord>>;
+  std::unique_ptr<trigrecsource_t> m_trigger_record_input_queue;
+
+  // Connection(s)
+  std::string m_trigger_decision_token_connection;
+  std::string m_trigger_decision_connection;
 
   // Worker(s)
-  std::unique_ptr<DataStore> data_writer_;
-  std::unique_ptr<TriggerInhibitAgent> trigger_inhibit_agent_;
+  std::unique_ptr<DataStore> m_data_writer;
+
+  // Metrics
+  std::atomic<uint64_t> m_records_received = { 0 };     // NOLINT(build/unsigned)
+  std::atomic<uint64_t> m_records_received_tot = { 0 }; // NOLINT(build/unsigned)
+  std::atomic<uint64_t> m_records_written = { 0 };      // NOLINT(build/unsigned)
+  std::atomic<uint64_t> m_records_written_tot = { 0 };  // NOLINT(build/unsigned)
+  std::atomic<uint64_t> m_bytes_output = { 0 };         // NOLINT(build/unsigned)
+
+  // Other
+  std::map<daqdataformats::trigger_number_t, size_t> m_seqno_counts;
+
+  inline double elapsed_seconds(std::chrono::steady_clock::time_point then,
+                                std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now()) const
+  {
+    return std::chrono::duration_cast<std::chrono::seconds>(now - then).count();
+  }
+
+  using geoid_system_type_t = daqdataformats::GeoID::SystemType;
+  using key_group_type_t = StorageKey::DataRecordGroupType;
+  std::map<geoid_system_type_t, key_group_type_t> m_system_type_to_group_type_mapping;
+  key_group_type_t get_group_type(geoid_system_type_t system_type, daqdataformats::FragmentType frag_type)
+  {
+    // 16-Aug-2021, KAB: ugly hack
+    if (system_type == geoid_system_type_t::kTPC && frag_type == daqdataformats::FragmentType::kTriggerPrimitives) {
+      return key_group_type_t::kTPC_TP;
+    }
+
+    if (m_system_type_to_group_type_mapping.size() == 0) {
+      m_system_type_to_group_type_mapping[geoid_system_type_t::kTPC] = key_group_type_t::kTPC;
+      m_system_type_to_group_type_mapping[geoid_system_type_t::kPDS] = key_group_type_t::kPDS;
+      m_system_type_to_group_type_mapping[geoid_system_type_t::kDataSelection] = key_group_type_t::kTrigger;
+      m_system_type_to_group_type_mapping[geoid_system_type_t::kNDLArTPC] = key_group_type_t::kNDLArTPC;
+      m_system_type_to_group_type_mapping[geoid_system_type_t::kInvalid] = key_group_type_t::kInvalid;
+    }
+    auto map_iter = m_system_type_to_group_type_mapping.find(system_type);
+    if (map_iter == m_system_type_to_group_type_mapping.end()) {
+      return key_group_type_t::kInvalid;
+    }
+    return map_iter->second;
+  };
 };
 } // namespace dfmodules
 
 ERS_DECLARE_ISSUE_BASE(dfmodules,
-                       InvalidDataWriterError,
+                       InvalidDataWriter,
                        appfwk::GeneralDAQModuleIssue,
                        "A valid dataWriter instance is not available so it will not be possible to write data. A "
                        "likely cause for this is a skipped or missed Configure transition.",
                        ((std::string)name),
                        ERS_EMPTY)
+
+ERS_DECLARE_ISSUE_BASE(dfmodules,
+                       DataWritingProblem,
+                       appfwk::GeneralDAQModuleIssue,
+                       "A problem was encountered when writing TriggerRecord number " << trnum << " in run " << runnum,
+                       ((std::string)name),
+                       ((size_t)trnum)((size_t)runnum))
 
 } // namespace dunedaq
 

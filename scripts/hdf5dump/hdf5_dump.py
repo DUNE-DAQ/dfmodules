@@ -1,179 +1,229 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
-# Version 0.1
-# Last modified: January 13, 2021
+# Version 1.0
+# Last modified: April 10, 2021
 
-# USAGE: python3 hdf5_dump.py -f sample.hdf5 -TRH  
+# USAGE: python3 hdf5_dump.py -f sample.hdf5
 
-import os
-import time
 import argparse
-import subprocess
-import re
-
+import datetime
 import h5py
-import binascii
+import struct
+
+CLOCK_SPEED_HZ = 50000000.0
+
+g_trigger_record_nfragments = []
+g_trigger_record_nexp_fragments = []
+g_trigger_record_number = []
+g_ith_record = -1
+
+g_n_request = 0
+g_header_type = "both"
+g_list_components = False
+g_header_paths = []
+
+
+def tick_to_timestamp(ticks):
+    ns = float(ticks)/CLOCK_SPEED_HZ
+    if ns < 3000000000:
+        return datetime.datetime.fromtimestamp(ns)
+    else:
+        return "InvalidDateString"
+
+def unpack_header(data_array, unpack_string, keys):
+    values = struct.unpack(unpack_string, data_array)
+    header = dict(zip(keys, values))
+    return header
+
+
+def get_geo_id_type(i):
+    types = {1: 'TPC', 2: 'PDS', 3: 'DataSelection', 4: 'NDLArTPC'}
+    if i in types.keys():
+        return types[i]
+    else:
+        return "Invalid"
+
+
+def print_header_dict(hdict):
+    filtered_list = ['Padding', 'GeoID version', 'Component request version']
+    for ik, iv in hdict.items():
+        if any(map(ik.__contains__, filtered_list)):
+            continue
+        elif "time" in ik or "begin" in ik or "end" in ik:
+            print("{:<30}: {} ({})".format(
+                ik, iv, tick_to_timestamp(iv)))
+        elif 'Magic word' in ik:
+            print("{:<30}: {}".format(ik, hex(iv)))
+        elif 'GeoID type' in ik:
+            print("{:<30}: {}".format(ik, get_geo_id_type(iv)))
+        else:
+            print("{:<30}: {}".format(ik, iv))
+    return
+
+
+def print_fragment_header(data_array):
+    keys = ['Magic word', 'Version', 'Frag Size', 'Trig number',
+            'Trig timestamp', 'Window begin', 'Window end', 'Run number',
+            'Error bits', 'Fragment type', 'Sequence number', 'Fragment Padding',
+            'GeoID version', 'GeoID type', 'GeoID region', 'GeoID element',
+            'Geo ID Padding']
+    unpack_string = '<2I5Q3I2H1I2H2I'
+    print_header_dict(unpack_header(data_array[:80], unpack_string, keys))
+    return
+
+
+def print_trigger_record_header(data_array):
+    keys = ['Magic word', 'Version', 'Trigger number',
+            'Trigger timestamp', 'No. of requested components', 'Run Number',
+            'Error bits', 'Trigger type', 'Sequence number', 'Max sequence num']
+    unpack_string = '<2I3Q2I3H'
+    print_header_dict(unpack_header(data_array[:46], unpack_string, keys))
+
+    if g_list_components:
+        comp_keys = ['Component request version', 'Component Request Padding',
+                     'GeoID version', 'GeoID type', 'GeoID region',
+                     'GeoID element', 'Geo ID Padding', 'Begin time',
+                     'End time']
+        comp_unpack_string = "<3I2H2I2Q"
+        for i_values in struct.iter_unpack(comp_unpack_string,
+                                           data_array[48:]):
+            i_comp = dict(zip(comp_keys, i_values))
+            print(80*'-')
+            print_header_dict(i_comp)
+    return
+
+
+def process_record_func(name, dset):
+    global g_ith_record
+    global g_header_paths
+    if g_n_request != 0 and g_ith_record >= g_n_request:
+        return
+    if isinstance(dset, h5py.Group) and "/" not in name:
+        g_ith_record += 1
+        g_header_paths.append({"TriggerRecordHeader": '', "Fragments": []})
+        g_trigger_record_nfragments.append(0)
+    if isinstance(dset, h5py.Dataset):
+        if "TriggerRecordHeader" in name:
+            g_header_paths[g_ith_record]["TriggerRecordHeader"] = name
+            data_array = bytearray(dset[:])
+            (i, j, k) = struct.unpack('<3Q', data_array[8:32])
+            g_trigger_record_nexp_fragments.append(k)
+            g_trigger_record_number.append(i)
+        else:
+            g_header_paths[g_ith_record]["Fragments"].append(name)
+            g_trigger_record_nfragments[g_ith_record] += 1
+    return
+
+
+def process_file(file_name):
+    global g_ith_record
+    g_ith_record = -1
+    with h5py.File(file_name, 'r') as f:
+        f.visititems(process_record_func)
+    return
+
+
+def print_header(file_name):
+    with h5py.File(file_name, 'r') as f:
+        for i in g_header_paths:
+            if i["TriggerRecordHeader"] == "":
+                continue
+            print(80*'=')
+            if g_header_type in ["trigger", "both"]:
+                dset = f[i["TriggerRecordHeader"]]
+                data_array = bytearray(dset[:])
+                print('{:<30}:\t{}'.format("Path", i["TriggerRecordHeader"]))
+                print('{:<30}:\t{}'.format("Size", dset.shape))
+                print('{:<30}:\t{}'.format("Data type", dset.dtype))
+                print_trigger_record_header(data_array)
+            if g_header_type in ["fragment", "both"]:
+                for j in i["Fragments"]:
+                    dset = f[j]
+                    data_array = bytearray(dset[:])
+                    print(80*'-')
+                    print('{:<30}:\t{}'.format("Path", j))
+                    print('{:<30}:\t{}'.format("Size", dset.shape))
+                    print('{:<30}:\t{}'.format("Data type", dset.dtype))
+                    print_fragment_header(data_array)
+    return
+
+
+def check_fragments():
+    print("{:-^60}".format("Column Definitions"))
+    print("i:           Trigger record number;")
+    print("N_frag_exp:  expected no. of fragments stored in header;")
+    print("N_frag_act:  no. of fragments written in trigger record;")
+    print("N_diff:      N_frag_act - N_frag_exp")
+    print("{:-^60}".format("Column Definitions"))
+    print("{:^10}{:^15}{:^15}{:^10}".format(
+        "i", "N_frag_exp", "N_frag_act", "N_diff"))
+    for i in range(len(g_trigger_record_nexp_fragments)):
+        print("{:^10}{:^15}{:^15}{:^10}".format(
+            g_trigger_record_number[i], g_trigger_record_nexp_fragments[i],
+            g_trigger_record_nfragments[i],
+            (g_trigger_record_nfragments[i] -
+             g_trigger_record_nexp_fragments[i])))
+    return
+
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='Python script to parse DUNE-DAQ HDF5 output files.')
-    parser.version = '0.1'
-    parser.add_argument('-p', '--path',
-                       help='Path to HDF5 file',
-                       default='./')
+    parser = argparse.ArgumentParser(
+        description='Python script to parse DUNE-DAQ HDF5 output files.')
 
     parser.add_argument('-f', '--file_name',
-                       help='Name of HDF5 file',
-                       required=True)
-    
-    parser.add_argument('-H', '--header_only',
-                       help='Print the header only; no data is displayed',
-                       action='store_true')    
+                        help='path to HDF5 file',
+                        required=True)
 
-    parser.add_argument('-TRH', '--TRH_only',
-                       help='Print the TriggerRecordheader only; data is displayed',
-                       action='store_true')   
+    parser.add_argument('-p', '--print-headers',
+                        choices=['trigger', 'fragment', 'both'],
+                        help='select which header data to display')
 
-    parser.add_argument('-v', '--version', action='version')
+    parser.add_argument('-c', '--check-fragments',
+                        help='''check if fragments written in trigger record
+                        matches expected number in trigger record header''',
+                        action='store_true')
+
+    parser.add_argument('-l', '--list-components',
+                        help='''list components in trigger record header, used
+                        together with "--print-headers trigger" or
+                        "--print-headers both"''', action='store_true')
+
+    parser.add_argument('-n', '--num-of-records', type=int,
+                        help='specify number of trigger records to be parsed',
+                        default=0)
+
+    parser.add_argument('-v', '--version', action='version',
+                        version='%(prog)s 1.0')
     return parser.parse_args()
 
 
-# Tools
-         
-## Recursive function to get all the information         
-## for a given HDF5 file_name
-def traverse_datasets(hdf_file):
-  def h5py_dataset_iterator(hdf5_group, prefix=''):
-    for key in hdf5_group.keys():
-      item = hdf5_group[key]
-      path = f'{prefix}/{key}'
-      if isinstance(item, h5py.Dataset) and key != "TriggerRecordHeader": # test for dataset
-        yield (path, item)
-      elif isinstance(item, h5py.Group): # test for group (go down)
-       yield from h5py_dataset_iterator(item, path) 
-
-  for path, _ in h5py_dataset_iterator(hdf_file):
-    yield path
-
-
-## Recursive function to get only 
-## the trigger record headers
-def traverse_TRH_datasets(hdf_file):
-  def h5py_dataset_iterator(hdf5_group, prefix=''):
-    for key in hdf5_group.keys():
-      item = hdf5_group[key]
-      path = f'{prefix}/{key}'
-      if isinstance(item, h5py.Dataset) and key == "TriggerRecordHeader": # test for dataset
-        yield (path, item)
-      elif isinstance(item, h5py.Group): # test for group (go down)
-       yield from h5py_dataset_iterator(item, path) 
-
-  for path, _ in h5py_dataset_iterator(hdf_file):
-    yield path
-
-
-def bytes_to_int(bytes):
-  return int(binascii.hexlify(bytes), 16)
-
-## Print FragmentHeader
-def print_frag_header(data_array):
-  check_word = data_array[0:4]
-  version = data_array[4:8]
-  fragment_size = data_array[8:16]
-  trigger_number = data_array[16:24]
-  trigger_timestamp = data_array[24:32]
-  window_offset = data_array[32:40]
-  window_width = data_array[40:48]
-  run_number = data_array[48:52]
-  geo_id_apa = data_array[52:56]
-  geo_id_link = data_array[56:60]
-  error_bits = data_array[60:64]
-  fragment_type = data_array[64:68]
-
-  print("Magic word:\t\t", binascii.hexlify(check_word)[::-1])
-  print("Version:\t\t", bytes_to_int((version)[::-1]))
-  print("Frag size:\t\t", bytes_to_int((fragment_size)[::-1]))
-  print("Trig number:\t\t", bytes_to_int((trigger_number)[::-1]))
-  print("Trig timestamp:\t\t", bytes_to_int((trigger_timestamp)[::-1]))
-  print("Window offset:\t\t", bytes_to_int((window_offset)[::-1]))
-  print("Window width:\t\t", bytes_to_int((window_width)[::-1]))
-  print("Run number:\t\t", bytes_to_int((run_number)[::-1]))
-  print("GeoID (APA):\t\t", bytes_to_int((geo_id_apa)[::-1]))
-  print("GeoID (link):\t\t", bytes_to_int((geo_id_link)[::-1]))
-  print("Error bits:\t\t", bytes_to_int((error_bits)[::-1]))
-  print("Fragment type:\t\t", bytes_to_int((fragment_type)[::-1]))
-
-
-
-
-## Print TriggerRecordHeader
-def print_trh(data_array):
-  check_word = data_array[0:4]
-  version = data_array[4:8]
-  trigger_number = data_array[8:16]
-  trigger_timestamp= data_array[16:24]
-  numb_req_comp = data_array[24:32]
-  run_number = data_array[32:36]
-  error_bits = data_array[36:40]
-  trigger_type = data_array[40:42]
-
-  print("Magic word:\t\t", binascii.hexlify(check_word)[::-1])
-  #print("Trigger number: ", binascii.hexlify(trigger_number)[::-1])
-  print("Version:\t\t", bytes_to_int((version)[::-1]))
-  print("Trig number:\t\t", bytes_to_int((trigger_number)[::-1]))
-  print("Trig timestamp:\t\t", bytes_to_int((trigger_timestamp)[::-1]))
-  print("Num req comp:\t\t", bytes_to_int((numb_req_comp)[::-1]))
-  print("Run number:\t\t", bytes_to_int((run_number)[::-1]))
-  print("Error bits:\t\t", bytes_to_int((error_bits)[::-1]))
-  print("Trigger type:\t\t", bytes_to_int((trigger_type)[::-1]))
-
-
-
-
-# Actions
-
-
-## Parse the TriggerRecordHeader data 
-def get_trigger_record_headers(file_name):
-  with h5py.File(file_name, 'r') as f:
-    for dset in traverse_TRH_datasets(f):
-      print('Path:', dset)
-      print('Size:', f[dset].shape)
-      print('Data type:', f[dset].dtype)
-      #print('Data content:', f[dset][:])
-      #print(binascii.hexlify(bytearray(f[dset][:])))
-      print_trh(bytearray(f[dset][:]))
-      print("=============================================")
-
-
-## Dump the contents of the HDF5 file
-## Similar to the h5dump tool
-def dump_file(file_name):
-  with h5py.File(file_name, 'r') as f:
-    for dset in traverse_datasets(f):
-      print('Path:', dset)
-      print('Size:', f[dset].shape)
-      print('Data type:', f[dset].dtype)
-      #print(binascii.hexlify(bytearray(f[dset][:])))
-      print_frag_header(bytearray(f[dset][:]))
-      print("=============================================")
-
-
 def main():
-    args=parse_args()
+    args = parse_args()
 
-     
-    input_path = args.path
-    input_file_name = args.file_name
-    full_path = input_path + input_file_name  
- 
-    print("Reading file", full_path ) 
-    if args.header_only:
-      dump_file(full_path)
+    global g_n_request
+    global g_header_type
+    global g_list_components
 
-    if args.TRH_only:
-      get_trigger_record_headers(full_path)
+    g_n_request = args.num_of_records
+    g_header_type = args.print_headers
+    g_list_components = args.list_components
+
+    if g_header_type is None and args.check_fragments is False:
+        print("Error: use at least one of the two following options:")
+        print("       -p, --print-headers {trigger,fragment,both}")
+        print("       -c, --check-fragments")
+        return
+
+    h5file = args.file_name
+    print("Reading file", h5file)
+
+    process_file(h5file)
+    if g_header_type is not None:
+        print_header(h5file)
+    if args.check_fragments:
+        check_fragments()
+    return
+
 
 if __name__ == "__main__":
     main()
-
-
