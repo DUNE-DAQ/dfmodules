@@ -21,6 +21,7 @@
 #include <chrono>
 #include <cstdlib>
 #include <future>
+#include <map>
 #include <memory>
 #include <string>
 #include <thread>
