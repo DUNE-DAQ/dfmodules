@@ -161,7 +161,6 @@ DataFlowOrchestrator::do_work(std::atomic<bool>& run_flag)
           if (assignment == nullptr)
             continue;
 
-          TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Dispatching assignment";
           auto dispatch_successful = dispatch(assignment, run_flag);
 
           if (dispatch_successful) {
@@ -204,8 +203,6 @@ DataFlowOrchestrator::find_slot(dfmessages::TriggerDecision decision)
     if (m_dataflow_availability_iter == m_dataflow_availability.end())
       m_dataflow_availability_iter = m_dataflow_availability.begin();
 
-    TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": TRB " << m_dataflow_availability_iter->first
-                                << " has_slot: " << m_dataflow_availability_iter->second.has_slot();
     if (m_dataflow_availability_iter->second.has_slot()) {
       output = m_dataflow_availability_iter->second.make_assignment(decision);
     }
