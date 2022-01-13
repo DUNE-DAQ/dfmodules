@@ -29,7 +29,7 @@ nanorc_command_list=[
 ["scrap"],
 
 # Only init after boot
-"boot boot".split(),
+#"boot boot".split(),
 "boot conf".split(),
 "boot start 101".split(),
 "boot resume".split(),
