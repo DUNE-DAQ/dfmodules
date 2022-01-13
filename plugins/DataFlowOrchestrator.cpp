@@ -86,6 +86,7 @@ DataFlowOrchestrator::do_conf(const data_t& payload)
   for (auto& app : parsed_conf.dataflow_applications) {
     m_dataflow_availability[app.decision_connection] = TriggerRecordBuilderData(app.decision_connection, app.capacity);
   }
+  m_dataflow_availability_iter = m_dataflow_availability.begin();
 
   m_queue_timeout = std::chrono::milliseconds(parsed_conf.general_queue_timeout);
   m_token_connection_name = parsed_conf.token_connection;
@@ -93,7 +94,8 @@ DataFlowOrchestrator::do_conf(const data_t& payload)
 
   networkmanager::NetworkManager::get().start_listening(m_token_connection_name);
 
-  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method, there are "
+                                      << m_dataflow_availability.size() << " TRB apps defined";
 }
 
 void
@@ -133,7 +135,9 @@ DataFlowOrchestrator::do_scrap(const data_t& /*args*/)
 
   networkmanager::NetworkManager::get().stop_listening(m_token_connection_name);
 
-  TLOG() << get_name() << " successfully stopped";
+  m_dataflow_availability.clear();
+
+  TLOG() << get_name() << " successfully scrapped";
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_scrap() method";
 }
 
@@ -153,6 +157,11 @@ DataFlowOrchestrator::do_work(std::atomic<bool>& run_flag)
         while (run_flag.load()) {
 
           auto assignment = find_slot(decision);
+
+          if (assignment == nullptr)
+            continue;
+
+          TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Dispatching assignment";
           auto dispatch_successful = dispatch(assignment, run_flag);
 
           if (dispatch_successful) {
@@ -187,18 +196,20 @@ DataFlowOrchestrator::do_work(std::atomic<bool>& run_flag)
 std::shared_ptr<AssignedTriggerDecision>
 DataFlowOrchestrator::find_slot(dfmessages::TriggerDecision decision)
 {
-  static std::map<std::string, TriggerRecordBuilderData>::iterator last_selected_trb = m_dataflow_availability.begin();
-
   std::shared_ptr<AssignedTriggerDecision> output = nullptr;
 
-  while (output == nullptr) {
-    ++last_selected_trb;
-    if (last_selected_trb == m_dataflow_availability.end())
-      last_selected_trb = m_dataflow_availability.begin();
+  size_t tries = 0;
+  while (output == nullptr && tries < m_dataflow_availability.size()) {
+    ++m_dataflow_availability_iter;
+    if (m_dataflow_availability_iter == m_dataflow_availability.end())
+      m_dataflow_availability_iter = m_dataflow_availability.begin();
 
-    if (last_selected_trb->second.has_slot()) {
-      output = last_selected_trb->second.make_assignment(decision);
+    TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": TRB " << m_dataflow_availability_iter->first
+                                << " has_slot: " << m_dataflow_availability_iter->second.has_slot();
+    if (m_dataflow_availability_iter->second.has_slot()) {
+      output = m_dataflow_availability_iter->second.make_assignment(decision);
     }
+    ++tries;
   }
 
   return output;
@@ -224,7 +235,12 @@ DataFlowOrchestrator::receive_trigger_complete_token(ipm::Receiver::Response mes
   ++m_received_tokens;
 
   if (token.run_number == m_run_number) {
-    m_dataflow_availability[token.decision_destination].complete_assignment(token.trigger_number, m_metadata_function);
+    try {
+      m_dataflow_availability[token.decision_destination].complete_assignment(token.trigger_number,
+                                                                              m_metadata_function);
+    } catch (AssignedTriggerDecisionNotFound const& err) {
+      ers::warning(err);
+    }
 
     if (m_dataflow_availability[token.decision_destination].is_in_error()) {
       TLOG() << TriggerRecordBuilderAppUpdate(ERS_HERE, token.decision_destination, "Has reconnected");

@@ -101,7 +101,7 @@ BOOST_AUTO_TEST_CASE(Assignments)
   trbd.add_assignment(extracted_assignment);
   BOOST_REQUIRE_EQUAL(trbd.available_slots(), 1);
 
-  std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
   trbd.complete_assignment(1, [](nlohmann::json&) {});
   BOOST_REQUIRE_EQUAL(trbd.available_slots(), 2);

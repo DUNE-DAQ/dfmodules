@@ -60,6 +60,7 @@ protected:
   virtual std::shared_ptr<AssignedTriggerDecision> find_slot(dfmessages::TriggerDecision decision);
 
   std::map<std::string, TriggerRecordBuilderData> m_dataflow_availability;
+  std::map<std::string, TriggerRecordBuilderData>::iterator m_dataflow_availability_iter;
   std::function<void(nlohmann::json&)> m_metadata_function;
 
 private:
