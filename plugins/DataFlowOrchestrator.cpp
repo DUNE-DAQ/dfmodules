@@ -140,9 +140,11 @@ void
 DataFlowOrchestrator::do_work(std::atomic<bool>& run_flag)
 {
   std::chrono::steady_clock::time_point slot_available, assignment_possible;
-  auto assignment_complete = std::chrono::steady_clock::now();
 
   while (run_flag.load()) {
+
+    auto last_slot_check = std::chrono::steady_clock::now();
+
     if (has_slot()) {
       slot_available = std::chrono::steady_clock::now();
       dfmessages::TriggerDecision decision;
@@ -167,11 +169,12 @@ DataFlowOrchestrator::do_work(std::atomic<bool>& run_flag)
             m_dataflow_availability[assignment->connection_name].set_in_error(true);
           }
         }
-        m_dataflow_busy +=
-          std::chrono::duration_cast<std::chrono::microseconds>(slot_available - assignment_complete).count();
-        assignment_complete = std::chrono::steady_clock::now();
-        m_dfo_busy +=
-          std::chrono::duration_cast<std::chrono::microseconds>(assignment_complete - assignment_possible).count();
+
+	auto assignment_complete = std::chrono::steady_clock::now();
+	
+        m_deciding_destination += 
+	  std::chrono::duration_cast<std::chrono::microseconds>(assignment_complete - assignment_possible).count();
+
       } else { // failed at extracting the decisions
 	m_waiting_for_decision +=
           std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - slot_available).count();
@@ -180,6 +183,11 @@ DataFlowOrchestrator::do_work(std::atomic<bool>& run_flag)
     } else {
       auto lk = std::unique_lock<std::mutex>(m_slot_available_mutex);
       m_slot_available_cv.wait_for(lk, std::chrono::milliseconds(1), [&]() { return has_slot(); });
+      auto new_time_check = std::chrono::steady_clock::now(); 
+      m_waiting_for_slots += std::chrono::duration_cast<std::chrono::microseconds>(new_time_check - last_slot_check).count();
+      last_slot_check = new_time_check ;
+
+
     }
   }
   dfmessages::TriggerDecision decision;
@@ -216,9 +224,9 @@ DataFlowOrchestrator::get_info(opmonlib::InfoCollector& ci, int /*level*/)
   info.tokens_received = m_received_tokens.exchange(0);
   info.decisions_sent = m_sent_decisions.exchange(0);
   info.decisions_received = m_received_decisions.exchange(0);
-  info.dataflow_busy = m_dataflow_busy.exchange(0);
+  info.deciding_destination = m_deciding_destination.exchange(0);
   info.waiting_for_decision = m_waiting_for_decision.exchange(0);
-  info.dfo_busy = m_dfo_busy.exchange(0);
+  info.waiting_for_slots = m_waiting_for_slots.exchange(0);
   ci.add(info);
 }
 

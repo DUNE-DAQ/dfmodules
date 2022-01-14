@@ -96,9 +96,9 @@ private:
   std::atomic<uint64_t> m_received_tokens{ 0 };    // NOLINT (build/unsigned)
   std::atomic<uint64_t> m_sent_decisions{ 0 };     // NOLINT (build/unsigned)
   std::atomic<uint64_t> m_received_decisions{ 0 }; // NOLINT (build/unsigned)
-  std::atomic<uint64_t> m_dataflow_busy{ 0 };
+  std::atomic<uint64_t> m_deciding_destination{ 0 };
   std::atomic<uint64_t> m_waiting_for_decision{ 0 };
-  std::atomic<uint64_t> m_dfo_busy{ 0 };
+  std::atomic<uint64_t> m_waiting_for_slots{ 0 };
 };
 } // namespace dfmodules
 } // namespace dunedaq
