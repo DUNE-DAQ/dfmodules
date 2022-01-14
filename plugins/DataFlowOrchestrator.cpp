@@ -140,55 +140,64 @@ DataFlowOrchestrator::do_scrap(const data_t& /*args*/)
 void
 DataFlowOrchestrator::do_work(std::atomic<bool>& run_flag)
 {
-  std::chrono::steady_clock::time_point slot_available, assignment_possible;
+  std::chrono::steady_clock::time_point last_slot_check, slot_available, assignment_possible;
 
+  last_slot_check = std::chrono::steady_clock::now();
   while (run_flag.load()) {
-
-    auto last_slot_check = std::chrono::steady_clock::now();
-
     if (has_slot()) {
       slot_available = std::chrono::steady_clock::now();
+      m_waiting_for_slots +=
+        std::chrono::duration_cast<std::chrono::microseconds>(slot_available - last_slot_check).count();
       dfmessages::TriggerDecision decision;
-      auto res = extract_a_decision(decision);
-      if (res) {
-        assignment_possible = std::chrono::steady_clock::now();
 
-        m_waiting_for_decision +=
-          std::chrono::duration_cast<std::chrono::microseconds>(assignment_possible - slot_available).count();
+      bool has_decision = false;
+      while (!has_decision && run_flag.load()) {
+        has_decision = extract_a_decision(decision);
+        if (has_decision) {
+          assignment_possible = std::chrono::steady_clock::now();
 
-        while (run_flag.load()) {
+          m_waiting_for_decision +=
+            std::chrono::duration_cast<std::chrono::microseconds>(assignment_possible - slot_available).count();
 
-          auto assignment = find_slot(decision);
-          auto dispatch_successful = dispatch(assignment, run_flag);
+          while (run_flag.load()) {
 
-          if (dispatch_successful) {
-            assign_trigger_decision(assignment);
-            break;
-          } else {
-            ers::error(
-              TriggerRecordBuilderAppUpdate(ERS_HERE, assignment->connection_name, "Could not send Trigger Decision"));
-            m_dataflow_availability[assignment->connection_name].set_in_error(true);
+            auto assignment = find_slot(decision);
+            auto dispatch_successful = dispatch(assignment, run_flag);
+
+            if (dispatch_successful) {
+              assign_trigger_decision(assignment);
+              break;
+            } else {
+              ers::error(TriggerRecordBuilderAppUpdate(
+                ERS_HERE, assignment->connection_name, "Could not send Trigger Decision"));
+              m_dataflow_availability[assignment->connection_name].set_in_error(true);
+            }
           }
+
+          auto assignment_complete = std::chrono::steady_clock::now();
+
+          m_deciding_destination +=
+            std::chrono::duration_cast<std::chrono::microseconds>(assignment_complete - assignment_possible).count();
+          last_slot_check = assignment_complete; // We'll restart the loop next, so set the first time counter to ensure
+                                                 // that the three counters do not miss any time
+
+        } else { // failed at extracting the decisions
+          // Incrementally update waiting_for_decision time counter
+          auto failed_extracting_decision = std::chrono::steady_clock::now();
+          m_waiting_for_decision +=
+            std::chrono::duration_cast<std::chrono::microseconds>(failed_extracting_decision - slot_available).count();
+          slot_available = failed_extracting_decision; // For while loop continuity
         }
-
-        auto assignment_complete = std::chrono::steady_clock::now();
-
-        m_deciding_destination +=
-          std::chrono::duration_cast<std::chrono::microseconds>(assignment_complete - assignment_possible).count();
-
-      } else { // failed at extracting the decisions
-        m_waiting_for_decision +=
-          std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - slot_available)
-            .count();
       }
-
-    } else {
+    } else { // no slots available
       auto lk = std::unique_lock<std::mutex>(m_slot_available_mutex);
       m_slot_available_cv.wait_for(lk, std::chrono::milliseconds(1), [&]() { return has_slot(); });
-      auto new_time_check = std::chrono::steady_clock::now();
+
+      // Incrementally update waiting_for_slots time counter
+      auto no_slots_available_time = std::chrono::steady_clock::now();
       m_waiting_for_slots +=
-        std::chrono::duration_cast<std::chrono::microseconds>(new_time_check - last_slot_check).count();
-      last_slot_check = new_time_check;
+        std::chrono::duration_cast<std::chrono::microseconds>(no_slots_available_time - last_slot_check).count();
+      last_slot_check = no_slots_available_time; // Set this here so we don't miss time going around the loop
     }
   }
   dfmessages::TriggerDecision decision;
