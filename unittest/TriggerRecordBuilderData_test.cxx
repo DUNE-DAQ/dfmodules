@@ -42,6 +42,8 @@ BOOST_AUTO_TEST_CASE(Constructors)
   BOOST_REQUIRE_EQUAL(atd.decision.trigger_number, td.trigger_number);
   BOOST_REQUIRE_EQUAL(atd.connection_name, "test");
 
+  // TRBD must have a default constructor so that it can be used in a std::map, but a default-constructed TRBD is
+  // invalid.
   TriggerRecordBuilderData trbd;
   BOOST_REQUIRE(trbd.is_in_error());
 
@@ -61,7 +63,6 @@ BOOST_AUTO_TEST_CASE(Constructors)
   BOOST_REQUIRE_EQUAL(trbd2.has_slot(), true);
   BOOST_REQUIRE(!trbd2.is_in_error());
 
-  
   TriggerRecordBuilderData trbd3 = std::move(trbd2);
   BOOST_REQUIRE(!trbd3.is_in_error());
   TriggerRecordBuilderData trbd4;

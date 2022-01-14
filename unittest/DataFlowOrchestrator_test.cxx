@@ -252,7 +252,7 @@ BOOST_FIXTURE_TEST_CASE(SendTrigDecFailed, NetworkManagerTestFixture)
 
   std::this_thread::sleep_for(std::chrono::milliseconds(50));
   BOOST_REQUIRE(trigger_decision_sink->can_push());
-  
+
   send_trigdec(trigger_decision_sink, 1);
   std::this_thread::sleep_for(std::chrono::milliseconds(150));
   auto info = get_dfo_info(dfo);
