@@ -167,8 +167,8 @@ DataFlowOrchestrator::do_work(std::atomic<bool>& run_flag)
 
             auto assignment = find_slot(decision);
 
-          if (assignment == nullptr)
-            continue;
+            if (assignment == nullptr)
+              continue;
 
             auto dispatch_successful = dispatch(assignment, run_flag);
 

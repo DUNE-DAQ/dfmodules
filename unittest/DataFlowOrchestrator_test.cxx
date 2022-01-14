@@ -157,9 +157,9 @@ BOOST_FIXTURE_TEST_CASE(Commands, NetworkManagerTestFixture)
   BOOST_REQUIRE_EQUAL(info.tokens_received, 0);
   BOOST_REQUIRE_EQUAL(info.decisions_received, 0);
   BOOST_REQUIRE_EQUAL(info.decisions_sent, 0);
-  BOOST_REQUIRE_EQUAL(info.dataflow_busy, 0);
+  BOOST_REQUIRE_EQUAL(info.waiting_for_slots, 0);
   BOOST_REQUIRE_EQUAL(info.waiting_for_decision, 0);
-  BOOST_REQUIRE_EQUAL(info.dfo_busy, 0);
+  BOOST_REQUIRE_EQUAL(info.deciding_destination, 0);
 }
 
 BOOST_FIXTURE_TEST_CASE(DataFlow, NetworkManagerTestFixture)
