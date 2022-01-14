@@ -25,6 +25,7 @@
 #include <memory>
 #include <mutex>
 #include <string>
+#include <utility>
 
 namespace dunedaq {
 ERS_DECLARE_ISSUE(dfmodules,
@@ -78,7 +79,7 @@ private:
   std::list<std::shared_ptr<AssignedTriggerDecision>> m_assigned_trigger_decisions;
   mutable std::mutex m_assigned_trigger_decisions_mutex;
 
-  // TODO: Eric Flumerfelt <eflumerf@github.com> 03-Dec-2021: Replace with circular buffer
+  // TODO: Eric Flumerfelt <eflumerf@github.com> Dec-03-2021: Replace with circular buffer
   std::list<std::pair<std::chrono::steady_clock::time_point, std::chrono::microseconds>> m_latency_info;
   mutable std::mutex m_latency_info_mutex;
 

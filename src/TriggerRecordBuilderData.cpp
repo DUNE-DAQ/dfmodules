@@ -13,6 +13,10 @@
 
 #include "logging/Logging.hpp"
 
+#include <memory>
+#include <string>
+#include <utility>
+
 /**
  * @brief Name used by TRACE TLOG calls from this source file
  */
