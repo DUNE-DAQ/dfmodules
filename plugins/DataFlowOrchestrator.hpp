@@ -29,55 +29,61 @@
 
 namespace dunedaq {
 
-ERS_DECLARE_ISSUE(dfmodules,
-                  TriggerRecordBuilderAppUpdate,
-                  "TriggerRecordBuilder app " << connection_name << ": " << message,
+ERS_DECLARE_ISSUE(dfmodules, TriggerRecordBuilderAppUpdate,
+                  "TriggerRecordBuilder app " << connection_name << ": "
+                                              << message,
                   ((std::string)connection_name)((std::string)message))
 
 namespace dfmodules {
 
 /**
- * @brief DataFlowOrchestrator distributes triggers according to the availability of the DF apps in the system
+ * @brief DataFlowOrchestrator distributes triggers according to the
+ * availability of the DF apps in the system
  */
-class DataFlowOrchestrator : public dunedaq::appfwk::DAQModule
-{
+class DataFlowOrchestrator : public dunedaq::appfwk::DAQModule {
 public:
   /**
    * @brief DataFlowOrchestrator Constructor
    * @param name Instance name for this DataFlowOrchestrator instance
    */
-  explicit DataFlowOrchestrator(const std::string& name);
+  explicit DataFlowOrchestrator(const std::string &name);
 
-  DataFlowOrchestrator(const DataFlowOrchestrator&) = delete; ///< DataFlowOrchestrator is not copy-constructible
-  DataFlowOrchestrator& operator=(const DataFlowOrchestrator&) =
-    delete;                                                         ///< DataFlowOrchestrator is not copy-assignable
-  DataFlowOrchestrator(DataFlowOrchestrator&&) = delete;            ///< DataFlowOrchestrator is not move-constructible
-  DataFlowOrchestrator& operator=(DataFlowOrchestrator&&) = delete; ///< DataFlowOrchestrator is not move-assignable
+  DataFlowOrchestrator(const DataFlowOrchestrator &) =
+      delete; ///< DataFlowOrchestrator is not copy-constructible
+  DataFlowOrchestrator &operator=(const DataFlowOrchestrator &) =
+      delete; ///< DataFlowOrchestrator is not copy-assignable
+  DataFlowOrchestrator(DataFlowOrchestrator &&) =
+      delete; ///< DataFlowOrchestrator is not move-constructible
+  DataFlowOrchestrator &operator=(DataFlowOrchestrator &&) =
+      delete; ///< DataFlowOrchestrator is not move-assignable
 
-  void init(const data_t&) override;
+  void init(const data_t &) override;
 
 protected:
-  virtual std::shared_ptr<AssignedTriggerDecision> find_slot(dfmessages::TriggerDecision decision);
+  virtual std::shared_ptr<AssignedTriggerDecision>
+  find_slot(dfmessages::TriggerDecision decision);
 
   std::map<std::string, TriggerRecordBuilderData> m_dataflow_availability;
-  std::function<void(nlohmann::json&)> m_metadata_function;
+  std::function<void(nlohmann::json &)> m_metadata_function;
 
 private:
   // Commands
-  void do_conf(const data_t&);
-  void do_start(const data_t&);
-  void do_stop(const data_t&);
-  void do_scrap(const data_t&);
+  void do_conf(const data_t &);
+  void do_start(const data_t &);
+  void do_stop(const data_t &);
+  void do_scrap(const data_t &);
 
-  void do_work(std::atomic<bool>& run_flag);
+  void do_work(std::atomic<bool> &run_flag);
 
-  void get_info(opmonlib::InfoCollector& ci, int level) override;
+  void get_info(opmonlib::InfoCollector &ci, int level) override;
 
   virtual void receive_trigger_complete_token(ipm::Receiver::Response message);
   virtual bool has_slot() const;
-  bool extract_a_decision(dfmessages::TriggerDecision& decision);
-  bool dispatch(std::shared_ptr<AssignedTriggerDecision> assignment, std::atomic<bool>& run_flag);
-  virtual void assign_trigger_decision(std::shared_ptr<AssignedTriggerDecision> assignment);
+  bool extract_a_decision(dfmessages::TriggerDecision &decision);
+  bool dispatch(std::shared_ptr<AssignedTriggerDecision> assignment,
+                std::atomic<bool> &run_flag);
+  virtual void
+  assign_trigger_decision(std::shared_ptr<AssignedTriggerDecision> assignment);
 
   // Configuration
   std::chrono::milliseconds m_queue_timeout;
@@ -86,7 +92,8 @@ private:
   size_t m_td_send_retries;
 
   // Queue(s)
-  using triggerdecisionsource_t = dunedaq::appfwk::DAQSource<dfmessages::TriggerDecision>;
+  using triggerdecisionsource_t =
+      dunedaq::appfwk::DAQSource<dfmessages::TriggerDecision>;
   std::unique_ptr<triggerdecisionsource_t> m_trigger_decision_queue = nullptr;
 
   // Coordination
@@ -95,12 +102,12 @@ private:
   mutable std::mutex m_slot_available_mutex;
 
   // Statistics
-  std::atomic<uint64_t> m_received_tokens{ 0 };      // NOLINT (build/unsigned)
-  std::atomic<uint64_t> m_sent_decisions{ 0 };       // NOLINT (build/unsigned)
-  std::atomic<uint64_t> m_received_decisions{ 0 };   // NOLINT (build/unsigned)
-  std::atomic<uint64_t> m_deciding_destination{ 0 }; // NOLINT (build/unsigned)
-  std::atomic<uint64_t> m_waiting_for_decision{ 0 }; // NOLINT (build/unsigned)
-  std::atomic<uint64_t> m_waiting_for_slots{ 0 };    // NOLINT (build/unsigned)
+  std::atomic<uint64_t> m_received_tokens{0};      // NOLINT (build/unsigned)
+  std::atomic<uint64_t> m_sent_decisions{0};       // NOLINT (build/unsigned)
+  std::atomic<uint64_t> m_received_decisions{0};   // NOLINT (build/unsigned)
+  std::atomic<uint64_t> m_deciding_destination{0}; // NOLINT (build/unsigned)
+  std::atomic<uint64_t> m_waiting_for_decision{0}; // NOLINT (build/unsigned)
+  std::atomic<uint64_t> m_waiting_for_slots{0};    // NOLINT (build/unsigned)
 };
 } // namespace dfmodules
 } // namespace dunedaq
