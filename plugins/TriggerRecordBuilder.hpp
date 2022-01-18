@@ -22,7 +22,7 @@
 #include "appfwk/DAQModule.hpp"
 #include "appfwk/DAQSink.hpp"
 #include "appfwk/DAQSource.hpp"
-#include "appfwk/ThreadHelper.hpp"
+#include "utilities/WorkerThread.hpp"
 
 #include <chrono>
 #include <map>
@@ -204,7 +204,7 @@ private:
   void do_stop(const data_t&);
 
   // Threading
-  dunedaq::appfwk::ThreadHelper m_thread;
+  dunedaq::utilities::WorkerThread m_thread;
   void do_work(std::atomic<bool>&);
 
   // Configuration

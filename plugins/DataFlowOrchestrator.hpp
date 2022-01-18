@@ -19,7 +19,7 @@
 
 #include "appfwk/DAQModule.hpp"
 #include "appfwk/DAQSource.hpp"
-#include "appfwk/ThreadHelper.hpp"
+#include "utilities/WorkerThread.hpp"
 #include "logging/Logging.hpp"
 
 #include <map>
@@ -94,7 +94,7 @@ private:
   std::unique_ptr<triggerdecisionsource_t> m_trigger_decision_queue = nullptr;
 
   // Coordination
-  appfwk::ThreadHelper m_working_thread;
+  utilities::WorkerThread m_working_thread;
   std::condition_variable m_slot_available_cv;
   mutable std::mutex m_slot_available_mutex;
 
