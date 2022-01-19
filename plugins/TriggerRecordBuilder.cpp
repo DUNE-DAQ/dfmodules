@@ -116,9 +116,12 @@ TriggerRecordBuilder::get_info(opmonlib::InfoCollector& ci, int /*level*/)
 
   triggerrecordbuilderinfo::Info i;
 
+  // status metrics
   i.pending_trigger_decisions = m_trigger_decisions_counter.load();
   i.fragments_in_the_book = m_fragment_counter.load();
   i.pending_fragments = m_pending_fragment_counter.load();
+
+  // error counters
   i.timed_out_trigger_records = m_timed_out_trigger_records.load();
   i.abandoned_trigger_records = m_abandoned_trigger_records.load();
   i.unexpected_fragments = m_unexpected_fragments.load();
@@ -126,32 +129,16 @@ TriggerRecordBuilder::get_info(opmonlib::InfoCollector& ci, int /*level*/)
   i.lost_fragments = m_lost_fragments.load();
   i.invalid_requests = m_invalid_requests.load();
   i.duplicated_trigger_ids = m_duplicated_trigger_ids.load();
+
+  // operation metrics
+  i.received_trigger_decisions = m_received_trigger_decisions.exchange(0);
+  i.generated_trigger_records = m_generated_trigger_records.exchange(0);
+  i.generated_data_requests = m_generated_data_requests.exchange(0);
   i.sleep_counter = m_sleep_counter.exchange(0);
   i.loop_counter = m_loop_counter.exchange(0);
-
-  i.received_trigger_decisions = m_run_received_trigger_decisions.load();
-  i.generated_trigger_records = m_generated_trigger_records.load();
-
-  auto time = m_trigger_record_time.exchange(0.);
-  auto n_triggers = m_completed_trigger_records.exchange(0);
-
-  if (n_triggers > 0) {
-    i.average_millisecond_per_trigger = time / (metric_ratio_type)n_triggers;
-  }
-
-  auto td_width = m_trigger_decision_width.exchange(0);
-  auto n_td = m_received_trigger_decisions.exchange(0);
-
-  if (n_td > 0) {
-    i.average_decision_width = td_width / (metric_ratio_type)n_td;
-  }
-
-  auto dr_width = m_data_request_width.exchange(0);
-  auto n_dr = m_generated_data_requests.exchange(0);
-
-  if (n_dr > 0) {
-    i.average_data_request_width = dr_width / (metric_ratio_type)n_dr;
-  }
+  i.data_waiting_time = m_data_waiting_time.exchange(0);
+  i.data_request_width = m_data_request_width.exchange(0);
+  i.trigger_decision_width = m_trigger_decision_width.exchange(0);
 
   ci.add(i);
 }
@@ -230,7 +217,6 @@ TriggerRecordBuilder::do_work(std::atomic<bool>& running_flag)
   m_trigger_decisions_counter.store(0);
   m_unexpected_trigger_decisions.store(0);
   m_pending_fragment_counter.store(0);
-  m_run_received_trigger_decisions.store(0);
   m_generated_trigger_records.store(0);
   m_fragment_counter.store(0);
   m_timed_out_trigger_records.store(0);
@@ -274,7 +260,7 @@ TriggerRecordBuilder::do_work(std::atomic<bool>& running_flag)
         continue;
       }
 
-      ++m_run_received_trigger_decisions;
+      ++m_received_trigger_decisions;
 
       book_updates = create_trigger_records_and_dispatch(temp_dec, running_flag) > 0;
 
@@ -455,8 +441,7 @@ TriggerRecordBuilder::extract_trigger_record(const TriggerId& id)
   auto time = clock_type::now();
   auto duration = time - it->second.first;
 
-  m_trigger_record_time += std::chrono::duration_cast<duration_type>(duration).count();
-  ++m_completed_trigger_records;
+  m_data_waiting_time += std::chrono::duration_cast<duration_type>(duration).count();
 
   m_trigger_records.erase(it);
 
@@ -530,7 +515,6 @@ TriggerRecordBuilder::create_trigger_records_and_dispatch(const dfmessages::Trig
       daqdataformats::ComponentRequest temp(component.component, new_begin, new_end);
       slice_components.push_back(temp);
 
-      ++m_generated_data_requests;
       m_data_request_width += new_end - new_begin;
 
     } // loop over component in trigger decision
@@ -625,6 +609,7 @@ TriggerRecordBuilder::dispatch_data_requests(const dfmessages::DataRequest& dr,
       NetworkManager::get().send_to(
         name, static_cast<const void*>(serialised_request.data()), serialised_request.size(), m_queue_timeout);
       wasSentSuccessfully = true;
+      ++m_generated_data_requests;
     } catch (const ers::Issue& excpt) {
       std::ostringstream oss_warn;
       oss_warn << "Send to connection \"" << name << "\" failed";

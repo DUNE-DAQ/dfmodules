@@ -26,7 +26,6 @@ local info = {
 
        // operation metrics
        s.field("received_trigger_decisions", self.uint8, 0, doc="Number of valid trigger decisions received in the run"),
-
        s.field("generated_trigger_records", self.uint8, 0, doc="Number of trigger records produced"),
        s.field("generated_data_requests", self.uint8, 0, doc="Number of data requests generated"),
        s.field("sleep_counter", self.uint8, 0, doc="Number times the loop goes to sleep"),
