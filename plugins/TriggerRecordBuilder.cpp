@@ -490,7 +490,6 @@ TriggerRecordBuilder::create_trigger_records_and_dispatch(const dfmessages::Trig
                               << ": trig_timestamp " << td.trigger_timestamp << " will have " << max_sequence_number + 1
                               << " sequences";
 
-  ++m_received_trigger_decisions;
   m_trigger_decision_width += tot_width;
 
   // create the trigger records
