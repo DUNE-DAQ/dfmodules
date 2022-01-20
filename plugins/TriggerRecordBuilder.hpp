@@ -180,6 +180,8 @@ protected:
 
   bool read_fragments(fragment_sources_t&, bool drain = false);
 
+  bool read_and_process_trigger_decision(trigger_decision_source_t&, std::atomic<bool>& running) ;
+
   trigger_record_ptr_t extract_trigger_record(const TriggerId&);
   // build_trigger_record will allocate memory and then orphan it to the caller
   // via the returned pointer Plese note that the method will destroy the memory

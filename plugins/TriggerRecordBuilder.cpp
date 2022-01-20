@@ -237,53 +237,34 @@ TriggerRecordBuilder::do_work(std::atomic<bool>& running_flag)
   bool run_again = false;
 
   while (running_flag.load() || run_again) {
-
+    
     bool book_updates = false;
-
+    
     // read decision requests
     while (decision_source.can_pop()) {
-
-      dfmessages::TriggerDecision temp_dec;
-
-      try {
-
-        // get the trigger decision
-        decision_source.pop(temp_dec, m_queue_timeout);
-
-      } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
-        continue;
-      }
-
-      if (temp_dec.run_number != *m_run_number) {
-        ers::error(UnexpectedTriggerDecision(ERS_HERE, temp_dec.trigger_number, temp_dec.run_number, *m_run_number));
-        ++m_unexpected_trigger_decisions;
-        continue;
-      }
-
-      ++m_received_trigger_decisions;
-
-      book_updates = create_trigger_records_and_dispatch(temp_dec, running_flag) > 0;
-
-      break;
-
+      
+      book_updates = read_and_process_trigger_decision(decision_source, running_flag); 
+      
+      if ( book_updates ) break;
+      
     } // while loop, so that we can pop a trigger decision
-
+    
     // read the fragments queues
     bool new_fragments = read_fragments(frag_sources);
-
+    
     //-------------------------------------------------
     // Check if trigger records are complete or timedout
     // and create dedicated record
     //--------------------------------------------------
-
+    
     if (new_fragments) {
-
+      
       TLOG_DEBUG(TLVL_BOOKKEEPING) << "Bookeeping status: " << m_trigger_records.size()
                                    << " trigger records in progress ";
-
+      
       std::vector<TriggerId> complete;
       for (const auto& tr : m_trigger_records) {
-
+	
         auto comp_size = tr.second.second->get_fragments_ref().size();
         auto requ_size = tr.second.second->get_header_ref().get_num_requested_components();
         std::ostringstream message;
@@ -321,7 +302,7 @@ TriggerRecordBuilder::do_work(std::atomic<bool>& running_flag)
     if (!run_again) {
       if (running_flag.load()) {
         ++m_sleep_counter;
-        std::this_thread::sleep_for(m_loop_sleep);
+        run_again = read_and_process_trigger_decision(decision_source, running_flag);
       }
     } else {
       ++m_loop_counter;
@@ -429,6 +410,35 @@ TriggerRecordBuilder::read_fragments(fragment_sources_t& frag_sources, bool drai
 
   return new_fragments;
 }
+
+bool 
+TriggerRecordBuilder::read_and_process_trigger_decision(trigger_decision_source_t & decision_source,
+							std::atomic<bool>& running) {
+
+  dfmessages::TriggerDecision temp_dec;
+  
+  try {
+    
+    // get the trigger decision
+    decision_source.pop(temp_dec, m_loop_sleep);
+    
+  } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
+    return false ;
+  }
+  
+  if (temp_dec.run_number != *m_run_number) {
+    ers::error(UnexpectedTriggerDecision(ERS_HERE, temp_dec.trigger_number, temp_dec.run_number, *m_run_number));
+    ++m_unexpected_trigger_decisions;
+    return false;
+  }
+  
+  ++m_received_trigger_decisions;
+  
+  bool book_updates = create_trigger_records_and_dispatch(temp_dec, running) > 0;
+  
+  return book_updates ;
+}
+
 
 TriggerRecordBuilder::trigger_record_ptr_t
 TriggerRecordBuilder::extract_trigger_record(const TriggerId& id)
