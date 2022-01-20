@@ -42,7 +42,8 @@ jobs:
         
     - name: setup dev area
       run: |
-          source /cvmfs/dunedaq.opensciencegrid.org/tools/dbt/latest/env.sh
+          source /cvmfs/dunedaq.opensciencegrid.org/setup_dunedaq.sh || true
+          setup_dbt latest
           dbt-create.sh -c -n last_successful dev
           
     - name: checkout package for CI
@@ -53,14 +54,15 @@ jobs:
     - name: setup build env, build and lint the repo against the development release
       run: |
           export REPO=$(echo '${{ github.repository }}' | awk -F '/' '{print $2}')
-          source /cvmfs/dunedaq.opensciencegrid.org/tools/dbt/latest/env.sh
+          source /cvmfs/dunedaq.opensciencegrid.org/setup_dunedaq.sh || true
+          setup_dbt latest
           cd $GITHUB_WORKSPACE/dev
           dbt-workarea-env || true
           setup_repo_env="SETUP_$REPO"
           [[ -z ${!setup_env_repo+x} ]] || unsetup $REPO
           cp -pr $GITHUB_WORKSPACE/DUNE-DAQ/$REPO $GITHUB_WORKSPACE/dev/sourcecode
-          dbt-build.py
-          dbt-build.py --lint
+          dbt-build.sh
+          dbt-build.sh --lint
           $GITHUB_WORKSPACE/daq-release/scripts/upsify-daq-pkgs.py -w $GITHUB_WORKSPACE/dev -o /tarballs
           
     - name: upload UPS tarball and log file
