@@ -42,8 +42,7 @@ jobs:
         
     - name: setup dev area
       run: |
-          source /cvmfs/dunedaq.opensciencegrid.org/setup_dunedaq.sh || true
-          setup_dbt latest
+          source /cvmfs/dunedaq.opensciencegrid.org/tools/dbt/latest/env.sh
           dbt-create.sh -c -n last_successful dev
           
     - name: checkout package for CI
@@ -54,8 +53,7 @@ jobs:
     - name: setup build env, build and lint the repo against the development release
       run: |
           export REPO=$(echo '${{ github.repository }}' | awk -F '/' '{print $2}')
-          source /cvmfs/dunedaq.opensciencegrid.org/setup_dunedaq.sh || true
-          setup_dbt latest
+          source /cvmfs/dunedaq.opensciencegrid.org/tools/dbt/latest/env.sh
           cd $GITHUB_WORKSPACE/dev
           dbt-workarea-env || true
           setup_repo_env="SETUP_$REPO"
