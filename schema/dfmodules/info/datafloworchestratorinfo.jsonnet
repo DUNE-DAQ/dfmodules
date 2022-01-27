@@ -14,7 +14,7 @@ local info = {
        s.field("decisions_sent", self.uint8, 0, doc="Number of sent trigger decisions"),
        s.field("deciding_destination", self.uint8, 0, doc="Time spent making a decision on the receving DF app"),
        s.field("waiting_for_decision", self.uint8, 0, doc="Time spent waiting on Trigger Decisions"),
-       s.field("waiting_for_slots", self.uint8, 0, doc="Time spent waiting for new feww slots")
+       s.field("evaluating_busy_status", self.uint8, 0, doc="Time spent evaluating busy status")
    ], doc="Data Flow Orchestrator information")
 };
 
