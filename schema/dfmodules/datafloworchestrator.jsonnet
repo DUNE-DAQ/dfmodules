@@ -16,7 +16,7 @@ local types = {
 
     appconfig: s.record("app_config", [
       s.field("decision_connection", self.connection_name, "", doc="Name of the connection to send decisions to for this application"),
-      s.field("busy_thresholds", self.busy_thresholds, doc="Watermark controls")
+      s.field("thresholds", self.busy_thresholds, doc="Watermark controls")
     ], doc="DataFlow application config"),
 
     appconfigs: s.sequence("app_configs", self.appconfig, doc="Configuration for the Dataflow applications"),
@@ -24,6 +24,10 @@ local types = {
     conf: s.record("ConfParams", [
         s.field("token_connection", self.connection_name, "", 
 	         doc="Connection details to receive job-completed messsages"),	
+        s.field("busy_connection", self.connection_name, "", 
+	         doc="Connection details to send busy status messages"),	
+        s.field("td_connection", self.connection_name, "", 
+	         doc="Connection details to receive trigger decisions"),	
         s.field("general_queue_timeout", self.timeout, 100, 
 	        doc="General indication for timeout"),
         s.field("td_send_retries", self.count, 5, doc="Number of times to retry sending TriggerDecisions"),
