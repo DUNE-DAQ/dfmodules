@@ -73,8 +73,7 @@ public:
   TriggerRecordBuilderData& operator=(TriggerRecordBuilderData const&) = delete;
   TriggerRecordBuilderData& operator=(TriggerRecordBuilderData&&);
 
-  bool is_free() const { return !m_in_error && m_free_threshold.load() > m_assigned_trigger_decisions.size(); }
-  bool is_busy() const { return m_in_error || m_busy_threshold.load() <= m_assigned_trigger_decisions.size(); }
+  bool is_busy() const { return m_in_error || m_is_busy ; }
   size_t used_slots() const { return m_assigned_trigger_decisions.size(); }
 
   std::shared_ptr<AssignedTriggerDecision> get_assignment(daqdataformats::trigger_number_t trigger_number) const;
@@ -92,6 +91,7 @@ public:
 private:
   std::atomic<size_t> m_busy_threshold{ 0 };
   std::atomic<size_t> m_free_threshold{ std::numeric_limits<size_t>::max() };
+  std::atomic<bool> m_is_busy{ false };
   std::list<std::shared_ptr<AssignedTriggerDecision>> m_assigned_trigger_decisions;
   mutable std::mutex m_assigned_trigger_decisions_mutex;
 
