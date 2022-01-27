@@ -18,6 +18,7 @@
 #include "ers/Issue.hpp"
 #include "nlohmann/json.hpp"
 
+#include <limits>
 #include <atomic>
 #include <chrono>
 #include <functional>
@@ -29,6 +30,10 @@
 
 namespace dunedaq {
 // Disable coverage checking LCOV_EXCL_START
+ERS_DECLARE_ISSUE(dfmodules,
+                  DFOThresholdsNotConsistent,
+                  "Busy threshold (" << busy << ") is smaller than free threshold (" << free << ')',
+                  ((size_t)busy)((size_t)free))
 ERS_DECLARE_ISSUE(dfmodules,
                   AssignedTriggerDecisionNotFound,
                   "The Trigger Decision with trigger number "
@@ -60,15 +65,17 @@ class TriggerRecordBuilderData
 {
 public:
   TriggerRecordBuilderData() = default;
-  TriggerRecordBuilderData(std::string connection_name, size_t capacity);
+  TriggerRecordBuilderData(std::string connection_name, size_t busy_threshold);
+  TriggerRecordBuilderData(std::string connection_name, size_t busy_threshold, size_t free_threshold);
 
   TriggerRecordBuilderData(TriggerRecordBuilderData const&) = delete;
   TriggerRecordBuilderData(TriggerRecordBuilderData&&);
   TriggerRecordBuilderData& operator=(TriggerRecordBuilderData const&) = delete;
   TriggerRecordBuilderData& operator=(TriggerRecordBuilderData&&);
 
-  bool has_slot() const { return !m_in_error && m_num_slots.load() > m_assigned_trigger_decisions.size(); }
-  size_t available_slots() const { return m_in_error ? 0 : m_num_slots.load() - m_assigned_trigger_decisions.size(); }
+  bool is_free() const { return !m_in_error && m_free_threshold.load() > m_assigned_trigger_decisions.size(); }
+  bool is_busy() const { return m_in_error || m_busy_threshold.load() <= m_assigned_trigger_decisions.size(); }
+  size_t used_slots() const { return m_assigned_trigger_decisions.size(); }
 
   std::shared_ptr<AssignedTriggerDecision> get_assignment(daqdataformats::trigger_number_t trigger_number) const;
   std::shared_ptr<AssignedTriggerDecision> extract_assignment(daqdataformats::trigger_number_t trigger_number);
@@ -83,7 +90,8 @@ public:
   void set_in_error(bool err) { m_in_error = err; }
 
 private:
-  std::atomic<size_t> m_num_slots{ 0 };
+  std::atomic<size_t> m_busy_threshold{ 0 };
+  std::atomic<size_t> m_free_threshold{ std::numeric_limits<size_t>::max() };
   std::list<std::shared_ptr<AssignedTriggerDecision>> m_assigned_trigger_decisions;
   mutable std::mutex m_assigned_trigger_decisions_mutex;
 

@@ -25,15 +25,29 @@
 namespace dunedaq {
 namespace dfmodules {
 
-TriggerRecordBuilderData::TriggerRecordBuilderData(std::string connection_name, size_t capacity)
-  : m_num_slots(capacity)
+TriggerRecordBuilderData::TriggerRecordBuilderData(std::string connection_name, size_t busy_threshold)
+  : m_busy_threshold(busy_threshold)
+  , m_free_threshold(busy_threshold)
   , m_in_error(false)
   , m_connection_name(connection_name)
 {}
 
+TriggerRecordBuilderData::TriggerRecordBuilderData(std::string connection_name, 
+						   size_t busy_threshold, 
+						   size_t free_threshold)
+  : m_busy_threshold(busy_threshold)
+  , m_free_threshold(busy_threshold)
+  , m_in_error(false)
+  , m_connection_name(connection_name)
+{ 
+  if (busy_threshold < free_threshold ) 
+    throw dfmodules::DFOThresholdsNotConsistent(ERS_HERE, busy_threshold,free_threshold) ; 
+}
+
 TriggerRecordBuilderData::TriggerRecordBuilderData(TriggerRecordBuilderData&& other)
 {
-  m_num_slots = other.m_num_slots.load();
+  m_busy_threshold = other.m_busy_threshold.load();
+  m_free_threshold = other.m_free_threshold.load();
   m_connection_name = std::move(other.m_connection_name);
 
   m_assigned_trigger_decisions = std::move(other.m_assigned_trigger_decisions);
@@ -47,7 +61,8 @@ TriggerRecordBuilderData::TriggerRecordBuilderData(TriggerRecordBuilderData&& ot
 TriggerRecordBuilderData&
 TriggerRecordBuilderData::operator=(TriggerRecordBuilderData&& other)
 {
-  m_num_slots = other.m_num_slots.load();
+  m_busy_threshold = other.m_busy_threshold.load();
+  m_free_threshold = other.m_free_threshold.load();
   m_connection_name = std::move(other.m_connection_name);
 
   m_assigned_trigger_decisions = std::move(other.m_assigned_trigger_decisions);
