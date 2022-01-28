@@ -94,8 +94,7 @@ TriggerRecordBuilderData::extract_assignment(daqdataformats::trigger_number_t tr
 
   if ( m_assigned_trigger_decisions.size() < m_free_threshold.load() ) 
     m_is_busy.store(false);
-  }
-
+  
   return dec_ptr;
 }
 

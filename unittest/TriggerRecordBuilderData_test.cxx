@@ -167,7 +167,7 @@ BOOST_AUTO_TEST_CASE(Exceptions)
   // we are now above threshold but we can accept new assigments anyway because we are not in error
   BOOST_REQUIRE(trbd.is_busy());
 
-  trdb.set_error(true);
+  trbd.set_in_error(true);
   dunedaq::dfmessages::TriggerDecision err_td;
   err_td.trigger_number = 4;
   err_td.run_number = 2;

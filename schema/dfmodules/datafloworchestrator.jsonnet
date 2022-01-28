@@ -9,8 +9,8 @@ local types = {
                        doc="Queue timeout in milliseconds" ),    
 
     busy_thresholds: s.record("busy_thresholds", [
-      s.field( "free", self.count, 5, doc="Maximum number of trigger decisions the application need to be considered free"), 
-      s.field( "busy", self.count, 10, doc="Minimum number of trigger decisions the application need to be considered busy") 
+      s.field( "free", self.count, 5, doc="Maximum number of trigger decisions the application need to be considered free. The values is not considered free (extreme not included)"), 
+      s.field( "busy", self.count, 10, doc="Minimum number of trigger decisions the application need to be considered busy. The value is considered busy (extreme included)") 
       ], doc="threshold definitions" ),
 
 
