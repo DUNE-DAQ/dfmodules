@@ -73,30 +73,36 @@ private:
   void do_stop(const data_t&);
   void do_scrap(const data_t&);
 
-  void do_work(std::atomic<bool>& run_flag);
+  // void do_work(std::atomic<bool>& run_flag);
 
   void get_info(opmonlib::InfoCollector& ci, int level) override;
 
   virtual void receive_trigger_complete_token(ipm::Receiver::Response message);
-  virtual bool has_slot() const;
-  bool extract_a_decision(dfmessages::TriggerDecision& decision);
-  bool dispatch(std::shared_ptr<AssignedTriggerDecision> assignment, std::atomic<bool>& run_flag);
+  void receive_trigger_decision(ipm::Receiver::Response message);
+  virtual bool is_busy() const;
+  void notify_trigger(bool busy) const;
+  //bool extract_a_decision(dfmessages::TriggerDecision& decision);
+  bool dispatch(std::shared_ptr<AssignedTriggerDecision> assignment);
   virtual void assign_trigger_decision(std::shared_ptr<AssignedTriggerDecision> assignment);
 
   // Configuration
   std::chrono::milliseconds m_queue_timeout;
   dunedaq::daqdataformats::run_number_t m_run_number;
   std::string m_token_connection_name;
+  std::string m_busy_connection_name;
+  std::string m_td_connection_name;
   size_t m_td_send_retries;
 
-  // Queue(s)
-  using triggerdecisionsource_t = dunedaq::appfwk::DAQSource<dfmessages::TriggerDecision>;
-  std::unique_ptr<triggerdecisionsource_t> m_trigger_decision_queue = nullptr;
+  // // Queue(s)
+  // using triggerdecisionsource_t = dunedaq::appfwk::DAQSource<dfmessages::TriggerDecision>;
+  // std::unique_ptr<triggerdecisionsource_t> m_trigger_decision_queue = nullptr;
 
   // Coordination
-  utilities::WorkerThread m_working_thread;
-  std::condition_variable m_slot_available_cv;
-  mutable std::mutex m_slot_available_mutex;
+  // utilities::WorkerThread m_working_thread;
+  // std::condition_variable m_slot_available_cv;
+  // mutable std::mutex m_slot_available_mutex;
+  // atomic<bool> m_last_notifiled_status{false};
+  atomic<bool> m_running_status{false};
 
   // Statistics
   std::atomic<uint64_t> m_received_tokens{ 0 };      // NOLINT (build/unsigned)
