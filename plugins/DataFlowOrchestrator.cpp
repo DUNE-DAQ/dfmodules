@@ -15,6 +15,7 @@
 #include "appfwk/DAQModuleHelper.hpp"
 #include "appfwk/app/Nljs.hpp"
 #include "dfmessages/TriggerDecisionToken.hpp"
+#include "dfmessages/TriggerInhibit.hpp"
 #include "logging/Logging.hpp"
 #include "networkmanager/NetworkManager.hpp"
 
@@ -46,7 +47,6 @@ DataFlowOrchestrator::DataFlowOrchestrator(const std::string& name)
   : dunedaq::appfwk::DAQModule(name)
   , m_queue_timeout(100)
   , m_run_number(0)
-  , m_working_thread(std::bind(&DataFlowOrchestrator::do_work, this, std::placeholders::_1))
 {
   register_command("conf", &DataFlowOrchestrator::do_conf);
   register_command("start", &DataFlowOrchestrator::do_start);
@@ -55,12 +55,12 @@ DataFlowOrchestrator::DataFlowOrchestrator(const std::string& name)
 }
 
 void
-DataFlowOrchestrator::init(const data_t& init_data)
+DataFlowOrchestrator::init(const data_t& /*init_data*/)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
 
   //----------------------
-  // Get queue
+  // the module has no queues now
   //----------------------
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
@@ -78,7 +78,7 @@ DataFlowOrchestrator::do_conf(const data_t& payload)
 										app.thresholds.busy, 
 										app.thresholds.free);
   }
-  m_dataflow_availability_iter = m_dataflow_availability.begin();
+  //m_dataflow_availability_iter = m_dataflow_availability.begin();
 
   m_queue_timeout = std::chrono::milliseconds(parsed_conf.general_queue_timeout);
   m_token_connection_name = parsed_conf.token_connection;
@@ -229,7 +229,7 @@ DataFlowOrchestrator::receive_trigger_decision(ipm::Receiver::Response message)
 
   dfmessages::TriggerDecision decision;
   try {
-   decision = serialization::deserialize<dfmessages::TriggerDecisionToken>(message.data);
+    decision = serialization::deserialize<dfmessages::TriggerDecision>(message.data);
   } catch (const ers::Issue& excpt) {
     ers::error(excpt);
   }
@@ -238,7 +238,7 @@ DataFlowOrchestrator::receive_trigger_decision(ipm::Receiver::Response message)
     
     auto assignment = find_slot(decision);
     
-    if (assignment == nullptr)
+    if (assignment == nullptr)  // this can happen if all application are in error state
       continue;
     
     auto dispatch_successful = dispatch(assignment);
@@ -263,20 +263,30 @@ DataFlowOrchestrator::receive_trigger_decision(ipm::Receiver::Response message)
 std::shared_ptr<AssignedTriggerDecision>
 DataFlowOrchestrator::find_slot(dfmessages::TriggerDecision decision)
 {
+
+  // this find_slot assigns to the application with the lowest occupancy 
+  // with respect to the busy threshold
+  // application in error state are remove from the choice
+
   std::shared_ptr<AssignedTriggerDecision> output = nullptr;
 
-  size_t tries = 0;
-  while (output == nullptr && tries < m_dataflow_availability.size()) {
-    ++m_dataflow_availability_iter;
-    if (m_dataflow_availability_iter == m_dataflow_availability.end())
-      m_dataflow_availability_iter = m_dataflow_availability.begin();
-
-    if (m_dataflow_availability_iter->second.has_slot()) {
-      output = m_dataflow_availability_iter->second.make_assignment(decision);
+  auto candidate = m_dataflow_availability.end() ;
+  double ratio = std::numeric_limits<double>::max() ;
+  for ( auto it = m_dataflow_availability.begin();
+	it != m_dataflow_availability.end(); ++it ) {
+    const auto & data = it->second;
+    if ( ! data.is_in_error() ) {
+      double temp_ratio = data.used_slots() / (double) data.busy_threshold() ;
+      if ( temp_ratio < ratio ) {
+	candidate = it ;
+	ratio = temp_ratio;
+      }
     }
-    ++tries;
   }
 
+  if ( candidate != m_dataflow_availability.end() )
+    output = candidate->second.make_assignment(decision);
+  
   return output;
 }
 
@@ -317,7 +327,7 @@ DataFlowOrchestrator::receive_trigger_complete_token(ipm::Receiver::Response mes
   
   if ( app_it -> second.is_in_error()) {
     TLOG() << TriggerRecordBuilderAppUpdate(ERS_HERE, token.decision_destination, "Has reconnected");
-    app_it -> set_in_error(false);
+    app_it -> second.set_in_error(false);
   }
   
   if ( ! app_it -> second.is_busy() ) {
@@ -334,6 +344,32 @@ DataFlowOrchestrator::is_busy() const
       return false;
   }
   return true;
+}
+
+void
+DataFlowOrchestrator::notify_trigger(bool busy) const {
+
+  auto message = dunedaq::serialization::serialize(dfmessages::TriggerInhibit{busy, m_run_number},
+						   dunedaq::serialization::kMsgPack);
+
+  bool wasSentSuccessfully = false;
+
+  do {
+    
+    try {
+      networkmanager::NetworkManager::get().send_to(m_busy_connection_name,
+                                                    static_cast<const void*>(message.data()),
+                                                    message.size(),
+                                                    m_queue_timeout);
+      wasSentSuccessfully = true;
+    } catch (const ers::Issue& excpt) {
+      std::ostringstream oss_warn;
+      oss_warn << "Send to connection \"" << m_busy_connection_name << "\" failed";
+      ers::warning(networkmanager::OperationFailed(ERS_HERE, oss_warn.str(), excpt));
+    }
+
+  } while (!wasSentSuccessfully && m_running_status.load() );
+
 }
 
 bool

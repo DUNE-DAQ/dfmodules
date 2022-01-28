@@ -76,6 +76,9 @@ public:
   bool is_busy() const { return m_in_error || m_is_busy ; }
   size_t used_slots() const { return m_assigned_trigger_decisions.size(); }
 
+  size_t busy_threshold() const { return m_busy_threshold.load(); }
+  size_t free_threshold() const { return m_free_threshold.load(); }
+
   std::shared_ptr<AssignedTriggerDecision> get_assignment(daqdataformats::trigger_number_t trigger_number) const;
   std::shared_ptr<AssignedTriggerDecision> extract_assignment(daqdataformats::trigger_number_t trigger_number);
   std::shared_ptr<AssignedTriggerDecision> make_assignment(dfmessages::TriggerDecision decision);
