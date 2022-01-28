@@ -19,7 +19,7 @@
 
 #include "appfwk/DAQModule.hpp"
 #include "appfwk/DAQSource.hpp"
-#include "appfwk/ThreadHelper.hpp"
+#include "utilities/WorkerThread.hpp"
 #include "logging/Logging.hpp"
 
 #include <map>
@@ -29,12 +29,18 @@
 
 namespace dunedaq {
 
-    ERS_DECLARE_ISSUE(dfmodules, TriggerRecordBuilderAppUpdate, "TriggerRecordBuilder app " << connection_name << ": " << message, ((std::string)connection_name)((std::string)message))
+// Disable coverage checking LCOV_EXCL_START
+ERS_DECLARE_ISSUE(dfmodules,
+                  TriggerRecordBuilderAppUpdate,
+                  "TriggerRecordBuilder app " << connection_name << ": " << message,
+                  ((std::string)connection_name)((std::string)message))
+// Re-enable coverage checking LCOV_EXCL_STOP
 
-    namespace dfmodules {
+namespace dfmodules {
 
 /**
- * @brief DataFlowOrchestrator distributes triggers according to the availability of the DF apps in the system
+ * @brief DataFlowOrchestrator distributes triggers according to the
+ * availability of the DF apps in the system
  */
 class DataFlowOrchestrator : public dunedaq::appfwk::DAQModule
 {
@@ -57,6 +63,7 @@ protected:
   virtual std::shared_ptr<AssignedTriggerDecision> find_slot(dfmessages::TriggerDecision decision);
 
   std::map<std::string, TriggerRecordBuilderData> m_dataflow_availability;
+  std::map<std::string, TriggerRecordBuilderData>::iterator m_dataflow_availability_iter;
   std::function<void(nlohmann::json&)> m_metadata_function;
 
 private:
@@ -72,9 +79,8 @@ private:
 
   virtual void receive_trigger_complete_token(ipm::Receiver::Response message);
   virtual bool has_slot() const;
-  bool extract_a_decision(dfmessages::TriggerDecision& decision, std::atomic<bool>& run_flag);
-  bool dispatch(std::shared_ptr<AssignedTriggerDecision> assignment,
-                std::atomic<bool>& run_flag);
+  bool extract_a_decision(dfmessages::TriggerDecision& decision);
+  bool dispatch(std::shared_ptr<AssignedTriggerDecision> assignment, std::atomic<bool>& run_flag);
   virtual void assign_trigger_decision(std::shared_ptr<AssignedTriggerDecision> assignment);
 
   // Configuration
@@ -88,17 +94,17 @@ private:
   std::unique_ptr<triggerdecisionsource_t> m_trigger_decision_queue = nullptr;
 
   // Coordination
-  appfwk::ThreadHelper m_working_thread;
+  utilities::WorkerThread m_working_thread;
   std::condition_variable m_slot_available_cv;
   mutable std::mutex m_slot_available_mutex;
 
   // Statistics
-  std::atomic<uint64_t> m_received_tokens{ 0 };    // NOLINT (build/unsigned)
-  std::atomic<uint64_t> m_sent_decisions{ 0 };     // NOLINT (build/unsigned)
-  std::atomic<uint64_t> m_received_decisions{ 0 }; // NOLINT (build/unsigned)
-  std::atomic<uint64_t> m_dataflow_busy{ 0 };
-  std::atomic<uint64_t> m_waiting_for_decision{ 0 };
-  std::atomic<uint64_t> m_dfo_busy{ 0 };
+  std::atomic<uint64_t> m_received_tokens{ 0 };      // NOLINT (build/unsigned)
+  std::atomic<uint64_t> m_sent_decisions{ 0 };       // NOLINT (build/unsigned)
+  std::atomic<uint64_t> m_received_decisions{ 0 };   // NOLINT (build/unsigned)
+  std::atomic<uint64_t> m_deciding_destination{ 0 }; // NOLINT (build/unsigned)
+  std::atomic<uint64_t> m_waiting_for_decision{ 0 }; // NOLINT (build/unsigned)
+  std::atomic<uint64_t> m_waiting_for_slots{ 0 };    // NOLINT (build/unsigned)
 };
 } // namespace dfmodules
 } // namespace dunedaq
