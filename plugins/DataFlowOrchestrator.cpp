@@ -102,6 +102,8 @@ DataFlowOrchestrator::do_start(const data_t& payload)
 
   m_running_status.store(true);
 
+  m_last_token_received = m_last_td_received = std::chrono::steady_clock::now();
+  
   networkmanager::NetworkManager::get().register_callback(
     m_token_connection_name,
     std::bind(&DataFlowOrchestrator::receive_trigger_complete_token, this, std::placeholders::_1));
@@ -157,6 +159,7 @@ DataFlowOrchestrator::receive_trigger_decision(ipm::Receiver::Response message)
 
   ++m_received_decisions;
   auto decision_received = std::chrono::steady_clock::now();
+  
   std::chrono::steady_clock::time_point decision_assigned;
   do {
 
@@ -187,7 +190,7 @@ DataFlowOrchestrator::receive_trigger_decision(ipm::Receiver::Response message)
   m_deciding_destination +=
     std::chrono::duration_cast<std::chrono::microseconds>(decision_assigned - decision_received).count();
   m_forwarding_decision +=
-    std::chrono::duration_cast<std::chrono::microseconds>(decision_assigned - m_last_td_received).count();
+    std::chrono::duration_cast<std::chrono::microseconds>(m_last_td_received - decision_assigned).count();
 }
 
 std::shared_ptr<AssignedTriggerDecision>
