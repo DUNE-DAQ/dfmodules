@@ -88,6 +88,7 @@ private:
   daqdataformats::FragmentType m_fragment_type;
   std::string m_timesync_connection_name;
   std::string m_timesync_topic_name;
+  uint32_t m_pid_of_current_process;
 
   // Queue(s)
   using datareqsource_t = dunedaq::appfwk::DAQSource<dfmessages::DataRequest>;
