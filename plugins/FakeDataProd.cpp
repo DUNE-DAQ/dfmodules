@@ -33,7 +33,8 @@ enum
 {
   TLVL_ENTER_EXIT_METHODS = 5,
   TLVL_CONFIG = 7,
-  TLVL_WORK_STEPS = 10
+  TLVL_WORK_STEPS = 10,
+  TLVL_TIME_SYNCS = 12
 };
 
 namespace dunedaq {
@@ -50,6 +51,8 @@ FakeDataProd::FakeDataProd(const std::string& name)
   register_command("conf", &FakeDataProd::do_conf);
   register_command("start", &FakeDataProd::do_start);
   register_command("stop", &FakeDataProd::do_stop);
+
+  m_pid_of_current_process = getpid();
 }
 
 void
@@ -123,11 +126,18 @@ void
 FakeDataProd::do_timesync(std::atomic<bool>& running_flag)
 {
   int sent_count = 0;
+  uint64_t msg_seqno = 0;
   while (running_flag.load()) {
     auto time_now = std::chrono::system_clock::now().time_since_epoch();
     uint64_t current_timestamp = // NOLINT (build/unsigned)
       std::chrono::duration_cast<std::chrono::nanoseconds>(time_now).count();
     auto timesyncmsg = dfmessages::TimeSync(current_timestamp);
+    timesyncmsg.run_number = m_run_number;
+    timesyncmsg.sequence_number = ++msg_seqno;
+    timesyncmsg.source_pid = m_pid_of_current_process;
+    TLOG_DEBUG(TLVL_TIME_SYNCS) << "New timesync: daq=" << timesyncmsg.daq_time
+                                << " wall=" << timesyncmsg.system_time << " run=" << timesyncmsg.run_number
+                                << " seqno=" << timesyncmsg.sequence_number << " pid=" << timesyncmsg.source_pid;
     try {
       auto serialised_timesync = dunedaq::serialization::serialize(timesyncmsg, dunedaq::serialization::kMsgPack);
       networkmanager::NetworkManager::get().send_to(m_timesync_connection_name,
