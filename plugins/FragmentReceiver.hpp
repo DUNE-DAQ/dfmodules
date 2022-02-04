@@ -60,7 +60,6 @@ private:
 
   // Queue(s)
   using fragmentsink_t = dunedaq::appfwk::DAQSink<std::unique_ptr<daqdataformats::Fragment>>;
-  std::string m_fragment_q_name;
   std::unique_ptr<fragmentsink_t> m_fragment_output_queue;
 
   size_t m_received_fragments{ 0 };

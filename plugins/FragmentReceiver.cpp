@@ -52,10 +52,10 @@ FragmentReceiver::FragmentReceiver(const std::string& name)
 }
 
 void
-FragmentReceiver::init(const data_t& iniobj)
+FragmentReceiver::init(const data_t&)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
-  m_fragment_q_name = appfwk::queue_inst(iniobj, "data_fragments_q");
+
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
 
@@ -65,7 +65,7 @@ FragmentReceiver::do_conf(const data_t& payload)
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
   fragmentreceiver::ConfParams parsed_conf = payload.get<fragmentreceiver::ConfParams>();
 
-  m_fragment_output_queue = std::unique_ptr<fragmentsink_t>(new fragmentsink_t(m_fragment_q_name));
+  m_fragment_output_queue = std::unique_ptr<fragmentsink_t>(new fragmentsink_t("data_fragments_q"));
 
   m_queue_timeout = std::chrono::milliseconds(parsed_conf.general_queue_timeout);
   m_connection_name = parsed_conf.connection_name;
