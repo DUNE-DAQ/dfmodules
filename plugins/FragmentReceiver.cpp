@@ -55,7 +55,7 @@ void
 FragmentReceiver::init(const data_t& iniobj)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
-  m_fragment_q_name = appfwk::queue_inst(iniobj, "data_fragments_q");
+  m_fragment_q_name = appfwk::queue_inst(iniobj, "output");
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
 
