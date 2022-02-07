@@ -22,7 +22,7 @@
 #include "appfwk/DAQModule.hpp"
 #include "appfwk/DAQSink.hpp"
 #include "appfwk/DAQSource.hpp"
-#include "appfwk/ThreadHelper.hpp"
+#include "utilities/WorkerThread.hpp"
 
 #include <chrono>
 #include <map>
@@ -204,7 +204,7 @@ private:
   void do_stop(const data_t&);
 
   // Threading
-  dunedaq::appfwk::ThreadHelper m_thread;
+  dunedaq::utilities::WorkerThread m_thread;
   void do_work(std::atomic<bool>&);
 
   // Configuration
@@ -232,7 +232,6 @@ private:
 
   // book related metrics
   using metric_counter_type = decltype(triggerrecordbuilderinfo::Info::pending_trigger_decisions);
-  using metric_ratio_type = decltype(triggerrecordbuilderinfo::Info::average_millisecond_per_trigger);
   mutable std::atomic<metric_counter_type> m_trigger_decisions_counter = { 0 }; // currently
   mutable std::atomic<metric_counter_type> m_fragment_counter = { 0 };          // currently
   mutable std::atomic<metric_counter_type> m_pending_fragment_counter = { 0 };  // currently
@@ -243,24 +242,16 @@ private:
   mutable std::atomic<metric_counter_type> m_lost_fragments = { 0 };                 // in the run
   mutable std::atomic<metric_counter_type> m_invalid_requests = { 0 };               // in the run
   mutable std::atomic<metric_counter_type> m_duplicated_trigger_ids = { 0 };         // in the run
-  mutable std::atomic<metric_counter_type> m_run_received_trigger_decisions = { 0 }; // in the run
-  mutable std::atomic<metric_counter_type> m_generated_trigger_records = { 0 };      // in the run
   mutable std::atomic<metric_counter_type> m_abandoned_trigger_records = { 0 };      // in the run
 
-  mutable std::atomic<metric_counter_type> m_completed_trigger_records = { 0 }; // in between calls
+  mutable std::atomic<metric_counter_type> m_received_trigger_decisions = { 0 }; // in between calls
+  mutable std::atomic<metric_counter_type> m_generated_trigger_records = { 0 }; // in between calls
+  mutable std::atomic<metric_counter_type> m_generated_data_requests = { 0 };   // in between calls
   mutable std::atomic<metric_counter_type> m_sleep_counter = { 0 };             // in between calls
   mutable std::atomic<metric_counter_type> m_loop_counter = { 0 };              // in between calls
-  mutable std::atomic<uint64_t> m_trigger_record_time = {                       // NOLINT
-                                                          0
-  };                                                         // in between calls
-  mutable std::atomic<uint64_t> m_trigger_decision_width = { // NOLINT
-                                                             0
-  };                                                     // in between calls
-  mutable std::atomic<uint64_t> m_data_request_width = { // NOLINT
-                                                         0
-  };                                                                             // in between calls
-  mutable std::atomic<metric_counter_type> m_received_trigger_decisions = { 0 }; // in between calls
-  mutable std::atomic<metric_counter_type> m_generated_data_requests = { 0 };    // in between calls
+  mutable std::atomic<metric_counter_type> m_data_waiting_time = {0};           // in between calls
+  mutable std::atomic<metric_counter_type> m_trigger_decision_width = {0}; // in between calls
+  mutable std::atomic<metric_counter_type> m_data_request_width = {0};     // in between calls
 
   // time thresholds
   using duration_type = std::chrono::milliseconds;

@@ -25,13 +25,22 @@
 #include <memory>
 #include <mutex>
 #include <string>
+#include <utility>
 
 namespace dunedaq {
+// Disable coverage checking LCOV_EXCL_START
 ERS_DECLARE_ISSUE(dfmodules,
                   AssignedTriggerDecisionNotFound,
                   "The Trigger Decision with trigger number "
                     << trigger_number << " was not found for dataflow application at " << connection_name,
                   ((daqdataformats::trigger_number_t)trigger_number)((std::string)connection_name))
+ERS_DECLARE_ISSUE(dfmodules,
+                  NoSlotsAvailable,
+                  "The Trigger Decision with trigger number "
+                    << trigger_number << " could not be assigned to the dataflow application at " << connection_name
+                    << " because no slots were available.",
+                  ((daqdataformats::trigger_number_t)trigger_number)((std::string)connection_name))
+// Re-enable coverage checking LCOV_EXCL_STOP
 
 namespace dfmodules {
 struct AssignedTriggerDecision
@@ -74,18 +83,18 @@ public:
   void set_in_error(bool err) { m_in_error = err; }
 
 private:
-  std::atomic<size_t> m_num_slots;
+  std::atomic<size_t> m_num_slots{ 0 };
   std::list<std::shared_ptr<AssignedTriggerDecision>> m_assigned_trigger_decisions;
   mutable std::mutex m_assigned_trigger_decisions_mutex;
 
-  // TODO: Eric Flumerfelt <eflumerf@github.com> 03-Dec-2021: Replace with circular buffer
+  // TODO: Eric Flumerfelt <eflumerf@github.com> Dec-03-2021: Replace with circular buffer
   std::list<std::pair<std::chrono::steady_clock::time_point, std::chrono::microseconds>> m_latency_info;
   mutable std::mutex m_latency_info_mutex;
 
-  std::atomic<bool> m_in_error;
+  std::atomic<bool> m_in_error{ true };
 
   nlohmann::json m_metadata;
-  std::string m_connection_name;
+  std::string m_connection_name{ "" };
 };
 } // namespace dfmodules
 } // namespace dunedaq

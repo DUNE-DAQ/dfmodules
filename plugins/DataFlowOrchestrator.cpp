@@ -21,6 +21,7 @@
 #include <chrono>
 #include <cstdlib>
 #include <future>
+#include <map>
 #include <memory>
 #include <string>
 #include <thread>
@@ -85,6 +86,7 @@ DataFlowOrchestrator::do_conf(const data_t& payload)
   for (auto& app : parsed_conf.dataflow_applications) {
     m_dataflow_availability[app.decision_connection] = TriggerRecordBuilderData(app.decision_connection, app.capacity);
   }
+  m_dataflow_availability_iter = m_dataflow_availability.begin();
 
   m_queue_timeout = std::chrono::milliseconds(parsed_conf.general_queue_timeout);
   m_token_connection_name = parsed_conf.token_connection;
@@ -92,7 +94,8 @@ DataFlowOrchestrator::do_conf(const data_t& payload)
 
   networkmanager::NetworkManager::get().start_listening(m_token_connection_name);
 
-  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method, there are "
+                                      << m_dataflow_availability.size() << " TRB apps defined";
 }
 
 void
@@ -132,52 +135,81 @@ DataFlowOrchestrator::do_scrap(const data_t& /*args*/)
 
   networkmanager::NetworkManager::get().stop_listening(m_token_connection_name);
 
-  TLOG() << get_name() << " successfully stopped";
+  m_dataflow_availability.clear();
+
+  TLOG() << get_name() << " successfully scrapped";
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_scrap() method";
 }
 
 void
 DataFlowOrchestrator::do_work(std::atomic<bool>& run_flag)
 {
-  std::chrono::steady_clock::time_point slot_available, assignment_possible;
-  auto assignment_complete = std::chrono::steady_clock::now();
+  std::chrono::steady_clock::time_point last_slot_check, slot_available, assignment_possible;
 
+  last_slot_check = std::chrono::steady_clock::now();
   while (run_flag.load()) {
     if (has_slot()) {
       slot_available = std::chrono::steady_clock::now();
+      m_waiting_for_slots +=
+        std::chrono::duration_cast<std::chrono::microseconds>(slot_available - last_slot_check).count();
       dfmessages::TriggerDecision decision;
-      auto res = extract_a_decision(decision, run_flag);
-      if (res) {
-        assignment_possible = std::chrono::steady_clock::now();
-        while (run_flag.load()) {
 
-          auto assignment = find_slot(decision);
-          auto dispatch_successful = dispatch(assignment, run_flag);
+      bool has_decision = false;
+      while (!has_decision && run_flag.load()) {
+        has_decision = extract_a_decision(decision);
+        if (has_decision) {
+          assignment_possible = std::chrono::steady_clock::now();
 
-          if (dispatch_successful) {
-            assign_trigger_decision(assignment);
-            break;
-          } else {
-            ers::error(
-              TriggerRecordBuilderAppUpdate(ERS_HERE, assignment->connection_name, "Could not send Trigger Decision"));
-            m_dataflow_availability[assignment->connection_name].set_in_error(true);
+          m_waiting_for_decision +=
+            std::chrono::duration_cast<std::chrono::microseconds>(assignment_possible - slot_available).count();
+
+          while (run_flag.load()) {
+
+            auto assignment = find_slot(decision);
+
+            if (assignment == nullptr)
+              continue;
+
+            auto dispatch_successful = dispatch(assignment, run_flag);
+
+            if (dispatch_successful) {
+              assign_trigger_decision(assignment);
+              break;
+            } else {
+              ers::error(TriggerRecordBuilderAppUpdate(
+                ERS_HERE, assignment->connection_name, "Could not send Trigger Decision"));
+              m_dataflow_availability[assignment->connection_name].set_in_error(true);
+            }
           }
+
+          auto assignment_complete = std::chrono::steady_clock::now();
+
+          m_deciding_destination +=
+            std::chrono::duration_cast<std::chrono::microseconds>(assignment_complete - assignment_possible).count();
+          last_slot_check = assignment_complete; // We'll restart the loop next, so set the first time counter to ensure
+                                                 // that the three counters do not miss any time
+
+        } else { // failed at extracting the decisions
+          // Incrementally update waiting_for_decision time counter
+          auto failed_extracting_decision = std::chrono::steady_clock::now();
+          m_waiting_for_decision +=
+            std::chrono::duration_cast<std::chrono::microseconds>(failed_extracting_decision - slot_available).count();
+          slot_available = failed_extracting_decision; // For while loop continuity
         }
-        m_dataflow_busy +=
-          std::chrono::duration_cast<std::chrono::microseconds>(slot_available - assignment_complete).count();
-        assignment_complete = std::chrono::steady_clock::now();
-        m_waiting_for_decision +=
-          std::chrono::duration_cast<std::chrono::microseconds>(assignment_possible - slot_available).count();
-        m_dfo_busy +=
-          std::chrono::duration_cast<std::chrono::microseconds>(assignment_complete - assignment_possible).count();
       }
-    } else {
+    } else { // no slots available
       auto lk = std::unique_lock<std::mutex>(m_slot_available_mutex);
       m_slot_available_cv.wait_for(lk, std::chrono::milliseconds(1), [&]() { return has_slot(); });
+
+      // Incrementally update waiting_for_slots time counter
+      auto no_slots_available_time = std::chrono::steady_clock::now();
+      m_waiting_for_slots +=
+        std::chrono::duration_cast<std::chrono::microseconds>(no_slots_available_time - last_slot_check).count();
+      last_slot_check = no_slots_available_time; // Set this here so we don't miss time going around the loop
     }
   }
   dfmessages::TriggerDecision decision;
-  while (extract_a_decision(decision, run_flag)) {
+  while (extract_a_decision(decision)) {
     auto assignment = find_slot(decision);
     dispatch(assignment, run_flag);
   }
@@ -186,18 +218,18 @@ DataFlowOrchestrator::do_work(std::atomic<bool>& run_flag)
 std::shared_ptr<AssignedTriggerDecision>
 DataFlowOrchestrator::find_slot(dfmessages::TriggerDecision decision)
 {
-  static std::map<std::string, TriggerRecordBuilderData>::iterator last_selected_trb = m_dataflow_availability.begin();
-
   std::shared_ptr<AssignedTriggerDecision> output = nullptr;
 
-  while (output == nullptr) {
-    ++last_selected_trb;
-    if (last_selected_trb == m_dataflow_availability.end())
-      last_selected_trb = m_dataflow_availability.begin();
+  size_t tries = 0;
+  while (output == nullptr && tries < m_dataflow_availability.size()) {
+    ++m_dataflow_availability_iter;
+    if (m_dataflow_availability_iter == m_dataflow_availability.end())
+      m_dataflow_availability_iter = m_dataflow_availability.begin();
 
-    if (last_selected_trb->second.has_slot()) {
-      output = last_selected_trb->second.make_assignment(decision);
+    if (m_dataflow_availability_iter->second.has_slot()) {
+      output = m_dataflow_availability_iter->second.make_assignment(decision);
     }
+    ++tries;
   }
 
   return output;
@@ -210,9 +242,9 @@ DataFlowOrchestrator::get_info(opmonlib::InfoCollector& ci, int /*level*/)
   info.tokens_received = m_received_tokens.exchange(0);
   info.decisions_sent = m_sent_decisions.exchange(0);
   info.decisions_received = m_received_decisions.exchange(0);
-  info.dataflow_busy = m_dataflow_busy.exchange(0);
+  info.deciding_destination = m_deciding_destination.exchange(0);
   info.waiting_for_decision = m_waiting_for_decision.exchange(0);
-  info.dfo_busy = m_dfo_busy.exchange(0);
+  info.waiting_for_slots = m_waiting_for_slots.exchange(0);
   ci.add(info);
 }
 
@@ -223,7 +255,12 @@ DataFlowOrchestrator::receive_trigger_complete_token(ipm::Receiver::Response mes
   ++m_received_tokens;
 
   if (token.run_number == m_run_number) {
-    m_dataflow_availability[token.decision_destination].complete_assignment(token.trigger_number, m_metadata_function);
+    try {
+      m_dataflow_availability[token.decision_destination].complete_assignment(token.trigger_number,
+                                                                              m_metadata_function);
+    } catch (AssignedTriggerDecisionNotFound const& err) {
+      ers::warning(err);
+    }
 
     if (m_dataflow_availability[token.decision_destination].is_in_error()) {
       TLOG() << TriggerRecordBuilderAppUpdate(ERS_HERE, token.decision_destination, "Has reconnected");
@@ -244,24 +281,21 @@ DataFlowOrchestrator::has_slot() const
 }
 
 bool
-DataFlowOrchestrator::extract_a_decision(dfmessages::TriggerDecision& decision, std::atomic<bool>& run_flag)
+DataFlowOrchestrator::extract_a_decision(dfmessages::TriggerDecision& decision)
 {
   bool got_something = false;
 
-  do {
-    try {
-      m_trigger_decision_queue->pop(decision, m_queue_timeout);
-      TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Popped the Trigger Decision with number "
-                                  << decision.trigger_number << " off the input queue";
-      got_something = true;
-      ++m_received_decisions;
-    } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
-      // it is perfectly reasonable that there might be no data in the queue
-      // some fraction of the times that we check, so we just continue on and try again
-      continue;
-    }
-
-  } while (!got_something && run_flag.load());
+  try {
+    m_trigger_decision_queue->pop(decision, m_queue_timeout);
+    TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Popped the Trigger Decision with number " << decision.trigger_number
+                                << " off the input queue";
+    got_something = true;
+    ++m_received_decisions;
+  } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
+    // it is perfectly reasonable that there might be no data in the queue
+    // some fraction of the times that we check, so we just return that the
+    // extraction failed
+  }
 
   return got_something;
 }
