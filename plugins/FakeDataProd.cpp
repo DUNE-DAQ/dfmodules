@@ -135,9 +135,9 @@ FakeDataProd::do_timesync(std::atomic<bool>& running_flag)
     timesyncmsg.run_number = m_run_number;
     timesyncmsg.sequence_number = ++msg_seqno;
     timesyncmsg.source_pid = m_pid_of_current_process;
-    TLOG_DEBUG(TLVL_TIME_SYNCS) << "New timesync: daq=" << timesyncmsg.daq_time
-                                << " wall=" << timesyncmsg.system_time << " run=" << timesyncmsg.run_number
-                                << " seqno=" << timesyncmsg.sequence_number << " pid=" << timesyncmsg.source_pid;
+    TLOG_DEBUG(TLVL_TIME_SYNCS) << "New timesync: daq=" << timesyncmsg.daq_time << " wall=" << timesyncmsg.system_time
+                                << " run=" << timesyncmsg.run_number << " seqno=" << timesyncmsg.sequence_number
+                                << " pid=" << timesyncmsg.source_pid;
     try {
       auto serialised_timesync = dunedaq::serialization::serialize(timesyncmsg, dunedaq::serialization::kMsgPack);
       networkmanager::NetworkManager::get().send_to(m_timesync_connection_name,
@@ -180,14 +180,16 @@ FakeDataProd::do_work(std::atomic<bool>& running_flag)
     size_t num_bytes_to_send = num_frames_to_send * m_frame_size;
 
     // We don't care about the content of the data, but the size should be correct
-    void* fake_data = malloc(num_bytes_to_send);
 
-    // This should really not happen
-    if (fake_data == nullptr) {
+    std::vector<uint8_t> fake_data;
+    try {
+      fake_data.resize(num_bytes_to_send);
+    } catch (const std::bad_alloc&) {
       throw dunedaq::dfmodules::MemoryAllocationFailed(ERS_HERE, get_name(), num_bytes_to_send);
     }
-    std::unique_ptr<daqdataformats::Fragment> data_fragment_ptr(
-      new daqdataformats::Fragment(fake_data, num_bytes_to_send));
+
+    auto data_fragment_ptr = std::make_unique<daqdataformats::Fragment>(fake_data.data(), num_bytes_to_send);
+
     data_fragment_ptr->set_trigger_number(data_request.trigger_number);
     data_fragment_ptr->set_run_number(m_run_number);
     data_fragment_ptr->set_element_id(m_geoid);
