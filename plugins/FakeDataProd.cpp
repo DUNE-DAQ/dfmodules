@@ -135,9 +135,9 @@ FakeDataProd::do_timesync(std::atomic<bool>& running_flag)
     timesyncmsg.run_number = m_run_number;
     timesyncmsg.sequence_number = ++msg_seqno;
     timesyncmsg.source_pid = m_pid_of_current_process;
-    TLOG_DEBUG(TLVL_TIME_SYNCS) << "New timesync: daq=" << timesyncmsg.daq_time
-                                << " wall=" << timesyncmsg.system_time << " run=" << timesyncmsg.run_number
-                                << " seqno=" << timesyncmsg.sequence_number << " pid=" << timesyncmsg.source_pid;
+    TLOG_DEBUG(TLVL_TIME_SYNCS) << "New timesync: daq=" << timesyncmsg.daq_time << " wall=" << timesyncmsg.system_time
+                                << " run=" << timesyncmsg.run_number << " seqno=" << timesyncmsg.sequence_number
+                                << " pid=" << timesyncmsg.source_pid;
     try {
       auto serialised_timesync = dunedaq::serialization::serialize(timesyncmsg, dunedaq::serialization::kMsgPack);
       networkmanager::NetworkManager::get().send_to(m_timesync_connection_name,
@@ -184,7 +184,7 @@ FakeDataProd::do_work(std::atomic<bool>& running_flag)
     std::vector<uint8_t> fake_data;
     try {
       fake_data.resize(num_bytes_to_send);
-    } catch (const std::bad_alloc& ) {
+    } catch (const std::bad_alloc&) {
       throw dunedaq::dfmodules::MemoryAllocationFailed(ERS_HERE, get_name(), num_bytes_to_send);
     }
 
