@@ -101,6 +101,7 @@ private:
   // mutable std::mutex m_slot_available_mutex;
   // atomic<bool> m_last_notifiled_status{false};
   std::atomic<bool> m_running_status{ false };
+  std::atomic<bool> m_last_notified_busy{false};
   std::string m_last_sent_td_connection;
   std::chrono::steady_clock::time_point m_last_token_received;
   std::chrono::steady_clock::time_point m_last_td_received;

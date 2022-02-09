@@ -101,6 +101,7 @@ DataFlowOrchestrator::do_start(const data_t& payload)
   m_run_number = payload.value<dunedaq::daqdataformats::run_number_t>("run", 0);
 
   m_running_status.store(true);
+  m_last_notified_busy.store(false);
 
   m_last_token_received = m_last_td_received = std::chrono::steady_clock::now();
   
@@ -297,6 +298,8 @@ void
 DataFlowOrchestrator::notify_trigger(bool busy) const
 {
 
+  if ( busy == m_last_noitified_busy.load() ) return ;
+  
   auto message = dunedaq::serialization::serialize(dfmessages::TriggerInhibit{ busy, m_run_number },
                                                    dunedaq::serialization::kMsgPack);
 
@@ -315,6 +318,8 @@ DataFlowOrchestrator::notify_trigger(bool busy) const
     }
 
   } while (!wasSentSuccessfully && m_running_status.load());
+
+  m_last_notified_busy.store(busy);
 }
 
 bool
