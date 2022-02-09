@@ -298,7 +298,7 @@ void
 DataFlowOrchestrator::notify_trigger(bool busy) const
 {
 
-  if ( busy == m_last_noitified_busy.load() ) return ;
+  if ( busy == m_last_notified_busy.load() ) return ;
   
   auto message = dunedaq::serialization::serialize(dfmessages::TriggerInhibit{ busy, m_run_number },
                                                    dunedaq::serialization::kMsgPack);
