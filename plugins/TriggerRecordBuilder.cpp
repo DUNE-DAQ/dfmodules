@@ -187,8 +187,10 @@ TriggerRecordBuilder::do_conf(const data_t& payload)
   m_reply_connection = parsed_conf.reply_connection_name;
 
   // Listener for monitoring requests
-  m_mon_connection = parsed_conf.mon_connection_name;
-  networkmanager::NetworkManager::get().start_listening(m_mon_connection);
+  if (!m_mon_connection.empty()) {
+      m_mon_connection = parsed_conf.mon_connection_name;
+      networkmanager::NetworkManager::get().start_listening(m_mon_connection);
+  }
 
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
@@ -202,7 +204,9 @@ TriggerRecordBuilder::do_scrap(const data_t& /*args*/)
   m_map_geoid_connections.clear();
 
   // Stop listener for monitoring requests
-  networkmanager::NetworkManager::get().stop_listening(m_mon_connection);
+  if (!m_mon_connection.empty()) {
+      networkmanager::NetworkManager::get().stop_listening(m_mon_connection);
+  }
 
   TLOG() << get_name() << " successfully scrapped";
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_scrap() method";
@@ -216,9 +220,11 @@ TriggerRecordBuilder::do_start(const data_t& args)
   m_run_number.reset(new const daqdataformats::run_number_t(args.at("run").get<daqdataformats::run_number_t>()));
 
   // Register the callback to receive monitoring requests
-  m_mon_requests.clear();
-  networkmanager::NetworkManager::get().register_callback(m_mon_connection,
-  std::bind(&TriggerRecordBuilder::tr_requested, this, std::placeholders::_1));
+  if (!m_mon_connection.empty()) {
+      m_mon_requests.clear();
+      networkmanager::NetworkManager::get().register_callback(m_mon_connection,
+      std::bind(&TriggerRecordBuilder::tr_requested, this, std::placeholders::_1));
+  }
 
 
   m_thread.start_working_thread(get_name());
@@ -231,7 +237,10 @@ TriggerRecordBuilder::do_stop(const data_t& /*args*/)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_stop() method";
   // Unregister the monitoring requests callback
-  networkmanager::NetworkManager::get().clear_callback(m_mon_connection);
+
+  if (!m_mon_connection.empty()) {
+      networkmanager::NetworkManager::get().clear_callback(m_mon_connection);
+  }
 
 
   m_thread.stop_working_thread();
@@ -676,7 +685,8 @@ TriggerRecordBuilder::send_trigger_record(const TriggerId& id, trigger_record_si
   trigger_record_ptr_t temp_record(extract_trigger_record(id));
 
   // Send to monitoring, if needed
-  {
+
+  if (!m_mon_connection.empty()) {
     const std::lock_guard<std::mutex> lock(m_mon_mutex);
     auto it = m_mon_requests.begin();
     while (it != m_mon_requests.end()) {

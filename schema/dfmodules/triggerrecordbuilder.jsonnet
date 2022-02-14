@@ -33,7 +33,7 @@ local types = {
                                    s.field("max_time_window", self.timestamp_diff, 0, 
                                            doc="Maximum time window size for Data requests. 0 means no slicing"),
                                    s.field("reply_connection_name", self.connection_id, "nwmgr_test.frags_0", doc="" ),
-                                   s.field("mon_connection_name", self.connection_id, "nwmgr_test.trs_0", doc="" ),
+                                   s.field("mon_connection_name", self.connection_id, "", doc="" ),
                                    s.field("map", self.mapgeoidconnections, doc="" ),
                                   ] , 
                    doc="TriggerRecordBuilder configuration")
