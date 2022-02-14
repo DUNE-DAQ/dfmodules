@@ -98,13 +98,6 @@ TPSetWriter::do_work(std::atomic<bool>& running_flag)
 
   size_t n_tpset_received = 0;
 
-  std::string application_name("Unknown");
-  char* appname_ptr = getenv("DUNEDAQ_APPLICATION_NAME");
-  if (appname_ptr != nullptr) {
-    std::string tmpstr(appname_ptr);
-    application_name = tmpstr;
-  }
-
   auto start_time = steady_clock::now();
 
   triggeralgs::timestamp_t first_timestamp = 0;
@@ -164,7 +157,7 @@ TPSetWriter::do_work(std::atomic<bool>& running_flag)
     if (!tpset_writer.is_open()) {
       std::ostringstream work_oss;
       work_oss << "tpsets_run" << std::setfill('0') << std::setw(6) << m_run_number << "_" << std::setw(4)
-               << file_index << "_" << application_name;
+               << file_index;
       time_t now = time(0);
       work_oss << "_" << boost::posix_time::to_iso_string(boost::posix_time::from_time_t(now)) << ".bin";
       tpset_writer.open(work_oss.str(), 1024, "None", false);
