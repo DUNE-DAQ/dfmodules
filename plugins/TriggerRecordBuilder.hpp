@@ -238,7 +238,7 @@ private:
   // Run information
   std::unique_ptr<const daqdataformats::run_number_t> m_run_number = nullptr;
 
-  // Monitoring relates variables
+  // Monitoring related variables
   std::mutex m_mon_mutex;
   std::string m_mon_connection;
   //std::map<std::string,dfmessages::TRMonRequest> m_mon_requests;
