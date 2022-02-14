@@ -158,7 +158,8 @@ TPSetWriter::do_work(std::atomic<bool>& running_flag)
     //TLOG_DEBUG(9) << "Size of serialized TPSet is " << tpset_bytes.size() << ", TPSet size is " << tpset.objects.size();
 
     TLOG_DEBUG(9) << "Number of TPs in TPSet is " << tpset.objects.size() << ", GeoID is " << tpset.origin
-                  << ", seqno is " << tpset.seqno << ", start timestamp is " << tpset.start_time;
+                  << ", seqno is " << tpset.seqno << ", start timestamp is " << tpset.start_time
+                  << ", run number is " << m_run_number;
 
     if (!tpset_writer.is_open()) {
       std::ostringstream work_oss;
