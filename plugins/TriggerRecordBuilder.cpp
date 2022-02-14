@@ -141,6 +141,8 @@ TriggerRecordBuilder::get_info(opmonlib::InfoCollector& ci, int /*level*/)
   i.data_waiting_time = m_data_waiting_time.exchange(0);
   i.data_request_width = m_data_request_width.exchange(0);
   i.trigger_decision_width = m_trigger_decision_width.exchange(0);
+  i.received_trmon_requests = m_trmon_request_counter.exchange(0);
+  i.sent_trmon = m_trmon_sent_counter.exchange(0);
 
   ci.add(i);
 }
@@ -216,7 +218,7 @@ TriggerRecordBuilder::do_start(const data_t& args)
   // Register the callback to receive monitoring requests
   m_mon_requests.clear();
   networkmanager::NetworkManager::get().register_callback(m_mon_connection,
-    std::bind(&TriggerRecordBuilder::tr_requested, this, std::placeholders::_1));
+  std::bind(&TriggerRecordBuilder::tr_requested, this, std::placeholders::_1));
 
 
   m_thread.start_working_thread(get_name());
@@ -240,6 +242,8 @@ TriggerRecordBuilder::do_stop(const data_t& /*args*/)
 void
 TriggerRecordBuilder::tr_requested(ipm::Receiver::Response message)
 {
+  ++m_trmon_request_counter;
+
   auto req = serialization::deserialize<dfmessages::TRMonRequest>(message.data);
 
   // Ignore requests that don't belong to the ongoing run  
@@ -680,7 +684,8 @@ TriggerRecordBuilder::send_trigger_record(const TriggerId& id, trigger_record_si
       if (it->trigger_type == temp_record->get_header_data().trigger_type) {
         try {
           auto serialized_tr = dunedaq::serialization::serialize(*temp_record, dunedaq::serialization::kMsgPack);
-	  NetworkManager::get().send_to(it->data_destination, static_cast<const void*>(serialized_tr.data()), serialized_tr.size(), m_queue_timeout );
+          NetworkManager::get().send_to(it->data_destination, static_cast<const void*>(serialized_tr.data()), serialized_tr.size(), m_queue_timeout );
+          ++m_trmon_sent_counter;
         } catch (const ers::Issue& excpt) {
           std::ostringstream oss_warn;
           oss_warn << "Sending TR to connection \"" << it->data_destination << "\" failed";

@@ -33,6 +33,9 @@ local info = {
        s.field("data_waiting_time", self.uint8, 0, doc="Time of TRs spent in the TRB buffer"),
        s.field("data_request_width", self.uint8, 0, doc="total time window requested to readout"),
        s.field("trigger_decision_width", self.uint8, 0, doc="total time window requested from a trigger decision"),
+       s.field("received_trmon_requests", self.uint8, 0, doc="Number of requests coming from DQM"),
+       s.field("sent_trmon", self.uint8, 0, doc="Number of TRs sent to DQM"),
+
    ], doc="Trigger Record builder information")
 };
 

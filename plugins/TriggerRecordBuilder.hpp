@@ -267,6 +267,9 @@ private:
   mutable std::atomic<metric_counter_type> m_trigger_decision_width = {0}; // in between calls
   mutable std::atomic<metric_counter_type> m_data_request_width = {0};     // in between calls
 
+  mutable std::atomic<metric_counter_type> m_trmon_request_counter = { 0 };
+  mutable std::atomic<metric_counter_type> m_trmon_sent_counter = { 0 };
+
   // time thresholds
   using duration_type = std::chrono::milliseconds;
   duration_type m_old_trigger_threshold;
