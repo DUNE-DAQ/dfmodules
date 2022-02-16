@@ -11,6 +11,7 @@ find_package(HighFive REQUIRED)
 find_package(dfmessages REQUIRED)
 find_package(opmonlib REQUIRED)
 find_package(networkmanager REQUIRED)
+find_package(detdataformats REQUIRED)
 
 # 22-Jul-2021, KAB: all of the packages in this block are needed for the first version
 # of the TPSetWriter. Some of these may be able to be removed, at some point in time,
@@ -27,9 +28,9 @@ daq_codegen( *.jsonnet TEMPLATES Structs.hpp.j2 Nljs.hpp.j2 )
 daq_codegen( info/*.jsonnet DEP_PKGS opmonlib TEMPLATES opmonlib/InfoStructs.hpp.j2 opmonlib/InfoNljs.hpp.j2 )
 
 ##############################################################################
-daq_add_library( StorageKey.cpp TriggerDecisionForwarder.cpp TriggerInhibitAgent.cpp TriggerRecordBuilderData.cpp
+daq_add_library( StorageKey.cpp TriggerDecisionForwarder.cpp TriggerInhibitAgent.cpp TriggerRecordBuilderData.cpp TPBundleHandler.cpp
                  LINK_LIBRARIES 
-                 ers::ers HighFive appfwk::appfwk logging::logging stdc++fs dfmessages::dfmessages utilities::utilities)
+                 ers::ers HighFive appfwk::appfwk logging::logging stdc++fs dfmessages::dfmessages utilities::utilities trigger::trigger detdataformats::detdataformats)
 
 daq_add_plugin( HDF5DataStore      duneDataStore LINK_LIBRARIES logging::logging daqdataformats::daqdataformats HighFive appfwk::appfwk stdc++fs)
 

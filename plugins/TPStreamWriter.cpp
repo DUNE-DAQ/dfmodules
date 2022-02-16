@@ -7,16 +7,14 @@
  */
 
 #include "TPStreamWriter.hpp"
+#include "dfmodules/TPBundleHandler.hpp"
 #include "dfmodules/tpstreamwriter/Nljs.hpp"
 
 #include "appfwk/DAQModuleHelper.hpp"
-#include "appfwk/app/Nljs.hpp"
 #include "daqdataformats/Fragment.hpp"
+#include "daqdataformats/Types.hpp"
 #include "logging/Logging.hpp"
 #include "rcif/cmd/Nljs.hpp"
-#include "readoutlibs/utils/BufferedFileWriter.hpp"
-#include "serialization/Serialization.hpp"
-#include "triggeralgs/Types.hpp"
 
 #include "boost/date_time/posix_time/posix_time.hpp"
 
@@ -95,32 +93,13 @@ TPStreamWriter::do_work(std::atomic<bool>& running_flag)
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() method";
 
   using namespace std::chrono;
-
   size_t n_tpset_received = 0;
-
-  std::string application_name("Unknown");
-  char* appname_ptr = getenv("DUNEDAQ_APPLICATION_NAME");
-  if (appname_ptr != nullptr) {
-    std::string tmpstr(appname_ptr);
-    application_name = tmpstr;
-  }
-
   auto start_time = steady_clock::now();
+  daqdataformats::timestamp_t first_timestamp = 0;
+  daqdataformats::timestamp_t last_timestamp = 0;
 
-  triggeralgs::timestamp_t first_timestamp = 0;
-  triggeralgs::timestamp_t last_timestamp = 0;
+  TPBundleHandler tp_bundle_handler(2500000, m_run_number, std::chrono::seconds(1));
 
-  // uint32_t last_seqno = 0;
-  dunedaq::readoutlibs::BufferedFileWriter tpset_writer;
-  size_t bytes_written = 0;
-  int file_index = 0;
-
-  // 11-Feb-2022, KAB: modified this loop to stop immediately when the
-  // running flag is set to false (instead of also waiting for the incoming
-  // TPSets to stop). It seems that with the newconf configuration model,
-  // the order of stop commands is slightly different (the flow of TPSets
-  // never stops, so something that previous was stopped earlier than this
-  // code must now be stopped later).
   while (running_flag.load()) {
     trigger::TPSet tpset;
     try {
@@ -130,87 +109,19 @@ TPStreamWriter::do_work(std::atomic<bool>& running_flag)
       continue;
     }
 
-    // Do some checks on the received TPSet
-    // if (last_seqno != 0 && tpset.seqno != last_seqno + 1) {
-    //  TLOG() << "Missed TPSets: last_seqno=" << last_seqno << ", current seqno=" << tpset.seqno;
-    //}
-    // last_seqno = tpset.seqno;
-
-    // if (tpset.start_time < last_timestamp) {
-    //  TLOG() << "TPSets out of order: last start time " << last_timestamp << ", current start time "
-    //         << tpset.start_time;
-    //}
-    if (tpset.type == trigger::TPSet::Type::kHeartbeat) {
-      TLOG() << "Heartbeat TPSet with start time " << tpset.start_time;
-    } else if (tpset.objects.empty()) {
-      TLOG() << "Empty TPSet with start time " << tpset.start_time;
-    }
-    for (auto const& tp : tpset.objects) {
-      if (tp.time_start < tpset.start_time || tp.time_start > tpset.end_time) {
-        TLOG() << "TPSet with start time " << tpset.start_time << ", end time " << tpset.end_time
-               << " contains out-of-bounds TP with start time " << tp.time_start;
-      }
-    }
-
-    // NOLINTNEXTLINE(build/unsigned)
-    // std::vector<uint8_t> tpset_bytes =
-    //  dunedaq::serialization::serialize(tpset, dunedaq::serialization::SerializationType::kMsgPack);
-    // TLOG_DEBUG(9) << "Size of serialized TPSet is " << tpset_bytes.size() << ", TPSet size is " <<
-    // tpset.objects.size();
-
     TLOG_DEBUG(9) << "Number of TPs in TPSet is " << tpset.objects.size() << ", GeoID is " << tpset.origin
                   << ", seqno is " << tpset.seqno << ", start timestamp is " << tpset.start_time << ", run number is "
-                  << m_run_number;
+                  << m_run_number << ", slice id is " << (tpset.start_time / 2500000);
 
-    if (!tpset_writer.is_open()) {
-      std::ostringstream work_oss;
-      work_oss << "tpsets_run" << std::setfill('0') << std::setw(6) << m_run_number << "_" << std::setw(4) << file_index
-               << "_" << application_name;
-      time_t now = time(0);
-      work_oss << "_" << boost::posix_time::to_iso_string(boost::posix_time::from_time_t(now)) << ".bin";
-      tpset_writer.open(work_oss.str(), 1024, "None", false);
-    }
+    tp_bundle_handler.add_tpset(std::move(tpset));
 
-    // daqdataformats::Fragment frag(&tpset_bytes[0], tpset_bytes.size());
-
-    int dummy_val = 0xdeadbeef;
-    daqdataformats::Fragment frag(&dummy_val, sizeof(dummy_val));
-    frag.set_run_number(m_run_number);
-    frag.set_window_begin(tpset.start_time);
-    frag.set_window_end(tpset.end_time);
-    daqdataformats::GeoID geoid;
-    geoid.system_type = tpset.origin.system_type;
-    geoid.region_id = tpset.origin.region_id;
-    geoid.element_id = tpset.origin.element_id;
-    frag.set_element_id(geoid);
-    frag.set_type(daqdataformats::FragmentType::kTriggerPrimitives);
-
-    tpset_writer.write(static_cast<const char*>(frag.get_storage_location()), frag.get_size());
-
-    size_t num_longwords = 1 + ((frag.get_size() - 1) / sizeof(int64_t));
-    size_t padding = (num_longwords * sizeof(int64_t)) - frag.get_size();
-    char zero = 0;
-    for (uint32_t idx = 0; idx < padding; ++idx) { // NOLINT(build/unsigned)
-      tpset_writer.write(&zero, 1);
-    }
-    bytes_written += frag.get_size() + padding;
-    if (m_max_file_size > 0 && bytes_written > m_max_file_size) {
-      if (tpset_writer.is_open()) {
-        tpset_writer.close();
-      }
-      ++file_index;
-      bytes_written = 0;
-    }
+    tp_bundle_handler.get_properly_aged_timeslices();
 
     if (first_timestamp == 0) {
       first_timestamp = tpset.start_time;
     }
     last_timestamp = tpset.start_time;
   } // while(true)
-
-  if (tpset_writer.is_open()) {
-    tpset_writer.close();
-  }
 
   auto end_time = steady_clock::now();
   auto time_ms = duration_cast<milliseconds>(end_time - start_time).count();

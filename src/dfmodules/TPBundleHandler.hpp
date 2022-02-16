@@ -1,102 +1,121 @@
 /**
- * @file TriggerRecordBuilderData.hpp TriggerRecordBuilderData Class
+ * @file TPBundleHandler.hpp TPBundleHandler Class
  *
- * The TriggerRecordBuilderData class represents the current state of a TriggerRecordBuilder's Trigger Record buffers
- * for use by the DFO.
+ * The TPBundleHandler class takes care of assembling and repacking TriggerPrimitives
+ * for storage on disk as part of a TP stream.
  *
  * This is part of the DUNE DAQ Application Framework, copyright 2020.
  * Licensing/copyright details are in the COPYING file that you should have
  * received with this code.
  */
 
-#ifndef DFMODULES_SRC_DFMODULES_TRIGGERRECORDBUILDERDATA_HPP_
-#define DFMODULES_SRC_DFMODULES_TRIGGERRECORDBUILDERDATA_HPP_
+#ifndef DFMODULES_SRC_DFMODULES_TPBUNDLEHANDLER_HPP_
+#define DFMODULES_SRC_DFMODULES_TPBUNDLEHANDLER_HPP_
 
 #include "daqdataformats/Types.hpp"
-#include "dfmessages/TriggerDecision.hpp"
+#include "detdataformats/trigger/TriggerPrimitive.hpp"
+#include "trigger/TPSet.hpp"
 
-#include "ers/Issue.hpp"
-#include "nlohmann/json.hpp"
-
-#include <atomic>
 #include <chrono>
-#include <functional>
-#include <list>
-#include <memory>
+#include <map>
 #include <mutex>
-#include <string>
-#include <utility>
+#include <vector>
 
 namespace dunedaq {
-// Disable coverage checking LCOV_EXCL_START
-ERS_DECLARE_ISSUE(dfmodules,
-                  AssignedTriggerDecisionNotFound,
-                  "The Trigger Decision with trigger number "
-                    << trigger_number << " was not found for dataflow application at " << connection_name,
-                  ((daqdataformats::trigger_number_t)trigger_number)((std::string)connection_name))
-ERS_DECLARE_ISSUE(dfmodules,
-                  NoSlotsAvailable,
-                  "The Trigger Decision with trigger number "
-                    << trigger_number << " could not be assigned to the dataflow application at " << connection_name
-                    << " because no slots were available.",
-                  ((daqdataformats::trigger_number_t)trigger_number)((std::string)connection_name))
-// Re-enable coverage checking LCOV_EXCL_STOP
-
 namespace dfmodules {
-struct AssignedTriggerDecision
-{
-  dfmessages::TriggerDecision decision;
-  std::chrono::steady_clock::time_point assigned_time;
-  std::string connection_name;
 
-  AssignedTriggerDecision(dfmessages::TriggerDecision dec, std::string conn_name)
-    : decision(dec)
-    , assigned_time(std::chrono::steady_clock::now())
-    , connection_name(conn_name)
-  {}
+struct TPBundle
+{
+  daqdataformats::GeoID geoid;
+  daqdataformats::timestamp_t first_time;
+  daqdataformats::timestamp_t last_time;
+  std::vector<detdataformats::trigger::TriggerPrimitive> tplist;
 };
 
-class TriggerRecordBuilderData
+class TimeSliceAccumulator
 {
 public:
-  TriggerRecordBuilderData() = default;
-  TriggerRecordBuilderData(std::string connection_name, size_t capacity);
+  TimeSliceAccumulator() {}
 
-  TriggerRecordBuilderData(TriggerRecordBuilderData const&) = delete;
-  TriggerRecordBuilderData(TriggerRecordBuilderData&&);
-  TriggerRecordBuilderData& operator=(TriggerRecordBuilderData const&) = delete;
-  TriggerRecordBuilderData& operator=(TriggerRecordBuilderData&&);
+  TimeSliceAccumulator(daqdataformats::timestamp_t begin_time,
+                       daqdataformats::timestamp_t end_time,
+                       daqdataformats::run_number_t run_number)
+    : m_begin_time(begin_time)
+    , m_end_time(end_time)
+    , m_run_number(run_number)
+    , m_update_time(std::chrono::steady_clock::now())
+  {}
 
-  bool has_slot() const { return !m_in_error && m_num_slots.load() > m_assigned_trigger_decisions.size(); }
-  size_t available_slots() const { return m_in_error ? 0 : m_num_slots.load() - m_assigned_trigger_decisions.size(); }
+  void add_tpset(trigger::TPSet&& tpset);
 
-  std::shared_ptr<AssignedTriggerDecision> get_assignment(daqdataformats::trigger_number_t trigger_number) const;
-  std::shared_ptr<AssignedTriggerDecision> extract_assignment(daqdataformats::trigger_number_t trigger_number);
-  std::shared_ptr<AssignedTriggerDecision> make_assignment(dfmessages::TriggerDecision decision);
-  void add_assignment(std::shared_ptr<AssignedTriggerDecision> assignment);
-  void complete_assignment(daqdataformats::trigger_number_t trigger_number,
-                           std::function<void(nlohmann::json&)> metadata_fun = nullptr);
+  // std::unique_ptr<daqdataformats::TimeSlice> get_timeslice();
+  void get_timeslice();
 
-  std::chrono::microseconds average_latency(std::chrono::steady_clock::time_point since) const;
+  daqdataformats::timestamp_t get_slice_begin_time() const { return m_begin_time; }
+  daqdataformats::timestamp_t get_slice_end_time() const { return m_end_time; }
 
-  bool is_in_error() const { return m_in_error.load(); }
-  void set_in_error(bool err) { m_in_error = err; }
+  std::chrono::steady_clock::time_point get_update_time() const
+  {
+    auto lk = std::lock_guard<std::mutex>(m_bundle_map_mutex);
+    return m_update_time;
+  }
 
 private:
-  std::atomic<size_t> m_num_slots{ 0 };
-  std::list<std::shared_ptr<AssignedTriggerDecision>> m_assigned_trigger_decisions;
-  mutable std::mutex m_assigned_trigger_decisions_mutex;
+  daqdataformats::timestamp_t m_begin_time;
+  daqdataformats::timestamp_t m_end_time;
+  daqdataformats::run_number_t m_run_number;
+  std::chrono::steady_clock::time_point m_update_time;
+  typedef std::map<daqdataformats::timestamp_t, TPBundle> tpbundles_by_start_time_t;
+  typedef std::map<daqdataformats::GeoID, tpbundles_by_start_time_t> bundles_by_geoid_t;
+  bundles_by_geoid_t m_tpbundles_by_geoid_and_start_time;
+  mutable std::mutex m_bundle_map_mutex;
 
-  // TODO: Eric Flumerfelt <eflumerf@github.com> Dec-03-2021: Replace with circular buffer
-  std::list<std::pair<std::chrono::steady_clock::time_point, std::chrono::microseconds>> m_latency_info;
-  mutable std::mutex m_latency_info_mutex;
+public:
+  TimeSliceAccumulator& operator=(const TimeSliceAccumulator& other)
+  {
+    if (this != &other) {
+      std::lock(m_bundle_map_mutex, other.m_bundle_map_mutex);
+      std::lock_guard<std::mutex> lhs_lk(m_bundle_map_mutex, std::adopt_lock);
+      std::lock_guard<std::mutex> rhs_lk(other.m_bundle_map_mutex, std::adopt_lock);
+      m_begin_time = other.m_begin_time;
+      m_end_time = other.m_end_time;
+      m_run_number = other.m_run_number;
+      m_update_time = other.m_update_time;
+      m_tpbundles_by_geoid_and_start_time = other.m_tpbundles_by_geoid_and_start_time;
+    }
+    return *this;
+  }
+};
 
-  std::atomic<bool> m_in_error{ true };
+class TPBundleHandler
+{
+public:
+  TPBundleHandler(daqdataformats::timestamp_t slice_interval,
+                  daqdataformats::run_number_t run_number,
+                  std::chrono::steady_clock::duration cooling_off_time)
+    : m_slice_interval(slice_interval)
+    , m_run_number(run_number)
+    , m_cooling_off_time(cooling_off_time)
+  {}
 
-  nlohmann::json m_metadata;
-  std::string m_connection_name{ "" };
+  TPBundleHandler(TPBundleHandler const&) = delete;
+  TPBundleHandler(TPBundleHandler&&) = delete;
+  TPBundleHandler& operator=(TPBundleHandler const&) = delete;
+  TPBundleHandler& operator=(TPBundleHandler&&) = delete;
+
+  void add_tpset(trigger::TPSet&& tpset);
+
+  // std::vector<std::unique_ptr<daqdataformats::TimeSlice>> get_complete_timeslices();
+  void get_properly_aged_timeslices();
+
+private:
+  daqdataformats::timestamp_t m_slice_interval;
+  daqdataformats::run_number_t m_run_number;
+  std::chrono::steady_clock::duration m_cooling_off_time;
+  std::map<daqdataformats::timestamp_t, TimeSliceAccumulator> m_timeslice_accumulators;
+  mutable std::mutex m_accumulator_map_mutex;
 };
 } // namespace dfmodules
 } // namespace dunedaq
 
-#endif // DFMODULES_SRC_DFMODULES_TRIGGERRECORDBUILDERDATA_HPP_
+#endif // DFMODULES_SRC_DFMODULES_TPBUNDLEHANDLER_HPP_
