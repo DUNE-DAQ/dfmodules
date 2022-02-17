@@ -58,9 +58,9 @@ confgen_arguments={
     'ttcm-s1'                               : ['--ttcm-s1', '2'],
     'ttcm-s2'                               : ['--ttcm-s2', '0'],
     'trigger-activity-plugin'               : ['--trigger-activity-plugin', 'TriggerActivityMakerPrescalePluginnn'],
-    'trigger-activity-config'               : ['--trigger-activity-config', 'dict(prescale=1000],'],
+    'trigger-activity-config'               : ['--trigger-activity-config', 'dict(prescale=1000000),'],
     'trigger-activity-config'               : ['--trigger-candidate-plugin', 'TriggerCandidateMakerPrescalePluginn'],
-    'trigger-candidate-config'              : ['--trigger-candidate-config', 'dict(prescale=1000],'],
+    'trigger-candidate-config'              : ['--trigger-candidate-config', 'dict(prescale=1000000),'],
     'control-timing-partition'              : ['--control-timing-partition'],
     'timing-partition-master-device-name'   : ['--timing-partition-master-device-name', "tpmdn"],
     'timing-partition-id'                   : ['--timing-partition-id', '1'],
@@ -96,7 +96,7 @@ confgen_arguments={
     'dqm-fouriersum-params'                 : ['--dqm-fouriersum-params', '6000', '600', '10000'],
     'op-env'                                : ['--op-env', 'swtest2'],
     'tpc-region-name-prefix'                : ['--tpc-region-name-prefix', 'CRP'],
-    'max-file-size'                         : ['--max-file-size', '1024']
+    'max-file-size'                         : ['--max-file-size', '10240']
 }
 
 confgen_arguments = {k:v+base_arg_conf for (k,v) in confgen_arguments.items()}
