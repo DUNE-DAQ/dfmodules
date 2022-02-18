@@ -171,7 +171,7 @@ public:
   /**
    * @brief Translates the specified input parameters into the appropriate filename.
    */
-  std::string get_file_name(const StorageKey& data_key, size_t file_index)
+  std::string get_file_name(const TriggerRecordHeader& trh, size_t file_index)
   {
     std::ostringstream work_oss;
     work_oss << m_config_params.directory_path;
@@ -183,8 +183,7 @@ public:
       work_oss << "_";
     }
 
-    size_t trigger_number = data_key.get_trigger_number();
-    size_t region_number = data_key.get_region_number();
+    size_t trigger_number = trh.get_trigger_number();
     std::string file_name = std::string("");
     if (m_config_params.mode == "one-event-per-file") {
 
@@ -192,14 +191,17 @@ public:
                   "_trigger_number_" + std::to_string(trigger_number) + ".hdf5";
       return file_name;
 
-    } else if (m_config_params.mode == "one-fragment-per-file") {
+    } 
+    /*
+      else if (m_config_params.mode == "one-fragment-per-file") {
 
       file_name = m_config_params.directory_path + "/" + m_config_params.filename_parameters.overall_prefix +
                   "_trigger_number_" + std::to_string(trigger_number) + "_region_number_" +
                   std::to_string(region_number) + ".hdf5";
       return file_name;
 
-    } else if (m_config_params.mode == "all-per-file") {
+      } */
+    else if (m_config_params.mode == "all-per-file") {
 
       // file_name = m_config_params.directory_path + "/" + m_config_params.filename_parameters.overall_prefix +
       // "_all_events" + ".hdf5"; file_name = m_config_params.directory_path + "/" +
@@ -208,7 +210,7 @@ public:
 
       work_oss << m_config_params.filename_parameters.run_number_prefix;
       work_oss << std::setw(m_config_params.filename_parameters.digits_for_run_number) << std::setfill('0')
-               << data_key.get_run_number();
+               << trh.get_run_number();
       work_oss << "_";
       work_oss << m_config_params.filename_parameters.file_index_prefix;
       work_oss << std::setw(m_config_params.filename_parameters.digits_for_file_index) << std::setfill('0')

@@ -222,77 +222,7 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
     // instead of zero, since I think that it would be nice to always get the first event
     // written out.
     if (m_data_storage_prescale <= 1 || ((m_records_received_tot.load() % m_data_storage_prescale) == 1)) {
-      std::vector<KeyedDataBlock> data_block_list;
-      uint64_t bytes_in_data_blocks = 0; // NOLINT(build/unsigned)
 
-      // First deal with the trigger record header
-      const void* trh_ptr = trigger_record_ptr->get_header_ref().get_storage_location();
-      size_t trh_size = trigger_record_ptr->get_header_ref().get_total_size_bytes();
-      // Apa number and link number in trh_key
-      // are not taken into account for the Trigger
-      StorageKey trh_key(trigger_record_ptr->get_header_ref().get_run_number(),
-                         trigger_record_ptr->get_header_ref().get_trigger_number(),
-                         StorageKey::DataRecordGroupType::kTriggerRecordHeader,
-                         1,
-                         1);
-      trh_key.m_this_sequence_number = trigger_record_ptr->get_header_ref().get_sequence_number();
-      trh_key.m_max_sequence_number = trigger_record_ptr->get_header_ref().get_max_sequence_number();
-      KeyedDataBlock trh_block(trh_key);
-      trh_block.m_unowned_data_start = trh_ptr;
-      trh_block.m_data_size = trh_size;
-      bytes_in_data_blocks += trh_block.m_data_size;
-      data_block_list.emplace_back(std::move(trh_block));
-
-      // Loop over the fragments
-      const auto& frag_vec = trigger_record_ptr->get_fragments_ref();
-      for (const auto& frag_ptr : frag_vec) {
-
-        // print out some debug information, if requested
-        TLOG_DEBUG(TLVL_FRAGMENT_HEADER_DUMP)
-          << get_name() << ": Partial(?) contents of the Fragment from link " << frag_ptr->get_element_id();
-        const size_t number_of_32bit_values_per_row = 5;
-        const size_t max_number_of_rows = 5;
-        int number_of_32bit_values_to_print =
-          std::min((number_of_32bit_values_per_row * max_number_of_rows),
-                   (static_cast<size_t>(frag_ptr->get_size()) / sizeof(uint32_t)));               // NOLINT
-        const uint32_t* mem_ptr = static_cast<const uint32_t*>(frag_ptr->get_storage_location()); // NOLINT
-        std::ostringstream oss_hexdump;
-        for (int idx = 0; idx < number_of_32bit_values_to_print; ++idx) {
-          if ((idx % number_of_32bit_values_per_row) == 0) {
-            oss_hexdump << "32-bit offset " << std::setw(2) << std::setfill(' ') << idx << ":" << std::hex;
-          }
-          oss_hexdump << " 0x" << std::setw(8) << std::setfill('0') << *mem_ptr;
-          ++mem_ptr;
-          if (((idx + 1) % number_of_32bit_values_per_row) == 0) {
-            oss_hexdump << std::dec;
-            TLOG_DEBUG(TLVL_FRAGMENT_HEADER_DUMP) << get_name() << ": " << oss_hexdump.str();
-            oss_hexdump.str("");
-            oss_hexdump.clear();
-          }
-        }
-        if (oss_hexdump.str().length() > 0) {
-          TLOG_DEBUG(TLVL_FRAGMENT_HEADER_DUMP) << get_name() << ": " << oss_hexdump.str();
-        }
-
-        // add information about each Fragment to the list of data blocks to be stored
-        StorageKey::DataRecordGroupType group_type =
-          get_group_type(frag_ptr->get_element_id().system_type, frag_ptr->get_fragment_type());
-        StorageKey fragment_skey(frag_ptr->get_run_number(),
-                                 frag_ptr->get_trigger_number(),
-                                 group_type,
-                                 frag_ptr->get_element_id().region_id,
-                                 frag_ptr->get_element_id().element_id);
-        fragment_skey.m_this_sequence_number = frag_ptr->get_sequence_number();
-        fragment_skey.m_max_sequence_number = trigger_record_ptr->get_header_ref().get_max_sequence_number();
-        KeyedDataBlock data_block(fragment_skey);
-        data_block.m_unowned_data_start = frag_ptr->get_storage_location();
-        data_block.m_data_size = frag_ptr->get_size();
-        bytes_in_data_blocks += data_block.m_data_size;
-
-        data_block_list.emplace_back(std::move(data_block));
-      }
-
-      // write the TRH and the fragments as a set of data blocks
       if (m_data_storage_is_enabled) {
 
         bool should_retry = true;
@@ -300,10 +230,10 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
         do {
           should_retry = false;
           try {
-            m_data_writer->write(data_block_list);
+            m_data_writer->write(*trigger_record_ptr);
             ++m_records_written;
             ++m_records_written_tot;
-            m_bytes_output += bytes_in_data_blocks;
+            m_bytes_output += trigger_record_ptr->get_total_size_bytes();
           } catch (const RetryableDataStoreProblem& excpt) {
             should_retry = true;
             ers::error(DataWritingProblem(ERS_HERE,

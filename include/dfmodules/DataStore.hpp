@@ -21,6 +21,7 @@
 #include "cetlib/BasicPluginFactory.h"
 #include "cetlib/compiler_macros.h"
 #include "daqdataformats/Types.hpp"
+#include "daqdataformats/TriggerRecord.hpp"
 #include "logging/Logging.hpp"
 
 #include "nlohmann/json.hpp"
@@ -103,25 +104,10 @@ public:
   {}
 
   /**
-   * @brief Writes the specified data payload into the DataStore.
-   * @param data_block Data block to write.
+   * @brief Writes the TriggerRecord into the DataStore.
+   * @param tr TriggerRecord to write.
    */
-  virtual void write(const KeyedDataBlock& data_block) = 0;
-
-  /**
-   * @brief Writes the specified set of data blocks into the DataStore.
-   * @param data_block_list List of data blocks to write.
-   */
-  virtual void write(const std::vector<KeyedDataBlock>& data_block_list) = 0;
-
-  /**
-   * @brief Returns the list of all keys that currently existing in the DataStore
-   * @return list of StorageKeys
-   */
-  virtual std::vector<StorageKey> get_all_existing_keys() const = 0;
-
-  virtual KeyedDataBlock read(const StorageKey& key) = 0;
-  // virtual std::vector<KeyedDataBlock> read(const std::vector<StorageKey>& key) = 0;
+  virtual void write(const daqdataformats::TriggerRecord& tr) = 0;
 
   /**
    * @brief Informs the DataStore that writes or reads of data blocks associated
