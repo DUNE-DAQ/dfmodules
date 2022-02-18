@@ -27,7 +27,7 @@ rawtp_frag_params={"fragment_type_description": "Raw TP",
 triggertp_frag_params={"fragment_type_description": "Trigger TP",
                        "hdf5_detector_group": "Trigger", "hdf5_region_prefix": "Region",
                        "expected_fragment_count": (number_of_data_producers*number_of_readout_apps),
-                       "min_size_bytes": 80, "max_size_bytes": 80}
+                       "min_size_bytes": 80, "max_size_bytes": 16000}
 ignored_logfile_problems={"trigger": ["zipped_tpset_q: Unable to push within timeout period"]}
 
 # The next three variable declarations *must* be present as globals in the test
