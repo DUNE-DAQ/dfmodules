@@ -115,8 +115,15 @@ TPStreamWriter::do_work(std::atomic<bool>& running_flag)
 
     tp_bundle_handler.add_tpset(std::move(tpset));
 
-    tp_bundle_handler.get_properly_aged_timeslices();
-
+    std::vector<std::unique_ptr<daqdataformats::TriggerRecord>> list_of_timeslices = tp_bundle_handler.get_properly_aged_timeslices();
+    for (auto& timeslice : list_of_timeslices) {
+      TLOG() << "================================";
+      TLOG() << timeslice->get_header_data();
+      for (auto& frag : timeslice->get_fragments_ref()) {
+        TLOG() << frag->get_header();
+      }
+    }
+    
     if (first_timestamp == 0) {
       first_timestamp = tpset.start_time;
     }

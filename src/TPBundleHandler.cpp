@@ -11,7 +11,6 @@
 
 #include "dfmodules/TPBundleHandler.hpp"
 
-#include "daqdataformats/Fragment.hpp"
 #include "logging/Logging.hpp"
 
 #include <memory>
@@ -107,10 +106,12 @@ TimeSliceAccumulator::add_tpset(trigger::TPSet&& tpset)
   }
 }
 
-void
-TimeSliceAccumulator::get_timeslice()
+std::unique_ptr<daqdataformats::TriggerRecord> TimeSliceAccumulator::get_timeslice()
 {
   auto lk = std::lock_guard<std::mutex>(m_bundle_map_mutex);
+
+  std::vector<daqdataformats::ComponentRequest> list_of_components;
+  std::vector<std::unique_ptr<daqdataformats::Fragment>> list_of_fragments;
 
   // loop over all GeoIDs present in this accumulator
   for (auto& [geoid, bundle_map] : m_tpbundles_by_geoid_and_start_time) {
@@ -122,7 +123,7 @@ TimeSliceAccumulator::get_timeslice()
     bool first = true;
     for (auto& [start_time, tp_bundle] : bundle_map) {
       if (tp_bundle.tplist.size() == 0) {
-        // this shouldn't happen, but better safe than sorry...
+        // this shouldn't happen, but we check anyway so that we don't throw an uncaught exception later
         continue;
       }
       if (first) {
@@ -145,7 +146,18 @@ TimeSliceAccumulator::get_timeslice()
     size_t frag_payload_size = frag->get_size() - sizeof(dunedaq::daqdataformats::FragmentHeader);
     TLOG() << "In get_timeslice, GeoID is " << geoid << ", number of pieces is " << list_of_pieces.size()
            << ", size of Fragment payload is " << frag_payload_size;
+
+    list_of_fragments.push_back(std::move(frag));
+    daqdataformats::ComponentRequest creq;
+    creq.component = geoid;
+    creq.window_begin = m_begin_time;
+    creq.window_end = m_end_time;
+    list_of_components.push_back(creq);
   }
+
+  std::unique_ptr<daqdataformats::TriggerRecord> trig_rec(new daqdataformats::TriggerRecord(list_of_components));
+  trig_rec->set_fragments(std::move(list_of_fragments));
+  return trig_rec;
 }
 
 void
@@ -185,16 +197,17 @@ TPBundleHandler::add_tpset(trigger::TPSet&& tpset)
   m_timeslice_accumulators[tsidx_from_begin_time].add_tpset(std::move(tpset));
 }
 
-void
+std::vector<std::unique_ptr<daqdataformats::TriggerRecord>> 
 TPBundleHandler::get_properly_aged_timeslices()
 {
+  std::vector<std::unique_ptr<daqdataformats::TriggerRecord>> list_of_timeslices;
   std::vector<daqdataformats::timestamp_t> elements_to_be_removed;
 
   auto now = std::chrono::steady_clock::now();
   for (auto& [tsidx, accum] : m_timeslice_accumulators) {
     if ((now - accum.get_update_time()) >= m_cooling_off_time) {
       TLOG() << "Fetching timeslice for " << tsidx;
-      accum.get_timeslice();
+      list_of_timeslices.push_back(accum.get_timeslice());
       elements_to_be_removed.push_back(tsidx);
     }
   }
@@ -203,6 +216,8 @@ TPBundleHandler::get_properly_aged_timeslices()
   for (auto& tsidx : elements_to_be_removed) {
     m_timeslice_accumulators.erase(tsidx);
   }
+
+  return list_of_timeslices;
 }
 
 } // namespace dfmodules

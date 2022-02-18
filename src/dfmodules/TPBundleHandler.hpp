@@ -12,6 +12,7 @@
 #ifndef DFMODULES_SRC_DFMODULES_TPBUNDLEHANDLER_HPP_
 #define DFMODULES_SRC_DFMODULES_TPBUNDLEHANDLER_HPP_
 
+#include "daqdataformats/TriggerRecord.hpp"
 #include "daqdataformats/Types.hpp"
 #include "detdataformats/trigger/TriggerPrimitive.hpp"
 #include "trigger/TPSet.hpp"
@@ -48,8 +49,7 @@ public:
 
   void add_tpset(trigger::TPSet&& tpset);
 
-  // std::unique_ptr<daqdataformats::TimeSlice> get_timeslice();
-  void get_timeslice();
+  std::unique_ptr<daqdataformats::TriggerRecord> get_timeslice();
 
   daqdataformats::timestamp_t get_slice_begin_time() const { return m_begin_time; }
   daqdataformats::timestamp_t get_slice_end_time() const { return m_end_time; }
@@ -105,8 +105,7 @@ public:
 
   void add_tpset(trigger::TPSet&& tpset);
 
-  // std::vector<std::unique_ptr<daqdataformats::TimeSlice>> get_complete_timeslices();
-  void get_properly_aged_timeslices();
+  std::vector<std::unique_ptr<daqdataformats::TriggerRecord>> get_properly_aged_timeslices();
 
 private:
   daqdataformats::timestamp_t m_slice_interval;
