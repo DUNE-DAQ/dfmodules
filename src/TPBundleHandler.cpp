@@ -106,11 +106,11 @@ TimeSliceAccumulator::add_tpset(trigger::TPSet&& tpset)
   }
 }
 
-std::unique_ptr<daqdataformats::TriggerRecord> TimeSliceAccumulator::get_timeslice()
+std::unique_ptr<daqdataformats::TimeSlice>
+TimeSliceAccumulator::get_timeslice()
 {
   auto lk = std::lock_guard<std::mutex>(m_bundle_map_mutex);
 
-  std::vector<daqdataformats::ComponentRequest> list_of_components;
   std::vector<std::unique_ptr<daqdataformats::Fragment>> list_of_fragments;
 
   // loop over all GeoIDs present in this accumulator
@@ -134,7 +134,6 @@ std::unique_ptr<daqdataformats::TriggerRecord> TimeSliceAccumulator::get_timesli
       list_of_pieces.push_back(std::make_pair<void*, size_t>(
         &tp_bundle.tplist[0], tp_bundle.tplist.size() * sizeof(detdataformats::trigger::TriggerPrimitive)));
     }
-    TLOG() << "number of pieces is " << list_of_pieces.size();
     std::unique_ptr<daqdataformats::Fragment> frag(new daqdataformats::Fragment(list_of_pieces));
 
     frag->set_run_number(m_run_number);
@@ -148,16 +147,11 @@ std::unique_ptr<daqdataformats::TriggerRecord> TimeSliceAccumulator::get_timesli
            << ", size of Fragment payload is " << frag_payload_size;
 
     list_of_fragments.push_back(std::move(frag));
-    daqdataformats::ComponentRequest creq;
-    creq.component = geoid;
-    creq.window_begin = m_begin_time;
-    creq.window_end = m_end_time;
-    list_of_components.push_back(creq);
   }
 
-  std::unique_ptr<daqdataformats::TriggerRecord> trig_rec(new daqdataformats::TriggerRecord(list_of_components));
-  trig_rec->set_fragments(std::move(list_of_fragments));
-  return trig_rec;
+  std::unique_ptr<daqdataformats::TimeSlice> time_slice(new daqdataformats::TimeSlice(m_slice_number, m_run_number));
+  time_slice->set_fragments(std::move(list_of_fragments));
+  return time_slice;
 }
 
 void
@@ -171,13 +165,17 @@ TPBundleHandler::add_tpset(trigger::TPSet&& tpset)
   // Of course, adding the tpset to multiple accumulators requires copies...
   size_t tsidx_from_begin_time = tpset.start_time / m_slice_interval;
   size_t tsidx_from_end_time = tpset.end_time / m_slice_interval;
+  if (m_slice_index_offset == 0) {
+    m_slice_index_offset = tsidx_from_begin_time - 1;
+  }
 
   // add the TPSet to any 'extra' accumulators
   for (size_t tsidx = (tsidx_from_begin_time + 1); tsidx <= tsidx_from_end_time; ++tsidx) {
     {
       auto lk = std::lock_guard<std::mutex>(m_accumulator_map_mutex);
       if (m_timeslice_accumulators.count(tsidx) == 0) {
-        TimeSliceAccumulator accum(tsidx * m_slice_interval, (tsidx + 1) * m_slice_interval, m_run_number);
+        TimeSliceAccumulator accum(
+          tsidx * m_slice_interval, (tsidx + 1) * m_slice_interval, tsidx - m_slice_index_offset, m_run_number);
         m_timeslice_accumulators[tsidx] = accum;
       }
     }
@@ -189,18 +187,20 @@ TPBundleHandler::add_tpset(trigger::TPSet&& tpset)
   {
     auto lk = std::lock_guard<std::mutex>(m_accumulator_map_mutex);
     if (m_timeslice_accumulators.count(tsidx_from_begin_time) == 0) {
-      TimeSliceAccumulator accum(
-        tsidx_from_begin_time * m_slice_interval, (tsidx_from_begin_time + 1) * m_slice_interval, m_run_number);
+      TimeSliceAccumulator accum(tsidx_from_begin_time * m_slice_interval,
+                                 (tsidx_from_begin_time + 1) * m_slice_interval,
+                                 tsidx_from_begin_time - m_slice_index_offset,
+                                 m_run_number);
       m_timeslice_accumulators[tsidx_from_begin_time] = accum;
     }
   }
   m_timeslice_accumulators[tsidx_from_begin_time].add_tpset(std::move(tpset));
 }
 
-std::vector<std::unique_ptr<daqdataformats::TriggerRecord>> 
+std::vector<std::unique_ptr<daqdataformats::TimeSlice>>
 TPBundleHandler::get_properly_aged_timeslices()
 {
-  std::vector<std::unique_ptr<daqdataformats::TriggerRecord>> list_of_timeslices;
+  std::vector<std::unique_ptr<daqdataformats::TimeSlice>> list_of_timeslices;
   std::vector<daqdataformats::timestamp_t> elements_to_be_removed;
 
   auto now = std::chrono::steady_clock::now();

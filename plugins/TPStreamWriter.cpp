@@ -7,7 +7,10 @@
  */
 
 #include "TPStreamWriter.hpp"
+#include "dfmodules/DataStore.hpp"
 #include "dfmodules/TPBundleHandler.hpp"
+#include "dfmodules/hdf5datastore/Nljs.hpp"
+#include "dfmodules/hdf5datastore/Structs.hpp"
 #include "dfmodules/tpstreamwriter/Nljs.hpp"
 
 #include "appfwk/DAQModuleHelper.hpp"
@@ -100,6 +103,36 @@ TPStreamWriter::do_work(std::atomic<bool>& running_flag)
 
   TPBundleHandler tp_bundle_handler(2500000, m_run_number, std::chrono::seconds(1));
 
+  // create the DataStore
+  hdf5datastore::PathParams params1;
+  params1.detector_group_type = "TPC";
+  params1.detector_group_name = "TPC";
+  params1.region_name_prefix = "APA";
+  params1.digits_for_region_number = 3;
+  params1.element_name_prefix = "Link";
+  params1.digits_for_element_number = 2;
+  hdf5datastore::PathParamList param_list;
+  param_list.push_back(params1);
+  hdf5datastore::FileLayoutParams layout_params;
+  layout_params.path_param_list = param_list;
+  layout_params.trigger_record_name_prefix = "TimeSlice";
+
+  std::string file_path(".");
+  std::string file_prefix = "tpstream";
+
+  hdf5datastore::ConfParams config_params;
+  config_params.name = "tpstream_writer";
+  config_params.directory_path = file_path;
+  config_params.mode = "all-per-file";
+  config_params.max_file_size_bytes = 1000000000;
+  config_params.filename_parameters.overall_prefix = file_prefix;
+  config_params.operational_environment = "swtest";
+  config_params.file_layout_parameters = layout_params;
+  hdf5datastore::data_t hdf5ds_json;
+  hdf5datastore::to_json(hdf5ds_json, config_params);
+  std::unique_ptr<DataStore> data_store_ptr;
+  data_store_ptr = make_data_store(hdf5ds_json);
+
   while (running_flag.load()) {
     trigger::TPSet tpset;
     try {
@@ -115,20 +148,89 @@ TPStreamWriter::do_work(std::atomic<bool>& running_flag)
 
     tp_bundle_handler.add_tpset(std::move(tpset));
 
-    std::vector<std::unique_ptr<daqdataformats::TriggerRecord>> list_of_timeslices = tp_bundle_handler.get_properly_aged_timeslices();
-    for (auto& timeslice : list_of_timeslices) {
+    std::vector<std::unique_ptr<daqdataformats::TimeSlice>> list_of_timeslices =
+      tp_bundle_handler.get_properly_aged_timeslices();
+    for (auto& timeslice_ptr : list_of_timeslices) {
       TLOG() << "================================";
-      TLOG() << timeslice->get_header_data();
-      for (auto& frag : timeslice->get_fragments_ref()) {
+      TLOG() << timeslice_ptr->get_header();
+      for (auto& frag : timeslice_ptr->get_fragments_ref()) {
         TLOG() << frag->get_header();
       }
+
+      std::vector<KeyedDataBlock> data_block_list;
+      uint64_t bytes_in_data_blocks = 0; // NOLINT(build/unsigned)
+
+      // First deal with the timeslice header
+      daqdataformats::TimeSliceHeader ts_header = timeslice_ptr->get_header();
+      size_t tsh_size = sizeof(ts_header);
+      StorageKey tsh_key(
+        ts_header.run_number, ts_header.timeslice_number, StorageKey::DataRecordGroupType::kTriggerRecordHeader, 1, 1);
+      tsh_key.m_this_sequence_number = 0;
+      tsh_key.m_max_sequence_number = 0;
+      KeyedDataBlock tsh_block(tsh_key);
+      tsh_block.m_unowned_data_start = &ts_header;
+      ;
+      tsh_block.m_data_size = tsh_size;
+      bytes_in_data_blocks += tsh_block.m_data_size;
+      data_block_list.emplace_back(std::move(tsh_block));
+
+      // Loop over the fragments
+      const auto& frag_vec = timeslice_ptr->get_fragments_ref();
+      for (const auto& frag_ptr : frag_vec) {
+
+        // add information about each Fragment to the list of data blocks to be stored
+        StorageKey::DataRecordGroupType group_type = get_group_type(frag_ptr->get_element_id().system_type);
+        StorageKey fragment_skey(frag_ptr->get_run_number(),
+                                 timeslice_ptr->get_header().timeslice_number,
+                                 group_type,
+                                 frag_ptr->get_element_id().region_id,
+                                 frag_ptr->get_element_id().element_id);
+        fragment_skey.m_this_sequence_number = 0;
+        fragment_skey.m_max_sequence_number = 0;
+        KeyedDataBlock data_block(fragment_skey);
+        data_block.m_unowned_data_start = frag_ptr->get_storage_location();
+        data_block.m_data_size = frag_ptr->get_size();
+        bytes_in_data_blocks += data_block.m_data_size;
+
+        data_block_list.emplace_back(std::move(data_block));
+      }
+
+      // write the TSH and the fragments as a set of data blocks
+      bool should_retry = true;
+      size_t retry_wait_usec = 1000;
+      do {
+        should_retry = false;
+        try {
+          data_store_ptr->write(data_block_list);
+        } catch (const RetryableDataStoreProblem& excpt) {
+          should_retry = true;
+          ers::error(DataWritingProblem(ERS_HERE,
+                                        get_name(),
+                                        timeslice_ptr->get_header().timeslice_number,
+                                        timeslice_ptr->get_header().run_number,
+                                        excpt));
+          if (retry_wait_usec > 1000000) {
+            retry_wait_usec = 1000000;
+          }
+          usleep(retry_wait_usec);
+          retry_wait_usec *= 2;
+        } catch (const std::exception& excpt) {
+          ers::error(DataWritingProblem(ERS_HERE,
+                                        get_name(),
+                                        timeslice_ptr->get_header().timeslice_number,
+                                        timeslice_ptr->get_header().run_number,
+                                        excpt));
+        }
+      } while (should_retry && running_flag.load());
     }
-    
+
     if (first_timestamp == 0) {
       first_timestamp = tpset.start_time;
     }
     last_timestamp = tpset.start_time;
   } // while(true)
+
+  data_store_ptr.reset(); // explicit destruction
 
   auto end_time = steady_clock::now();
   auto time_ms = duration_cast<milliseconds>(end_time - start_time).count();

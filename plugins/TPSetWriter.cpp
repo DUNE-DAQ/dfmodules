@@ -129,7 +129,7 @@ TPSetWriter::do_work(std::atomic<bool>& running_flag)
     //}
     // last_seqno = tpset.seqno;
 
-    //if (tpset.start_time < last_timestamp) {
+    // if (tpset.start_time < last_timestamp) {
     //  TLOG() << "TPSets out of order: last start time " << last_timestamp << ", current start time "
     //         << tpset.start_time;
     //}
@@ -146,13 +146,14 @@ TPSetWriter::do_work(std::atomic<bool>& running_flag)
     }
 
     // NOLINTNEXTLINE(build/unsigned)
-    //std::vector<uint8_t> tpset_bytes =
+    // std::vector<uint8_t> tpset_bytes =
     //  dunedaq::serialization::serialize(tpset, dunedaq::serialization::SerializationType::kMsgPack);
-    //TLOG_DEBUG(9) << "Size of serialized TPSet is " << tpset_bytes.size() << ", TPSet size is " << tpset.objects.size();
+    // TLOG_DEBUG(9) << "Size of serialized TPSet is " << tpset_bytes.size() << ", TPSet size is " <<
+    // tpset.objects.size();
 
     TLOG_DEBUG(9) << "Number of TPs in TPSet is " << tpset.objects.size() << ", GeoID is " << tpset.origin
-                  << ", seqno is " << tpset.seqno << ", start timestamp is " << tpset.start_time
-                  << ", run number is " << m_run_number;
+                  << ", seqno is " << tpset.seqno << ", start timestamp is " << tpset.start_time << ", run number is "
+                  << m_run_number;
 
     if (!tpset_writer.is_open()) {
       std::ostringstream work_oss;
