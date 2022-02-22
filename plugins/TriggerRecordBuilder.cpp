@@ -186,9 +186,9 @@ TriggerRecordBuilder::do_conf(const data_t& payload)
 
   m_reply_connection = parsed_conf.reply_connection_name;
 
+  m_mon_connection = parsed_conf.mon_connection_name;
   // Listener for monitoring requests
   if (!m_mon_connection.empty()) {
-      m_mon_connection = parsed_conf.mon_connection_name;
       networkmanager::NetworkManager::get().start_listening(m_mon_connection);
   }
 
