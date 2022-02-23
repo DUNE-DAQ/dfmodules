@@ -2,6 +2,9 @@ local moo = import "moo.jsonnet";
 local ns = "dunedaq.dfmodules.hdf5datastore";
 local s = moo.oschema.schema(ns);
 
+local s_filelayout = import "hdf5libs/hdf5filelayout.jsonnet";
+local filelayout = moo.oschema.hier(s_filelayout).dunedaq.hdf5libs.hdf5filelayout;
+
 local types = {
     size : s.number("Size", "u8", doc="A count of very many things"),
 
@@ -47,6 +50,8 @@ local types = {
                 doc="Flag to disable the addition of a unique suffix to the output filenames"),
         s.field("filename_parameters", self.hdf5_filename_params,
                 doc="Parameters that are use for the filenames of the HDF5 files"),
+#	s.field("file_layout_parameters",filelayout.FileLayoutParams,
+#		doc="Parameters that are used for the file layout of the HDF5 files"),
         s.field("free_space_safety_factor_for_write", self.factor, 5.0,
                 doc="The safety factor that should be used when determining if there is sufficient free disk space during write operations"),
     ], doc="HDF5DataStore configuration"),

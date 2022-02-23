@@ -23,7 +23,7 @@ find_package(serialization REQUIRED)
 find_package(readoutlibs REQUIRED)
 find_package(Boost COMPONENTS iostreams unit_test_framework REQUIRED)
 
-daq_codegen( *.jsonnet TEMPLATES Structs.hpp.j2 Nljs.hpp.j2 )
+daq_codegen( *.jsonnet DEP_PKGS hdf5libs TEMPLATES Structs.hpp.j2 Nljs.hpp.j2 )
 daq_codegen( info/*.jsonnet DEP_PKGS opmonlib TEMPLATES opmonlib/InfoStructs.hpp.j2 opmonlib/InfoNljs.hpp.j2 )
 
 ##############################################################################
@@ -51,8 +51,8 @@ daq_add_unit_test( KeyedDataBlock_test      LINK_LIBRARIES dfmodules )
 
 daq_add_unit_test( HDF5FileUtils_test       LINK_LIBRARIES dfmodules )
 
-#daq_add_unit_test( HDF5Write_test           LINK_LIBRARIES dfmodules )
-#add_dependencies(  HDF5Write_test dfmodules_HDF5DataStore_duneDataStore)
+daq_add_unit_test( HDF5Write_test           LINK_LIBRARIES dfmodules hdf5libs )
+add_dependencies(  HDF5Write_test dfmodules_HDF5DataStore_duneDataStore )
 
 #daq_add_unit_test( HDF5Read_test            LINK_LIBRARIES dfmodules )
 #add_dependencies(  HDF5Read_test dfmodules_HDF5DataStore_duneDataStore)
