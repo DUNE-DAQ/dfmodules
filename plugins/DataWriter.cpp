@@ -8,8 +8,6 @@
 
 #include "DataWriter.hpp"
 #include "dfmodules/CommonIssues.hpp"
-#include "dfmodules/KeyedDataBlock.hpp"
-#include "dfmodules/StorageKey.hpp"
 #include "dfmodules/datawriter/Nljs.hpp"
 #include "dfmodules/datawriterinfo/InfoNljs.hpp"
 

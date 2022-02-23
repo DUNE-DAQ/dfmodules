@@ -15,8 +15,6 @@
 #ifndef DFMODULES_INCLUDE_DFMODULES_DATASTORE_HPP_
 #define DFMODULES_INCLUDE_DFMODULES_DATASTORE_HPP_
 
-#include "dfmodules/KeyedDataBlock.hpp"
-
 #include "appfwk/NamedObject.hpp"
 #include "cetlib/BasicPluginFactory.h"
 #include "cetlib/compiler_macros.h"
