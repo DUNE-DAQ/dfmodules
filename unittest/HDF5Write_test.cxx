@@ -156,15 +156,10 @@ BOOST_AUTO_TEST_CASE(WriteEventFiles)
   config_params.directory_path = file_path;
   config_params.mode = "one-event-per-file";
   config_params.filename_parameters.overall_prefix = file_prefix;
+  config_params.file_layout_parameters = create_file_layout_params();
 
   hdf5datastore::data_t hdf5ds_json;
   hdf5datastore::to_json(hdf5ds_json, config_params);
-
-  dunedaq::hdf5libs::hdf5filelayout::FileLayoutParams file_layout_parameters = create_file_layout_params();
-  dunedaq::hdf5libs::hdf5filelayout::data_t hdf5fl_json;
-  dunedaq::hdf5libs::hdf5filelayout::to_json(hdf5fl_json, file_layout_parameters);
-
-  hdf5ds_json["file_layout"] = hdf5fl_json;
 
   std::unique_ptr<DataStore> data_store_ptr;
   data_store_ptr = make_data_store(hdf5ds_json);
@@ -206,15 +201,10 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
   config_params.mode = "all-per-file";
   config_params.max_file_size_bytes = 100000000; // much larger than what we expect, so no second file;
   config_params.filename_parameters.overall_prefix = file_prefix;
+  config_params.file_layout_parameters = create_file_layout_params();
 
   hdf5datastore::data_t hdf5ds_json;
   hdf5datastore::to_json(hdf5ds_json, config_params);
-
-  dunedaq::hdf5libs::hdf5filelayout::FileLayoutParams file_layout_parameters = create_file_layout_params();
-  dunedaq::hdf5libs::hdf5filelayout::data_t hdf5fl_json;
-  dunedaq::hdf5libs::hdf5filelayout::to_json(hdf5fl_json, file_layout_parameters);
-
-  hdf5ds_json["file_layout"] = hdf5fl_json;
 
   std::unique_ptr<DataStore> data_store_ptr;
   data_store_ptr = make_data_store(hdf5ds_json);
@@ -259,15 +249,10 @@ BOOST_AUTO_TEST_CASE(FileSizeLimitResultsInMultipleFiles)
   config_params.mode = "all-per-file";
   config_params.max_file_size_bytes = 3000000; // goal is 6 events per file
   config_params.filename_parameters.overall_prefix = file_prefix;
+  config_params.file_layout_parameters = create_file_layout_params();
 
   hdf5datastore::data_t hdf5ds_json;
   hdf5datastore::to_json(hdf5ds_json, config_params);
-
-  dunedaq::hdf5libs::hdf5filelayout::FileLayoutParams file_layout_parameters = create_file_layout_params();
-  dunedaq::hdf5libs::hdf5filelayout::data_t hdf5fl_json;
-  dunedaq::hdf5libs::hdf5filelayout::to_json(hdf5fl_json, file_layout_parameters);
-
-  hdf5ds_json["file_layout"] = hdf5fl_json;
 
   std::unique_ptr<DataStore> data_store_ptr;
   data_store_ptr = make_data_store(hdf5ds_json);
@@ -312,15 +297,10 @@ BOOST_AUTO_TEST_CASE(SmallFileSizeLimitDataBlockListWrite)
   config_params.mode = "all-per-file";
   config_params.max_file_size_bytes = 150000; // ~1.5 Fragment, ~0.3 TR
   config_params.filename_parameters.overall_prefix = file_prefix;
+  config_params.file_layout_parameters = create_file_layout_params();
 
   hdf5datastore::data_t hdf5ds_json;
   hdf5datastore::to_json(hdf5ds_json, config_params);
-
-  dunedaq::hdf5libs::hdf5filelayout::FileLayoutParams file_layout_parameters = create_file_layout_params();
-  dunedaq::hdf5libs::hdf5filelayout::data_t hdf5fl_json;
-  dunedaq::hdf5libs::hdf5filelayout::to_json(hdf5fl_json, file_layout_parameters);
-
-  hdf5ds_json["file_layout"] = hdf5fl_json;
 
   std::unique_ptr<DataStore> data_store_ptr;
   data_store_ptr = make_data_store(hdf5ds_json);
