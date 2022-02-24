@@ -120,7 +120,7 @@ public:
     TLOG_DEBUG(TLVL_BASIC) << get_name() << ": Configuration: " << conf;
 
     m_config_params = conf.get<hdf5datastore::ConfParams>();
-    m_file_layout_params = conf["file_layout"].get<hdf5libs::hdf5filelayout::FileLayoutParams>();
+    m_file_layout_params = m_config_params.file_layout_parameters;
 
     m_operation_mode = m_config_params.mode;
     m_path = m_config_params.directory_path;
