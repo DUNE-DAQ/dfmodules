@@ -11,6 +11,7 @@
 
 #include "appfwk/DAQSink.hpp"
 #include "dfmessages/TriggerDecisionToken.hpp"
+#include "dfmessages/TriggerInhibit.hpp"
 #include "dfmodules/CommonIssues.hpp"
 #include "dfmodules/datafloworchestratorinfo/InfoNljs.hpp"
 #include "networkmanager/NetworkManager.hpp"
@@ -51,8 +52,14 @@ struct NetworkManagerTestFixture
     testConn.name = "test.trigdec_0";
     testConn.address = "tcp://127.0.0.10:5050";
     testConfig.push_back(testConn);
+    testConn.name = "test.trigdec";
+    testConn.address = "inproc://foo";
+    testConfig.push_back(testConn);
     testConn.name = "test.triginh";
     testConn.address = "inproc://bar";
+    testConfig.push_back(testConn);
+    testConn.name = "test.token";
+    testConn.address = "inproc://baz";
     testConfig.push_back(testConn);
     networkmanager::NetworkManager::get().configure(testConfig);
   }
@@ -83,7 +90,7 @@ send_token(dfmessages::trigger_number_t trigger_number, std::string connection_n
   auto tokenmsg = serialization::serialize(token, serialization::kMsgPack);
   TLOG() << "Sending TriggerDecisionToken with trigger number " << trigger_number << " to DFO";
   networkmanager::NetworkManager::get().send_to(
-    "test.triginh", static_cast<const void*>(tokenmsg.data()), tokenmsg.size(), ipm::Sender::s_block);
+    "test.token", static_cast<const void*>(tokenmsg.data()), tokenmsg.size(), ipm::Sender::s_block);
 }
 
 void
@@ -95,9 +102,17 @@ recv_trigdec(ipm::Receiver::Response res)
   send_token(decision.trigger_number);
 }
 
+std::atomic<bool> busy_signal_recvd = false;
 void
-send_trigdec(std::shared_ptr<appfwk::DAQSink<dfmessages::TriggerDecision>> trigger_decision_sink,
-             dfmessages::trigger_number_t trigger_number)
+recv_triginh(ipm::Receiver::Response res)
+{
+  auto inhibit = serialization::deserialize<dfmessages::TriggerInhibit>(res.data);
+  TLOG() << "Received TriggerInhibit with busy=" << std::boolalpha << inhibit.busy << " from DFO";
+  busy_signal_recvd = inhibit.busy;
+}
+
+void
+send_trigdec(dfmessages::trigger_number_t trigger_number)
 {
   dunedaq::dfmessages::TriggerDecision td;
   td.trigger_number = trigger_number;
@@ -105,8 +120,10 @@ send_trigdec(std::shared_ptr<appfwk::DAQSink<dfmessages::TriggerDecision>> trigg
   td.trigger_timestamp = 1;
   td.trigger_type = 1;
   td.readout_type = dunedaq::dfmessages::ReadoutType::kLocalized;
-  TLOG() << "Pushing TriggerDecision with trigger number " << trigger_number << " onto DFO queue";
-  trigger_decision_sink->push(td);
+  TLOG() << "Sending TriggerDecision with trigger number " << trigger_number << " to DFO";
+  auto decisionmsg = serialization::serialize(td, serialization::kMsgPack);
+  networkmanager::NetworkManager::get().send_to(
+    "test.trigdec", static_cast<const void*>(decisionmsg.data()), decisionmsg.size(), ipm::Sender::s_block);
 }
 
 BOOST_AUTO_TEST_CASE(CopyAndMoveSemantics)
@@ -124,27 +141,21 @@ BOOST_AUTO_TEST_CASE(Constructor)
 
 BOOST_AUTO_TEST_CASE(Init)
 {
-  auto bad_json =
-    "{\"qinfos\": [{ \"dir\": \"input\", \"inst\": \"non_existant_q\", \"name\": \"trigger_decision_queue\" }]}"_json;
-
-  auto json =
-    "{\"qinfos\": [{ \"dir\": \"input\", \"inst\": \"trigger_decision_q\", \"name\": \"trigger_decision_queue\" }]}"_json;
+  auto json = "{}"_json;
   auto dfo = appfwk::make_module("DataFlowOrchestrator", "test");
-
-  BOOST_REQUIRE_EXCEPTION(
-    dfo->init(bad_json), InvalidQueueFatalError, [](InvalidQueueFatalError const&) { return true; });
   dfo->init(json);
 }
 
 BOOST_FIXTURE_TEST_CASE(Commands, NetworkManagerTestFixture)
 {
-  auto json =
-    "{\"qinfos\": [{ \"dir\": \"input\", \"inst\": \"trigger_decision_q\", \"name\": \"trigger_decision_queue\" }]}"_json;
+  auto json = "{}"_json;
   auto dfo = appfwk::make_module("DataFlowOrchestrator", "test");
   dfo->init(json);
 
   auto conf_json =
-    "{\"dataflow_applications\": [ { \"capacity\": 1, \"decision_connection\": \"test.trigdec_0\" } ], \"general_queue_timeout\": 100, \"td_send_retries\": 5, \"token_connection\": \"test.triginh\"}"_json;
+    "{\"dataflow_applications\": [ { \"thresholds\": { \"free\": 1, \"busy\": 2 }, \"decision_connection\": \"test.trigdec_0\" } ], \
+      \"general_queue_timeout\": 100, \"td_send_retries\": 5, \"token_connection\": \"test.token\", \
+      \"busy_connection\": \"test.triginh\", \"td_connection\": \"test.trigdec\" }"_json;
   auto start_json = "{\"run\": 1}"_json;
   auto null_json = "{}"_json;
 
@@ -157,20 +168,23 @@ BOOST_FIXTURE_TEST_CASE(Commands, NetworkManagerTestFixture)
   BOOST_REQUIRE_EQUAL(info.tokens_received, 0);
   BOOST_REQUIRE_EQUAL(info.decisions_received, 0);
   BOOST_REQUIRE_EQUAL(info.decisions_sent, 0);
-  BOOST_REQUIRE_EQUAL(info.waiting_for_slots, 0);
+  BOOST_REQUIRE_EQUAL(info.forwarding_decision, 0);
   BOOST_REQUIRE_EQUAL(info.waiting_for_decision, 0);
   BOOST_REQUIRE_EQUAL(info.deciding_destination, 0);
+  BOOST_REQUIRE_EQUAL(info.waiting_for_token, 0);
+  BOOST_REQUIRE_EQUAL(info.processing_token, 0);
 }
 
 BOOST_FIXTURE_TEST_CASE(DataFlow, NetworkManagerTestFixture)
 {
-  auto json =
-    "{\"qinfos\": [{ \"dir\": \"input\", \"inst\": \"trigger_decision_q\", \"name\": \"trigger_decision_queue\" }]}"_json;
+  auto json = "{}"_json;
   auto dfo = appfwk::make_module("DataFlowOrchestrator", "test");
   dfo->init(json);
 
   auto conf_json =
-    "{\"dataflow_applications\": [ { \"capacity\": 1, \"decision_connection\": \"test.trigdec_0\" } ], \"general_queue_timeout\": 100, \"td_send_retries\": 5, \"token_connection\": \"test.triginh\"}"_json;
+    "{\"dataflow_applications\": [ { \"thresholds\": { \"free\": 1, \"busy\": 2 }, \"decision_connection\": \"test.trigdec_0\" } ], \
+      \"general_queue_timeout\": 100, \"td_send_retries\": 5, \"token_connection\": \"test.token\", \
+      \"busy_connection\": \"test.triginh\", \"td_connection\": \"test.trigdec\" }"_json;
   auto start_json = "{\"run\": 1}"_json;
   auto null_json = "{}"_json;
 
@@ -179,13 +193,11 @@ BOOST_FIXTURE_TEST_CASE(DataFlow, NetworkManagerTestFixture)
   networkmanager::NetworkManager::get().start_listening("test.trigdec_0");
   networkmanager::NetworkManager::get().register_callback("test.trigdec_0", recv_trigdec);
 
-  std::shared_ptr<appfwk::DAQSink<dfmessages::TriggerDecision>> trigger_decision_sink(
-    new appfwk::DAQSink<dfmessages::TriggerDecision>("trigger_decision_q"));
+  networkmanager::NetworkManager::get().start_listening("test.triginh");
+  networkmanager::NetworkManager::get().register_callback("test.triginh", recv_triginh);
 
-  BOOST_REQUIRE(trigger_decision_sink->can_push());
-  send_trigdec(trigger_decision_sink, 1);
+  send_trigdec(1);
   std::this_thread::sleep_for(std::chrono::milliseconds(50));
-  BOOST_REQUIRE(!trigger_decision_sink->can_push());
 
   send_token(999);
   send_token(9999);
@@ -197,35 +209,30 @@ BOOST_FIXTURE_TEST_CASE(DataFlow, NetworkManagerTestFixture)
   dfo->execute_command("start", start_json);
 
   std::this_thread::sleep_for(std::chrono::milliseconds(150));
-  BOOST_REQUIRE(trigger_decision_sink->can_push());
-
-  info = get_dfo_info(dfo);
-  BOOST_REQUIRE_EQUAL(info.tokens_received, 1);
-  BOOST_REQUIRE_EQUAL(info.decisions_received, 1);
-  BOOST_REQUIRE_EQUAL(info.decisions_sent, 1);
-
-  send_trigdec(trigger_decision_sink, 2);
-  BOOST_REQUIRE(!trigger_decision_sink->can_push());
-  std::this_thread::sleep_for(std::chrono::milliseconds(50));
-  BOOST_REQUIRE(trigger_decision_sink->can_push());
-  send_trigdec(trigger_decision_sink, 3);
-  BOOST_REQUIRE(!trigger_decision_sink->can_push());
 
   info = get_dfo_info(dfo);
   BOOST_REQUIRE_EQUAL(info.tokens_received, 0);
-  BOOST_REQUIRE_EQUAL(info.decisions_received, 1);
-  BOOST_REQUIRE_EQUAL(info.decisions_sent, 1);
+  BOOST_REQUIRE_EQUAL(info.decisions_received, 0);
+  BOOST_REQUIRE_EQUAL(info.decisions_sent, 0);
 
+  send_trigdec(2);
+  send_trigdec(3);
   std::this_thread::sleep_for(std::chrono::milliseconds(50));
-  BOOST_REQUIRE(!trigger_decision_sink->can_push());
-
-  std::this_thread::sleep_for(std::chrono::milliseconds(200));
-  BOOST_REQUIRE(trigger_decision_sink->can_push());
+  send_trigdec(4);
 
   info = get_dfo_info(dfo);
-  BOOST_REQUIRE_EQUAL(info.tokens_received, 2);
+  BOOST_REQUIRE_EQUAL(info.tokens_received, 0);
+  BOOST_REQUIRE_EQUAL(info.decisions_received, 2);
+  BOOST_REQUIRE_EQUAL(info.decisions_sent, 2);
+
+  BOOST_REQUIRE(busy_signal_recvd.load());
+  std::this_thread::sleep_for(std::chrono::milliseconds(400));
+
+  info = get_dfo_info(dfo);
+  BOOST_REQUIRE_EQUAL(info.tokens_received, 3);
   BOOST_REQUIRE_EQUAL(info.decisions_received, 1);
   BOOST_REQUIRE_EQUAL(info.decisions_sent, 1);
+  BOOST_REQUIRE(!busy_signal_recvd.load());
 
   dfo->execute_command("stop", null_json);
   dfo->execute_command("scrap", null_json);
@@ -233,27 +240,24 @@ BOOST_FIXTURE_TEST_CASE(DataFlow, NetworkManagerTestFixture)
 
 BOOST_FIXTURE_TEST_CASE(SendTrigDecFailed, NetworkManagerTestFixture)
 {
-  auto json =
-    "{\"qinfos\": [{ \"dir\": \"input\", \"inst\": \"trigger_decision_q\", \"name\": \"trigger_decision_queue\" }]}"_json;
+  auto json = "{}"_json;
   auto dfo = appfwk::make_module("DataFlowOrchestrator", "test");
   dfo->init(json);
 
   auto conf_json =
-    "{\"dataflow_applications\": [ { \"capacity\": 1, \"decision_connection\": \"test.invalid_connection\" } ], \"general_queue_timeout\": 1, \"td_send_retries\": 0, \"token_connection\": \"test.triginh\"}"_json;
+    "{\"dataflow_applications\": [ { \"thresholds\": { \"free\": 1, \"busy\": 2 }, \"decision_connection\": \"test.invalid_connection\" } ], \
+      \"general_queue_timeout\": 100, \"td_send_retries\": 5, \"token_connection\": \"test.token\", \
+      \"busy_connection\": \"test.triginh\", \"td_connection\": \"test.trigdec\" }"_json;
   auto start_json = "{\"run\": 1}"_json;
   auto null_json = "{}"_json;
 
   dfo->execute_command("conf", conf_json);
 
-  std::shared_ptr<appfwk::DAQSink<dfmessages::TriggerDecision>> trigger_decision_sink(
-    new appfwk::DAQSink<dfmessages::TriggerDecision>("trigger_decision_q"));
-
   dfo->execute_command("start", start_json);
 
   std::this_thread::sleep_for(std::chrono::milliseconds(50));
-  BOOST_REQUIRE(trigger_decision_sink->can_push());
 
-  send_trigdec(trigger_decision_sink, 1);
+  send_trigdec(1);
   std::this_thread::sleep_for(std::chrono::milliseconds(150));
   auto info = get_dfo_info(dfo);
   BOOST_REQUIRE_EQUAL(info.tokens_received, 0);
