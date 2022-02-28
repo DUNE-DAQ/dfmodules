@@ -29,7 +29,7 @@ nanorc_command_list=[
 ["scrap"],
 
 # Only init after boot
-#"boot boot".split(),
+"boot boot".split(),
 "boot conf".split(),
 "boot start 101".split(),
 "boot resume".split(),
@@ -76,10 +76,18 @@ nanorc_command_list=[
 "boot init conf start 117 stop scrap resume".split(),
 "boot init conf start 118 stop scrap pause".split(),
 "boot init conf start 119 stop scrap stop".split(),
-"boot init conf start 120 stop scrap scrap".split()
+"boot init conf start 120 stop scrap scrap".split(),
 
+# Test valid command after invalid (should still fail)
+"boot boot init conf start 121 stop scrap".split(),
+"boot init stop conf start 122 stop scrap".split(),
+"boot init conf stop start 123 stop scrap".split(),
+"boot init conf start 124 conf stop scrap".split(),
+"boot init conf start 125 stop init scrap".split(),
+"boot init conf start 125 stop scrap boot conf".split(),
+"boot init stop start 126 stop scrap boot conf".split()
 ]
 
 # The tests themselves
 def test_result(run_nanorc):
-    assert run_nanorc.completed_process.returncode!=0
+    assert run_nanorc.completed_process.returncode==30 # InvalidTransition
