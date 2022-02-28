@@ -43,10 +43,8 @@ sufficient_resources_on_this_computer=True
 cpu_count=os.cpu_count()
 hostname=os.uname().nodename
 #mem_obj=psutil.virtual_memory()
-#free_mem=round((mem_obj.available/(1024*1024*1024)), 2)
-#total_mem=round((mem_obj.total/(1024*1024*1024)), 2)
-free_mem=999
-total_mem=999
+free_mem=999  #round((mem_obj.available/(1024*1024*1024)), 2)
+total_mem=999 #round((mem_obj.total/(1024*1024*1024)), 2)
 print(f"DEBUG: CPU count is {cpu_count}, free and total memory are {free_mem} GB and {total_mem} GB.")
 if cpu_count < 18 or free_mem < 24:
     sufficient_resources_on_this_computer=False
@@ -56,7 +54,7 @@ if cpu_count < 18 or free_mem < 24:
 # to run the config generation and nanorc
 
 # The name of the python module for the config generation
-confgen_name="minidaqapp.newconf.mdapp_multiru_gen"
+confgen_name="daqconf_multiru_gen"
 
 # The arguments to pass to the config generator, excluding the json
 # output directory (the test framework handles that)

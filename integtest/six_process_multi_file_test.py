@@ -35,7 +35,7 @@ ignored_logfile_problems={"trigger": ["zipped_tpset_q: Unable to push within tim
 # to run the config generation and nanorc
 
 # The name of the python module for the config generation
-confgen_name="minidaqapp.newconf.mdapp_multiru_gen"
+confgen_name="daqconf_multiru_gen"
 # The arguments to pass to the config generator, excluding the json
 # output directory (the test framework handles that)
 confgen_arguments_base=[ "-d", "./frames.bin", "-o", ".", "-s", "10", "-n", str(number_of_data_producers), "-b", "1000", "-a", "1000", "-t", "10.0", "--max-file-size", "1074000000", "--latency-buffer-size", "200000"] + [ "--host-ru", "localhost" ] * number_of_readout_apps
