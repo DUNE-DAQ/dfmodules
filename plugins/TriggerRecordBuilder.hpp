@@ -19,6 +19,7 @@
 #include "dfmessages/TriggerDecision.hpp"
 #include "dfmessages/Types.hpp"
 #include "dfmessages/TRMonRequest.hpp"
+#include "ipm/Receiver.hpp"
 
 #include "appfwk/DAQModule.hpp"
 #include "appfwk/DAQSink.hpp"
