@@ -101,7 +101,7 @@ TPStreamWriter::do_work(std::atomic<bool>& running_flag)
   daqdataformats::timestamp_t first_timestamp = 0;
   daqdataformats::timestamp_t last_timestamp = 0;
 
-  TPBundleHandler tp_bundle_handler(2500000, m_run_number, std::chrono::seconds(1));
+  TPBundleHandler tp_bundle_handler(5000000, m_run_number, std::chrono::seconds(1));
 
   // create the DataStore
   hdf5datastore::PathParams params1;
@@ -144,7 +144,7 @@ TPStreamWriter::do_work(std::atomic<bool>& running_flag)
 
     TLOG_DEBUG(9) << "Number of TPs in TPSet is " << tpset.objects.size() << ", GeoID is " << tpset.origin
                   << ", seqno is " << tpset.seqno << ", start timestamp is " << tpset.start_time << ", run number is "
-                  << m_run_number << ", slice id is " << (tpset.start_time / 2500000);
+                  << m_run_number << ", slice id is " << (tpset.start_time / 5000000);
 
     tp_bundle_handler.add_tpset(std::move(tpset));
 

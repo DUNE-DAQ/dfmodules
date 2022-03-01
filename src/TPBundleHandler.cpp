@@ -144,7 +144,8 @@ TimeSliceAccumulator::get_timeslice()
 
     size_t frag_payload_size = frag->get_size() - sizeof(dunedaq::daqdataformats::FragmentHeader);
     TLOG() << "In get_timeslice, GeoID is " << geoid << ", number of pieces is " << list_of_pieces.size()
-           << ", size of Fragment payload is " << frag_payload_size;
+           << ", size of Fragment payload is " << frag_payload_size << ", size of TP is "
+           << sizeof(detdataformats::trigger::TriggerPrimitive);
 
     list_of_fragments.push_back(std::move(frag));
   }
