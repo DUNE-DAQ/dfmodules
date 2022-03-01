@@ -23,21 +23,42 @@ namespace dfmodules {
 void
 TimeSliceAccumulator::add_tpset(trigger::TPSet&& tpset)
 {
-  // double-check that this TPSet belongs in this accumulator
-  // (reverse of tpset.start_time < m_end_time || tpset.end_time > m_begin_time)
-  if (tpset.end_time <= m_begin_time || tpset.start_time >= m_end_time) {
-    if (tpset.end_time == m_begin_time) {
-      // the end of the TPSet just missed the start of our window, so not a big deal
-      TLOG() << "Note: no TPs were used from a TPSet with start_time=" << tpset.start_time
-             << ", end_time=" << tpset.end_time << ", TSAccumulator begin and end times:" << m_begin_time << ", "
-             << m_end_time;
-    } else {
-      // woah, something unexpected happened
-      TLOG() << "WARNING: no TPs were used from a TPSet with start_time=" << tpset.start_time
-             << ", end_time=" << tpset.end_time << ", TSAccumulator begin and end times:" << m_begin_time << ", "
-             << m_end_time;
+  // if this TPSet is near one of the edges of our window, handle it specially
+  if (tpset.start_time <= m_begin_time || tpset.end_time >= m_end_time) {
+    trigger::TPSet working_tpset;
+    daqdataformats::timestamp_t first_time = daqdataformats::TypeDefaults::s_invalid_timestamp;
+    daqdataformats::timestamp_t last_time = daqdataformats::TypeDefaults::s_invalid_timestamp;
+    bool first = true;
+    for (auto& trigprim : tpset.objects) {
+      if (trigprim.time_start >= m_begin_time && trigprim.time_start < m_end_time) {
+        working_tpset.objects.push_back(trigprim);
+        if (first) {
+          first_time = trigprim.time_start;
+          first = false;
+        }
+        last_time = trigprim.time_start;
+      }
     }
-    return;
+    if (working_tpset.objects.size() == 0) {
+      if (tpset.end_time == m_begin_time) {
+        // the end of the TPSet just missed the start of our window, so not a big deal
+        TLOG() << "Note: no TPs were used from a TPSet with start_time=" << tpset.start_time
+               << ", end_time=" << tpset.end_time << ", TSAccumulator begin and end times:" << m_begin_time << ", "
+               << m_end_time;
+      } else {
+        // woah, something unexpected happened
+        TLOG() << "WARNING: no TPs were used from a TPSet with start_time=" << tpset.start_time
+               << ", end_time=" << tpset.end_time << ", TSAccumulator begin and end times:" << m_begin_time << ", "
+               << m_end_time;
+      }
+      return;
+    }
+    working_tpset.type = tpset.type;
+    working_tpset.seqno = tpset.seqno;
+    working_tpset.origin = tpset.origin;
+    working_tpset.start_time = first_time;
+    working_tpset.end_time = last_time;
+    tpset = std::move(working_tpset);
   }
 
   // create an entry in the top-level map for the geoid in this TPSet, if needed
@@ -56,31 +77,22 @@ std::unique_ptr<daqdataformats::TimeSlice>
 TimeSliceAccumulator::get_timeslice()
 {
   auto lk = std::lock_guard<std::mutex>(m_bundle_map_mutex);
-
   std::vector<std::unique_ptr<daqdataformats::Fragment>> list_of_fragments;
 
   // loop over all GeoIDs present in this accumulator
   for (auto& [geoid, bundle_map] : m_tpbundles_by_geoid_and_start_time) {
-    daqdataformats::timestamp_t first_time = daqdataformats::TypeDefaults::s_invalid_timestamp;
-    daqdataformats::timestamp_t last_time = daqdataformats::TypeDefaults::s_invalid_timestamp;
 
     // build up the list of pieces that we will use to contruct the Fragment
     std::vector<std::pair<void*, size_t>> list_of_pieces;
-    bool first = true;
     for (auto& [start_time, tpset] : bundle_map) {
-      if (first) {
-        first_time = tpset.start_time;
-        first = false;
-      }
-      last_time = tpset.end_time;
       list_of_pieces.push_back(std::make_pair<void*, size_t>(
         &tpset.objects[0], tpset.objects.size() * sizeof(detdataformats::trigger::TriggerPrimitive)));
     }
     std::unique_ptr<daqdataformats::Fragment> frag(new daqdataformats::Fragment(list_of_pieces));
 
     frag->set_run_number(m_run_number);
-    frag->set_window_begin(first_time);
-    frag->set_window_end(last_time);
+    frag->set_window_begin(m_begin_time);
+    frag->set_window_end(m_end_time);
     frag->set_element_id(geoid);
     frag->set_type(daqdataformats::FragmentType::kTriggerPrimitives);
 

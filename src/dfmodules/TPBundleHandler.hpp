@@ -45,9 +45,6 @@ public:
 
   std::unique_ptr<daqdataformats::TimeSlice> get_timeslice();
 
-  daqdataformats::timestamp_t get_slice_begin_time() const { return m_begin_time; }
-  daqdataformats::timestamp_t get_slice_end_time() const { return m_end_time; }
-
   std::chrono::steady_clock::time_point get_update_time() const
   {
     auto lk = std::lock_guard<std::mutex>(m_bundle_map_mutex);
