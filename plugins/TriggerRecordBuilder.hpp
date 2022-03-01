@@ -19,7 +19,6 @@
 #include "dfmessages/TriggerDecision.hpp"
 #include "dfmessages/Types.hpp"
 #include "dfmessages/TRMonRequest.hpp"
-#include "ipm/Receiver.hpp"
 
 #include "appfwk/DAQModule.hpp"
 #include "appfwk/DAQSink.hpp"
@@ -241,7 +240,7 @@ private:
   // Monitoring related variables
   std::mutex m_mon_mutex;
   std::string m_mon_connection;
-  //std::map<std::string,dfmessages::TRMonRequest> m_mon_requests;
+
   std::list<dfmessages::TRMonRequest> m_mon_requests;
 
   // book related metrics
