@@ -4,7 +4,7 @@
  * The TPBundleHandler class takes care of assembling and repacking TriggerPrimitives
  * for storage on disk as part of a TP stream.
  *
- * This is part of the DUNE DAQ Application Framework, copyright 2020.
+ * This is part of the DUNE DAQ Software Suite, copyright 2020.
  * Licensing/copyright details are in the COPYING file that you should have
  * received with this code.
  */
@@ -23,87 +23,33 @@ namespace dfmodules {
 void
 TimeSliceAccumulator::add_tpset(trigger::TPSet&& tpset)
 {
-  // create an entry in the top-level map for this geoid, if needed
-  {
-    auto lk = std::lock_guard<std::mutex>(m_bundle_map_mutex);
-    if (m_tpbundles_by_geoid_and_start_time.count(tpset.origin) == 0) {
-      tpbundles_by_start_time_t empty_bundle_map;
-      m_tpbundles_by_geoid_and_start_time[tpset.origin] = empty_bundle_map;
-    }
-  }
-
-  // Create a TPBundle from the TPSet.
-  // NOTE that the resulting TPBundle might have fewer TriggerPrimitives in it
-  // than the input TPSet
-  // because we take this opportunity to ignore TPs that are outside the
-  // window of interest for this accumulator.
-  TPBundle tp_bundle;
-  tp_bundle.geoid = tpset.origin;
-  tp_bundle.tplist.reserve(tpset.objects.size());
-  tp_bundle.first_time = daqdataformats::TypeDefaults::s_invalid_timestamp;
-  tp_bundle.last_time = daqdataformats::TypeDefaults::s_invalid_timestamp;
-  bool first = true;
-  for (auto& oldtp : tpset.objects) {
-    if (oldtp.time_start < m_begin_time || oldtp.time_start >= m_end_time) {
-      continue;
-    }
-
-    if (first) {
-      tp_bundle.first_time = oldtp.time_start;
-      first = false;
-    }
-    tp_bundle.last_time = oldtp.time_start;
-
-    detdataformats::trigger::TriggerPrimitive newtp;
-    newtp.time_start = oldtp.time_start;
-    newtp.time_peak = oldtp.time_peak;
-    newtp.time_over_threshold = oldtp.time_over_threshold;
-    newtp.channel = oldtp.channel;
-    newtp.adc_integral = oldtp.adc_integral;
-    newtp.adc_peak = oldtp.adc_peak;
-    newtp.detid = oldtp.detid;
-    switch (oldtp.type) {
-      case triggeralgs::TriggerPrimitive::Type::kTPC:
-        newtp.type = detdataformats::trigger::TriggerPrimitive::Type::kTPC;
-        break;
-      case triggeralgs::TriggerPrimitive::Type::kPDS:
-        newtp.type = detdataformats::trigger::TriggerPrimitive::Type::kPDS;
-        break;
-      default:
-        newtp.type = detdataformats::trigger::TriggerPrimitive::Type::kUnknown;
-    }
-    switch (oldtp.algorithm) {
-      case triggeralgs::TriggerPrimitive::Algorithm::kTPCDefault:
-        newtp.algorithm = detdataformats::trigger::TriggerPrimitive::Algorithm::kTPCDefault;
-        break;
-      default:
-        newtp.algorithm = detdataformats::trigger::TriggerPrimitive::Algorithm::kUnknown;
-    }
-    newtp.version = oldtp.version;
-    newtp.flag = oldtp.flag;
-    tp_bundle.tplist.push_back(std::move(newtp));
-  }
-
-  // store the bundle in the map
-  if (tp_bundle.tplist.size() == 0) {
+  // double-check that this TPSet belongs in this accumulator
+  // (reverse of tpset.start_time < m_end_time || tpset.end_time > m_begin_time)
+  if (tpset.end_time <= m_begin_time || tpset.start_time >= m_end_time) {
     if (tpset.end_time == m_begin_time) {
       // the end of the TPSet just missed the start of our window, so not a big deal
       TLOG() << "Note: no TPs were used from a TPSet with start_time=" << tpset.start_time
-             << ", end_time=" << tpset.end_time << ", tpbundle begin and end times:" << m_begin_time << ", "
+             << ", end_time=" << tpset.end_time << ", TSAccumulator begin and end times:" << m_begin_time << ", "
              << m_end_time;
     } else {
       // woah, something unexpected happened
       TLOG() << "WARNING: no TPs were used from a TPSet with start_time=" << tpset.start_time
-             << ", end_time=" << tpset.end_time << ", tpbundle begin and end times:" << m_begin_time << ", "
+             << ", end_time=" << tpset.end_time << ", TSAccumulator begin and end times:" << m_begin_time << ", "
              << m_end_time;
     }
-  } else {
-    auto lk = std::lock_guard<std::mutex>(m_bundle_map_mutex);
-    daqdataformats::GeoID geoid = tp_bundle.geoid;
-    daqdataformats::timestamp_t start_time = tp_bundle.first_time;
-    m_tpbundles_by_geoid_and_start_time[geoid].emplace(start_time, std::move(tp_bundle));
-    m_update_time = std::chrono::steady_clock::now();
+    return;
   }
+
+  // create an entry in the top-level map for the geoid in this TPSet, if needed
+  auto lk = std::lock_guard<std::mutex>(m_bundle_map_mutex);
+  if (m_tpbundles_by_geoid_and_start_time.count(tpset.origin) == 0) {
+    tpbundles_by_start_time_t empty_bundle_map;
+    m_tpbundles_by_geoid_and_start_time[tpset.origin] = empty_bundle_map;
+  }
+
+  // store the TPSet in the map
+  m_tpbundles_by_geoid_and_start_time[tpset.origin].emplace(tpset.start_time, std::move(tpset));
+  m_update_time = std::chrono::steady_clock::now();
 }
 
 std::unique_ptr<daqdataformats::TimeSlice>
@@ -121,18 +67,14 @@ TimeSliceAccumulator::get_timeslice()
     // build up the list of pieces that we will use to contruct the Fragment
     std::vector<std::pair<void*, size_t>> list_of_pieces;
     bool first = true;
-    for (auto& [start_time, tp_bundle] : bundle_map) {
-      if (tp_bundle.tplist.size() == 0) {
-        // this shouldn't happen, but we check anyway so that we don't throw an uncaught exception later
-        continue;
-      }
+    for (auto& [start_time, tpset] : bundle_map) {
       if (first) {
-        first_time = tp_bundle.first_time;
+        first_time = tpset.start_time;
         first = false;
       }
-      last_time = tp_bundle.last_time;
+      last_time = tpset.end_time;
       list_of_pieces.push_back(std::make_pair<void*, size_t>(
-        &tp_bundle.tplist[0], tp_bundle.tplist.size() * sizeof(detdataformats::trigger::TriggerPrimitive)));
+        &tpset.objects[0], tpset.objects.size() * sizeof(detdataformats::trigger::TriggerPrimitive)));
     }
     std::unique_ptr<daqdataformats::Fragment> frag(new daqdataformats::Fragment(list_of_pieces));
 

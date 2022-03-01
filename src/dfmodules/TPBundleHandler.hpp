@@ -4,7 +4,7 @@
  * The TPBundleHandler class takes care of assembling and repacking TriggerPrimitives
  * for storage on disk as part of a TP stream.
  *
- * This is part of the DUNE DAQ Application Framework, copyright 2020.
+ * This is part of the DUNE DAQ Software Suite, copyright 2020.
  * Licensing/copyright details are in the COPYING file that you should have
  * received with this code.
  */
@@ -24,14 +24,6 @@
 
 namespace dunedaq {
 namespace dfmodules {
-
-struct TPBundle
-{
-  daqdataformats::GeoID geoid;
-  daqdataformats::timestamp_t first_time;
-  daqdataformats::timestamp_t last_time;
-  std::vector<detdataformats::trigger::TriggerPrimitive> tplist;
-};
 
 class TimeSliceAccumulator
 {
@@ -68,7 +60,7 @@ private:
   daqdataformats::timeslice_number_t m_slice_number;
   daqdataformats::run_number_t m_run_number;
   std::chrono::steady_clock::time_point m_update_time;
-  typedef std::map<daqdataformats::timestamp_t, TPBundle> tpbundles_by_start_time_t;
+  typedef std::map<daqdataformats::timestamp_t, trigger::TPSet> tpbundles_by_start_time_t;
   typedef std::map<daqdataformats::GeoID, tpbundles_by_start_time_t> bundles_by_geoid_t;
   bundles_by_geoid_t m_tpbundles_by_geoid_and_start_time;
   mutable std::mutex m_bundle_map_mutex;
