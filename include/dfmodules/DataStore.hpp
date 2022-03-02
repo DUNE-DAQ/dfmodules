@@ -20,6 +20,7 @@
 #include "cetlib/compiler_macros.h"
 #include "daqdataformats/Types.hpp"
 #include "daqdataformats/TriggerRecord.hpp"
+#include "daqdataformats/TimeSlice.hpp"
 #include "logging/Logging.hpp"
 
 #include "nlohmann/json.hpp"
@@ -106,6 +107,12 @@ public:
    * @param tr TriggerRecord to write.
    */
   virtual void write(const daqdataformats::TriggerRecord& tr) = 0;
+
+  /**
+   * @brief Writes the TimeSlice into the DataStore.
+   * @param ts TimeSlice to write.
+   */
+  virtual void write(const daqdataformats::TimeSlice& ts) = 0;
 
   /**
    * @brief Informs the DataStore that writes or reads of data blocks associated

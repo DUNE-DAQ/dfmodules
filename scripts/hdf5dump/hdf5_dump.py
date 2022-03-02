@@ -52,7 +52,7 @@ def print_header_dict(hdict):
         elif "time" in ik or "begin" in ik or "end" in ik:
             print("{:<30}: {} ({})".format(
                 ik, iv, tick_to_timestamp(iv)))
-        elif 'Magic word' in ik:
+        elif 'Marker word' in ik:
             print("{:<30}: {}".format(ik, hex(iv)))
         elif 'GeoID type' in ik:
             print("{:<30}: {}".format(ik, get_geo_id_type(iv)))
@@ -62,7 +62,7 @@ def print_header_dict(hdict):
 
 
 def print_fragment_header(data_array):
-    keys = ['Magic word', 'Version', 'Frag Size', 'Trig number',
+    keys = ['Marker word', 'Version', 'Frag Size', 'Trig number',
             'Trig timestamp', 'Window begin', 'Window end', 'Run number',
             'Error bits', 'Fragment type', 'Sequence number', 'Fragment Padding',
             'GeoID version', 'GeoID type', 'GeoID region', 'GeoID element',
@@ -73,7 +73,7 @@ def print_fragment_header(data_array):
 
 
 def print_trigger_record_header(data_array):
-    keys = ['Magic word', 'Version', 'Trigger number',
+    keys = ['Marker word', 'Version', 'Trigger number',
             'Trigger timestamp', 'No. of requested components', 'Run Number',
             'Error bits', 'Trigger type', 'Sequence number', 'Max sequence num']
     unpack_string = '<2I3Q2I3H'

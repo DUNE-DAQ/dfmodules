@@ -177,7 +177,8 @@ public:
     increment_file_index_if_needed(tr_size);
 
     // determine the filename from Storage Key + configuration parameters
-    std::string full_filename = get_file_name(tr.get_header_ref());
+    std::string full_filename = get_file_name(tr.get_header_ref().get_trigger_number(),
+					      tr.get_header_ref().get_run_number());
 
     try {
       open_file_if_needed(full_filename, HighFive::File::OpenOrCreate);
@@ -193,6 +194,49 @@ public:
     m_recorded_size = m_file_handle->get_recorded_size();
   }
 
+  /**
+   * @brief HDF5DataStore write()
+   * Method used to write constant data
+   * into HDF5 format. Operational mode
+   * defined in the configuration file.
+   *
+   */
+  virtual void write(const daqdataformats::TimeSlice& ts)
+  {
+ 
+    // check if there is sufficient space for this data block
+    size_t current_free_space = get_free_space(m_path);
+    size_t ts_size = ts.get_total_size_bytes();
+    if (current_free_space < (m_free_space_safety_factor_for_write * ts_size)) {
+      InsufficientDiskSpace issue(ERS_HERE,
+                                  get_name(),
+                                  m_path,
+                                  current_free_space,
+                                  ts_size,
+                                  "a multiple of the data block size");
+      std::string msg = "writing a data block to file " + m_file_handle->get_file_name();
+      throw RetryableDataStoreProblem(ERS_HERE, get_name(), msg, issue);
+    }
+
+    // check if a new file should be opened for this data block
+    increment_file_index_if_needed(ts_size);
+
+    // determine the filename from Storage Key + configuration parameters
+    std::string full_filename = get_file_name(ts.get_header().timeslice_number,ts.get_header().run_number);
+
+    try {
+      open_file_if_needed(full_filename, HighFive::File::OpenOrCreate);
+    } catch (std::exception const& excpt) {
+      throw FileOperationProblem(ERS_HERE, get_name(), full_filename, excpt);
+    } catch (...) { // NOLINT(runtime/exceptions)
+      // NOLINT here because we *ARE* re-throwing the exception!
+      throw FileOperationProblem(ERS_HERE, get_name(), full_filename);
+    }
+
+    // write the data block
+    m_file_handle->write(ts);
+    m_recorded_size = m_file_handle->get_recorded_size();
+  }
 
   /**
    * @brief Informs the HDF5DataStore that writes or reads of data blocks
@@ -283,10 +327,11 @@ private:
 
   //std::unique_ptr<HDF5KeyTranslator> m_key_translator_ptr;
 
-    /**
+  /**
    * @brief Translates the specified input parameters into the appropriate filename.
    */
-  std::string get_file_name(const daqdataformats::TriggerRecordHeader& trh)
+  std::string get_file_name(uint64_t record_number, // NOLINT(build/unsigned)
+			    daqdataformats::run_number_t run_number)
   {
     std::ostringstream work_oss;
     work_oss << m_config_params.directory_path;
@@ -302,13 +347,13 @@ private:
 
       work_oss << m_config_params.filename_parameters.trigger_number_prefix;
       work_oss << std::setw(m_config_params.filename_parameters.digits_for_trigger_number) << std::setfill('0')
-	       << trh.get_trigger_number();
+	       << record_number;
     } 
     else if (m_config_params.mode == "all-per-file") {
 
       work_oss << m_config_params.filename_parameters.run_number_prefix;
       work_oss << std::setw(m_config_params.filename_parameters.digits_for_run_number) << std::setfill('0')
-               << trh.get_run_number();
+               << run_number;
       work_oss << "_";
       work_oss << m_config_params.filename_parameters.file_index_prefix;
       work_oss << std::setw(m_config_params.filename_parameters.digits_for_file_index) << std::setfill('0')

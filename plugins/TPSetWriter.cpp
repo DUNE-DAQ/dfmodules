@@ -108,19 +108,19 @@ TPSetWriter::do_work(std::atomic<bool>& running_flag)
   size_t bytes_written = 0;
   int file_index = 0;
 
-  while (true) {
+  // 11-Feb-2022, KAB: modified this loop to stop immediately when the
+  // running flag is set to false (instead of also waiting for the incoming
+  // TPSets to stop). It seems that with the newconf configuration model,
+  // the order of stop commands is slightly different (the flow of TPSets
+  // never stops, so something that previous was stopped earlier than this
+  // code must now be stopped later).
+  while (running_flag.load()) {
     trigger::TPSet tpset;
     try {
       m_tpset_source->pop(tpset, std::chrono::milliseconds(100));
       ++n_tpset_received;
     } catch (appfwk::QueueTimeoutExpired&) {
-      // The condition to exit the loop is that we've been stopped and
-      // there's nothing left on the input queue
-      if (!running_flag.load()) {
-        break;
-      } else {
-        continue;
-      }
+      continue;
     }
 
     // Do some checks on the received TPSet
@@ -129,10 +129,10 @@ TPSetWriter::do_work(std::atomic<bool>& running_flag)
     //}
     // last_seqno = tpset.seqno;
 
-    if (tpset.start_time < last_timestamp) {
-      TLOG() << "TPSets out of order: last start time " << last_timestamp << ", current start time "
-             << tpset.start_time;
-    }
+    // if (tpset.start_time < last_timestamp) {
+    //  TLOG() << "TPSets out of order: last start time " << last_timestamp << ", current start time "
+    //         << tpset.start_time;
+    //}
     if (tpset.type == trigger::TPSet::Type::kHeartbeat) {
       TLOG() << "Heartbeat TPSet with start time " << tpset.start_time;
     } else if (tpset.objects.empty()) {
@@ -146,9 +146,14 @@ TPSetWriter::do_work(std::atomic<bool>& running_flag)
     }
 
     // NOLINTNEXTLINE(build/unsigned)
-    std::vector<uint8_t> tpset_bytes =
-      dunedaq::serialization::serialize(tpset, dunedaq::serialization::SerializationType::kMsgPack);
-    TLOG_DEBUG(9) << "Size of serialized TPSet is " << tpset_bytes.size() << ", TPSet size is " << tpset.objects.size();
+    // std::vector<uint8_t> tpset_bytes =
+    //  dunedaq::serialization::serialize(tpset, dunedaq::serialization::SerializationType::kMsgPack);
+    // TLOG_DEBUG(9) << "Size of serialized TPSet is " << tpset_bytes.size() << ", TPSet size is " <<
+    // tpset.objects.size();
+
+    TLOG_DEBUG(9) << "Number of TPs in TPSet is " << tpset.objects.size() << ", GeoID is " << tpset.origin
+                  << ", seqno is " << tpset.seqno << ", start timestamp is " << tpset.start_time << ", run number is "
+                  << m_run_number;
 
     if (!tpset_writer.is_open()) {
       std::ostringstream work_oss;

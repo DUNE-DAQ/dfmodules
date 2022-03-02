@@ -11,6 +11,7 @@ find_package(hdf5libs REQUIRED)
 find_package(dfmessages REQUIRED)
 find_package(opmonlib REQUIRED)
 find_package(networkmanager REQUIRED)
+find_package(detdataformats REQUIRED)
 
 # 22-Jul-2021, KAB: all of the packages in this block are needed for the first version
 # of the TPSetWriter. Some of these may be able to be removed, at some point in time,
@@ -27,9 +28,9 @@ daq_codegen( *.jsonnet DEP_PKGS hdf5libs TEMPLATES Structs.hpp.j2 Nljs.hpp.j2 )
 daq_codegen( info/*.jsonnet DEP_PKGS opmonlib TEMPLATES opmonlib/InfoStructs.hpp.j2 opmonlib/InfoNljs.hpp.j2 )
 
 ##############################################################################
-daq_add_library( TriggerDecisionForwarder.cpp TriggerInhibitAgent.cpp TriggerRecordBuilderData.cpp
+daq_add_library( TriggerDecisionForwarder.cpp TriggerInhibitAgent.cpp TriggerRecordBuilderData.cpp TPBundleHandler.cpp
                  LINK_LIBRARIES 
-                 ers::ers HighFive appfwk::appfwk logging::logging stdc++fs dfmessages::dfmessages utilities::utilities)
+                 ers::ers HighFive appfwk::appfwk logging::logging stdc++fs dfmessages::dfmessages utilities::utilities trigger::trigger detdataformats::detdataformats)
 
 daq_add_plugin( HDF5DataStore      duneDataStore LINK_LIBRARIES logging::logging daqdataformats::daqdataformats hdf5libs appfwk::appfwk stdc++fs)
 
@@ -39,8 +40,9 @@ daq_add_plugin( TriggerRecordBuilder  duneDAQModule LINK_LIBRARIES dfmodules net
 daq_add_plugin( TPSetWriter           duneDAQModule LINK_LIBRARIES dfmodules trigger::trigger serialization::serialization readoutlibs::readoutlibs Boost::iostreams )
 daq_add_plugin( FakeDataProd          duneDAQModule LINK_LIBRARIES dfmodules networkmanager::networkmanager)
 daq_add_plugin( RequestReceiver       duneDAQModule LINK_LIBRARIES dfmodules networkmanager::networkmanager)
-daq_add_plugin( FragmentReceiver       duneDAQModule LINK_LIBRARIES dfmodules networkmanager::networkmanager)
-daq_add_plugin( TriggerDecisionReceiver       duneDAQModule LINK_LIBRARIES dfmodules networkmanager::networkmanager)
+daq_add_plugin( FragmentReceiver      duneDAQModule LINK_LIBRARIES dfmodules networkmanager::networkmanager)
+daq_add_plugin( TriggerDecisionReceiver duneDAQModule LINK_LIBRARIES dfmodules networkmanager::networkmanager)
+daq_add_plugin( TPStreamWriter        duneDAQModule LINK_LIBRARIES dfmodules hdf5libs trigger::trigger serialization::serialization readoutlibs::readoutlibs Boost::iostreams )
 
 ##############################################################################
 daq_add_unit_test( HDF5FileUtils_test       LINK_LIBRARIES dfmodules )
