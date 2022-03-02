@@ -22,6 +22,7 @@
 #include <chrono>
 #include <cstdlib>
 #include <future>
+#include <limits>
 #include <map>
 #include <memory>
 #include <string>
@@ -104,7 +105,7 @@ DataFlowOrchestrator::do_start(const data_t& payload)
   m_last_notified_busy.store(false);
 
   m_last_token_received = m_last_td_received = std::chrono::steady_clock::now();
-  
+
   networkmanager::NetworkManager::get().register_callback(
     m_token_connection_name,
     std::bind(&DataFlowOrchestrator::receive_trigger_complete_token, this, std::placeholders::_1));
@@ -160,7 +161,7 @@ DataFlowOrchestrator::receive_trigger_decision(ipm::Receiver::Response message)
 
   ++m_received_decisions;
   auto decision_received = std::chrono::steady_clock::now();
-  
+
   std::chrono::steady_clock::time_point decision_assigned;
   do {
 
@@ -209,7 +210,7 @@ DataFlowOrchestrator::find_slot(dfmessages::TriggerDecision decision)
   for (auto it = m_dataflow_availability.begin(); it != m_dataflow_availability.end(); ++it) {
     const auto& data = it->second;
     if (!data.is_in_error()) {
-      double temp_ratio = data.used_slots() / (double)data.busy_threshold();
+      double temp_ratio = data.used_slots() / static_cast<double>(data.busy_threshold());
       if (temp_ratio < ratio) {
         candidate = it;
         ratio = temp_ratio;
@@ -298,8 +299,9 @@ void
 DataFlowOrchestrator::notify_trigger(bool busy) const
 {
 
-  if ( busy == m_last_notified_busy.load() ) return ;
-  
+  if (busy == m_last_notified_busy.load())
+    return;
+
   auto message = dunedaq::serialization::serialize(dfmessages::TriggerInhibit{ busy, m_run_number },
                                                    dunedaq::serialization::kMsgPack);
 

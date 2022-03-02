@@ -38,7 +38,7 @@ ERS_DECLARE_ISSUE(dfmodules,
                   DataFlowOrchestratorRunNumberMismatch,
                   "DataFlowOrchestrator encountered run number mismatch: recvd ("
                     << received_run_number << ") != " << run_number << " from " << src_app,
-                  ((uint32_t)received_run_number)((uint32_t)run_number)((std::string)src_app))
+                  ((uint32_t)received_run_number)((uint32_t)run_number)((std::string)src_app)) // NOLINT(build/unsigned)
 // Re-enable coverage checking LCOV_EXCL_STOP
 
 namespace dfmodules {
@@ -101,7 +101,7 @@ private:
   // mutable std::mutex m_slot_available_mutex;
   // atomic<bool> m_last_notifiled_status{false};
   std::atomic<bool> m_running_status{ false };
-  mutable std::atomic<bool> m_last_notified_busy{false};
+  mutable std::atomic<bool> m_last_notified_busy{ false };
   std::string m_last_sent_td_connection;
   std::chrono::steady_clock::time_point m_last_token_received;
   std::chrono::steady_clock::time_point m_last_td_received;

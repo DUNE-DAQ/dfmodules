@@ -126,14 +126,14 @@ void
 FakeDataProd::do_timesync(std::atomic<bool>& running_flag)
 {
   int sent_count = 0;
-  uint64_t msg_seqno = 0;
+  uint64_t msg_seqno = 0; // NOLINT(build/unsigned)
   while (running_flag.load()) {
     auto time_now = std::chrono::system_clock::now().time_since_epoch();
     uint64_t current_timestamp = // NOLINT (build/unsigned)
       std::chrono::duration_cast<std::chrono::nanoseconds>(time_now).count();
     auto timesyncmsg = dfmessages::TimeSync(current_timestamp);
     timesyncmsg.run_number = m_run_number;
-    timesyncmsg.sequence_number = ++msg_seqno;
+    timesyncmsg.sequence_number = ++msg_seqno; // NOLINT
     timesyncmsg.source_pid = m_pid_of_current_process;
     TLOG_DEBUG(TLVL_TIME_SYNCS) << "New timesync: daq=" << timesyncmsg.daq_time << " wall=" << timesyncmsg.system_time
                                 << " run=" << timesyncmsg.run_number << " seqno=" << timesyncmsg.sequence_number
@@ -181,7 +181,7 @@ FakeDataProd::do_work(std::atomic<bool>& running_flag)
 
     // We don't care about the content of the data, but the size should be correct
 
-    std::vector<uint8_t> fake_data;
+    std::vector<uint8_t> fake_data; // NOLINT(build/unsigned)
     try {
       fake_data.resize(num_bytes_to_send);
     } catch (const std::bad_alloc&) {

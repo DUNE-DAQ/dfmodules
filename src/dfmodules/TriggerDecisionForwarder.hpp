@@ -14,8 +14,8 @@
 
 #include "appfwk/DAQSink.hpp"
 #include "appfwk/NamedObject.hpp"
-#include "utilities/WorkerThread.hpp"
 #include "dfmessages/TriggerDecision.hpp"
+#include "utilities/WorkerThread.hpp"
 
 #include <atomic>
 #include <chrono>

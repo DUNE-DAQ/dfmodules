@@ -20,6 +20,8 @@
 
 #include "boost/test/unit_test.hpp"
 
+#include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -65,6 +67,11 @@ struct NetworkManagerTestFixture
   }
 
   ~NetworkManagerTestFixture() { networkmanager::NetworkManager::get().reset(); }
+
+  NetworkManagerTestFixture(NetworkManagerTestFixture const&) = default;
+  NetworkManagerTestFixture(NetworkManagerTestFixture&&) = default;
+  NetworkManagerTestFixture& operator=(NetworkManagerTestFixture const&) = default;
+  NetworkManagerTestFixture& operator=(NetworkManagerTestFixture&&) = default;
 };
 
 datafloworchestratorinfo::Info
@@ -152,10 +159,10 @@ BOOST_FIXTURE_TEST_CASE(Commands, NetworkManagerTestFixture)
   auto dfo = appfwk::make_module("DataFlowOrchestrator", "test");
   dfo->init(json);
 
-  auto conf_json =
-    "{\"dataflow_applications\": [ { \"thresholds\": { \"free\": 1, \"busy\": 2 }, \"decision_connection\": \"test.trigdec_0\" } ], \
-      \"general_queue_timeout\": 100, \"td_send_retries\": 5, \"token_connection\": \"test.token\", \
-      \"busy_connection\": \"test.triginh\", \"td_connection\": \"test.trigdec\" }"_json;
+  auto conf_json = "{\"dataflow_applications\": [ { \"thresholds\": { \"free\": 1, \"busy\": 2 }, "
+                   "\"decision_connection\": \"test.trigdec_0\" } ], "
+                   "\"general_queue_timeout\": 100, \"td_send_retries\": 5, \"token_connection\": \"test.token\", "
+                   "\"busy_connection\": \"test.triginh\", \"td_connection\": \"test.trigdec\" }"_json;
   auto start_json = "{\"run\": 1}"_json;
   auto null_json = "{}"_json;
 
@@ -181,10 +188,10 @@ BOOST_FIXTURE_TEST_CASE(DataFlow, NetworkManagerTestFixture)
   auto dfo = appfwk::make_module("DataFlowOrchestrator", "test");
   dfo->init(json);
 
-  auto conf_json =
-    "{\"dataflow_applications\": [ { \"thresholds\": { \"free\": 1, \"busy\": 2 }, \"decision_connection\": \"test.trigdec_0\" } ], \
-      \"general_queue_timeout\": 100, \"td_send_retries\": 5, \"token_connection\": \"test.token\", \
-      \"busy_connection\": \"test.triginh\", \"td_connection\": \"test.trigdec\" }"_json;
+  auto conf_json = "{\"dataflow_applications\": [ { \"thresholds\": { \"free\": 1, \"busy\": 2 }, "
+                   "\"decision_connection\": \"test.trigdec_0\" } ], "
+                   "\"general_queue_timeout\": 100, \"td_send_retries\": 5, \"token_connection\": \"test.token\", "
+                   "\"busy_connection\": \"test.triginh\", \"td_connection\": \"test.trigdec\" }"_json;
   auto start_json = "{\"run\": 1}"_json;
   auto null_json = "{}"_json;
 
@@ -244,10 +251,10 @@ BOOST_FIXTURE_TEST_CASE(SendTrigDecFailed, NetworkManagerTestFixture)
   auto dfo = appfwk::make_module("DataFlowOrchestrator", "test");
   dfo->init(json);
 
-  auto conf_json =
-    "{\"dataflow_applications\": [ { \"thresholds\": { \"free\": 1, \"busy\": 2 }, \"decision_connection\": \"test.invalid_connection\" } ], \
-      \"general_queue_timeout\": 100, \"td_send_retries\": 5, \"token_connection\": \"test.token\", \
-      \"busy_connection\": \"test.triginh\", \"td_connection\": \"test.trigdec\" }"_json;
+  auto conf_json = "{\"dataflow_applications\": [ { \"thresholds\": { \"free\": 1, \"busy\": 2 }, "
+                   "\"decision_connection\": \"test.invalid_connection\" } ], "
+                   "\"general_queue_timeout\": 100, \"td_send_retries\": 5, \"token_connection\": \"test.token\", "
+                   "\"busy_connection\": \"test.triginh\", \"td_connection\": \"test.trigdec\" }"_json;
   auto start_json = "{\"run\": 1}"_json;
   auto null_json = "{}"_json;
 
