@@ -7,7 +7,7 @@ daq_setup_environment()
 find_package(appfwk REQUIRED)
 find_package(logging REQUIRED)
 find_package(ers REQUIRED)
-find_package(HighFive REQUIRED)
+find_package(hdf5libs REQUIRED)
 find_package(dfmessages REQUIRED)
 find_package(opmonlib REQUIRED)
 find_package(networkmanager REQUIRED)
@@ -23,15 +23,15 @@ find_package(serialization REQUIRED)
 find_package(readoutlibs REQUIRED)
 find_package(Boost COMPONENTS iostreams unit_test_framework REQUIRED)
 
-daq_codegen( *.jsonnet TEMPLATES Structs.hpp.j2 Nljs.hpp.j2 )
+daq_codegen( *.jsonnet DEP_PKGS hdf5libs TEMPLATES Structs.hpp.j2 Nljs.hpp.j2 )
 daq_codegen( info/*.jsonnet DEP_PKGS opmonlib TEMPLATES opmonlib/InfoStructs.hpp.j2 opmonlib/InfoNljs.hpp.j2 )
 
 ##############################################################################
-daq_add_library( StorageKey.cpp TriggerDecisionForwarder.cpp TriggerInhibitAgent.cpp TriggerRecordBuilderData.cpp
+daq_add_library( TriggerDecisionForwarder.cpp TriggerInhibitAgent.cpp TriggerRecordBuilderData.cpp
                  LINK_LIBRARIES 
                  ers::ers HighFive appfwk::appfwk logging::logging stdc++fs dfmessages::dfmessages utilities::utilities)
 
-daq_add_plugin( HDF5DataStore      duneDataStore LINK_LIBRARIES logging::logging daqdataformats::daqdataformats HighFive appfwk::appfwk stdc++fs)
+daq_add_plugin( HDF5DataStore      duneDataStore LINK_LIBRARIES logging::logging daqdataformats::daqdataformats hdf5libs appfwk::appfwk stdc++fs)
 
 daq_add_plugin( DataWriter            duneDAQModule LINK_LIBRARIES dfmodules networkmanager::networkmanager )
 daq_add_plugin( DataFlowOrchestrator  duneDAQModule LINK_LIBRARIES dfmodules networkmanager::networkmanager )
@@ -43,29 +43,16 @@ daq_add_plugin( FragmentReceiver       duneDAQModule LINK_LIBRARIES dfmodules ne
 daq_add_plugin( TriggerDecisionReceiver       duneDAQModule LINK_LIBRARIES dfmodules networkmanager::networkmanager)
 
 ##############################################################################
-daq_add_unit_test( StorageKey_test          LINK_LIBRARIES dfmodules )
-daq_add_unit_test( KeyedDataBlock_test      LINK_LIBRARIES dfmodules )
-
-daq_add_unit_test( HDF5KeyTranslator_test   LINK_LIBRARIES dfmodules )
-add_dependencies(  HDF5KeyTranslator_test dfmodules_HDF5DataStore_duneDataStore)
-
 daq_add_unit_test( HDF5FileUtils_test       LINK_LIBRARIES dfmodules )
 
-daq_add_unit_test( HDF5Write_test           LINK_LIBRARIES dfmodules )
-add_dependencies(  HDF5Write_test dfmodules_HDF5DataStore_duneDataStore)
-
-daq_add_unit_test( HDF5Read_test            LINK_LIBRARIES dfmodules )
-add_dependencies(  HDF5Read_test dfmodules_HDF5DataStore_duneDataStore)
+daq_add_unit_test( HDF5Write_test           LINK_LIBRARIES dfmodules hdf5libs )
+add_dependencies(  HDF5Write_test dfmodules_HDF5DataStore_duneDataStore )
 
 daq_add_unit_test( DataFlowOrchestrator_test LINK_LIBRARIES dfmodules )
 add_dependencies( DataFlowOrchestrator_test dfmodules_DataFlowOrchestrator_duneDAQModule)
 
 daq_add_unit_test( TriggerRecordBuilderData_test LINK_LIBRARIES dfmodules )
 
-daq_add_unit_test( TriggerRecordHeaderWrite_test  LINK_LIBRARIES dfmodules )
-add_dependencies(  TriggerRecordHeaderWrite_test dfmodules_HDF5DataStore_duneDataStore)
-
-#daq_add_unit_test( HDF5GetAllKeys_test      LINK_LIBRARIES dfmodules )
 daq_add_unit_test( DataStoreFactory_test    LINK_LIBRARIES dfmodules )
 
 ##############################################################################
