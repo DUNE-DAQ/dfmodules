@@ -18,6 +18,8 @@
 #include "dfmessages/DataRequest.hpp"
 #include "dfmessages/TriggerDecision.hpp"
 #include "dfmessages/Types.hpp"
+#include "dfmessages/TRMonRequest.hpp"
+#include "ipm/Receiver.hpp"
 
 #include "appfwk/DAQModule.hpp"
 #include "appfwk/DAQSink.hpp"
@@ -26,11 +28,13 @@
 
 #include <chrono>
 #include <map>
+#include <list>
 #include <memory>
 #include <string>
 #include <tuple>
 #include <utility>
 #include <vector>
+#include <mutex>
 
 namespace dunedaq {
 
@@ -200,8 +204,12 @@ protected:
 private:
   // Commands
   void do_conf(const data_t&);
+  void do_scrap(const data_t&);
   void do_start(const data_t&);
   void do_stop(const data_t&);
+
+  // Monitoring callback
+   void tr_requested(ipm::Receiver::Response message);
 
   // Threading
   dunedaq::utilities::WorkerThread m_thread;
@@ -230,6 +238,12 @@ private:
   // Run information
   std::unique_ptr<const daqdataformats::run_number_t> m_run_number = nullptr;
 
+  // Monitoring related variables
+  std::mutex m_mon_mutex;
+  std::string m_mon_connection;
+
+  std::list<dfmessages::TRMonRequest> m_mon_requests;
+
   // book related metrics
   using metric_counter_type = decltype(triggerrecordbuilderinfo::Info::pending_trigger_decisions);
   mutable std::atomic<metric_counter_type> m_trigger_decisions_counter = { 0 }; // currently
@@ -252,6 +266,9 @@ private:
   mutable std::atomic<metric_counter_type> m_data_waiting_time = {0};           // in between calls
   mutable std::atomic<metric_counter_type> m_trigger_decision_width = {0}; // in between calls
   mutable std::atomic<metric_counter_type> m_data_request_width = {0};     // in between calls
+
+  mutable std::atomic<metric_counter_type> m_trmon_request_counter = { 0 };
+  mutable std::atomic<metric_counter_type> m_trmon_sent_counter = { 0 };
 
   // time thresholds
   using duration_type = std::chrono::milliseconds;
