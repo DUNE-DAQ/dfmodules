@@ -31,7 +31,7 @@ daq_add_library( TriggerDecisionForwarder.cpp TriggerInhibitAgent.cpp TriggerRec
                  LINK_LIBRARIES 
                  ers::ers HighFive appfwk::appfwk logging::logging stdc++fs dfmessages::dfmessages utilities::utilities)
 
-daq_add_plugin( HDF5DataStore      duneDataStore LINK_LIBRARIES logging::logging daqdataformats::daqdataformats hdf5libs appfwk::appfwk stdc++fs)
+daq_add_plugin( HDF5DataStore      duneDataStore LINK_LIBRARIES logging::logging daqdataformats::daqdataformats hdf5libs::hdf5libs appfwk::appfwk stdc++fs)
 
 daq_add_plugin( DataWriter            duneDAQModule LINK_LIBRARIES dfmodules networkmanager::networkmanager )
 daq_add_plugin( DataFlowOrchestrator  duneDAQModule LINK_LIBRARIES dfmodules networkmanager::networkmanager )
@@ -45,7 +45,7 @@ daq_add_plugin( TriggerDecisionReceiver       duneDAQModule LINK_LIBRARIES dfmod
 ##############################################################################
 daq_add_unit_test( HDF5FileUtils_test       LINK_LIBRARIES dfmodules )
 
-daq_add_unit_test( HDF5Write_test           LINK_LIBRARIES dfmodules hdf5libs )
+daq_add_unit_test( HDF5Write_test           LINK_LIBRARIES dfmodules hdf5libs::hdf5libs )
 add_dependencies(  HDF5Write_test dfmodules_HDF5DataStore_duneDataStore )
 
 daq_add_unit_test( DataFlowOrchestrator_test LINK_LIBRARIES dfmodules )
