@@ -16,9 +16,9 @@
 #include "daqdataformats/TriggerRecord.hpp"
 #include "daqdataformats/Types.hpp"
 #include "dfmessages/DataRequest.hpp"
+#include "dfmessages/TRMonRequest.hpp"
 #include "dfmessages/TriggerDecision.hpp"
 #include "dfmessages/Types.hpp"
-#include "dfmessages/TRMonRequest.hpp"
 #include "ipm/Receiver.hpp"
 
 #include "appfwk/DAQModule.hpp"
@@ -27,14 +27,14 @@
 #include "utilities/WorkerThread.hpp"
 
 #include <chrono>
-#include <map>
 #include <list>
+#include <map>
 #include <memory>
+#include <mutex>
 #include <string>
 #include <tuple>
 #include <utility>
 #include <vector>
-#include <mutex>
 
 namespace dunedaq {
 
@@ -184,7 +184,7 @@ protected:
 
   bool read_fragments(fragment_sources_t&, bool drain = false);
 
-  bool read_and_process_trigger_decision(trigger_decision_source_t&, std::atomic<bool>& running) ;
+  bool read_and_process_trigger_decision(trigger_decision_source_t&, std::atomic<bool>& running);
 
   trigger_record_ptr_t extract_trigger_record(const TriggerId&);
   // build_trigger_record will allocate memory and then orphan it to the caller
@@ -211,7 +211,7 @@ private:
   void do_stop(const data_t&);
 
   // Monitoring callback
-   void tr_requested(ipm::Receiver::Response message);
+  void tr_requested(ipm::Receiver::Response message);
 
   // Threading
   dunedaq::utilities::WorkerThread m_thread;
@@ -252,22 +252,22 @@ private:
   mutable std::atomic<metric_counter_type> m_fragment_counter = { 0 };          // currently
   mutable std::atomic<metric_counter_type> m_pending_fragment_counter = { 0 };  // currently
 
-  mutable std::atomic<metric_counter_type> m_timed_out_trigger_records = { 0 };      // in the run
-  mutable std::atomic<metric_counter_type> m_unexpected_fragments = { 0 };           // in the run
-  mutable std::atomic<metric_counter_type> m_unexpected_trigger_decisions = { 0 };   // in the run
-  mutable std::atomic<metric_counter_type> m_lost_fragments = { 0 };                 // in the run
-  mutable std::atomic<metric_counter_type> m_invalid_requests = { 0 };               // in the run
-  mutable std::atomic<metric_counter_type> m_duplicated_trigger_ids = { 0 };         // in the run
-  mutable std::atomic<metric_counter_type> m_abandoned_trigger_records = { 0 };      // in the run
+  mutable std::atomic<metric_counter_type> m_timed_out_trigger_records = { 0 };    // in the run
+  mutable std::atomic<metric_counter_type> m_unexpected_fragments = { 0 };         // in the run
+  mutable std::atomic<metric_counter_type> m_unexpected_trigger_decisions = { 0 }; // in the run
+  mutable std::atomic<metric_counter_type> m_lost_fragments = { 0 };               // in the run
+  mutable std::atomic<metric_counter_type> m_invalid_requests = { 0 };             // in the run
+  mutable std::atomic<metric_counter_type> m_duplicated_trigger_ids = { 0 };       // in the run
+  mutable std::atomic<metric_counter_type> m_abandoned_trigger_records = { 0 };    // in the run
 
   mutable std::atomic<metric_counter_type> m_received_trigger_decisions = { 0 }; // in between calls
-  mutable std::atomic<metric_counter_type> m_generated_trigger_records = { 0 }; // in between calls
-  mutable std::atomic<metric_counter_type> m_generated_data_requests = { 0 };   // in between calls
-  mutable std::atomic<metric_counter_type> m_sleep_counter = { 0 };             // in between calls
-  mutable std::atomic<metric_counter_type> m_loop_counter = { 0 };              // in between calls
-  mutable std::atomic<metric_counter_type> m_data_waiting_time = {0};           // in between calls
-  mutable std::atomic<metric_counter_type> m_trigger_decision_width = {0}; // in between calls
-  mutable std::atomic<metric_counter_type> m_data_request_width = {0};     // in between calls
+  mutable std::atomic<metric_counter_type> m_generated_trigger_records = { 0 };  // in between calls
+  mutable std::atomic<metric_counter_type> m_generated_data_requests = { 0 };    // in between calls
+  mutable std::atomic<metric_counter_type> m_sleep_counter = { 0 };              // in between calls
+  mutable std::atomic<metric_counter_type> m_loop_counter = { 0 };               // in between calls
+  mutable std::atomic<metric_counter_type> m_data_waiting_time = { 0 };          // in between calls
+  mutable std::atomic<metric_counter_type> m_trigger_decision_width = { 0 };     // in between calls
+  mutable std::atomic<metric_counter_type> m_data_request_width = { 0 };         // in between calls
 
   mutable std::atomic<metric_counter_type> m_trmon_request_counter = { 0 };
   mutable std::atomic<metric_counter_type> m_trmon_sent_counter = { 0 };

@@ -18,10 +18,10 @@
 #include "ers/Issue.hpp"
 #include "nlohmann/json.hpp"
 
-#include <limits>
 #include <atomic>
 #include <chrono>
 #include <functional>
+#include <limits>
 #include <list>
 #include <memory>
 #include <mutex>
@@ -73,7 +73,7 @@ public:
   TriggerRecordBuilderData& operator=(TriggerRecordBuilderData const&) = delete;
   TriggerRecordBuilderData& operator=(TriggerRecordBuilderData&&);
 
-  bool is_busy() const { return m_in_error || m_is_busy ; }
+  bool is_busy() const { return m_in_error || m_is_busy; }
   size_t used_slots() const { return m_assigned_trigger_decisions.size(); }
 
   size_t busy_threshold() const { return m_busy_threshold.load(); }

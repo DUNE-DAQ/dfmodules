@@ -69,10 +69,9 @@ BOOST_AUTO_TEST_CASE(Constructors)
   trbd4 = std::move(trbd3);
   BOOST_REQUIRE(!trbd4.is_in_error());
 
-  BOOST_REQUIRE_EXCEPTION( TriggerRecordBuilderData( "test", 10, 15),
-			   DFOThresholdsNotConsistent,
-			   [](DFOThresholdsNotConsistent const&) { return true; });
-
+  BOOST_REQUIRE_EXCEPTION(TriggerRecordBuilderData("test", 10, 15),
+                          DFOThresholdsNotConsistent,
+                          [](DFOThresholdsNotConsistent const&) { return true; });
 }
 
 BOOST_AUTO_TEST_CASE(Assignments)
@@ -163,7 +162,7 @@ BOOST_AUTO_TEST_CASE(Exceptions)
                           [](AssignedTriggerDecisionNotFound const&) { return true; });
 
   auto yet_another_assignment = trbd.make_assignment(yet_another_td);
-  BOOST_CHECK_NO_THROW( trbd.add_assignment(yet_another_assignment) );
+  BOOST_CHECK_NO_THROW(trbd.add_assignment(yet_another_assignment));
   // we are now above threshold but we can accept new assigments anyway because we are not in error
   BOOST_REQUIRE(trbd.is_busy());
 
@@ -175,7 +174,7 @@ BOOST_AUTO_TEST_CASE(Exceptions)
   err_td.trigger_type = 4;
   err_td.readout_type = dunedaq::dfmessages::ReadoutType::kLocalized;
   auto err_assignment = trbd.make_assignment(err_td);
-  
+
   BOOST_REQUIRE_EXCEPTION(
     trbd.add_assignment(err_assignment), NoSlotsAvailable, [](NoSlotsAvailable const&) { return true; });
 }
