@@ -15,7 +15,7 @@
 #include "appfwk/DAQModule.hpp"
 #include "appfwk/DAQSink.hpp"
 #include "appfwk/DAQSource.hpp"
-#include "appfwk/ThreadHelper.hpp"
+#include "utilities/WorkerThread.hpp"
 
 #include <memory>
 #include <string>
@@ -72,8 +72,8 @@ private:
   void get_info(opmonlib::InfoCollector& ci, int level) override;
 
   // Threading
-  dunedaq::appfwk::ThreadHelper m_thread;
-  dunedaq::appfwk::ThreadHelper m_timesync_thread;
+  dunedaq::utilities::WorkerThread m_thread;
+  dunedaq::utilities::WorkerThread m_timesync_thread;
   void do_work(std::atomic<bool>&);
   void do_timesync(std::atomic<bool>&);
 
@@ -88,6 +88,7 @@ private:
   daqdataformats::FragmentType m_fragment_type;
   std::string m_timesync_connection_name;
   std::string m_timesync_topic_name;
+  uint32_t m_pid_of_current_process;
 
   // Queue(s)
   using datareqsource_t = dunedaq::appfwk::DAQSource<dfmessages::DataRequest>;
