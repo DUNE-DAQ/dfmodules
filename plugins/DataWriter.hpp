@@ -14,9 +14,9 @@
 #include "appfwk/DAQModule.hpp"
 #include "appfwk/DAQSink.hpp"
 #include "appfwk/DAQSource.hpp"
-#include "utilities/WorkerThread.hpp"
 #include "daqdataformats/TriggerRecord.hpp"
 #include "dfmessages/TriggerDecisionToken.hpp"
+#include "utilities/WorkerThread.hpp"
 
 #include <chrono>
 #include <map>
@@ -94,7 +94,6 @@ private:
   {
     return std::chrono::duration_cast<std::chrono::seconds>(now - then).count();
   }
-
 };
 } // namespace dfmodules
 

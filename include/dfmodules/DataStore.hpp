@@ -18,9 +18,9 @@
 #include "appfwk/NamedObject.hpp"
 #include "cetlib/BasicPluginFactory.h"
 #include "cetlib/compiler_macros.h"
-#include "daqdataformats/Types.hpp"
 #include "daqdataformats/TriggerRecord.hpp"
 #include "daqdataformats/TimeSlice.hpp"
+#include "daqdataformats/Types.hpp"
 #include "logging/Logging.hpp"
 
 #include "nlohmann/json.hpp"
