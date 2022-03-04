@@ -90,4 +90,4 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: linting_log_${{ matrix.os_name }}
-        path: ${{ github.workspace }}/dev-${{ matrix.os_name }}/log/linting*.log
+        path: ${{ github.workspace }}/dev-${{ matrix.os_name }}/log/linting*
