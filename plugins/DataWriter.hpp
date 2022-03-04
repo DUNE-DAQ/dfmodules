@@ -14,9 +14,9 @@
 #include "appfwk/DAQModule.hpp"
 #include "appfwk/DAQSink.hpp"
 #include "appfwk/DAQSource.hpp"
-#include "utilities/WorkerThread.hpp"
 #include "daqdataformats/TriggerRecord.hpp"
 #include "dfmessages/TriggerDecisionToken.hpp"
+#include "utilities/WorkerThread.hpp"
 
 #include <chrono>
 #include <map>
@@ -94,30 +94,6 @@ private:
   {
     return std::chrono::duration_cast<std::chrono::seconds>(now - then).count();
   }
-
-  using geoid_system_type_t = daqdataformats::GeoID::SystemType;
-  using key_group_type_t = StorageKey::DataRecordGroupType;
-  std::map<geoid_system_type_t, key_group_type_t> m_system_type_to_group_type_mapping;
-  key_group_type_t get_group_type(geoid_system_type_t system_type, daqdataformats::FragmentType frag_type)
-  {
-    // 16-Aug-2021, KAB: ugly hack
-    if (system_type == geoid_system_type_t::kTPC && frag_type == daqdataformats::FragmentType::kTriggerPrimitives) {
-      return key_group_type_t::kTPC_TP;
-    }
-
-    if (m_system_type_to_group_type_mapping.size() == 0) {
-      m_system_type_to_group_type_mapping[geoid_system_type_t::kTPC] = key_group_type_t::kTPC;
-      m_system_type_to_group_type_mapping[geoid_system_type_t::kPDS] = key_group_type_t::kPDS;
-      m_system_type_to_group_type_mapping[geoid_system_type_t::kDataSelection] = key_group_type_t::kTrigger;
-      m_system_type_to_group_type_mapping[geoid_system_type_t::kNDLArTPC] = key_group_type_t::kNDLArTPC;
-      m_system_type_to_group_type_mapping[geoid_system_type_t::kInvalid] = key_group_type_t::kInvalid;
-    }
-    auto map_iter = m_system_type_to_group_type_mapping.find(system_type);
-    if (map_iter == m_system_type_to_group_type_mapping.end()) {
-      return key_group_type_t::kInvalid;
-    }
-    return map_iter->second;
-  };
 };
 } // namespace dfmodules
 

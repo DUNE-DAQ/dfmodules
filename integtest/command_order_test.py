@@ -11,7 +11,7 @@ number_of_data_producers=2
 # to run the config generation and nanorc
 
 # The name of the python module for the config generation
-confgen_name="minidaqapp.newconf.mdapp_multiru_gen"
+confgen_name="daqconf_multiru_gen"
 # The arguments to pass to the config generator, excluding the json
 # output directory (the test framework handles that)
 confgen_arguments_base=[ "-d", "./frames.bin", "-o", ".", "-s", "10", "-n", str(number_of_data_producers), "-b", "1000", "-a", "1000", "--host-ru", "localhost"]
@@ -29,7 +29,7 @@ nanorc_command_list=[
 ["scrap"],
 
 # Only init after boot
-#"boot boot".split(),
+"boot boot".split(),
 "boot conf".split(),
 "boot start 101".split(),
 "boot resume".split(),
@@ -76,10 +76,18 @@ nanorc_command_list=[
 "boot init conf start 117 stop scrap resume".split(),
 "boot init conf start 118 stop scrap pause".split(),
 "boot init conf start 119 stop scrap stop".split(),
-"boot init conf start 120 stop scrap scrap".split()
+"boot init conf start 120 stop scrap scrap".split(),
 
+# Test valid command after invalid (should still fail)
+"boot boot init conf start 121 stop scrap".split(),
+"boot init stop conf start 122 stop scrap".split(),
+"boot init conf stop start 123 stop scrap".split(),
+"boot init conf start 124 conf stop scrap".split(),
+"boot init conf start 125 stop init scrap".split(),
+"boot init conf start 125 stop scrap boot conf".split(),
+"boot init stop start 126 stop scrap boot conf".split()
 ]
 
 # The tests themselves
 def test_result(run_nanorc):
-    assert run_nanorc.completed_process.returncode!=0
+    assert run_nanorc.completed_process.returncode==30 # InvalidTransition

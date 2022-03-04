@@ -20,23 +20,19 @@ wib1_frag_hsi_trig_params={"fragment_type_description": "WIB",
                            "min_size_bytes": 37200, "max_size_bytes": 37200}
 wib1_frag_multi_trig_params={"fragment_type_description": "WIB",
                              "hdf5_detector_group": "TPC", "hdf5_region_prefix": "APA",
-                             "expected_fragment_count": number_of_data_producers,
+                             "expected_fragment_count": number_of_data_producers*2,
                              "min_size_bytes": 80, "max_size_bytes": 37200}
-rawtp_frag_params={"fragment_type_description": "Raw TP",
-                   "hdf5_detector_group": "TPC", "hdf5_region_prefix": "TP_APA",
-                   "expected_fragment_count": number_of_data_producers,
-                   "min_size_bytes": 80, "max_size_bytes": 80}
 triggertp_frag_params={"fragment_type_description": "Trigger TP",
                        "hdf5_detector_group": "Trigger", "hdf5_region_prefix": "Region",
                        "expected_fragment_count": number_of_data_producers,
-                       "min_size_bytes": 80, "max_size_bytes": 80}
+                       "min_size_bytes": 80, "max_size_bytes": 16000}
 
 # The next three variable declarations *must* be present as globals in the test
 # file. They're read by the "fixtures" in conftest.py to determine how
 # to run the config generation and nanorc
 
 # The name of the python module for the config generation
-confgen_name="minidaqapp.newconf.mdapp_multiru_gen"
+confgen_name="daqconf_multiru_gen"
 # The arguments to pass to the config generator, excluding the json
 # output directory (the test framework handles that)
 confgen_arguments_base=[ "-d", "./frames.bin", "-o", ".", "-s", "10", "-n", str(number_of_data_producers), "-b", "1000", "-a", "1000", "--host-ru", "localhost"]
@@ -77,7 +73,6 @@ def test_data_file(run_nanorc):
         local_expected_event_count+=(270*number_of_data_producers*run_duration/100)
         local_event_count_tolerance+=(10*number_of_data_producers*run_duration/100)
         fragment_check_list.append(wib1_frag_multi_trig_params)
-        fragment_check_list.append(rawtp_frag_params)
         fragment_check_list.append(triggertp_frag_params)
     if len(fragment_check_list) == 0:
         fragment_check_list.append(wib1_frag_hsi_trig_params)

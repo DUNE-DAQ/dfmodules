@@ -1,3 +1,4 @@
+import datetime
 import h5py
 import os.path
 import re
@@ -44,7 +45,7 @@ def check_file_attributes(datafile):
     "Check that the expected Attributes exist within the data file"
     passed=True
     base_filename = os.path.basename(datafile.h5file.filename)
-    expected_attribute_names = ["application_name", "creation_timestamp", "data_format_version", "file_index", "operational_environment", "run_number"]
+    expected_attribute_names = ["application_name", "closing_timestamp", "creation_timestamp", "file_index", "filelayout_params", "filelayout_version", "operational_environment", "recorded_size", "run_number"]
     for expected_attr_name in expected_attribute_names:
         if expected_attr_name not in datafile.h5file.attrs.keys():
             passed=False
@@ -73,7 +74,9 @@ def check_file_attributes(datafile):
                     print(f"The value in Attribute '{expected_attr_name}' ({attr_value}) does not match the value in the filename ({base_filename})")
         elif expected_attr_name == "creation_timestamp":
             attr_value = datafile.h5file.attrs.get(expected_attr_name)
-            pattern = f".*{attr_value}.*"
+            date_obj = datetime.datetime.fromtimestamp(int(attr_value) / 1000, datetime.timezone.utc)
+            date_string = date_obj.strftime("%Y%m%dT%H%M%S")
+            pattern = f".*{date_string}.*"
             if not re.match(pattern, base_filename):
                 passed=False
                 print(f"The value in Attribute '{expected_attr_name}' ({attr_value}) does not match the value in the filename ({base_filename})")

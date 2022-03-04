@@ -49,18 +49,17 @@ BOOST_AUTO_TEST_CASE(Constructors)
 
   TriggerRecordBuilderData trbd2("test", 10);
 
-  BOOST_REQUIRE_EQUAL(trbd2.available_slots(), 10);
-  BOOST_REQUIRE_EQUAL(trbd2.has_slot(), true);
+  BOOST_REQUIRE_EQUAL(trbd2.used_slots(), 0);
+  BOOST_REQUIRE_EQUAL(trbd2.is_busy(), false);
   BOOST_REQUIRE(!trbd2.is_in_error());
 
   trbd2.set_in_error(true);
   BOOST_REQUIRE(trbd2.is_in_error());
-  BOOST_REQUIRE_EQUAL(trbd2.available_slots(), 0);
-  BOOST_REQUIRE_EQUAL(trbd2.has_slot(), false);
+  BOOST_REQUIRE_EQUAL(trbd2.is_busy(), true);
 
   trbd2.set_in_error(false);
-  BOOST_REQUIRE_EQUAL(trbd2.available_slots(), 10);
-  BOOST_REQUIRE_EQUAL(trbd2.has_slot(), true);
+  BOOST_REQUIRE_EQUAL(trbd2.used_slots(), 0);
+  BOOST_REQUIRE_EQUAL(trbd2.is_busy(), false);
   BOOST_REQUIRE(!trbd2.is_in_error());
 
   TriggerRecordBuilderData trbd3 = std::move(trbd2);
@@ -69,6 +68,10 @@ BOOST_AUTO_TEST_CASE(Constructors)
   BOOST_REQUIRE(trbd4.is_in_error());
   trbd4 = std::move(trbd3);
   BOOST_REQUIRE(!trbd4.is_in_error());
+
+  BOOST_REQUIRE_EXCEPTION(TriggerRecordBuilderData("test", 10, 15),
+                          DFOThresholdsNotConsistent,
+                          [](DFOThresholdsNotConsistent const&) { return true; });
 }
 
 BOOST_AUTO_TEST_CASE(Assignments)
@@ -82,30 +85,30 @@ BOOST_AUTO_TEST_CASE(Assignments)
   td.readout_type = dunedaq::dfmessages::ReadoutType::kLocalized;
 
   TriggerRecordBuilderData trbd("test", 2);
-  BOOST_REQUIRE_EQUAL(trbd.available_slots(), 2);
-  BOOST_REQUIRE(trbd.has_slot());
+  BOOST_REQUIRE_EQUAL(trbd.used_slots(), 0);
+  BOOST_REQUIRE(!trbd.is_busy());
 
   auto assignment = trbd.make_assignment(td);
   BOOST_REQUIRE_EQUAL(assignment->connection_name, "test");
   trbd.add_assignment(assignment);
 
-  BOOST_REQUIRE_EQUAL(trbd.available_slots(), 1);
+  BOOST_REQUIRE_EQUAL(trbd.used_slots(), 1);
   auto got_assignment = trbd.get_assignment(1);
   BOOST_REQUIRE_EQUAL(got_assignment->decision.trigger_number, assignment->decision.trigger_number);
   BOOST_REQUIRE_EQUAL(got_assignment->decision.trigger_timestamp, assignment->decision.trigger_timestamp);
   BOOST_REQUIRE_EQUAL(got_assignment.get(), assignment.get());
-  BOOST_REQUIRE_EQUAL(trbd.available_slots(), 1);
+  BOOST_REQUIRE_EQUAL(trbd.used_slots(), 1);
 
   auto extracted_assignment = trbd.extract_assignment(1);
   BOOST_REQUIRE_EQUAL(extracted_assignment.get(), assignment.get());
-  BOOST_REQUIRE_EQUAL(trbd.available_slots(), 2);
+  BOOST_REQUIRE_EQUAL(trbd.used_slots(), 0);
   trbd.add_assignment(extracted_assignment);
-  BOOST_REQUIRE_EQUAL(trbd.available_slots(), 1);
+  BOOST_REQUIRE_EQUAL(trbd.used_slots(), 1);
 
   std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
   trbd.complete_assignment(1, [](nlohmann::json&) {});
-  BOOST_REQUIRE_EQUAL(trbd.available_slots(), 2);
+  BOOST_REQUIRE_EQUAL(trbd.used_slots(), 0);
 
   auto latency =
     std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - assignment->assigned_time)
@@ -141,8 +144,8 @@ BOOST_AUTO_TEST_CASE(Exceptions)
   yet_another_td.readout_type = dunedaq::dfmessages::ReadoutType::kLocalized;
 
   TriggerRecordBuilderData trbd("test", 2);
-  BOOST_REQUIRE_EQUAL(trbd.available_slots(), 2);
-  BOOST_REQUIRE(trbd.has_slot());
+  BOOST_REQUIRE_EQUAL(trbd.used_slots(), 0);
+  BOOST_REQUIRE(!trbd.is_busy());
 
   auto assignment = trbd.make_assignment(td);
   BOOST_REQUIRE_EQUAL(assignment->connection_name, "test");
@@ -151,16 +154,29 @@ BOOST_AUTO_TEST_CASE(Exceptions)
   auto another_assignment = trbd.make_assignment(another_td);
   trbd.add_assignment(another_assignment);
 
-  BOOST_REQUIRE_EQUAL(trbd.available_slots(), 0);
-  BOOST_REQUIRE(!trbd.has_slot());
+  BOOST_REQUIRE_EQUAL(trbd.used_slots(), 2);
+  BOOST_REQUIRE(trbd.is_busy());
 
   BOOST_REQUIRE_EXCEPTION(trbd.complete_assignment(3),
                           AssignedTriggerDecisionNotFound,
                           [](AssignedTriggerDecisionNotFound const&) { return true; });
 
   auto yet_another_assignment = trbd.make_assignment(yet_another_td);
+  BOOST_CHECK_NO_THROW(trbd.add_assignment(yet_another_assignment));
+  // we are now above threshold but we can accept new assigments anyway because we are not in error
+  BOOST_REQUIRE(trbd.is_busy());
+
+  trbd.set_in_error(true);
+  dunedaq::dfmessages::TriggerDecision err_td;
+  err_td.trigger_number = 4;
+  err_td.run_number = 2;
+  err_td.trigger_timestamp = 10;
+  err_td.trigger_type = 4;
+  err_td.readout_type = dunedaq::dfmessages::ReadoutType::kLocalized;
+  auto err_assignment = trbd.make_assignment(err_td);
+
   BOOST_REQUIRE_EXCEPTION(
-    trbd.add_assignment(yet_another_assignment), NoSlotsAvailable, [](NoSlotsAvailable const&) { return true; });
+    trbd.add_assignment(err_assignment), NoSlotsAvailable, [](NoSlotsAvailable const&) { return true; });
 }
 
 BOOST_AUTO_TEST_SUITE_END()
