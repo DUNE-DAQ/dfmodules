@@ -13,8 +13,8 @@
 
 #include "appfwk/DAQModule.hpp"
 #include "appfwk/DAQSource.hpp"
-#include "utilities/WorkerThread.hpp"
 #include "trigger/TPSet.hpp"
+#include "utilities/WorkerThread.hpp"
 
 #include <memory>
 #include <string>

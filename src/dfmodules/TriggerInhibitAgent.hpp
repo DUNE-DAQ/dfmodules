@@ -15,10 +15,10 @@
 #include "appfwk/DAQSink.hpp"
 #include "appfwk/DAQSource.hpp"
 #include "appfwk/NamedObject.hpp"
-#include "utilities/WorkerThread.hpp"
 #include "daqdataformats/Types.hpp"
 #include "dfmessages/TriggerDecision.hpp"
 #include "dfmessages/TriggerInhibit.hpp"
+#include "utilities/WorkerThread.hpp"
 
 #include <atomic>
 #include <chrono>
