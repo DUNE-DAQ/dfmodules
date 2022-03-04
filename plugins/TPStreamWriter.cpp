@@ -104,18 +104,18 @@ TPStreamWriter::do_work(std::atomic<bool>& running_flag)
   TPBundleHandler tp_bundle_handler(5000000, m_run_number, std::chrono::seconds(1));
 
   // create the DataStore
-  hdf5datastore::PathParams params1;
+  hdf5libs::hdf5filelayout::PathParams params1;
   params1.detector_group_type = "TPC";
   params1.detector_group_name = "TPC";
   params1.region_name_prefix = "APA";
   params1.digits_for_region_number = 3;
   params1.element_name_prefix = "Link";
   params1.digits_for_element_number = 2;
-  hdf5datastore::PathParamList param_list;
-  param_list.push_back(params1);
-  hdf5datastore::FileLayoutParams layout_params;
-  layout_params.path_param_list = param_list;
+  
+  hdf5libs::hdf5filelayout::FileLayoutParams layout_params;
+  layout_params.path_param_list.push_back(params1);
   layout_params.trigger_record_name_prefix = "TimeSlice";
+  layout_params.trigger_record_header_dataset_name = "TimeSliceHeader";
 
   std::string file_path(".");
   std::string file_prefix = "tpstream";
@@ -157,51 +157,14 @@ TPStreamWriter::do_work(std::atomic<bool>& running_flag)
         TLOG() << frag->get_header();
       }
 
-      std::vector<KeyedDataBlock> data_block_list;
-      uint64_t bytes_in_data_blocks = 0; // NOLINT(build/unsigned)
-
-      // First deal with the timeslice header
-      daqdataformats::TimeSliceHeader ts_header = timeslice_ptr->get_header();
-      size_t tsh_size = sizeof(ts_header);
-      StorageKey tsh_key(
-        ts_header.run_number, ts_header.timeslice_number, StorageKey::DataRecordGroupType::kTriggerRecordHeader, 1, 1);
-      tsh_key.m_this_sequence_number = 0;
-      tsh_key.m_max_sequence_number = 0;
-      KeyedDataBlock tsh_block(tsh_key);
-      tsh_block.m_unowned_data_start = &ts_header;
-      ;
-      tsh_block.m_data_size = tsh_size;
-      bytes_in_data_blocks += tsh_block.m_data_size;
-      data_block_list.emplace_back(std::move(tsh_block));
-
-      // Loop over the fragments
-      const auto& frag_vec = timeslice_ptr->get_fragments_ref();
-      for (const auto& frag_ptr : frag_vec) {
-
-        // add information about each Fragment to the list of data blocks to be stored
-        StorageKey::DataRecordGroupType group_type = get_group_type(frag_ptr->get_element_id().system_type);
-        StorageKey fragment_skey(frag_ptr->get_run_number(),
-                                 timeslice_ptr->get_header().timeslice_number,
-                                 group_type,
-                                 frag_ptr->get_element_id().region_id,
-                                 frag_ptr->get_element_id().element_id);
-        fragment_skey.m_this_sequence_number = 0;
-        fragment_skey.m_max_sequence_number = 0;
-        KeyedDataBlock data_block(fragment_skey);
-        data_block.m_unowned_data_start = frag_ptr->get_storage_location();
-        data_block.m_data_size = frag_ptr->get_size();
-        bytes_in_data_blocks += data_block.m_data_size;
-
-        data_block_list.emplace_back(std::move(data_block));
-      }
-
+      
       // write the TSH and the fragments as a set of data blocks
       bool should_retry = true;
       size_t retry_wait_usec = 1000;
       do {
         should_retry = false;
         try {
-          data_store_ptr->write(data_block_list);
+          data_store_ptr->write(*timeslice_ptr);
         } catch (const RetryableDataStoreProblem& excpt) {
           should_retry = true;
           ers::error(DataWritingProblem(ERS_HERE,
