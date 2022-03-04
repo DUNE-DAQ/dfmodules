@@ -91,6 +91,7 @@ TimeSliceAccumulator::get_timeslice()
     std::unique_ptr<daqdataformats::Fragment> frag(new daqdataformats::Fragment(list_of_pieces));
 
     frag->set_run_number(m_run_number);
+    frag->set_trigger_number(m_slice_number);
     frag->set_window_begin(m_begin_time);
     frag->set_window_end(m_end_time);
     frag->set_element_id(geoid);
