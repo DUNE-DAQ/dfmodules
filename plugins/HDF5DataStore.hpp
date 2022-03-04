@@ -134,9 +134,9 @@ public:
     m_file_index = 0;
     m_recorded_size = 0;
 
-    if (m_operation_mode != "one-event-per-file" 
-	//&& m_operation_mode != "one-fragment-per-file" 
-	&& m_operation_mode != "all-per-file") {
+    if (m_operation_mode != "one-event-per-file"
+        //&& m_operation_mode != "one-fragment-per-file"
+        && m_operation_mode != "all-per-file") {
 
       throw InvalidOperationMode(ERS_HERE, get_name(), m_operation_mode);
     }
@@ -158,17 +158,13 @@ public:
    */
   virtual void write(const daqdataformats::TriggerRecord& tr)
   {
- 
+
     // check if there is sufficient space for this data block
     size_t current_free_space = get_free_space(m_path);
     size_t tr_size = tr.get_total_size_bytes();
     if (current_free_space < (m_free_space_safety_factor_for_write * tr_size)) {
-      InsufficientDiskSpace issue(ERS_HERE,
-                                  get_name(),
-                                  m_path,
-                                  current_free_space,
-                                  tr_size,
-                                  "a multiple of the data block size");
+      InsufficientDiskSpace issue(
+        ERS_HERE, get_name(), m_path, current_free_space, tr_size, "a multiple of the data block size");
       std::string msg = "writing a data block to file " + m_file_handle->get_file_name();
       throw RetryableDataStoreProblem(ERS_HERE, get_name(), msg, issue);
     }
@@ -192,7 +188,6 @@ public:
     m_file_handle->write(tr);
     m_recorded_size = m_file_handle->get_recorded_size();
   }
-
 
   /**
    * @brief Informs the HDF5DataStore that writes or reads of data blocks
@@ -281,9 +276,9 @@ private:
   bool m_disable_unique_suffix;
   float m_free_space_safety_factor_for_write;
 
-  //std::unique_ptr<HDF5KeyTranslator> m_key_translator_ptr;
+  // std::unique_ptr<HDF5KeyTranslator> m_key_translator_ptr;
 
-    /**
+  /**
    * @brief Translates the specified input parameters into the appropriate filename.
    */
   std::string get_file_name(const daqdataformats::TriggerRecordHeader& trh)
@@ -302,9 +297,8 @@ private:
 
       work_oss << m_config_params.filename_parameters.trigger_number_prefix;
       work_oss << std::setw(m_config_params.filename_parameters.digits_for_trigger_number) << std::setfill('0')
-	       << trh.get_trigger_number();
-    } 
-    else if (m_config_params.mode == "all-per-file") {
+               << trh.get_trigger_number();
+    } else if (m_config_params.mode == "all-per-file") {
 
       work_oss << m_config_params.filename_parameters.run_number_prefix;
       work_oss << std::setw(m_config_params.filename_parameters.digits_for_run_number) << std::setfill('0')
@@ -318,7 +312,6 @@ private:
     work_oss << ".hdf5";
     return work_oss.str();
   }
-
 
   void increment_file_index_if_needed(size_t size_of_next_write)
   {
@@ -373,12 +366,8 @@ private:
       m_basic_name_of_open_file = file_name;
       m_open_flags_of_open_file = open_flags;
       try {
-        m_file_handle.reset(new hdf5libs::HDF5RawDataFile(unique_filename,
-							  m_run_number,
-							  m_file_index,
-							  m_application_name,
-							  m_file_layout_params,
-							  open_flags));
+        m_file_handle.reset(new hdf5libs::HDF5RawDataFile(
+          unique_filename, m_run_number, m_file_index, m_application_name, m_file_layout_params, open_flags));
       } catch (std::exception const& excpt) {
         throw FileOperationProblem(ERS_HERE, get_name(), unique_filename, excpt);
       } catch (...) { // NOLINT(runtime/exceptions)
@@ -391,10 +380,9 @@ private:
       } else {
         TLOG_DEBUG(TLVL_BASIC) << get_name() << "Created HDF5 file (" << unique_filename << ").";
 
-	//write attributes that aren't being handled by the HDF5RawDataFile right now
-	//m_file_handle->write_attribute("data_format_version",(int)m_key_translator_ptr->get_current_version());
-	m_file_handle->write_attribute("operational_environment",(std::string)m_config_params.operational_environment);
-
+        // write attributes that aren't being handled by the HDF5RawDataFile right now
+        // m_file_handle->write_attribute("data_format_version",(int)m_key_translator_ptr->get_current_version());
+        m_file_handle->write_attribute("operational_environment", (std::string)m_config_params.operational_environment);
       }
     } else {
       TLOG_DEBUG(TLVL_BASIC) << get_name() << ": Pointer file to  " << m_basic_name_of_open_file
