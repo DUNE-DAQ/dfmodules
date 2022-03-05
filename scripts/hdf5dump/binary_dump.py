@@ -54,7 +54,7 @@ def read_binary_file(fname):
                 nfrag = 0
                 if ntrh !=0 and g_header_type in ['both', 'fragment']:
                     print(80*'-')
-                    print_fragment_header(bytesbuffer)
+                    print_fragment_header(bytesbuffer, g_list_components)
                 bytesbuffer = bytearray()
                 ntrh += 1
                 if ntrh > g_n_request and g_n_request != 0: break
@@ -62,7 +62,7 @@ def read_binary_file(fname):
                 if nfrag == 0 and ntrh != 0 and g_header_type in ['both',
                                                                   'trigger']:
                     print(80*'=')
-                    print_trigger_record_header(bytesbuffer)
+                    print_trigger_record_header(bytesbuffer, g_list_components)
                 if nfrag != 0 and g_header_type in ['both', 'fragment']:
                     print(80*'-')
                     print_fragment_header(bytesbuffer)
