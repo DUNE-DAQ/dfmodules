@@ -33,17 +33,17 @@ TriggerRecordBuilderData::TriggerRecordBuilderData(std::string connection_name, 
   , m_connection_name(connection_name)
 {}
 
-TriggerRecordBuilderData::TriggerRecordBuilderData(std::string connection_name, 
-						   size_t busy_threshold, 
-						   size_t free_threshold)
+TriggerRecordBuilderData::TriggerRecordBuilderData(std::string connection_name,
+                                                   size_t busy_threshold,
+                                                   size_t free_threshold)
   : m_busy_threshold(busy_threshold)
   , m_free_threshold(busy_threshold)
   , m_is_busy(false)
   , m_in_error(false)
   , m_connection_name(connection_name)
-{ 
-  if (busy_threshold < free_threshold ) 
-    throw dfmodules::DFOThresholdsNotConsistent(ERS_HERE, busy_threshold,free_threshold) ; 
+{
+  if (busy_threshold < free_threshold)
+    throw dfmodules::DFOThresholdsNotConsistent(ERS_HERE, busy_threshold, free_threshold);
 }
 
 TriggerRecordBuilderData::TriggerRecordBuilderData(TriggerRecordBuilderData&& other)
@@ -92,9 +92,9 @@ TriggerRecordBuilderData::extract_assignment(daqdataformats::trigger_number_t tr
     }
   }
 
-  if ( m_assigned_trigger_decisions.size() < m_free_threshold.load() ) 
+  if (m_assigned_trigger_decisions.size() < m_free_threshold.load())
     m_is_busy.store(false);
-  
+
   return dec_ptr;
 }
 
@@ -151,7 +151,7 @@ TriggerRecordBuilderData::add_assignment(std::shared_ptr<AssignedTriggerDecision
   m_assigned_trigger_decisions.push_back(assignment);
   TLOG_DEBUG(13) << "Size of assigned_trigger_decision list is " << m_assigned_trigger_decisions.size();
 
-  if ( m_assigned_trigger_decisions.size() >= m_busy_threshold.load() ) {
+  if (m_assigned_trigger_decisions.size() >= m_busy_threshold.load()) {
     m_is_busy.store(true);
   }
 }

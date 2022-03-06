@@ -15,8 +15,8 @@
 #include "dfmodules/triggerrecordbuilder/Structs.hpp"
 #include "logging/Logging.hpp"
 
-#include "networkmanager/NetworkManager.hpp"
 #include "dfmessages/TriggerRecord_serialization.hpp"
+#include "networkmanager/NetworkManager.hpp"
 
 #include <algorithm>
 #include <chrono>
@@ -189,9 +189,8 @@ TriggerRecordBuilder::do_conf(const data_t& payload)
   m_mon_connection = parsed_conf.mon_connection_name;
   // Listener for monitoring requests
   if (!m_mon_connection.empty()) {
-      networkmanager::NetworkManager::get().start_listening(m_mon_connection);
+    networkmanager::NetworkManager::get().start_listening(m_mon_connection);
   }
-
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
 }
@@ -205,7 +204,7 @@ TriggerRecordBuilder::do_scrap(const data_t& /*args*/)
 
   // Stop listener for monitoring requests
   if (!m_mon_connection.empty()) {
-      networkmanager::NetworkManager::get().stop_listening(m_mon_connection);
+    networkmanager::NetworkManager::get().stop_listening(m_mon_connection);
   }
 
   TLOG() << get_name() << " successfully scrapped";
@@ -221,11 +220,10 @@ TriggerRecordBuilder::do_start(const data_t& args)
 
   // Register the callback to receive monitoring requests
   if (!m_mon_connection.empty()) {
-      m_mon_requests.clear();
-      networkmanager::NetworkManager::get().register_callback(m_mon_connection,
-      std::bind(&TriggerRecordBuilder::tr_requested, this, std::placeholders::_1));
+    m_mon_requests.clear();
+    networkmanager::NetworkManager::get().register_callback(
+      m_mon_connection, std::bind(&TriggerRecordBuilder::tr_requested, this, std::placeholders::_1));
   }
-
 
   m_thread.start_working_thread(get_name());
   TLOG() << get_name() << " successfully started";
@@ -239,9 +237,8 @@ TriggerRecordBuilder::do_stop(const data_t& /*args*/)
   // Unregister the monitoring requests callback
 
   if (!m_mon_connection.empty()) {
-      networkmanager::NetworkManager::get().clear_callback(m_mon_connection);
+    networkmanager::NetworkManager::get().clear_callback(m_mon_connection);
   }
-
 
   m_thread.stop_working_thread();
   TLOG() << get_name() << " successfully stopped";
@@ -255,15 +252,15 @@ TriggerRecordBuilder::tr_requested(ipm::Receiver::Response message)
 
   auto req = serialization::deserialize<dfmessages::TRMonRequest>(message.data);
 
-  // Ignore requests that don't belong to the ongoing run  
-  if (req.run_number != *m_run_number) return;
+  // Ignore requests that don't belong to the ongoing run
+  if (req.run_number != *m_run_number)
+    return;
 
   // Add requests to pending requests
   // To be done: choose a concurrent container implementation.
   const std::lock_guard<std::mutex> lock(m_mon_mutex);
   m_mon_requests.push_back(req);
 }
-
 
 void
 TriggerRecordBuilder::do_work(std::atomic<bool>& running_flag)
@@ -302,28 +299,10 @@ TriggerRecordBuilder::do_work(std::atomic<bool>& running_flag)
     // read decision requests
     while (decision_source.can_pop()) {
 
-      dfmessages::TriggerDecision temp_dec;
+      book_updates = read_and_process_trigger_decision(decision_source, running_flag);
 
-      try {
-
-        // get the trigger decision
-        decision_source.pop(temp_dec, m_queue_timeout);
-
-      } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
-        continue;
-      }
-
-      if (temp_dec.run_number != *m_run_number) {
-        ers::error(UnexpectedTriggerDecision(ERS_HERE, temp_dec.trigger_number, temp_dec.run_number, *m_run_number));
-        ++m_unexpected_trigger_decisions;
-        continue;
-      }
-
-      ++m_received_trigger_decisions;
-
-      book_updates = create_trigger_records_and_dispatch(temp_dec, running_flag) > 0;
-
-      break;
+      if (book_updates)
+        break;
 
     } // while loop, so that we can pop a trigger decision
 
@@ -380,7 +359,7 @@ TriggerRecordBuilder::do_work(std::atomic<bool>& running_flag)
     if (!run_again) {
       if (running_flag.load()) {
         ++m_sleep_counter;
-        std::this_thread::sleep_for(m_loop_sleep);
+        run_again = read_and_process_trigger_decision(decision_source, running_flag);
       }
     } else {
       ++m_loop_counter;
@@ -487,6 +466,35 @@ TriggerRecordBuilder::read_fragments(fragment_sources_t& frag_sources, bool drai
   } // queue loop
 
   return new_fragments;
+}
+
+bool
+TriggerRecordBuilder::read_and_process_trigger_decision(trigger_decision_source_t& decision_source,
+                                                        std::atomic<bool>& running)
+{
+
+  dfmessages::TriggerDecision temp_dec;
+
+  try {
+
+    // get the trigger decision
+    decision_source.pop(temp_dec, m_loop_sleep);
+
+  } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
+    return false;
+  }
+
+  if (temp_dec.run_number != *m_run_number) {
+    ers::error(UnexpectedTriggerDecision(ERS_HERE, temp_dec.trigger_number, temp_dec.run_number, *m_run_number));
+    ++m_unexpected_trigger_decisions;
+    return false;
+  }
+
+  ++m_received_trigger_decisions;
+
+  bool book_updates = create_trigger_records_and_dispatch(temp_dec, running) > 0;
+
+  return book_updates;
 }
 
 TriggerRecordBuilder::trigger_record_ptr_t
@@ -694,7 +702,10 @@ TriggerRecordBuilder::send_trigger_record(const TriggerId& id, trigger_record_si
       if (it->trigger_type == temp_record->get_header_data().trigger_type) {
         try {
           auto serialized_tr = dunedaq::serialization::serialize(*temp_record, dunedaq::serialization::kMsgPack);
-          NetworkManager::get().send_to(it->data_destination, static_cast<const void*>(serialized_tr.data()), serialized_tr.size(), m_queue_timeout );
+          NetworkManager::get().send_to(it->data_destination,
+                                        static_cast<const void*>(serialized_tr.data()),
+                                        serialized_tr.size(),
+                                        m_queue_timeout);
           ++m_trmon_sent_counter;
         } catch (const ers::Issue& excpt) {
           std::ostringstream oss_warn;
