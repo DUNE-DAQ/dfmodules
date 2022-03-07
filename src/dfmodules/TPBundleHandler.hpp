@@ -15,6 +15,7 @@
 #include "daqdataformats/TimeSlice.hpp"
 #include "daqdataformats/Types.hpp"
 #include "detdataformats/trigger/TriggerPrimitive.hpp"
+#include "ers/Issue.hpp"
 #include "trigger/TPSet.hpp"
 
 #include <chrono>
@@ -23,6 +24,17 @@
 #include <vector>
 
 namespace dunedaq {
+
+// Disable coverage checking LCOV_EXCL_START
+ERS_DECLARE_ISSUE(dfmodules,
+                  NoTPsInWindow,
+                  "No TriggerPrimitives were used from a TPSet with start_time="
+                    << tpset_start_time << ", end_time=" << tpset_end_time
+                    << ", TSAccumulator begin and end times:" << window_begin_time << ", " << window_end_time,
+                  ((daqdataformats::timestamp_t)tpset_start_time)((daqdataformats::timestamp_t)tpset_end_time)(
+                    (daqdataformats::timestamp_t)window_begin_time)((daqdataformats::timestamp_t)window_end_time))
+// Re-enable coverage checking LCOV_EXCL_STOP
+
 namespace dfmodules {
 
 class TimeSliceAccumulator

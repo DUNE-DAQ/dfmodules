@@ -42,14 +42,12 @@ TimeSliceAccumulator::add_tpset(trigger::TPSet&& tpset)
     if (working_tpset.objects.size() == 0) {
       if (tpset.end_time == m_begin_time) {
         // the end of the TPSet just missed the start of our window, so not a big deal
-        TLOG() << "Note: no TPs were used from a TPSet with start_time=" << tpset.start_time
-               << ", end_time=" << tpset.end_time << ", TSAccumulator begin and end times:" << m_begin_time << ", "
-               << m_end_time;
+        TLOG_DEBUG(22) << "Note: no TPs were used from a TPSet with start_time=" << tpset.start_time
+                       << ", end_time=" << tpset.end_time << ", TSAccumulator begin and end times:" << m_begin_time
+                       << ", " << m_end_time;
       } else {
         // woah, something unexpected happened
-        TLOG() << "WARNING: no TPs were used from a TPSet with start_time=" << tpset.start_time
-               << ", end_time=" << tpset.end_time << ", TSAccumulator begin and end times:" << m_begin_time << ", "
-               << m_end_time;
+        ers::warning(NoTPsInWindow(ERS_HERE, tpset.start_time, tpset.end_time, m_begin_time, m_end_time));
       }
       return;
     }
@@ -98,9 +96,9 @@ TimeSliceAccumulator::get_timeslice()
     frag->set_type(daqdataformats::FragmentType::kTriggerPrimitives);
 
     size_t frag_payload_size = frag->get_size() - sizeof(dunedaq::daqdataformats::FragmentHeader);
-    TLOG() << "In get_timeslice, GeoID is " << geoid << ", number of pieces is " << list_of_pieces.size()
-           << ", size of Fragment payload is " << frag_payload_size << ", size of TP is "
-           << sizeof(detdataformats::trigger::TriggerPrimitive);
+    TLOG_DEBUG(21) << "In get_timeslice, GeoID is " << geoid << ", number of pieces is " << list_of_pieces.size()
+                   << ", size of Fragment payload is " << frag_payload_size << ", size of TP is "
+                   << sizeof(detdataformats::trigger::TriggerPrimitive);
 
     list_of_fragments.push_back(std::move(frag));
   }
@@ -162,7 +160,6 @@ TPBundleHandler::get_properly_aged_timeslices()
   auto now = std::chrono::steady_clock::now();
   for (auto& [tsidx, accum] : m_timeslice_accumulators) {
     if ((now - accum.get_update_time()) >= m_cooling_off_time) {
-      TLOG() << "Fetching timeslice for " << tsidx;
       list_of_timeslices.push_back(accum.get_timeslice());
       elements_to_be_removed.push_back(tsidx);
     }
