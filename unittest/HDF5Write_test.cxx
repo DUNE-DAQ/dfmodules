@@ -223,6 +223,57 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
   BOOST_REQUIRE_EQUAL(file_list.size(), 1);
 }
 
+BOOST_AUTO_TEST_CASE(CheckWritingSuffix)
+{
+  std::string file_path(std::filesystem::temp_directory_path());
+  std::string file_prefix = "demo" + std::to_string(getpid()) + "_" + std::string(getenv("USER"));
+
+  const int trigger_count = 5;
+  const int apa_count = 3;
+  const int link_count = 1;
+  const int fragment_size = 10 + sizeof(dunedaq::daqdataformats::FragmentHeader);
+
+  // delete any pre-existing files so that we start with a clean slate
+  std::string delete_pattern = file_prefix + ".*.hdf5";
+  delete_files_matching_pattern(file_path, delete_pattern);
+
+  // create the DataStore
+  hdf5datastore::ConfParams config_params;
+  config_params.name = "tempWriter";
+  config_params.directory_path = file_path;
+  config_params.mode = "all-per-file";
+  config_params.max_file_size_bytes = 100000000; // much larger than what we expect, so no second file;
+  config_params.filename_parameters.overall_prefix = file_prefix;
+  config_params.file_layout_parameters = create_file_layout_params();
+
+  hdf5datastore::data_t hdf5ds_json;
+  hdf5datastore::to_json(hdf5ds_json, config_params);
+
+  std::unique_ptr<DataStore> data_store_ptr;
+  data_store_ptr = make_data_store(hdf5ds_json);
+
+  // write several events, each with several fragments
+  for (int trigger_number = 1; trigger_number <= trigger_count; ++trigger_number){
+    data_store_ptr->write(create_trigger_record(trigger_number, fragment_size, apa_count, link_count));
+
+    // check that the .writing file is there
+    std::string search_pattern = file_prefix + ".*.writing";
+    std::vector<std::string> file_list = get_files_matching_pattern(file_path, search_pattern);
+    BOOST_REQUIRE_EQUAL(file_list.size(), 1);
+  }
+  
+  data_store_ptr.reset(); // explicit destruction
+
+  // check that the expected number of files was created
+  std::string search_pattern = file_prefix + ".*.writing";
+  std::vector<std::string> file_list = get_files_matching_pattern(file_path, search_pattern);
+  BOOST_REQUIRE_EQUAL(file_list.size(), 0);
+
+  // clean up the files that were created
+  file_list = delete_files_matching_pattern(file_path, delete_pattern);
+  BOOST_REQUIRE_EQUAL(file_list.size(), 1);
+}
+
 BOOST_AUTO_TEST_CASE(FileSizeLimitResultsInMultipleFiles)
 {
   std::string file_path(std::filesystem::temp_directory_path());
