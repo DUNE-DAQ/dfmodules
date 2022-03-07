@@ -66,7 +66,6 @@ private:
 
   // Worker(s)
   std::unique_ptr<DataStore> m_data_writer;
-
 };
 } // namespace dfmodules
 

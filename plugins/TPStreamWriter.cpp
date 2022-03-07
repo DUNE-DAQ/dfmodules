@@ -92,6 +92,8 @@ TPStreamWriter::do_start(const nlohmann::json& payload)
   }
 
   m_thread.start_working_thread(get_name());
+
+  TLOG() << get_name() << " successfully started for run number " << m_run_number;
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
 }
 
@@ -136,7 +138,7 @@ TPStreamWriter::do_work(std::atomic<bool>& running_flag)
   daqdataformats::timestamp_t first_timestamp = 0;
   daqdataformats::timestamp_t last_timestamp = 0;
 
-  TPBundleHandler tp_bundle_handler(5000000, m_run_number, std::chrono::seconds(1));
+  TPBundleHandler tp_bundle_handler(m_accumulation_interval_ticks, m_run_number, std::chrono::seconds(1));
 
   while (running_flag.load()) {
     trigger::TPSet tpset;
@@ -147,22 +149,16 @@ TPStreamWriter::do_work(std::atomic<bool>& running_flag)
       continue;
     }
 
-    TLOG_DEBUG(9) << "Number of TPs in TPSet is " << tpset.objects.size() << ", GeoID is " << tpset.origin
-                  << ", seqno is " << tpset.seqno << ", start timestamp is " << tpset.start_time << ", run number is "
-                  << m_run_number << ", slice id is " << (tpset.start_time / 5000000);
+    TLOG_DEBUG(21) << "Number of TPs in TPSet is " << tpset.objects.size() << ", GeoID is " << tpset.origin
+                   << ", seqno is " << tpset.seqno << ", start timestamp is " << tpset.start_time << ", run number is "
+                   << m_run_number << ", slice id is " << (tpset.start_time / m_accumulation_interval_ticks);
 
     tp_bundle_handler.add_tpset(std::move(tpset));
 
     std::vector<std::unique_ptr<daqdataformats::TimeSlice>> list_of_timeslices =
       tp_bundle_handler.get_properly_aged_timeslices();
     for (auto& timeslice_ptr : list_of_timeslices) {
-      TLOG() << "================================";
-      TLOG() << timeslice_ptr->get_header();
-      for (auto& frag : timeslice_ptr->get_fragments_ref()) {
-        TLOG() << frag->get_header();
-      }
 
-      
       // write the TSH and the fragments as a set of data blocks
       bool should_retry = true;
       size_t retry_wait_usec = 1000;
