@@ -18,7 +18,7 @@ wib1_frag_hsi_trig_params={"fragment_type_description": "WIB",
                            "min_size_bytes": 37200, "max_size_bytes": 37200}
 wib1_frag_multi_trig_params={"fragment_type_description": "WIB",
                              "hdf5_detector_group": "TPC", "hdf5_region_prefix": "APA",
-                             "expected_fragment_count": (number_of_data_producers*number_of_readout_apps*2),
+                             "expected_fragment_count": (number_of_data_producers*number_of_readout_apps),
                              "min_size_bytes": 80, "max_size_bytes": 37200}
 triggertp_frag_params={"fragment_type_description": "Trigger TP",
                        "hdf5_detector_group": "Trigger", "hdf5_region_prefix": "Region",
