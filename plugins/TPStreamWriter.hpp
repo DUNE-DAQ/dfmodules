@@ -57,12 +57,15 @@ private:
 
   // Configuration
   std::chrono::milliseconds m_queue_timeout;
-  size_t m_max_file_size;
+  size_t m_accumulation_interval_ticks;
   daqdataformats::run_number_t m_run_number;
 
   // Queue sources and sinks
   using source_t = appfwk::DAQSource<trigger::TPSet>;
   std::unique_ptr<source_t> m_tpset_source;
+
+  // Worker(s)
+  std::unique_ptr<DataStore> m_data_writer;
 
 };
 } // namespace dfmodules

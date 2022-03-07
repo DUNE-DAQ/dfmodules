@@ -7,10 +7,8 @@
  */
 
 #include "TPStreamWriter.hpp"
-#include "dfmodules/DataStore.hpp"
+#include "dfmodules/CommonIssues.hpp"
 #include "dfmodules/TPBundleHandler.hpp"
-#include "dfmodules/hdf5datastore/Nljs.hpp"
-#include "dfmodules/hdf5datastore/Structs.hpp"
 #include "dfmodules/tpstreamwriter/Nljs.hpp"
 
 #include "appfwk/DAQModuleHelper.hpp"
@@ -59,8 +57,20 @@ TPStreamWriter::do_conf(const data_t& payload)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
   tpstreamwriter::ConfParams conf_params = payload.get<tpstreamwriter::ConfParams>();
-  m_max_file_size = conf_params.max_file_size_bytes;
-  TLOG_DEBUG(TLVL_CONFIG) << get_name() << ": max file size is " << m_max_file_size << " bytes.";
+  m_accumulation_interval_ticks = conf_params.tp_accumulation_interval_ticks;
+
+  // create the DataStore instance here
+  try {
+    m_data_writer = make_data_store(payload["data_store_parameters"]);
+  } catch (const ers::Issue& excpt) {
+    throw UnableToConfigure(ERS_HERE, get_name(), excpt);
+  }
+
+  // ensure that we have a valid dataWriter instance
+  if (m_data_writer.get() == nullptr) {
+    throw InvalidDataWriter(ERS_HERE, get_name());
+  }
+
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
 }
 
@@ -70,6 +80,17 @@ TPStreamWriter::do_start(const nlohmann::json& payload)
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_start() method";
   rcif::cmd::StartParams start_params = payload.get<rcif::cmd::StartParams>();
   m_run_number = start_params.run;
+
+  // 06-Mar-2022, KAB: added this call to allow DataStore to prepare for the run.
+  // I've put this call fairly early in this method because it could throw an
+  // exception and abort the run start.  And, it seems sensible to avoid starting
+  // threads, etc. if we throw an exception.
+  try {
+    m_data_writer->prepare_for_run(m_run_number);
+  } catch (const ers::Issue& excpt) {
+    throw UnableToStart(ERS_HERE, get_name(), m_run_number, excpt);
+  }
+
   m_thread.start_working_thread(get_name());
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
 }
@@ -79,6 +100,16 @@ TPStreamWriter::do_stop(const nlohmann::json& /*payload*/)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_stop() method";
   m_thread.stop_working_thread();
+
+  // 06-Mar-2022, KAB: added this call to allow DataStore to finish up with this run.
+  // I've put this call fairly late in this method so that any draining of queues
+  // (or whatever) can take place before we finalize things in the DataStore.
+  try {
+    m_data_writer->finish_with_run(m_run_number);
+  } catch (const std::exception& excpt) {
+    ers::error(ProblemDuringStop(ERS_HERE, get_name(), m_run_number, excpt));
+  }
+
   TLOG() << get_name() << " successfully stopped for run number " << m_run_number;
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_stop() method";
 }
@@ -87,6 +118,10 @@ void
 TPStreamWriter::do_scrap(const data_t& /*payload*/)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_scrap() method";
+
+  // clear/reset the DataStore instance here
+  m_data_writer.reset();
+
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_scrap() method";
 }
 
@@ -103,40 +138,10 @@ TPStreamWriter::do_work(std::atomic<bool>& running_flag)
 
   TPBundleHandler tp_bundle_handler(5000000, m_run_number, std::chrono::seconds(1));
 
-  // create the DataStore
-  hdf5libs::hdf5filelayout::PathParams params1;
-  params1.detector_group_type = "TPC";
-  params1.detector_group_name = "TPC";
-  params1.region_name_prefix = "APA";
-  params1.digits_for_region_number = 3;
-  params1.element_name_prefix = "Link";
-  params1.digits_for_element_number = 2;
-  
-  hdf5libs::hdf5filelayout::FileLayoutParams layout_params;
-  layout_params.path_param_list.push_back(params1);
-  layout_params.trigger_record_name_prefix = "TimeSlice";
-  layout_params.trigger_record_header_dataset_name = "TimeSliceHeader";
-
-  std::string file_path(".");
-  std::string file_prefix = "tpstream";
-
-  hdf5datastore::ConfParams config_params;
-  config_params.name = "tpstream_writer";
-  config_params.directory_path = file_path;
-  config_params.mode = "all-per-file";
-  config_params.max_file_size_bytes = 1000000000;
-  config_params.filename_parameters.overall_prefix = file_prefix;
-  config_params.operational_environment = "swtest";
-  config_params.file_layout_parameters = layout_params;
-  hdf5datastore::data_t hdf5ds_json;
-  hdf5datastore::to_json(hdf5ds_json, config_params);
-  std::unique_ptr<DataStore> data_store_ptr;
-  data_store_ptr = make_data_store(hdf5ds_json);
-
   while (running_flag.load()) {
     trigger::TPSet tpset;
     try {
-      m_tpset_source->pop(tpset, std::chrono::milliseconds(100));
+      m_tpset_source->pop(tpset, m_queue_timeout);
       ++n_tpset_received;
     } catch (appfwk::QueueTimeoutExpired&) {
       continue;
@@ -164,7 +169,7 @@ TPStreamWriter::do_work(std::atomic<bool>& running_flag)
       do {
         should_retry = false;
         try {
-          data_store_ptr->write(*timeslice_ptr);
+          m_data_writer->write(*timeslice_ptr);
         } catch (const RetryableDataStoreProblem& excpt) {
           should_retry = true;
           ers::error(DataWritingProblem(ERS_HERE,
@@ -192,8 +197,6 @@ TPStreamWriter::do_work(std::atomic<bool>& running_flag)
     }
     last_timestamp = tpset.start_time;
   } // while(true)
-
-  data_store_ptr.reset(); // explicit destruction
 
   auto end_time = steady_clock::now();
   auto time_ms = duration_cast<milliseconds>(end_time - start_time).count();

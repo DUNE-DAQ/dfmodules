@@ -5,9 +5,13 @@ local s = moo.oschema.schema(ns);
 local types = {
     size: s.number("Size", "u8", doc="A count of very many things"),
 
+    dsparams: s.any("DataStoreParams", doc="Parameters that configure a data store"),
+
     conf: s.record("ConfParams", [
-        s.field("max_file_size_bytes", self.size, 1000000000,
-                doc="Maximum number of bytes in each raw data file"),
+        s.field("tp_accumulation_interval_ticks", self.size, 50000000,
+                doc="Size of the TP accumulation window, measured in clock ticks"),
+        s.field("data_store_parameters", self.dsparams,
+                doc="Parameters that configure the DataStore associated with this TPStreamWriter"),
     ], doc="TPStreamWriter configuration parameters"),
 
 };
