@@ -79,7 +79,7 @@ def check_file_attributes(datafile):
             pattern = f".*{date_string}.*"
             if not re.match(pattern, base_filename):
                 passed=False
-                print(f"The value in Attribute '{expected_attr_name}' ({attr_value}) does not match the value in the filename ({base_filename})")
+                print(f"The value in Attribute '{expected_attr_name}' ({date_string}) does not match the value in the filename ({base_filename})")
     if passed:
         print(f"All Attribute tests passed for file {base_filename}")
     return passed
