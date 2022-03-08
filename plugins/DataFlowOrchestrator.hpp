@@ -115,6 +115,8 @@ private:
   std::atomic<uint64_t> m_forwarding_decision{ 0 };  // NOLINT (build/unsigned)
   std::atomic<uint64_t> m_waiting_for_token{ 0 };    // NOLINT (build/unsigned)
   std::atomic<uint64_t> m_processing_token{ 0 };     // NOLINT (build/unsigned)
+  using df_app_info = std::pair<std::atomic<uint64_t>, std::atomic<uint64_t>>; // first counter, second millisecond
+  std::map<std::string, df_app_info> m_app_infos;  
 };
 } // namespace dfmodules
 } // namespace dunedaq
