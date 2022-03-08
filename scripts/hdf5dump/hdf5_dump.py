@@ -72,14 +72,14 @@ def print_fragment_header(data_array):
     return
 
 
-def print_trigger_record_header(data_array):
-    keys = ['Marker word', 'Version', 'Trigger number',
+def print_trigger_record_header(data_array, k_list_components=False):
+    keys = ['Magic word', 'Version', 'Trigger number',
             'Trigger timestamp', 'No. of requested components', 'Run Number',
             'Error bits', 'Trigger type', 'Sequence number', 'Max sequence num']
     unpack_string = '<2I3Q2I3H'
     print_header_dict(unpack_header(data_array[:46], unpack_string, keys))
 
-    if g_list_components:
+    if g_list_components or k_list_components:
         comp_keys = ['Component request version', 'Component Request Padding',
                      'GeoID version', 'GeoID type', 'GeoID region',
                      'GeoID element', 'Geo ID Padding', 'Begin time',
