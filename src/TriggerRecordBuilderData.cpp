@@ -13,6 +13,10 @@
 
 #include "logging/Logging.hpp"
 
+#include <memory>
+#include <string>
+#include <utility>
+
 /**
  * @brief Name used by TRACE TLOG calls from this source file
  */
@@ -21,14 +25,32 @@
 namespace dunedaq {
 namespace dfmodules {
 
-TriggerRecordBuilderData::TriggerRecordBuilderData(std::string connection_name, size_t capacity)
-  : m_num_slots(capacity)
+TriggerRecordBuilderData::TriggerRecordBuilderData(std::string connection_name, size_t busy_threshold)
+  : m_busy_threshold(busy_threshold)
+  , m_free_threshold(busy_threshold)
+  , m_is_busy(false)
+  , m_in_error(false)
   , m_connection_name(connection_name)
 {}
 
+TriggerRecordBuilderData::TriggerRecordBuilderData(std::string connection_name,
+                                                   size_t busy_threshold,
+                                                   size_t free_threshold)
+  : m_busy_threshold(busy_threshold)
+  , m_free_threshold(busy_threshold)
+  , m_is_busy(false)
+  , m_in_error(false)
+  , m_connection_name(connection_name)
+{
+  if (busy_threshold < free_threshold)
+    throw dfmodules::DFOThresholdsNotConsistent(ERS_HERE, busy_threshold, free_threshold);
+}
+
 TriggerRecordBuilderData::TriggerRecordBuilderData(TriggerRecordBuilderData&& other)
 {
-  m_num_slots = other.m_num_slots.load();
+  m_busy_threshold = other.m_busy_threshold.load();
+  m_free_threshold = other.m_free_threshold.load();
+  m_is_busy = other.m_is_busy.load();
   m_connection_name = std::move(other.m_connection_name);
 
   m_assigned_trigger_decisions = std::move(other.m_assigned_trigger_decisions);
@@ -36,12 +58,15 @@ TriggerRecordBuilderData::TriggerRecordBuilderData(TriggerRecordBuilderData&& ot
   m_latency_info = std::move(other.m_latency_info);
 
   m_metadata = std::move(other.m_metadata);
+  m_in_error = other.m_in_error.load();
 }
 
 TriggerRecordBuilderData&
 TriggerRecordBuilderData::operator=(TriggerRecordBuilderData&& other)
 {
-  m_num_slots = other.m_num_slots.load();
+  m_busy_threshold = other.m_busy_threshold.load();
+  m_free_threshold = other.m_free_threshold.load();
+  m_is_busy = other.m_is_busy.load();
   m_connection_name = std::move(other.m_connection_name);
 
   m_assigned_trigger_decisions = std::move(other.m_assigned_trigger_decisions);
@@ -49,6 +74,7 @@ TriggerRecordBuilderData::operator=(TriggerRecordBuilderData&& other)
   m_latency_info = std::move(other.m_latency_info);
 
   m_metadata = std::move(other.m_metadata);
+  m_in_error = other.m_in_error.load();
 
   return *this;
 }
@@ -66,6 +92,9 @@ TriggerRecordBuilderData::extract_assignment(daqdataformats::trigger_number_t tr
     }
   }
 
+  if (m_assigned_trigger_decisions.size() < m_free_threshold.load())
+    m_is_busy.store(false);
+
   return dec_ptr;
 }
 
@@ -82,7 +111,7 @@ TriggerRecordBuilderData::get_assignment(daqdataformats::trigger_number_t trigge
   return nullptr;
 }
 
-void
+std::shared_ptr<AssignedTriggerDecision>
 TriggerRecordBuilderData::complete_assignment(daqdataformats::trigger_number_t trigger_number,
                                               std::function<void(nlohmann::json&)> metadata_fun)
 {
@@ -91,11 +120,12 @@ TriggerRecordBuilderData::complete_assignment(daqdataformats::trigger_number_t t
 
   if (dec_ptr == nullptr)
     throw AssignedTriggerDecisionNotFound(ERS_HERE, trigger_number, m_connection_name);
+
   auto now = std::chrono::steady_clock::now();
+  auto time = std::chrono::duration_cast<std::chrono::microseconds>(now - dec_ptr->assigned_time);
   {
     auto lk = std::lock_guard<std::mutex>(m_latency_info_mutex);
-    m_latency_info.emplace_back(now,
-                                std::chrono::duration_cast<std::chrono::microseconds>(now - dec_ptr->assigned_time));
+    m_latency_info.emplace_back(now, time);
 
     if (m_latency_info.size() > 1000)
       m_latency_info.pop_front();
@@ -103,6 +133,8 @@ TriggerRecordBuilderData::complete_assignment(daqdataformats::trigger_number_t t
 
   if (metadata_fun)
     metadata_fun(m_metadata);
+
+  return dec_ptr;
 }
 
 std::shared_ptr<AssignedTriggerDecision>
@@ -115,8 +147,16 @@ void
 TriggerRecordBuilderData::add_assignment(std::shared_ptr<AssignedTriggerDecision> assignment)
 {
   auto lk = std::lock_guard<std::mutex>(m_assigned_trigger_decisions_mutex);
+
+  if (is_in_error())
+    throw NoSlotsAvailable(ERS_HERE, assignment->decision.trigger_number, m_connection_name);
+
   m_assigned_trigger_decisions.push_back(assignment);
   TLOG_DEBUG(13) << "Size of assigned_trigger_decision list is " << m_assigned_trigger_decisions.size();
+
+  if (m_assigned_trigger_decisions.size() >= m_busy_threshold.load()) {
+    m_is_busy.store(true);
+  }
 }
 
 std::chrono::microseconds

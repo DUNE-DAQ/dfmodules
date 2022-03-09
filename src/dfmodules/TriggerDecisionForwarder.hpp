@@ -15,7 +15,7 @@
 #include "appfwk/DAQSink.hpp"
 #include "appfwk/NamedObject.hpp"
 #include "dfmessages/TriggerDecision.hpp"
-#include "appfwk/ThreadHelper.hpp"
+#include "utilities/WorkerThread.hpp"
 
 #include <atomic>
 #include <chrono>
@@ -62,7 +62,7 @@ public:
 
 private:
   // Threading
-  dunedaq::appfwk::ThreadHelper m_thread;
+  dunedaq::utilities::WorkerThread m_thread;
   void do_work(std::atomic<bool>&);
 
   // Configuration

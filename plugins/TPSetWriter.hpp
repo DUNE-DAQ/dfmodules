@@ -13,8 +13,8 @@
 
 #include "appfwk/DAQModule.hpp"
 #include "appfwk/DAQSource.hpp"
-#include "appfwk/ThreadHelper.hpp"
 #include "trigger/TPSet.hpp"
+#include "utilities/WorkerThread.hpp"
 
 #include <memory>
 #include <string>
@@ -49,7 +49,7 @@ private:
   void do_scrap(const data_t&);
 
   // Threading
-  dunedaq::appfwk::ThreadHelper m_thread;
+  dunedaq::utilities::WorkerThread m_thread;
   void do_work(std::atomic<bool>&);
 
   // Configuration

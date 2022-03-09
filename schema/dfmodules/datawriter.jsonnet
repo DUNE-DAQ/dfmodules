@@ -9,8 +9,6 @@ local types = {
 
     flag: s.boolean("Flag", doc="Parameter that can be used to enable or disable functionality"),
 
-    run_number: s.number("RunNumber", dtype="u8", doc="Run Number"),
-
     conf: s.record("ConfParams", [
         s.field("data_storage_prescale", self.count, "1",
                 doc="Prescale value for writing TriggerRecords to storage"),

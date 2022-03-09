@@ -20,14 +20,10 @@ wib1_frag_multi_trig_params={"fragment_type_description": "WIB",
                              "hdf5_detector_group": "TPC", "hdf5_region_prefix": "APA",
                              "expected_fragment_count": (number_of_data_producers*number_of_readout_apps),
                              "min_size_bytes": 80, "max_size_bytes": 37200}
-rawtp_frag_params={"fragment_type_description": "Raw TP",
-                   "hdf5_detector_group": "TPC", "hdf5_region_prefix": "TP_APA",
-                   "expected_fragment_count": (number_of_data_producers*number_of_readout_apps),
-                   "min_size_bytes": 80, "max_size_bytes": 80}
 triggertp_frag_params={"fragment_type_description": "Trigger TP",
                        "hdf5_detector_group": "Trigger", "hdf5_region_prefix": "Region",
                        "expected_fragment_count": (number_of_data_producers*number_of_readout_apps),
-                       "min_size_bytes": 80, "max_size_bytes": 80}
+                       "min_size_bytes": 80, "max_size_bytes": 16000}
 ignored_logfile_problems={"trigger": ["zipped_tpset_q: Unable to push within timeout period"]}
 
 # The next three variable declarations *must* be present as globals in the test
@@ -35,10 +31,10 @@ ignored_logfile_problems={"trigger": ["zipped_tpset_q: Unable to push within tim
 # to run the config generation and nanorc
 
 # The name of the python module for the config generation
-confgen_name="minidaqapp.nanorc.mdapp_multiru_gen"
+confgen_name="daqconf_multiru_gen"
 # The arguments to pass to the config generator, excluding the json
 # output directory (the test framework handles that)
-confgen_arguments_base=[ "-d", "./frames.bin", "-o", ".", "-s", "10", "-n", str(number_of_data_producers), "-b", "1000", "-a", "1000", "-t", "10.0", "--max-file-size", "1074000000"] + [ "--host-ru", "localhost" ] * number_of_readout_apps
+confgen_arguments_base=[ "-d", "./frames.bin", "-o", ".", "-s", "10", "-n", str(number_of_data_producers), "-b", "1000", "-a", "1000", "-t", "10.0", "--max-file-size", "1074000000", "--latency-buffer-size", "200000"] + [ "--host-ru", "localhost" ] * number_of_readout_apps
 confgen_arguments={"WIB1_System": confgen_arguments_base,
                    "Software_TPG_System": confgen_arguments_base+["--enable-software-tpg"]}
 # The commands to run in nanorc, as a list
@@ -69,7 +65,6 @@ def test_data_file(run_nanorc):
     if "--enable-software-tpg" in run_nanorc.confgen_arguments:
         local_file_count=9
         fragment_check_list.append(wib1_frag_multi_trig_params)
-        fragment_check_list.append(rawtp_frag_params)
         fragment_check_list.append(triggertp_frag_params)
     if len(fragment_check_list) == 0:
         fragment_check_list.append(wib1_frag_hsi_trig_params)
