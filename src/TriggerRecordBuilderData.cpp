@@ -111,7 +111,7 @@ TriggerRecordBuilderData::get_assignment(daqdataformats::trigger_number_t trigge
   return nullptr;
 }
 
-std::chrono::microseconds
+std::shared_ptr<AssignedTriggerDecision>
 TriggerRecordBuilderData::complete_assignment(daqdataformats::trigger_number_t trigger_number,
                                               std::function<void(nlohmann::json&)> metadata_fun)
 {
@@ -134,7 +134,7 @@ TriggerRecordBuilderData::complete_assignment(daqdataformats::trigger_number_t t
   if (metadata_fun)
     metadata_fun(m_metadata);
 
-  return time;
+  return dec_ptr;
 }
 
 std::shared_ptr<AssignedTriggerDecision>
