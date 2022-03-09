@@ -83,8 +83,9 @@ public:
   std::shared_ptr<AssignedTriggerDecision> extract_assignment(daqdataformats::trigger_number_t trigger_number);
   std::shared_ptr<AssignedTriggerDecision> make_assignment(dfmessages::TriggerDecision decision);
   void add_assignment(std::shared_ptr<AssignedTriggerDecision> assignment);
-  std::shared_ptr<AssignedTriggerDecision> complete_assignment(daqdataformats::trigger_number_t trigger_number,
-							       std::function<void(nlohmann::json&)> metadata_fun = nullptr);
+  std::shared_ptr<AssignedTriggerDecision> complete_assignment(
+    daqdataformats::trigger_number_t trigger_number,
+    std::function<void(nlohmann::json&)> metadata_fun = nullptr);
 
   std::chrono::microseconds average_latency(std::chrono::steady_clock::time_point since) const;
 

@@ -253,7 +253,7 @@ BOOST_AUTO_TEST_CASE(CheckWritingSuffix)
   data_store_ptr = make_data_store(hdf5ds_json);
 
   // write several events, each with several fragments
-  for (int trigger_number = 1; trigger_number <= trigger_count; ++trigger_number){
+  for (int trigger_number = 1; trigger_number <= trigger_count; ++trigger_number) {
     data_store_ptr->write(create_trigger_record(trigger_number, fragment_size, apa_count, link_count));
 
     // check that the .writing file is there
@@ -261,7 +261,7 @@ BOOST_AUTO_TEST_CASE(CheckWritingSuffix)
     std::vector<std::string> file_list = get_files_matching_pattern(file_path, search_pattern);
     BOOST_REQUIRE_EQUAL(file_list.size(), 1);
   }
-  
+
   data_store_ptr.reset(); // explicit destruction
 
   // check that the expected number of files was created
