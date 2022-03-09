@@ -409,12 +409,12 @@ private:
       m_open_flags_of_open_file = open_flags;
       try {
         m_file_handle.reset(new hdf5libs::HDF5RawDataFile(unique_filename,
-							  m_run_number,
-							  m_file_index,
-							  m_application_name,
-							  m_file_layout_params,
-							  ".writing",
-							  open_flags));
+                                                          m_run_number,
+                                                          m_file_index,
+                                                          m_application_name,
+                                                          m_file_layout_params,
+                                                          ".writing",
+                                                          open_flags));
       } catch (std::exception const& excpt) {
         throw FileOperationProblem(ERS_HERE, get_name(), unique_filename, excpt);
       } catch (...) { // NOLINT(runtime/exceptions)

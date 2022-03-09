@@ -16,6 +16,7 @@
 #include <memory>
 #include <string>
 #include <utility>
+#include <vector>
 
 namespace dunedaq {
 namespace dfmodules {

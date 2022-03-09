@@ -20,8 +20,10 @@
 #include "boost/date_time/posix_time/posix_time.hpp"
 
 #include <chrono>
+#include <memory>
 #include <sstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 enum
