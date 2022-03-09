@@ -4,13 +4,7 @@ import argparse
 import datetime
 import h5py
 import struct
-from hdf5_dump import print_fragment_header, print_trigger_record_header
-
-CLOCK_SPEED_HZ = 50000000.0
-
-g_n_request = 0
-g_header_type = "both"
-g_list_components = False
+from hdf5_dump import print_header, print_fragment_header
 
 
 def get_record_locations_from_binary_file(fname):
@@ -40,30 +34,35 @@ def get_record_locations_from_binary_file(fname):
     return (trh_loc, frag_loc)
 
 
-def read_binary_file(fname):
+def parse_binary_file(fname, k_n_request, k_print_out, k_list_components):
     frag_magic_word = bytes.fromhex("22221111")
     trh_magic_word = bytes.fromhex("44443333")
+    tsl_magic_word = bytes.fromhex("66665555")
     with open(fname, "rb") as f:
         bytesbuffer = bytearray()
         ntrh = 0
         nfrag = 0
+        record_type = ""
         while (byte := f.read(4)):
-            #print(byte)
-            #if iloc > 4: break
-            if byte == trh_magic_word:
+            if record_type == "":
+                if byte == trh_magic_word:
+                    record_type = "TriggerRecord"
+                if byte == tsl_magic_word:
+                    record_type = "TimeSlice"
+            if byte == trh_magic_word or byte == tsl_magic_word:
                 nfrag = 0
-                if ntrh !=0 and g_header_type in ['both', 'fragment']:
+                if ntrh !=0 and k_print_out in ['both', 'fragment']:
                     print(80*'-')
                     print_fragment_header(bytesbuffer)
                 bytesbuffer = bytearray()
                 ntrh += 1
-                if ntrh > g_n_request and g_n_request != 0: break
+                if ntrh > k_n_request and k_n_request != 0: break
             if byte == frag_magic_word:
-                if nfrag == 0 and ntrh != 0 and g_header_type in ['both',
-                                                                  'trigger']:
+                if nfrag == 0 and ntrh != 0 and k_print_out in ['both',
+                                                                'header']:
                     print(80*'=')
-                    print_trigger_record_header(bytesbuffer, g_list_components)
-                if nfrag != 0 and g_header_type in ['both', 'fragment']:
+                    print_header(bytesbuffer, record_type, k_list_components)
+                if nfrag != 0 and k_print_out in ['both', 'fragment']:
                     print(80*'-')
                     print_fragment_header(bytesbuffer)
                 bytesbuffer = bytearray()
@@ -80,22 +79,23 @@ def parse_args():
                         help='path to binary file',
                         required=True)
 
-    parser.add_argument('-p', '--print-headers',
-                        choices=['trigger', 'fragment', 'both'],
+    parser.add_argument('-p', '--print-out',
+                        choices=['header', 'fragment', 'both'],
                         default='both',
-                        help='select which header data to display')
+                        help='select which part of data to display')
 
     parser.add_argument('-l', '--list-components',
                         help='''list components in trigger record header, used
-                        together with "--print-headers trigger" or
-                        "--print-headers both"''', action='store_true')
+                        with "--print-out header" or "--print-out both", not
+                        applicable to TimeSlice data''', action='store_true')
+
 
     parser.add_argument('-d', '--debug',
                         help='print locations of headers in the file',
                         action='store_true')
 
     parser.add_argument('-n', '--num-of-records', type=int,
-                        help='specify number of trigger records to be parsed',
+                        help='specify number of records to be parsed',
                         default=0)
 
     parser.add_argument('-v', '--version', action='version',
@@ -106,18 +106,11 @@ def parse_args():
 def main():
     args = parse_args()
 
-    global g_n_request
-    global g_header_type
-    global g_list_components
-
-    g_n_request = args.num_of_records
-    g_header_type = args.print_headers
-    g_list_components = args.list_components
-
     bfile = args.file_name
     print("Reading file", bfile)
 
-    read_binary_file(bfile)
+    parse_binary_file(bfile, args.num_of_records, args.print_out,
+                      args.list_components)
     if args.debug:
         get_record_locations_from_binary_file(bfile)
     return
