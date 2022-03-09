@@ -25,6 +25,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace dunedaq {
@@ -38,7 +39,7 @@ ERS_DECLARE_ISSUE(dfmodules,
                   DataFlowOrchestratorRunNumberMismatch,
                   "DataFlowOrchestrator encountered run number mismatch: recvd ("
                     << received_run_number << ") != " << run_number << " from " << src_app,
-                  ((uint32_t)received_run_number)((uint32_t)run_number)((std::string)src_app))
+                  ((uint32_t)received_run_number)((uint32_t)run_number)((std::string)src_app)) // NOLINT(build/unsigned)
 // Re-enable coverage checking LCOV_EXCL_STOP
 
 namespace dfmodules {
@@ -107,15 +108,16 @@ private:
   std::chrono::steady_clock::time_point m_last_td_received;
 
   // Statistics
-  std::atomic<uint64_t> m_received_tokens{ 0 };                                // NOLINT (build/unsigned)
-  std::atomic<uint64_t> m_sent_decisions{ 0 };                                 // NOLINT (build/unsigned)
-  std::atomic<uint64_t> m_received_decisions{ 0 };                             // NOLINT (build/unsigned)
-  std::atomic<uint64_t> m_waiting_for_decision{ 0 };                           // NOLINT (build/unsigned)
-  std::atomic<uint64_t> m_deciding_destination{ 0 };                           // NOLINT (build/unsigned)
-  std::atomic<uint64_t> m_forwarding_decision{ 0 };                            // NOLINT (build/unsigned)
-  std::atomic<uint64_t> m_waiting_for_token{ 0 };                              // NOLINT (build/unsigned)
-  std::atomic<uint64_t> m_processing_token{ 0 };                               // NOLINT (build/unsigned)
-  using df_app_info = std::pair<std::atomic<uint64_t>, std::atomic<uint64_t>>; // first counter, second millisecond
+  std::atomic<uint64_t> m_received_tokens{ 0 };      // NOLINT (build/unsigned)
+  std::atomic<uint64_t> m_sent_decisions{ 0 };       // NOLINT (build/unsigned)
+  std::atomic<uint64_t> m_received_decisions{ 0 };   // NOLINT (build/unsigned)
+  std::atomic<uint64_t> m_waiting_for_decision{ 0 }; // NOLINT (build/unsigned)
+  std::atomic<uint64_t> m_deciding_destination{ 0 }; // NOLINT (build/unsigned)
+  std::atomic<uint64_t> m_forwarding_decision{ 0 };  // NOLINT (build/unsigned)
+  std::atomic<uint64_t> m_waiting_for_token{ 0 };    // NOLINT (build/unsigned)
+  std::atomic<uint64_t> m_processing_token{ 0 };     // NOLINT (build/unsigned)
+  // first counter, second millisecond
+  using df_app_info = std::pair<std::atomic<uint64_t>, std::atomic<uint64_t>>; // NOLINT (build/unsigned)
   std::map<std::string, df_app_info> m_app_infos;
 };
 } // namespace dfmodules

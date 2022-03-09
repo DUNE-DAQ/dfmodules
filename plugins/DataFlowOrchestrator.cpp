@@ -23,6 +23,7 @@
 #include <chrono>
 #include <cstdlib>
 #include <future>
+#include <limits>
 #include <map>
 #include <memory>
 #include <string>
@@ -212,7 +213,7 @@ DataFlowOrchestrator::find_slot(dfmessages::TriggerDecision decision)
   for (auto it = m_dataflow_availability.begin(); it != m_dataflow_availability.end(); ++it) {
     const auto& data = it->second;
     if (!data.is_in_error()) {
-      double temp_ratio = data.used_slots() / (double)data.busy_threshold();
+      double temp_ratio = data.used_slots() / static_cast<double>(data.busy_threshold());
       if (temp_ratio < ratio) {
         candidate = it;
         ratio = temp_ratio;

@@ -89,7 +89,9 @@ create_trigger_record(int trig_num, int fragment_size, int region_count, int ele
   char* dummy_data = dummy_vector.data();
 
   // get a timestamp for this trigger
-  uint64_t ts = std::chrono::duration_cast<std::chrono::milliseconds>(system_clock::now().time_since_epoch()).count();
+  uint64_t ts = std::chrono::duration_cast<std::chrono::milliseconds>( // NOLINT(build/unsigned)
+                  system_clock::now().time_since_epoch())
+                  .count();
 
   // create TriggerRecordHeader
   dunedaq::daqdataformats::TriggerRecordHeaderData trh_data;

@@ -20,6 +20,7 @@
 
 #include <chrono>
 #include <map>
+#include <memory>
 #include <mutex>
 #include <vector>
 
@@ -53,6 +54,22 @@ public:
     , m_update_time(std::chrono::steady_clock::now())
   {}
 
+  TimeSliceAccumulator& operator=(const TimeSliceAccumulator& other)
+  {
+    if (this != &other) {
+      std::lock(m_bundle_map_mutex, other.m_bundle_map_mutex);
+      std::lock_guard<std::mutex> lhs_lk(m_bundle_map_mutex, std::adopt_lock);
+      std::lock_guard<std::mutex> rhs_lk(other.m_bundle_map_mutex, std::adopt_lock);
+      m_begin_time = other.m_begin_time;
+      m_end_time = other.m_end_time;
+      m_slice_number = other.m_slice_number;
+      m_run_number = other.m_run_number;
+      m_update_time = other.m_update_time;
+      m_tpbundles_by_geoid_and_start_time = other.m_tpbundles_by_geoid_and_start_time;
+    }
+    return *this;
+  }
+
   void add_tpset(trigger::TPSet&& tpset);
 
   std::unique_ptr<daqdataformats::TimeSlice> get_timeslice();
@@ -73,23 +90,6 @@ private:
   typedef std::map<daqdataformats::GeoID, tpbundles_by_start_time_t> bundles_by_geoid_t;
   bundles_by_geoid_t m_tpbundles_by_geoid_and_start_time;
   mutable std::mutex m_bundle_map_mutex;
-
-public:
-  TimeSliceAccumulator& operator=(const TimeSliceAccumulator& other)
-  {
-    if (this != &other) {
-      std::lock(m_bundle_map_mutex, other.m_bundle_map_mutex);
-      std::lock_guard<std::mutex> lhs_lk(m_bundle_map_mutex, std::adopt_lock);
-      std::lock_guard<std::mutex> rhs_lk(other.m_bundle_map_mutex, std::adopt_lock);
-      m_begin_time = other.m_begin_time;
-      m_end_time = other.m_end_time;
-      m_slice_number = other.m_slice_number;
-      m_run_number = other.m_run_number;
-      m_update_time = other.m_update_time;
-      m_tpbundles_by_geoid_and_start_time = other.m_tpbundles_by_geoid_and_start_time;
-    }
-    return *this;
-  }
 };
 
 class TPBundleHandler
