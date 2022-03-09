@@ -206,7 +206,7 @@ def parse_args():
     parser = argparse.ArgumentParser(
         description='Python script to parse DUNE-DAQ HDF5 output files.')
 
-    parser.add_argument('-f', '--file_name',
+    parser.add_argument('-f', '--file-name',
                         help='path to HDF5 file',
                         required=True)
 

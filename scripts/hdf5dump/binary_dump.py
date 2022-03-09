@@ -75,7 +75,7 @@ def parse_args():
     parser = argparse.ArgumentParser(
         description='Python script to parse binary files converted from HDF5.')
 
-    parser.add_argument('-f', '--file_name',
+    parser.add_argument('-f', '--file-name',
                         help='path to binary file',
                         required=True)
 
