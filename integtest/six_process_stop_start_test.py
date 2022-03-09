@@ -57,23 +57,18 @@ confgen_name="daqconf_multiru_gen"
 if sufficient_resources_on_this_computer:
     confgen_arguments_base=[ "-d", "./frames.bin", "-o", ".", "-s", "10", "-n", str(number_of_data_producers), "-b", "1000", "-a", "1000", "--latency-buffer-size", "200000"] + [ "--host-ru", "localhost" ] * number_of_readout_apps
     confgen_arguments={"WIB1_System": confgen_arguments_base,
-                       "Software_TPG_System": confgen_arguments_base+["--enable-software-tpg"],
+                       "Software_TPG_System": confgen_arguments_base+["--enable-software-tpg", "-c", str(3*number_of_data_producers*number_of_readout_apps)],
                        "DQM_System": confgen_arguments_base+["--enable-dqm"],
-                       #"Software_TPG_and_DQM_System": confgen_arguments_base+["--enable-software-tpg", "--enable-dqm"]
                       }
 else:
     confgen_arguments=["-d", "./frames.bin", "-o", ".", "-s", "10"]
 
 # The commands to run in nanorc, as a list
-# (the first run [#100] is included to warm up the DAQ processes and avoid warnings and errors caused by
-# startup sluggishness seen on slower test computers)
 if sufficient_resources_on_this_computer:
     nanorc_command_list="boot init conf".split()
-    #nanorc_command_list+="start --disable-data-storage 100 wait 1 pause wait 3 resume wait 1 pause wait 3 stop wait 2".split()
     nanorc_command_list+="start --resume-wait 1 101 wait ".split() + [str(run_duration)] + "stop               wait 2".split()
     nanorc_command_list+="start --resume-wait 2 102 wait ".split() + [str(run_duration)] + "stop --stop-wait 1 wait 2".split()
     nanorc_command_list+="start                 103 wait ".split() + [str(run_duration)] + "stop --stop-wait 2 wait 2".split()
-    #nanorc_command_list+="start --resume-wait 1 104 wait ".split() + [str(run_duration)] + "stop --stop-wait 4 wait 2".split()
     nanorc_command_list+="scrap terminate".split()
 else:
     nanorc_command_list=["boot", "terminate"]

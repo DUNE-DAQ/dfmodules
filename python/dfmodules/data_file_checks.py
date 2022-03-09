@@ -74,10 +74,16 @@ def check_file_attributes(datafile):
                     print(f"The value in Attribute '{expected_attr_name}' ({attr_value}) does not match the value in the filename ({base_filename})")
         elif expected_attr_name == "creation_timestamp":
             attr_value = datafile.h5file.attrs.get(expected_attr_name)
-            date_obj = datetime.datetime.fromtimestamp(int(attr_value) / 1000, datetime.timezone.utc)
+            date_obj = datetime.datetime.fromtimestamp((int(attr_value)-1) / 1000, datetime.timezone.utc)
             date_string = date_obj.strftime("%Y%m%dT%H%M%S")
-            pattern = f".*{date_string}.*"
-            if not re.match(pattern, base_filename):
+            pattern_low = f".*{date_string}.*"
+            date_obj = datetime.datetime.fromtimestamp((int(attr_value)+1) / 1000, datetime.timezone.utc)
+            date_string = date_obj.strftime("%Y%m%dT%H%M%S")
+            pattern_high = f".*{date_string}.*"
+            date_obj = datetime.datetime.fromtimestamp((int(attr_value)+0) / 1000, datetime.timezone.utc)
+            date_string = date_obj.strftime("%Y%m%dT%H%M%S")
+            pattern_exact = f".*{date_string}.*"
+            if not re.match(pattern_exact, base_filename) and not re.match(pattern_low, base_filename) and not re.match(pattern_high, base_filename):
                 passed=False
                 print(f"The value in Attribute '{expected_attr_name}' ({date_string}) does not match the value in the filename ({base_filename})")
     if passed:
