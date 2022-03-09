@@ -11,6 +11,7 @@
 
 #include "dfmodules/datafloworchestrator/Nljs.hpp"
 #include "dfmodules/datafloworchestratorinfo/InfoNljs.hpp"
+#include "dfmodules/dfapplicationinfo/InfoNljs.hpp"
 
 #include "appfwk/DAQModuleHelper.hpp"
 #include "appfwk/app/Nljs.hpp"
@@ -76,6 +77,7 @@ DataFlowOrchestrator::do_conf(const data_t& payload)
   for (auto& app : parsed_conf.dataflow_applications) {
     m_dataflow_availability[app.decision_connection] =
       TriggerRecordBuilderData(app.decision_connection, app.thresholds.busy, app.thresholds.free);
+    m_app_infos[app.decision_connection]; //we just need to create the object 
   }
 
   m_queue_timeout = std::chrono::milliseconds(parsed_conf.general_queue_timeout);
@@ -138,6 +140,7 @@ DataFlowOrchestrator::do_scrap(const data_t& /*args*/)
   networkmanager::NetworkManager::get().stop_listening(m_td_connection_name);
 
   m_dataflow_availability.clear();
+  m_app_infos.clear();
 
   TLOG() << get_name() << " successfully scrapped";
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_scrap() method";
@@ -240,6 +243,19 @@ DataFlowOrchestrator::get_info(opmonlib::InfoCollector& ci, int /*level*/)
   info.waiting_for_token = m_waiting_for_token.exchange(0);
   info.processing_token = m_processing_token.exchange(0);
   ci.add(info);
+
+  for ( auto & [name,data] : m_app_infos ) {
+    dfapplicationinfo::Info tmp_info;
+    tmp_info.outstanding_decisions = m_dataflow_availability[name].used_slots();
+    tmp_info.completed_trigger_records = data.first.exchange(0);
+    tmp_info.waiting_time = data.second.exchange(0);
+    
+    opmonlib::InfoCollector tmp_ic;
+    tmp_ic.add(tmp_info);
+
+    ci.add(name, tmp_ic);    
+  }
+  
 }
 
 void
@@ -261,9 +277,14 @@ DataFlowOrchestrator::receive_trigger_complete_token(ipm::Receiver::Response mes
     return;
 
   auto callback_start = std::chrono::steady_clock::now();
-  try {
-    app_it->second.complete_assignment(token.trigger_number, m_metadata_function);
 
+  try {
+    auto dec_ptr = app_it->second.complete_assignment(token.trigger_number, m_metadata_function);
+
+    auto & info_data = m_app_infos[app_it->first];
+    ++info_data.first;
+    info_data.second += std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - dec_ptr->assigned_time).count();
+    
   } catch (AssignedTriggerDecisionNotFound const& err) {
     ers::warning(err);
   }
@@ -277,6 +298,7 @@ DataFlowOrchestrator::receive_trigger_complete_token(ipm::Receiver::Response mes
     notify_trigger(false);
   }
 
+ 
   m_waiting_for_token +=
     std::chrono::duration_cast<std::chrono::microseconds>(callback_start - m_last_token_received).count();
   m_last_token_received = std::chrono::steady_clock::now();

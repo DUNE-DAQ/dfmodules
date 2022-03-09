@@ -111,7 +111,7 @@ TriggerRecordBuilderData::get_assignment(daqdataformats::trigger_number_t trigge
   return nullptr;
 }
 
-void
+std::shared_ptr<AssignedTriggerDecision>
 TriggerRecordBuilderData::complete_assignment(daqdataformats::trigger_number_t trigger_number,
                                               std::function<void(nlohmann::json&)> metadata_fun)
 {
@@ -120,18 +120,21 @@ TriggerRecordBuilderData::complete_assignment(daqdataformats::trigger_number_t t
 
   if (dec_ptr == nullptr)
     throw AssignedTriggerDecisionNotFound(ERS_HERE, trigger_number, m_connection_name);
+  
   auto now = std::chrono::steady_clock::now();
+  auto time = std::chrono::duration_cast<std::chrono::microseconds>(now - dec_ptr->assigned_time);
   {
     auto lk = std::lock_guard<std::mutex>(m_latency_info_mutex);
-    m_latency_info.emplace_back(now,
-                                std::chrono::duration_cast<std::chrono::microseconds>(now - dec_ptr->assigned_time));
-
+    m_latency_info.emplace_back(now, time);
+    
     if (m_latency_info.size() > 1000)
       m_latency_info.pop_front();
   }
-
+  
   if (metadata_fun)
     metadata_fun(m_metadata);
+
+  return dec_ptr;
 }
 
 std::shared_ptr<AssignedTriggerDecision>
