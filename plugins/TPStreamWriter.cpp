@@ -83,6 +83,25 @@ TPStreamWriter::do_start(const nlohmann::json& payload)
   rcif::cmd::StartParams start_params = payload.get<rcif::cmd::StartParams>();
   m_run_number = start_params.run;
 
+  // 10-Mar-2022, KAB: we have noticed TPSets leaking from one run into the next.
+  // A nice solution would be to check the run number associated with each TPSet
+  // and discard ones from a previous run, but we don't have the run number in
+  // TPSets currently. So, instead, we'll try popping stale TPSets off the queue here.
+  // I don't want this loop to run forever and hang the program if something
+  // changes in the order of App Start commands, so I'll limit its duration to
+  // a second or two...
+  auto start_time = std::chrono::steady_clock::now();
+  auto now = std::chrono::steady_clock::now();
+  trigger::TPSet tpset;
+  while (m_tpset_source->can_pop() && (now - start_time) < std::chrono::seconds(2)) {
+    now = std::chrono::steady_clock::now();
+    try {
+      m_tpset_source->pop(tpset, m_queue_timeout);
+    } catch (appfwk::QueueTimeoutExpired&) {
+      break;
+    }
+  }
+
   // 06-Mar-2022, KAB: added this call to allow DataStore to prepare for the run.
   // I've put this call fairly early in this method because it could throw an
   // exception and abort the run start.  And, it seems sensible to avoid starting
