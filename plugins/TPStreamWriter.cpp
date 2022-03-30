@@ -159,9 +159,8 @@ TPStreamWriter::do_work(std::atomic<bool>& running_flag)
     // confused by TPSets that happen to be leftover in transit from one run to the
     // next (which we have observed in v2.10.x systems).
     if (tpset.run_number != m_run_number) {
-      TLOG_DEBUG(22) << "Discarding TPSet with invalid run number " << tpset.run_number
-                     << " (current is " << m_run_number << "), GeoID is " << tpset.origin
-                     << ", seqno is " << tpset.seqno;
+      TLOG_DEBUG(22) << "Discarding TPSet with invalid run number " << tpset.run_number << " (current is "
+                     << m_run_number << "), GeoID is " << tpset.origin << ", seqno is " << tpset.seqno;
       continue;
     }
 
