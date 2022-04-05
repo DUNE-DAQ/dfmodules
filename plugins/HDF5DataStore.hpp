@@ -147,6 +147,14 @@ public:
       std::string tmpstr(appname_ptr);
       m_application_name = tmpstr;
     }
+
+    // 05-Apr-2022, KAB: added warning message when the output destination
+    // is not a valid directory.
+    struct statvfs vfs_results;
+    int retval = statvfs(m_path.c_str(), &vfs_results);
+    if (retval != 0) {
+      ers::warning(InvalidOutputPath(ERS_HERE, get_name(), m_path));
+    }
   }
 
   /**
