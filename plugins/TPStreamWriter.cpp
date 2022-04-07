@@ -56,7 +56,7 @@ TPStreamWriter::init(const nlohmann::json& payload)
 }
 
 void
-DataWriter::get_info(opmonlib::InfoCollector& ci, int /*level*/)
+TPStreamWriter::get_info(opmonlib::InfoCollector& ci, int /*level*/)
 {
   tpstreamwriterinfo::Info info;
 
@@ -64,7 +64,7 @@ DataWriter::get_info(opmonlib::InfoCollector& ci, int /*level*/)
   info.tpset_written = m_tpset_written.exchange(0);
   info.bytes_output = m_bytes_output.exchange(0);
 
-  ci.add(dwi);
+  ci.add(info);
 }
 
 void
