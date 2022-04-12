@@ -43,6 +43,7 @@ public:
   TPStreamWriter& operator=(TPStreamWriter&&) = delete;      ///< TPStreamWriter is not move-assignable
 
   void init(const data_t&) override;
+  void get_info(opmonlib::InfoCollector& ci, int level) override;
 
 private:
   // Commands
@@ -66,6 +67,12 @@ private:
 
   // Worker(s)
   std::unique_ptr<DataStore> m_data_writer;
+
+  // Metrics
+  std::atomic<uint64_t> m_tpset_received = { 0 };         // NOLINT(build/unsigned)
+  std::atomic<uint64_t> m_tpset_written  = { 0 };         // NOLINT(build/unsigned)
+  std::atomic<uint64_t> m_bytes_output   = { 0 };         // NOLINT(build/unsigned)
+
 };
 } // namespace dfmodules
 

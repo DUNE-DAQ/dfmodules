@@ -10,6 +10,7 @@
 #include "dfmodules/CommonIssues.hpp"
 #include "dfmodules/TPBundleHandler.hpp"
 #include "dfmodules/tpstreamwriter/Nljs.hpp"
+#include "dfmodules/tpstreamwriterinfo/InfoNljs.hpp"
 
 #include "appfwk/DAQModuleHelper.hpp"
 #include "daqdataformats/Fragment.hpp"
@@ -55,6 +56,18 @@ TPStreamWriter::init(const nlohmann::json& payload)
 }
 
 void
+TPStreamWriter::get_info(opmonlib::InfoCollector& ci, int /*level*/)
+{
+  tpstreamwriterinfo::Info info;
+
+  info.tpset_received = m_tpset_received.exchange(0);
+  info.tpset_written = m_tpset_written.exchange(0);
+  info.bytes_output = m_bytes_output.exchange(0);
+
+  ci.add(info);
+}
+
+void
 TPStreamWriter::do_conf(const data_t& payload)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
@@ -82,25 +95,6 @@ TPStreamWriter::do_start(const nlohmann::json& payload)
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_start() method";
   rcif::cmd::StartParams start_params = payload.get<rcif::cmd::StartParams>();
   m_run_number = start_params.run;
-
-  // 10-Mar-2022, KAB: we have noticed TPSets leaking from one run into the next.
-  // A nice solution would be to check the run number associated with each TPSet
-  // and discard ones from a previous run, but we don't have the run number in
-  // TPSets currently. So, instead, we'll try popping stale TPSets off the queue here.
-  // I don't want this loop to run forever and hang the program if something
-  // changes in the order of App Start commands, so I'll limit its duration to
-  // a second or two...
-  auto start_time = std::chrono::steady_clock::now();
-  auto now = std::chrono::steady_clock::now();
-  trigger::TPSet tpset;
-  while (m_tpset_source->can_pop() && (now - start_time) < std::chrono::seconds(2)) {
-    now = std::chrono::steady_clock::now();
-    try {
-      m_tpset_source->pop(tpset, m_queue_timeout);
-    } catch (appfwk::QueueTimeoutExpired&) {
-      break;
-    }
-  }
 
   // 06-Mar-2022, KAB: added this call to allow DataStore to prepare for the run.
   // I've put this call fairly early in this method because it could throw an
@@ -166,13 +160,23 @@ TPStreamWriter::do_work(std::atomic<bool>& running_flag)
     try {
       m_tpset_source->pop(tpset, m_queue_timeout);
       ++n_tpset_received;
+      ++m_tpset_received;
     } catch (appfwk::QueueTimeoutExpired&) {
       continue;
     }
 
     TLOG_DEBUG(21) << "Number of TPs in TPSet is " << tpset.objects.size() << ", GeoID is " << tpset.origin
                    << ", seqno is " << tpset.seqno << ", start timestamp is " << tpset.start_time << ", run number is "
-                   << m_run_number << ", slice id is " << (tpset.start_time / m_accumulation_interval_ticks);
+                   << tpset.run_number << ", slice id is " << (tpset.start_time / m_accumulation_interval_ticks);
+
+    // 30-Mar-2022, KAB: added test for matching run number.  This is to avoid getting
+    // confused by TPSets that happen to be leftover in transit from one run to the
+    // next (which we have observed in v2.10.x systems).
+    if (tpset.run_number != m_run_number) {
+      TLOG_DEBUG(22) << "Discarding TPSet with invalid run number " << tpset.run_number << " (current is "
+                     << m_run_number << "), GeoID is " << tpset.origin << ", seqno is " << tpset.seqno;
+      continue;
+    }
 
     tp_bundle_handler.add_tpset(std::move(tpset));
 
@@ -187,6 +191,8 @@ TPStreamWriter::do_work(std::atomic<bool>& running_flag)
         should_retry = false;
         try {
           m_data_writer->write(*timeslice_ptr);
+	  ++m_tpset_written;
+	  m_bytes_output += timeslice_ptr->get_total_size_bytes();
         } catch (const RetryableDataStoreProblem& excpt) {
           should_retry = true;
           ers::error(DataWritingProblem(ERS_HERE,
@@ -213,7 +219,7 @@ TPStreamWriter::do_work(std::atomic<bool>& running_flag)
       first_timestamp = tpset.start_time;
     }
     last_timestamp = tpset.start_time;
-  } // while(true)
+  } // while(running)
 
   auto end_time = steady_clock::now();
   auto time_ms = duration_cast<milliseconds>(end_time - start_time).count();
