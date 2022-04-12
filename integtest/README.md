@@ -16,5 +16,6 @@ For reference, here are the ideas behind the existing tests:
 * multi_output_file_test.py - test that the file size maximum config parameter works
 * 3ru_1df_multirun_test.py - verify that we don't get empty fragments at end run
   * this test is also useful in looking into high-CPU-usage scenarios because it has 3 RUs
+* 3ru_3df_multirun_test.py - verify that a system with multiple DF Apps works as expected
 * fake_data_producer_test.py - verify that the FakeDataProd DAQModule works as expected
 * long_window_readout_test.py - verify that readout windows that require TriggerRecords to be split into multiple sequences works as expected
