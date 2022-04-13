@@ -210,7 +210,7 @@ DataFlowOrchestrator::find_slot(dfmessages::TriggerDecision decision)
   std::shared_ptr<AssignedTriggerDecision> output = nullptr;
 
   auto last_it = m_last_assignement_it;
-  if ( last_t == m_dataflow_availability.end() ) last_it = m_dataflow_availability.begin();
+  if ( last_it == m_dataflow_availability.end() ) last_it = m_dataflow_availability.begin();
 
   auto candidate_it = last_it;
 
@@ -219,13 +219,13 @@ DataFlowOrchestrator::find_slot(dfmessages::TriggerDecision decision)
     ++candidate_it;
     if ( candidate_it == m_dataflow_availability.end() ) candidate_it = m_dataflow_availability.begin();
     
-    if ( candidate_it -> second -> is_in_error() ) continue ;
+    if ( candidate_it -> second.is_in_error() ) continue ;
 
-    output = candidate->second.make_assignment(decision);
-    m_last_assignement_it = candidate;
+    output = candidate_it->second.make_assignment(decision);
+    m_last_assignement_it = candidate_it;
     break ;
     
-  } while ( temp_it != last_it ) ;
+  } while ( candidate_it != last_it ) ;
 
   return output;
 }

@@ -105,7 +105,7 @@ private:
   // atomic<bool> m_last_notifiled_status{false};
   std::atomic<bool> m_running_status{ false };
   mutable std::atomic<bool> m_last_notified_busy{ false };
-OA  std::chrono::steady_clock::time_point m_last_token_received;
+  std::chrono::steady_clock::time_point m_last_token_received;
   std::chrono::steady_clock::time_point m_last_td_received;
 
   // Statistics
