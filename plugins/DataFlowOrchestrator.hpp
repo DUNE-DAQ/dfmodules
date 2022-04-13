@@ -67,9 +67,11 @@ public:
 
 protected:
   virtual std::shared_ptr<AssignedTriggerDecision> find_slot(dfmessages::TriggerDecision decision);
+  // find_slot operates on a round-robin logic
 
-  std::map<std::string, TriggerRecordBuilderData> m_dataflow_availability;
-  // std::map<std::string, TriggerRecordBuilderData>::iterator m_last_assignement_it;
+  using data_structure_t = std::map<std::string, TriggerRecordBuilderData>;
+  data_structure_t m_dataflow_availability;
+  data_structure_t::iterator m_last_assignement_it;
   std::function<void(nlohmann::json&)> m_metadata_function;
 
 private:
@@ -103,8 +105,7 @@ private:
   // atomic<bool> m_last_notifiled_status{false};
   std::atomic<bool> m_running_status{ false };
   mutable std::atomic<bool> m_last_notified_busy{ false };
-  std::string m_last_sent_td_connection;
-  std::chrono::steady_clock::time_point m_last_token_received;
+OA  std::chrono::steady_clock::time_point m_last_token_received;
   std::chrono::steady_clock::time_point m_last_td_received;
 
   // Statistics
