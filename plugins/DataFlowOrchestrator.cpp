@@ -221,7 +221,7 @@ DataFlowOrchestrator::find_slot(dfmessages::TriggerDecision decision)
     if (candidate_it == m_dataflow_availability.end())
       candidate_it = m_dataflow_availability.begin();
 
-    if (candidate_it->second.is_in_error())
+    if (candidate_it->second.is_busy())
       continue;
 
     output = candidate_it->second.make_assignment(decision);
