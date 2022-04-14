@@ -106,7 +106,7 @@ DataFlowOrchestrator::do_start(const data_t& payload)
   m_running_status.store(true);
   m_last_notified_busy.store(false);
   m_last_assignement_it = m_dataflow_availability.end();
-  
+
   m_last_token_received = m_last_td_received = std::chrono::steady_clock::now();
 
   networkmanager::NetworkManager::get().register_callback(
@@ -210,22 +210,25 @@ DataFlowOrchestrator::find_slot(dfmessages::TriggerDecision decision)
   std::shared_ptr<AssignedTriggerDecision> output = nullptr;
 
   auto last_it = m_last_assignement_it;
-  if ( last_it == m_dataflow_availability.end() ) last_it = m_dataflow_availability.begin();
+  if (last_it == m_dataflow_availability.end())
+    last_it = m_dataflow_availability.begin();
 
   auto candidate_it = last_it;
 
   do {
 
     ++candidate_it;
-    if ( candidate_it == m_dataflow_availability.end() ) candidate_it = m_dataflow_availability.begin();
-    
-    if ( candidate_it -> second.is_in_error() ) continue ;
+    if (candidate_it == m_dataflow_availability.end())
+      candidate_it = m_dataflow_availability.begin();
+
+    if (candidate_it->second.is_in_error())
+      continue;
 
     output = candidate_it->second.make_assignment(decision);
     m_last_assignement_it = candidate_it;
-    break ;
-    
-  } while ( candidate_it != last_it ) ;
+    break;
+
+  } while (candidate_it != last_it);
 
   return output;
 }
