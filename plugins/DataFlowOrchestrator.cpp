@@ -105,6 +105,7 @@ DataFlowOrchestrator::do_start(const data_t& payload)
 
   m_running_status.store(true);
   m_last_notified_busy.store(false);
+  m_last_assignement_it = m_dataflow_availability.end();
 
   m_last_token_received = m_last_td_received = std::chrono::steady_clock::now();
 
@@ -202,30 +203,32 @@ std::shared_ptr<AssignedTriggerDecision>
 DataFlowOrchestrator::find_slot(dfmessages::TriggerDecision decision)
 {
 
-  // this find_slot assigns to the application with the lowest occupancy
-  // with respect to the busy threshold
-  // application in error state are remove from the choice
+  // this find_slot assings the decision with a round-robin logic
+  // across all the available applications.
+  // Applications in error are skipped.
+  // we only probe the applications once.
+  // if they are all unavailable we return to the caller
+  // before looping again
 
   std::shared_ptr<AssignedTriggerDecision> output = nullptr;
+  unsigned int counter = 0;
 
-  auto candidate = m_dataflow_availability.end();
-  double ratio = std::numeric_limits<double>::max();
-  for (auto it = m_dataflow_availability.begin(); it != m_dataflow_availability.end(); ++it) {
-    const auto& data = it->second;
-    if (!data.is_in_error()) {
-      double temp_ratio = data.used_slots() / static_cast<double>(data.busy_threshold());
-      if (temp_ratio < ratio) {
-        candidate = it;
-        ratio = temp_ratio;
-      } else if (temp_ratio == ratio && it->first != m_last_sent_td_connection) {
-        candidate = it;
-      }
-    }
-  }
+  auto candidate_it = m_last_assignement_it;
+  if (candidate_it == m_dataflow_availability.end())
+    candidate_it = m_dataflow_availability.begin();
 
-  if (candidate != m_dataflow_availability.end()) {
-    output = candidate->second.make_assignment(decision);
-    m_last_sent_td_connection = candidate->first;
+  while (output == nullptr && counter < m_dataflow_availability.size()) {
+
+    ++counter;
+    ++candidate_it;
+    if (candidate_it == m_dataflow_availability.end())
+      candidate_it = m_dataflow_availability.begin();
+
+    if (candidate_it->second.is_busy())
+      continue;
+
+    output = candidate_it->second.make_assignment(decision);
+    m_last_assignement_it = candidate_it;
   }
 
   return output;
