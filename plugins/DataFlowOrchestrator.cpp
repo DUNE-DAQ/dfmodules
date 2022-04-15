@@ -206,29 +206,31 @@ DataFlowOrchestrator::find_slot(dfmessages::TriggerDecision decision)
   // this find_slot assings the decision with a round-robin logic
   // across all the available applications.
   // Applications in error are skipped.
-
+  // we only probe the applications once.
+  // if they are all unavailable we retur to the caller 
+  // before looping again
+  
   std::shared_ptr<AssignedTriggerDecision> output = nullptr;
+  unsigned int counter = 0 ;
+ 
+  auto candidate_it = m_last_assignement_it;
+  if (candidate_it == m_dataflow_availability.end())
+    candidate_it = m_dataflow_availability.begin();
 
-  auto last_it = m_last_assignement_it;
-  if (last_it == m_dataflow_availability.end())
-    last_it = m_dataflow_availability.begin();
+  while ( output == nullptr && counter < m_dataflow_availability.size() ) {
 
-  auto candidate_it = last_it;
-
-  do {
-
+    ++counter;
     ++candidate_it;
     if (candidate_it == m_dataflow_availability.end())
       candidate_it = m_dataflow_availability.begin();
-
+    
     if (candidate_it->second.is_busy())
       continue;
-
+    
     output = candidate_it->second.make_assignment(decision);
     m_last_assignement_it = candidate_it;
-    break;
-
-  } while (candidate_it != last_it);
+    
+  }
 
   return output;
 }
