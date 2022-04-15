@@ -15,8 +15,8 @@ run_duration=20  # seconds
 # Default values for validation parameters
 expected_number_of_data_files=3*number_of_dataflow_apps
 check_for_logfile_errors=True
-expected_event_count=3*run_duration*trigger_rate/number_of_dataflow_apps
-expected_event_count_tolerance=expected_event_count/1.5
+expected_event_count=run_duration*trigger_rate/number_of_dataflow_apps
+expected_event_count_tolerance=expected_event_count/10
 wib1_frag_hsi_trig_params={"fragment_type_description": "WIB",
                            "hdf5_detector_group": "TPC", "hdf5_region_prefix": "APA",
                            "expected_fragment_count": (number_of_data_producers*number_of_readout_apps),
@@ -77,8 +77,8 @@ def test_data_file(run_nanorc):
     high_number_of_files=expected_number_of_data_files
     fragment_check_list=[]
     if "--enable-software-tpg" in run_nanorc.confgen_arguments:
-        local_expected_event_count+=(270*number_of_data_producers*number_of_readout_apps*run_duration/100)
-        local_event_count_tolerance+=(230*number_of_data_producers*number_of_readout_apps*run_duration/100)
+        local_expected_event_count+=(270*number_of_data_producers*number_of_readout_apps*run_duration/(100*number_of_dataflow_apps))
+        local_event_count_tolerance+=(10*number_of_data_producers*number_of_readout_apps*run_duration/(100*number_of_dataflow_apps))
         fragment_check_list.append(wib1_frag_multi_trig_params)
         fragment_check_list.append(triggertp_frag_params)
     else:
