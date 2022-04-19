@@ -166,10 +166,10 @@ BOOST_FIXTURE_TEST_CASE(Commands, NetworkManagerTestFixture)
   auto start_json = "{\"run\": 1}"_json;
   auto null_json = "{}"_json;
 
-  dfo->execute_command("conf", conf_json);
-  dfo->execute_command("start", start_json);
-  dfo->execute_command("stop", null_json);
-  dfo->execute_command("scrap", null_json);
+  dfo->execute_command("conf", "INITIAL", conf_json);
+  dfo->execute_command("start", "CONFIGURED", start_json);
+  dfo->execute_command("stop", "RUNNING", null_json);
+  dfo->execute_command("scrap", "CONFIGURED", null_json);
 
   auto info = get_dfo_info(dfo);
   BOOST_REQUIRE_EQUAL(info.tokens_received, 0);
@@ -195,7 +195,7 @@ BOOST_FIXTURE_TEST_CASE(DataFlow, NetworkManagerTestFixture)
   auto start_json = "{\"run\": 1}"_json;
   auto null_json = "{}"_json;
 
-  dfo->execute_command("conf", conf_json);
+  dfo->execute_command("conf", "INITIAL", conf_json);
 
   networkmanager::NetworkManager::get().start_listening("test.trigdec_0");
   networkmanager::NetworkManager::get().register_callback("test.trigdec_0", recv_trigdec);
@@ -213,7 +213,7 @@ BOOST_FIXTURE_TEST_CASE(DataFlow, NetworkManagerTestFixture)
   auto info = get_dfo_info(dfo);
   BOOST_REQUIRE_EQUAL(info.tokens_received, 0);
 
-  dfo->execute_command("start", start_json);
+  dfo->execute_command("start", "CONFIGURED", start_json);
 
   std::this_thread::sleep_for(std::chrono::milliseconds(150));
 
@@ -241,8 +241,8 @@ BOOST_FIXTURE_TEST_CASE(DataFlow, NetworkManagerTestFixture)
   BOOST_REQUIRE_EQUAL(info.decisions_sent, 1);
   BOOST_REQUIRE(!busy_signal_recvd.load());
 
-  dfo->execute_command("stop", null_json);
-  dfo->execute_command("scrap", null_json);
+  dfo->execute_command("stop", "RUNNING", null_json);
+  dfo->execute_command("scrap", "CONFIGURED", null_json);
 }
 
 BOOST_FIXTURE_TEST_CASE(SendTrigDecFailed, NetworkManagerTestFixture)
@@ -258,9 +258,9 @@ BOOST_FIXTURE_TEST_CASE(SendTrigDecFailed, NetworkManagerTestFixture)
   auto start_json = "{\"run\": 1}"_json;
   auto null_json = "{}"_json;
 
-  dfo->execute_command("conf", conf_json);
+  dfo->execute_command("conf", "INITIAL", conf_json);
 
-  dfo->execute_command("start", start_json);
+  dfo->execute_command("start", "CONFIGURED", start_json);
 
   std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
@@ -279,8 +279,8 @@ BOOST_FIXTURE_TEST_CASE(SendTrigDecFailed, NetworkManagerTestFixture)
   send_token(1000);
   std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
-  dfo->execute_command("stop", null_json);
-  dfo->execute_command("scrap", null_json);
+  dfo->execute_command("stop", "RUNNING", null_json);
+  dfo->execute_command("scrap", "CONFIGURED", null_json);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
