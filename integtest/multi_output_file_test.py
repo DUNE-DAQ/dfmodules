@@ -6,20 +6,20 @@ import dfmodules.data_file_checks as data_file_checks
 import integrationtest.log_file_checks as log_file_checks
 
 # Values that help determine the running conditions
-number_of_data_producers=5
+number_of_data_producers=2
 number_of_readout_apps=3
 
 # Default values for validation parameters
-expected_number_of_data_files=5
+expected_number_of_data_files=4
 check_for_logfile_errors=True
 wib1_frag_hsi_trig_params={"fragment_type_description": "WIB",
                            "hdf5_detector_group": "TPC", "hdf5_region_prefix": "APA",
                            "expected_fragment_count": (number_of_data_producers*number_of_readout_apps),
-                           "min_size_bytes": 37200, "max_size_bytes": 37200}
+                           "min_size_bytes": 37200, "max_size_bytes": 185680}
 wib1_frag_multi_trig_params={"fragment_type_description": "WIB",
                              "hdf5_detector_group": "TPC", "hdf5_region_prefix": "APA",
                              "expected_fragment_count": (number_of_data_producers*number_of_readout_apps),
-                             "min_size_bytes": 80, "max_size_bytes": 37200}
+                             "min_size_bytes": 80, "max_size_bytes": 185680}
 triggertp_frag_params={"fragment_type_description": "Trigger TP",
                        "hdf5_detector_group": "Trigger", "hdf5_region_prefix": "Region",
                        "expected_fragment_count": (number_of_data_producers*number_of_readout_apps),
@@ -34,11 +34,11 @@ ignored_logfile_problems={"trigger": ["zipped_tpset_q: Unable to push within tim
 confgen_name="daqconf_multiru_gen"
 # The arguments to pass to the config generator, excluding the json
 # output directory (the test framework handles that)
-confgen_arguments_base=[ "-d", "./frames.bin", "-o", ".", "-s", "10", "-n", str(number_of_data_producers), "-b", "1000", "-a", "1000", "-t", "10.0", "--max-file-size", "1074000000", "--latency-buffer-size", "200000"] + [ "--host-ru", "localhost" ] * number_of_readout_apps
+confgen_arguments_base=[ "-d", "./frames.bin", "-o", ".", "-s", "10", "-n", str(number_of_data_producers), "-b", "5000", "-a", "5000", "-t", "10.0", "--max-file-size", "1074000000", "--latency-buffer-size", "200000"] + [ "--host-ru", "localhost" ] * number_of_readout_apps
 confgen_arguments={"WIB1_System": confgen_arguments_base,
-                   "Software_TPG_System": confgen_arguments_base+["--enable-software-tpg"]}
+                   "Software_TPG_System": confgen_arguments_base+["--enable-software-tpg", "-c", str(3*number_of_data_producers*number_of_readout_apps)]}
 # The commands to run in nanorc, as a list
-nanorc_command_list="boot init conf start 101 resume wait 440 pause wait 2 stop wait 21 start 102 resume wait 330 pause wait 2 stop wait 21 scrap terminate".split()
+nanorc_command_list="boot init conf start 101 resume wait 180 pause wait 2 stop wait 21 start 102 resume wait 120 pause wait 2 stop wait 21 scrap terminate".split()
 
 # The tests themselves
 
@@ -63,7 +63,7 @@ def test_data_file(run_nanorc):
     local_file_count=expected_number_of_data_files
     fragment_check_list=[]
     if "--enable-software-tpg" in run_nanorc.confgen_arguments:
-        local_file_count=9
+        local_file_count=5
         fragment_check_list.append(wib1_frag_multi_trig_params)
         fragment_check_list.append(triggertp_frag_params)
     if len(fragment_check_list) == 0:
