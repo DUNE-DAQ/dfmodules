@@ -13,6 +13,7 @@
 #include "dfmodules/tpstreamwriterinfo/InfoNljs.hpp"
 
 #include "appfwk/DAQModuleHelper.hpp"
+#include "iomanager/IOManager.hpp"
 #include "daqdataformats/Fragment.hpp"
 #include "daqdataformats/Types.hpp"
 #include "logging/Logging.hpp"
@@ -51,7 +52,8 @@ void
 TPStreamWriter::init(const nlohmann::json& payload)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
-  m_tpset_source.reset(new source_t(appfwk::queue_inst(payload, "tpset_source")));
+  IOManager manager;
+  m_tpset_source = manager.get_receiver<source_t>( appfwk::connection_inst(payload, "tpset_source"));
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
 
@@ -158,7 +160,7 @@ TPStreamWriter::do_work(std::atomic<bool>& running_flag)
   while (running_flag.load()) {
     trigger::TPSet tpset;
     try {
-      m_tpset_source->pop(tpset, m_queue_timeout);
+      tpset = m_tpset_source->receive(m_queue_timeout);
       ++n_tpset_received;
       ++m_tpset_received;
     } catch (appfwk::QueueTimeoutExpired&) {

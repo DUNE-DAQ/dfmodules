@@ -14,7 +14,7 @@
 #include "dfmodules/DataStore.hpp"
 
 #include "appfwk/DAQModule.hpp"
-#include "appfwk/DAQSource.hpp"
+#include "iomanager/Receiver.hpp"
 #include "daqdataformats/TimeSlice.hpp"
 #include "trigger/TPSet.hpp"
 #include "utilities/WorkerThread.hpp"
@@ -62,8 +62,8 @@ private:
   daqdataformats::run_number_t m_run_number;
 
   // Queue sources and sinks
-  using source_t = appfwk::DAQSource<trigger::TPSet>;
-  std::unique_ptr<source_t> m_tpset_source;
+  using source_t = iomanager::Receiver<trigger::TPSet>;
+  std::shared_ptr<source_t> m_tpset_source;
 
   // Worker(s)
   std::unique_ptr<DataStore> m_data_writer;
