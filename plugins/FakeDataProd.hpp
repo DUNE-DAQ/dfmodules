@@ -13,8 +13,7 @@
 #include "dfmessages/DataRequest.hpp"
 
 #include "appfwk/DAQModule.hpp"
-#include "appfwk/DAQSink.hpp"
-#include "appfwk/DAQSource.hpp"
+#include "iomanager/ConnectionId.hpp" 
 #include "utilities/WorkerThread.hpp"
 
 #include <memory>
@@ -31,8 +30,8 @@ ERS_DECLARE_ISSUE(dfmodules,
 
 ERS_DECLARE_ISSUE(dfmodules,
                   TimeSyncTransmissionFailed,
-                  mod_name << " failed to send send TimeSync message to " << dest << " with topic " << topic << ".",
-                  ((std::string)mod_name)((std::string)dest)((std::string)topic))
+                  mod_name << " failed to send send TimeSync message to " << dest << ".",
+                  ((std::string)mod_name)((std::string)dest))
 ERS_DECLARE_ISSUE_BASE(dfmodules,
                        MemoryAllocationFailed,
                        appfwk::GeneralDAQModuleIssue,
@@ -74,7 +73,7 @@ private:
   // Threading
   dunedaq::utilities::WorkerThread m_thread;
   dunedaq::utilities::WorkerThread m_timesync_thread;
-  void do_work(std::atomic<bool>&);
+  void process_data_request( dfmessages::DataRequest &);
   void do_timesync(std::atomic<bool>&);
 
   // Configuration
@@ -89,11 +88,9 @@ private:
   std::string m_timesync_connection_name;
   std::string m_timesync_topic_name;
   uint32_t m_pid_of_current_process; // NOLINT (build/unsigned)
-
-  // Queue(s)
-  using datareqsource_t = dunedaq::appfwk::DAQSource<dfmessages::DataRequest>;
-  std::unique_ptr<datareqsource_t> m_data_request_input_queue;
-
+  ConnectionRef m_data_request_ref;
+  ConnectionRef m_timesync_ref;
+  
   std::atomic<uint64_t> m_received_requests{ 0 }; // NOLINT (build/unsigned)
   std::atomic<uint64_t> m_sent_fragments{ 0 };    // NOLINT (build/unsigned)
 };

@@ -26,10 +26,6 @@ local types = {
                     doc="Wait for this amount of ns before sending the fragment"),
         s.field("fragment_type", self.fragment_type_t,
                     doc="Fragment type of the response"),
-        s.field("timesync_connection_name", self.netmgr_name,
-                    doc="Connection name to use for sending TimeSync messages"),
-        s.field("timesync_topic_name", self.netmgr_name, "Timesync",
-                    doc="Topic name to use for sending TimeSync messages")
     ], doc="FakeDataProd configuration"),
 
 };
