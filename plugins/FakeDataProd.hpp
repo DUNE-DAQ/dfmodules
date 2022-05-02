@@ -71,9 +71,8 @@ private:
   void get_info(opmonlib::InfoCollector& ci, int level) override;
 
   // Threading
-  dunedaq::utilities::WorkerThread m_thread;
   dunedaq::utilities::WorkerThread m_timesync_thread;
-  void process_data_request( dfmessages::DataRequest &);
+  void process_data_request(dfmessages::DataRequest &);
   void do_timesync(std::atomic<bool>&);
 
   // Configuration
@@ -88,8 +87,9 @@ private:
   std::string m_timesync_connection_name;
   std::string m_timesync_topic_name;
   uint32_t m_pid_of_current_process; // NOLINT (build/unsigned)
-  ConnectionRef m_data_request_ref;
-  ConnectionRef m_timesync_ref;
+
+  iomanager::connection::ConnectionRef m_data_request_ref;
+  iomanager::connection::ConnectionRef m_timesync_ref;
   
   std::atomic<uint64_t> m_received_requests{ 0 }; // NOLINT (build/unsigned)
   std::atomic<uint64_t> m_sent_fragments{ 0 };    // NOLINT (build/unsigned)

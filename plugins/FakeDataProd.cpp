@@ -60,8 +60,8 @@ FakeDataProd::init(const data_t& init_data)
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
   auto qi = appfwk::connection_index(init_data, { "data_request_input_queue", "timesync" });
 
-  m_data_request_ref = qi["data_request_input_queue"].inst;
-  m_timesync_ref = qi["timesync"].inst;
+  m_data_request_ref = qi["data_request_input_queue"];
+  m_timesync_ref = qi["timesync"];
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
@@ -95,8 +95,9 @@ FakeDataProd::do_start(const data_t& payload)
 
   m_timesync_thread.start_working_thread();
   
-  IOManager iom;
-  iom.add_callback( m_data_request_ref, FakeDataProd::process_data_request );
+  iomanager::IOManager iom;
+  iom.add_callback<dfmessages::DataRequest>( m_data_request_ref,
+		    std::bind( & FakeDataProd::process_data_request, this, std::placeholders::_1) );
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
 }
 
@@ -106,8 +107,8 @@ FakeDataProd::do_stop(const data_t& /*args*/)
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_stop() method";
   m_timesync_thread.stop_working_thread();
 
-  IOManager iom;
-  iom.remove_callback( m_data_request_ref);
+  iomanager::IOManager iom;
+  iom.remove_callback<dfmessages::DataRequest>(m_data_request_ref);
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_stop() method";
 }
 
@@ -196,7 +197,7 @@ FakeDataProd::process_data_request( dfmessages::DataRequest & data_request)
 
   try {
 
-    IOManager iom;
+    iomanager::IOManager iom;
     iom.get_sender<daqdataformats::Fragment>(data_request.data_destination)->send( *data_fragment_ptr, std::chrono::milliseconds(1000));
   } catch (ers::Issue& e) {
     ers::warning(FragmentTransmissionFailed(ERS_HERE, get_name(), data_request.trigger_number, e));
