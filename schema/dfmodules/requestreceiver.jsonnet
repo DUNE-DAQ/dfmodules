@@ -8,7 +8,7 @@ local types = {
     element_number : s.number("element_number", "u4",
                      doc="Element container type for GeoID"),
 
-    connectionid : s.string("connection_id", doc="Parameter that configure RequestReceiver's queues"),
+    connectionid : s.string("connection_id", doc="Parameter that configure RequestReceiver's connections"),
     system_type : s.string("system_type", doc="Parameter that configure RequestReceiver"),
 
     geoidqueue : s.record("geoidinst", [s.field("region", self.region_number, doc="" ) , 
@@ -21,12 +21,10 @@ local types = {
 
     timeout: s.number( "Timeout", "u8", 
                        doc="Queue timeout in milliseconds" ),    
-    connection_name: s.string("Name", doc="Name for the connection that RequestReceiver listens on"),
                         
     conf: s.record("ConfParams", [ s.field("map", self.mapgeoidqueue, doc="" ), 
                                    s.field("general_queue_timeout", self.timeout, 100, 
-                                           doc="General indication for timeout"),
-                                   s.field("connection_name", self.connection_name, "", doc="Connection name for listening" )
+                                           doc="General indication for timeout")
                                   ] , 
                    doc="RequestReceiver configuration")
 
