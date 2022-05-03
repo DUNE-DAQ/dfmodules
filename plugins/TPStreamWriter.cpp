@@ -52,8 +52,8 @@ void
 TPStreamWriter::init(const nlohmann::json& payload)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
-  IOManager manager;
-  m_tpset_source = manager.get_receiver<source_t>( appfwk::connection_inst(payload, "tpset_source"));
+  iomanager::IOManager manager;
+  m_tpset_source = manager.get_receiver<incoming_t>( appfwk::connection_inst(payload, "tpset_source"));
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
 
@@ -163,7 +163,7 @@ TPStreamWriter::do_work(std::atomic<bool>& running_flag)
       tpset = m_tpset_source->receive(m_queue_timeout);
       ++n_tpset_received;
       ++m_tpset_received;
-    } catch (appfwk::QueueTimeoutExpired&) {
+    } catch (iomanager::TimeoutExpired&) {
       continue;
     }
 

@@ -62,7 +62,8 @@ private:
   daqdataformats::run_number_t m_run_number;
 
   // Queue sources and sinks
-  using source_t = iomanager::Receiver<trigger::TPSet>;
+  using incoming_t = trigger::TPSet;
+  using source_t = iomanager::ReceiverConcept<incoming_t>;
   std::shared_ptr<source_t> m_tpset_source;
 
   // Worker(s)

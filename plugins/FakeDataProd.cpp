@@ -125,8 +125,8 @@ void
 FakeDataProd::do_timesync(std::atomic<bool>& running_flag)
 {
 
-  IOManager iom;
-  auto sender = iom.get_sender<dfmessages::TimeSync>(m_timesync_ref);
+  iomanager::IOManager iom;
+  auto sender_ptr = iom.get_sender<dfmessages::TimeSync>(m_timesync_ref);
   
   int sent_count = 0;
   uint64_t msg_seqno = 0; // NOLINT (build/unsigned)
@@ -144,7 +144,7 @@ FakeDataProd::do_timesync(std::atomic<bool>& running_flag)
                                 << " pid=" << timesyncmsg.source_pid;
     try {
       
-      sender.send( timesyncmsg, std::chrono::milliseconds(500) );
+      sender_ptr -> send( timesyncmsg, std::chrono::milliseconds(500) );
       ++sent_count;
     } catch (ers::Issue& excpt) {
 
