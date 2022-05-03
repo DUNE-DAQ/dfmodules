@@ -12,8 +12,7 @@
 #include "dfmessages/DataRequest.hpp"
 
 #include "appfwk/DAQModule.hpp"
-#include "appfwk/DAQSink.hpp"
-#include "ipm/Receiver.hpp"
+#include "iomanager/Sender.hpp"
 
 #include <map>
 #include <memory>
@@ -43,6 +42,10 @@ public:
   void init(const data_t&) override;
 
 private:
+
+  //type defionition
+  using incoming_t = dfmessages::DataRequest;
+  
   // Commands
   void do_conf(const data_t&);
   void do_start(const data_t&);
@@ -51,16 +54,16 @@ private:
 
   void get_info(opmonlib::InfoCollector& ci, int level) override;
 
-  void dispatch_request(ipm::Receiver::Response message);
+  void dispatch_request(incoming_t &);
 
   // Configuration
   std::chrono::milliseconds m_queue_timeout;
   dunedaq::daqdataformats::run_number_t m_run_number;
-  std::string m_connection_name;
 
-  // Queue(s)
-  using datareqsink_t = dunedaq::appfwk::DAQSink<dfmessages::DataRequest>;
-  std::map<daqdataformats::GeoID, std::unique_ptr<datareqsink_t>> m_data_request_output_queues;
+  // Connections
+  iomanager::connection::ConnectionRef m_incoming_data_ref;
+  using datareqsender_t = dunedaq::iomanager::SenderConcept<incoming_t>;
+  std::map<daqdataformats::GeoID, std::shared_ptr<datareqsender_t>> m_data_request_outputs;
 
   std::atomic<uint64_t> m_received_requests{ 0 }; // NOLINT (build/unsigned)
 };
