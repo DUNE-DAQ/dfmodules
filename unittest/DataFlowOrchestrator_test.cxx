@@ -9,12 +9,12 @@
 
 #include "DataFlowOrchestrator.hpp"
 
-#include "appfwk/DAQSink.hpp"
 #include "dfmessages/TriggerDecisionToken.hpp"
 #include "dfmessages/TriggerInhibit.hpp"
 #include "dfmodules/CommonIssues.hpp"
 #include "dfmodules/datafloworchestratorinfo/InfoNljs.hpp"
-#include "networkmanager/NetworkManager.hpp"
+#include "iomanager/IOManager.hpp"
+#include "iomanager/Sender.hpp"
 
 #define BOOST_TEST_MODULE DataFlowOrchestrator_test // NOLINT
 
@@ -35,11 +35,11 @@ struct QueueRegistryFixture
 {
   void setup()
   {
-    std::map<std::string, appfwk::QueueConfig> queue_cfgs;
+    std::map<std::string, iomanager::QueueConfig> queue_cfgs;
     const std::string queue_name = "trigger_decision_q";
-    queue_cfgs[queue_name].kind = appfwk::QueueConfig::queue_kind::kFollySPSCQueue;
+    queue_cfgs[queue_name].kind = iomanager::QueueConfig::queue_kind::kFollySPSCQueue;
     queue_cfgs[queue_name].capacity = 1;
-    appfwk::QueueRegistry::get().configure(queue_cfgs);
+    iomanager::QueueRegistry::get().configure(queue_cfgs);
   }
 };
 
@@ -94,16 +94,15 @@ send_token(dfmessages::trigger_number_t trigger_number, std::string connection_n
   token.run_number = 1;
   token.trigger_number = trigger_number;
   token.decision_destination = connection_name;
-  auto tokenmsg = serialization::serialize(token, serialization::kMsgPack);
+
+  iomanager::IOManager iom;
   TLOG() << "Sending TriggerDecisionToken with trigger number " << trigger_number << " to DFO";
-  networkmanager::NetworkManager::get().send_to(
-    "test.token", static_cast<const void*>(tokenmsg.data()), tokenmsg.size(), ipm::Sender::s_block);
+  iom.get_sender<dfmessages::TriggerDecisionToken>(  "test.token" ) -> send( token, iomanager::Sender::s_block );
 }
 
 void
-recv_trigdec(ipm::Receiver::Response res)
+recv_trigdec(const dfmessages::TriggerDecision & decision)
 {
-  auto decision = serialization::deserialize<dfmessages::TriggerDecision>(res.data);
   TLOG() << "Received TriggerDecision with trigger number " << decision.trigger_number << " from DFO";
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
   send_token(decision.trigger_number);
@@ -111,9 +110,8 @@ recv_trigdec(ipm::Receiver::Response res)
 
 std::atomic<bool> busy_signal_recvd = false;
 void
-recv_triginh(ipm::Receiver::Response res)
+recv_triginh(const dfmessages::TriggerInhibit & inhibit)
 {
-  auto inhibit = serialization::deserialize<dfmessages::TriggerInhibit>(res.data);
   TLOG() << "Received TriggerInhibit with busy=" << std::boolalpha << inhibit.busy << " from DFO";
   busy_signal_recvd = inhibit.busy;
 }
@@ -127,10 +125,9 @@ send_trigdec(dfmessages::trigger_number_t trigger_number)
   td.trigger_timestamp = 1;
   td.trigger_type = 1;
   td.readout_type = dunedaq::dfmessages::ReadoutType::kLocalized;
+  iomanager::IOManager iom;
   TLOG() << "Sending TriggerDecision with trigger number " << trigger_number << " to DFO";
-  auto decisionmsg = serialization::serialize(td, serialization::kMsgPack);
-  networkmanager::NetworkManager::get().send_to(
-    "test.trigdec", static_cast<const void*>(decisionmsg.data()), decisionmsg.size(), ipm::Sender::s_block);
+  iom.get_sender<dfmessages::TriggerDecision>( "test.trigdec") -> send( td, iomanager::Sender::s_block );
 }
 
 BOOST_AUTO_TEST_CASE(CopyAndMoveSemantics)
@@ -197,31 +194,29 @@ BOOST_FIXTURE_TEST_CASE(DataFlow, NetworkManagerTestFixture)
 
   dfo->execute_command("conf", "INITIAL", conf_json);
 
-  networkmanager::NetworkManager::get().start_listening("test.trigdec_0");
-  networkmanager::NetworkManager::get().register_callback("test.trigdec_0", recv_trigdec);
-
-  networkmanager::NetworkManager::get().start_listening("test.triginh");
-  networkmanager::NetworkManager::get().register_callback("test.triginh", recv_triginh);
-
+  iomanager::IOManager iom;
+  iom.get_receiver<dfmessages::TriggerDecision>( "test.trigdec_0") -> add_callback(recv_trigdec);
+  iom.get_receiver<dfmessages::TriggerInhibit>( "test.triginh") -> add_callback(recv_triginh );
+  
   send_trigdec(1);
   std::this_thread::sleep_for(std::chrono::milliseconds(50));
-
+  
   send_token(999);
   send_token(9999);
   std::this_thread::sleep_for(std::chrono::milliseconds(50));
   // Note: Counters are reset each time get_dfo_info is called!
   auto info = get_dfo_info(dfo);
   BOOST_REQUIRE_EQUAL(info.tokens_received, 0);
-
+  
   dfo->execute_command("start", "CONFIGURED", start_json);
-
+  
   std::this_thread::sleep_for(std::chrono::milliseconds(150));
-
+  
   info = get_dfo_info(dfo);
   BOOST_REQUIRE_EQUAL(info.tokens_received, 0);
   BOOST_REQUIRE_EQUAL(info.decisions_received, 0);
   BOOST_REQUIRE_EQUAL(info.decisions_sent, 0);
-
+  
   send_trigdec(2);
   send_trigdec(3);
   std::this_thread::sleep_for(std::chrono::milliseconds(50));
@@ -231,10 +226,10 @@ BOOST_FIXTURE_TEST_CASE(DataFlow, NetworkManagerTestFixture)
   BOOST_REQUIRE_EQUAL(info.tokens_received, 0);
   BOOST_REQUIRE_EQUAL(info.decisions_received, 2);
   BOOST_REQUIRE_EQUAL(info.decisions_sent, 2);
-
+  
   BOOST_REQUIRE(busy_signal_recvd.load());
   std::this_thread::sleep_for(std::chrono::milliseconds(400));
-
+  
   info = get_dfo_info(dfo);
   BOOST_REQUIRE_EQUAL(info.tokens_received, 3);
   BOOST_REQUIRE_EQUAL(info.decisions_received, 1);
