@@ -15,10 +15,8 @@
 
 #include "appfwk/DAQModuleHelper.hpp"
 #include "appfwk/app/Nljs.hpp"
-#include "dfmessages/TriggerDecisionToken.hpp"
-#include "dfmessages/TriggerInhibit.hpp"
 #include "logging/Logging.hpp"
-#include "networkmanager/NetworkManager.hpp"
+#include "iomanager/IOManager.hpp"
 
 #include <chrono>
 #include <cstdlib>
@@ -57,14 +55,22 @@ DataFlowOrchestrator::DataFlowOrchestrator(const std::string& name)
 }
 
 void
-DataFlowOrchestrator::init(const data_t& /*init_data*/)
+DataFlowOrchestrator::init(const data_t& init_data)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
 
-  //----------------------
-  // the module has no queues now
-  //----------------------
+  iomanager::IOManager manager;
+  auto mandatory_connections = appfwk::connection_index(init_data, { "tocken_connection", "td_connection", "busy_connection" });
 
+  m_token_connection = mandatory_connections["tocken_connection"];
+  m_td_connection = mandatory_connections["td_connection"];
+  auto busy_connection = mandatory_connections["busy_connection"];
+
+  // these are just tests to check if the connections are ok
+  manager.get_receiver<dfmessages::TriggerDecisionToken>( m_token_connection );
+  manager.get_receiver<dfmessages::TriggerDecision>( m_td_connection );
+  m_busy_sender = manager.get_sender<dfmessages::TriggerInhibit>( busy_connection );
+    
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
 
@@ -76,20 +82,14 @@ DataFlowOrchestrator::do_conf(const data_t& payload)
   datafloworchestrator::ConfParams parsed_conf = payload.get<datafloworchestrator::ConfParams>();
 
   for (auto& app : parsed_conf.dataflow_applications) {
-    m_dataflow_availability[app.decision_connection] =
-      TriggerRecordBuilderData(app.decision_connection, app.thresholds.busy, app.thresholds.free);
-    m_app_infos[app.decision_connection]; // we just need to create the object
+    m_dataflow_availability[app.connection_uid] =
+      TriggerRecordBuilderData(app.connection_uid, app.thresholds.busy, app.thresholds.free);
+    m_app_infos[app.connection_uid]; // we just need to create the object
   }
 
   m_queue_timeout = std::chrono::milliseconds(parsed_conf.general_queue_timeout);
-  m_token_connection_name = parsed_conf.token_connection;
-  m_busy_connection_name = parsed_conf.busy_connection;
-  m_td_connection_name = parsed_conf.td_connection;
 
   m_td_send_retries = parsed_conf.td_send_retries;
-
-  networkmanager::NetworkManager::get().start_listening(m_token_connection_name);
-  networkmanager::NetworkManager::get().start_listening(m_td_connection_name);
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method, there are "
                                       << m_dataflow_availability.size() << " TRB apps defined";
@@ -109,13 +109,13 @@ DataFlowOrchestrator::do_start(const data_t& payload)
 
   m_last_token_received = m_last_td_received = std::chrono::steady_clock::now();
 
-  networkmanager::NetworkManager::get().register_callback(
-    m_token_connection_name,
-    std::bind(&DataFlowOrchestrator::receive_trigger_complete_token, this, std::placeholders::_1));
-
-  networkmanager::NetworkManager::get().register_callback(
-    m_td_connection_name, std::bind(&DataFlowOrchestrator::receive_trigger_decision, this, std::placeholders::_1));
-
+  iomanager::IOManager iom;
+  iom.add_callback<dfmessages::TriggerDecisionToken>( m_token_connection,
+						      std::bind(&DataFlowOrchestrator::receive_trigger_complete_token, this, std::placeholders::_1) );
+  
+  iom.add_callback<dfmessages::TriggerDecision>( m_td_connection,
+						 std::bind(&DataFlowOrchestrator::receive_trigger_decision, this, std::placeholders::_1) );
+  
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
 }
 
@@ -126,8 +126,9 @@ DataFlowOrchestrator::do_stop(const data_t& /*args*/)
 
   m_running_status.store(false);
 
-  networkmanager::NetworkManager::get().clear_callback(m_td_connection_name);
-  networkmanager::NetworkManager::get().clear_callback(m_token_connection_name);
+  iomanager::IOManager iom;
+  iom.remove_callback<dfmessages::TriggerDecision>( m_td_connection );
+  iom.remove_callback<dfmessages::TriggerDecisionToken>( m_token_connection );
 
   TLOG() << get_name() << " successfully stopped";
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_stop() method";
@@ -138,9 +139,6 @@ DataFlowOrchestrator::do_scrap(const data_t& /*args*/)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_scrap() method";
 
-  networkmanager::NetworkManager::get().stop_listening(m_token_connection_name);
-  networkmanager::NetworkManager::get().stop_listening(m_td_connection_name);
-
   m_dataflow_availability.clear();
   m_app_infos.clear();
 
@@ -149,20 +147,14 @@ DataFlowOrchestrator::do_scrap(const data_t& /*args*/)
 }
 
 void
-DataFlowOrchestrator::receive_trigger_decision(ipm::Receiver::Response message)
+DataFlowOrchestrator::receive_trigger_decision(const dfmessages::TriggerDecision & decision)
 {
-  dfmessages::TriggerDecision decision;
-  try {
-    decision = serialization::deserialize<dfmessages::TriggerDecision>(message.data);
-  } catch (const ers::Issue& excpt) {
-    ers::error(excpt);
-  }
 
   if (decision.run_number != m_run_number) {
     ers::warning(DataFlowOrchestratorRunNumberMismatch(ERS_HERE, decision.run_number, m_run_number, "MLT"));
     return;
   }
-
+  
   ++m_received_decisions;
   auto decision_received = std::chrono::steady_clock::now();
 
@@ -170,13 +162,13 @@ DataFlowOrchestrator::receive_trigger_decision(ipm::Receiver::Response message)
   do {
 
     auto assignment = find_slot(decision);
-
+    
     if (assignment == nullptr) // this can happen if all application are in error state
       continue;
-
+    
     decision_assigned = std::chrono::steady_clock::now();
     auto dispatch_successful = dispatch(assignment);
-
+    
     if (dispatch_successful) {
       assign_trigger_decision(assignment);
       break;
@@ -262,9 +254,8 @@ DataFlowOrchestrator::get_info(opmonlib::InfoCollector& ci, int /*level*/)
 }
 
 void
-DataFlowOrchestrator::receive_trigger_complete_token(ipm::Receiver::Response message)
+DataFlowOrchestrator::receive_trigger_complete_token(const dfmessages::TriggerDecisionToken & token)
 {
-  auto token = serialization::deserialize<dfmessages::TriggerDecisionToken>(message.data);
   ++m_received_tokens;
 
   // add a check to see if the application data found
@@ -293,7 +284,7 @@ DataFlowOrchestrator::receive_trigger_complete_token(ipm::Receiver::Response mes
   } catch (AssignedTriggerDecisionNotFound const& err) {
     ers::warning(err);
   }
-
+  
   if (app_it->second.is_in_error()) {
     TLOG() << TriggerRecordBuilderAppUpdate(ERS_HERE, token.decision_destination, "Has reconnected");
     app_it->second.set_in_error(false);
@@ -327,21 +318,20 @@ DataFlowOrchestrator::notify_trigger(bool busy) const
   if (busy == m_last_notified_busy.load())
     return;
 
-  auto message = dunedaq::serialization::serialize(dfmessages::TriggerInhibit{ busy, m_run_number },
-                                                   dunedaq::serialization::kMsgPack);
+  dfmessages::TriggerInhibit message{ busy, m_run_number };
+  
 
   bool wasSentSuccessfully = false;
 
   do {
 
     try {
-      networkmanager::NetworkManager::get().send_to(
-        m_busy_connection_name, static_cast<const void*>(message.data()), message.size(), m_queue_timeout);
+      m_busy_sender -> send( message, m_queue_timeout);
       wasSentSuccessfully = true;
     } catch (const ers::Issue& excpt) {
       std::ostringstream oss_warn;
-      oss_warn << "Send to connection \"" << m_busy_connection_name << "\" failed";
-      ers::warning(networkmanager::OperationFailed(ERS_HERE, oss_warn.str(), excpt));
+      oss_warn << "Send with sender \"" << m_busy_sender -> get_name() << "\" failed";
+      ers::warning(iomanager::OperationFailed(ERS_HERE, oss_warn.str(), excpt));
     }
 
   } while (!wasSentSuccessfully && m_running_status.load());
@@ -358,19 +348,19 @@ DataFlowOrchestrator::dispatch(std::shared_ptr<AssignedTriggerDecision> assignme
 
   bool wasSentSuccessfully = false;
   int retries = m_td_send_retries;
+  iomanager::IOManager iom;
   do {
 
     try {
-      networkmanager::NetworkManager::get().send_to(assignment->connection_name,
-                                                    static_cast<const void*>(serialised_decision.data()),
-                                                    serialised_decision.size(),
-                                                    m_queue_timeout);
+
+      iom.get_sender<dfmessages::TriggerDecision>( assignment->connection_name ) -> send( assignment->decision,
+											  m_queue_timeout );
       wasSentSuccessfully = true;
       ++m_sent_decisions;
     } catch (const ers::Issue& excpt) {
       std::ostringstream oss_warn;
       oss_warn << "Send to connection \"" << assignment->connection_name << "\" failed";
-      ers::warning(networkmanager::OperationFailed(ERS_HERE, oss_warn.str(), excpt));
+      ers::warning(iomanager::OperationFailed(ERS_HERE, oss_warn.str(), excpt));
     }
 
     retries--;
