@@ -19,12 +19,12 @@
 #include "dfmessages/TRMonRequest.hpp"
 #include "dfmessages/TriggerDecision.hpp"
 #include "dfmessages/Types.hpp"
-#include "ipm/Receiver.hpp"
 
 #include "appfwk/DAQModule.hpp"
-#include "appfwk/DAQSink.hpp"
-#include "appfwk/DAQSource.hpp"
 #include "utilities/WorkerThread.hpp"
+#include "iomanager/ConnectionId.hpp"
+#include "iomanager/Sender.hpp"
+#inlcude "iomanager/Receiver.hpp"
 
 #include <chrono>
 #include <list>
@@ -174,17 +174,17 @@ public:
   void get_info(opmonlib::InfoCollector& ci, int level) override;
 
 protected:
-  using trigger_decision_source_t = dunedaq::appfwk::DAQSource<dfmessages::TriggerDecision>;
-  using datareqsink_t = dunedaq::appfwk::DAQSink<dfmessages::DataRequest>;
-  using fragment_source_t = dunedaq::appfwk::DAQSource<std::unique_ptr<daqdataformats::Fragment>>;
-  using fragment_sources_t = std::vector<std::unique_ptr<fragment_source_t>>;
+  using trigger_decision_receiver_t = iomanager::ReceiverConcept<dfmessages::TriggerDecision>;
+  using data_req_sender_t = iomanager::SenderConcept<dfmessages::DataRequest>;
+  using fragment_receiver_t = iomanager::ReceiverConcept<std::unique_ptr<daqdataformats::Fragment>>;
+  using fragment_receivers_t = std::vector<std::shared_ptr<fragment_source_t>>;
 
   using trigger_record_ptr_t = std::unique_ptr<daqdataformats::TriggerRecord>;
-  using trigger_record_sink_t = appfwk::DAQSink<trigger_record_ptr_t>;
+  using trigger_record_sender_t = iomanager::SenderConcept<trigger_record_ptr_t>;
 
-  bool read_fragments(fragment_sources_t&, bool drain = false);
+  bool read_fragments(bool drain = false);
 
-  bool read_and_process_trigger_decision(trigger_decision_source_t&, std::atomic<bool>& running);
+  bool read_and_process_trigger_decision(std::atomic<bool>& running);
 
   trigger_record_ptr_t extract_trigger_record(const TriggerId&);
   // build_trigger_record will allocate memory and then orphan it to the caller
@@ -197,10 +197,10 @@ protected:
                               const daqdataformats::GeoID&,
                               std::atomic<bool>& running) const;
 
-  bool send_trigger_record(const TriggerId&, trigger_record_sink_t&, std::atomic<bool>& running);
+  bool send_trigger_record(const TriggerId&, std::atomic<bool>& running);
   // this creates a trigger record and send it
 
-  bool check_stale_requests(trigger_record_sink_t&, std::atomic<bool>& running);
+  bool check_stale_requests(std::atomic<bool>& running);
   // it returns true when there are changes in the book = a TR timed out
 
 private:
@@ -211,7 +211,7 @@ private:
   void do_stop(const data_t&);
 
   // Monitoring callback
-  void tr_requested(ipm::Receiver::Response message);
+  void tr_requested(const dfmessages::TRMonRequest &);
 
   // Threading
   dunedaq::utilities::WorkerThread m_thread;
@@ -222,13 +222,13 @@ private:
   std::chrono::milliseconds m_loop_sleep;
   std::string m_reply_connection;
 
-  // Input Queues
-  std::string m_trigger_decision_source_name;
-  std::vector<std::string> m_fragment_source_names;
+  // Input Connections
+  std::shared_ptr<trigger_decision_receiver_t> m_trigger_decision_input;
+  fragment_receivers_t m_fragment_inputs;
 
-  // Output queues
-  std::string m_trigger_record_sink_name;
-  std::map<daqdataformats::GeoID, std::string> m_map_geoid_connections; ///< Mappinng between GeoID and queues
+  // Output connections
+  std::shared_ptr<trigger_record_sender_t> m_trigger_record_output;
+  std::map<daqdataformats::GeoID, shared_ptr<data_req_sender_t>> m_map_geoid_connections; ///< Mappinng between GeoID and connections
 
   // bookeeping
   using clock_type = std::chrono::high_resolution_clock;
@@ -242,8 +242,7 @@ private:
 
   // Monitoring related variables
   std::mutex m_mon_mutex;
-  std::string m_mon_connection;
-
+  std::shared_ptr<iomanager::ReceiverConcept<dfmessages::TRMonRequest>> m_mon_receiver;
   std::list<dfmessages::TRMonRequest> m_mon_requests;
 
   // book related metrics

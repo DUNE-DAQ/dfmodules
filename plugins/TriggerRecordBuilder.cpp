@@ -15,8 +15,7 @@
 #include "dfmodules/triggerrecordbuilder/Structs.hpp"
 #include "logging/Logging.hpp"
 
-#include "dfmessages/TriggerRecord_serialization.hpp"
-#include "networkmanager/NetworkManager.hpp"
+#include "iomanager/IOManager.hpp"
 
 #include <algorithm>
 #include <chrono>
@@ -68,47 +67,35 @@ TriggerRecordBuilder::init(const data_t& init_data)
   // Get single queues
   //---------------------------------
 
-  auto qi = appfwk::queue_index(init_data, { "trigger_decision_input_queue", "trigger_record_output_queue" });
-  // data request input queue
-  try {
-    auto temp_info = qi["trigger_decision_input_queue"];
-    std::string temp_name = temp_info.inst;
-    trigger_decision_source_t test(temp_name);
-    m_trigger_decision_source_name = temp_name;
-  } catch (const ers::Issue& excpt) {
-    throw InvalidQueueFatalError(ERS_HERE, get_name(), "trigger_decision_input_queue", excpt);
-  }
+  auto ci = appfwk::connection_index(init_data, { "trigger_decision_input", "trigger_record_output" });
 
-  // trigger record output
-  try {
-    auto temp_info = qi["trigger_record_output_queue"];
-    std::string temp_name = temp_info.inst;
-    trigger_record_sink_t test(temp_name);
-    m_trigger_record_sink_name = temp_name;
-  } catch (const ers::Issue& excpt) {
-    throw InvalidQueueFatalError(ERS_HERE, get_name(), "trigger_record_output_queue", excpt);
-  }
+  iomanager::IOManager iom;
+  
+  m_trigger_decision_input = iom.get_receiver<dfmessages::TriggerDecision>( ci["trigger_decision_input"] );
+  m_trigger_record_output  = iom.get_sender<std::unique_ptr<daqdataformats::TriggerRecord>>( ci["trigger_record_output"] );
 
   //----------------------
   // Get dynamic queues
   //----------------------
 
-  // set names for the fragment queue(s)
+  // set names for the fragment connections
   auto ini = init_data.get<appfwk::app::ModInit>();
 
-  // get the names for the fragment queues
-  for (const auto& qitem : ini.qinfos) {
-    if (qitem.name.rfind("data_fragment_") == 0) {
-      try {
-        std::string temp_name = qitem.inst;
-        fragment_source_t test(temp_name);
-        m_fragment_source_names.push_back(temp_name);
-      } catch (const ers::Issue& excpt) {
-        throw InvalidQueueFatalError(ERS_HERE, get_name(), qitem.name, excpt);
-      }
+
+  // get the names for the fragment connections
+  // there is an optional connection, which is the connection to DQM
+  // Since it's optional, we need to loop over all the connections
+  // to check if it's there and act accordingly
+
+  for (const auto& ref : ini.conn_refs) {
+    if (ref.name.rfind("data_fragment_") == 0) {
+      m_fragment_inputs.push_back( iom.get_receiver<std::unique_ptr<daqdataformats::Fragment>( ref ) );
+    }
+    else if ( ref.name == "mon_connection" ) {
+      m_mon_receiver = iom.get_receiver<dfmessages::TRMonRequest>( ref );
     }
   }
-
+      
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
 
