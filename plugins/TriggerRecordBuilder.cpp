@@ -583,7 +583,7 @@ TriggerRecordBuilder::create_trigger_records_and_dispatch(const dfmessages::Trig
                                   << dataReq.request_information.window_begin << ", "
                                   << dataReq.request_information.window_end << ']';
 
-      dispatch_data_requests(dataReq, component.component, running);
+      dispatch_data_requests(std::move(dataReq), component.component, running);
 
     } // loop loop over component in the slice
 
@@ -593,7 +593,7 @@ TriggerRecordBuilder::create_trigger_records_and_dispatch(const dfmessages::Trig
 }
 
 bool
-TriggerRecordBuilder::dispatch_data_requests(const dfmessages::DataRequest & dr,
+TriggerRecordBuilder::dispatch_data_requests(dfmessages::DataRequest dr,
                                              const daqdataformats::GeoID& geo,
                                              std::atomic<bool>& running) const
 

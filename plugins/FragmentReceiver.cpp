@@ -11,12 +11,11 @@
 
 #include "appfwk/DAQModuleHelper.hpp"
 #include "appfwk/app/Nljs.hpp"
-#include "dfmessages/Fragment_serialization.hpp"
 #include "dfmodules/fragmentreceiver/Nljs.hpp"
 #include "dfmodules/fragmentreceiver/Structs.hpp"
 #include "dfmodules/fragmentreceiverinfo/InfoNljs.hpp"
 #include "logging/Logging.hpp"
-#include "networkmanager/NetworkManager.hpp"
+#include "iomanager/IOManager.hpp"
 
 #include <chrono>
 #include <cstdlib>
@@ -55,7 +54,8 @@ void
 FragmentReceiver::init(const data_t& iniobj)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
-  m_fragment_q_name = appfwk::queue_inst(iniobj, "output");
+  m_input_connection = appfwk::connection_inst(iniobj, "input");
+  m_fragment_output = iomanager::IOManager::get()->get_sender<internal_data_t>( appfwk::connection_inst(iniobj, "output") );
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
 
@@ -65,12 +65,7 @@ FragmentReceiver::do_conf(const data_t& payload)
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
   fragmentreceiver::ConfParams parsed_conf = payload.get<fragmentreceiver::ConfParams>();
 
-  m_fragment_output_queue = std::unique_ptr<fragmentsink_t>(new fragmentsink_t(m_fragment_q_name));
-
   m_queue_timeout = std::chrono::milliseconds(parsed_conf.general_queue_timeout);
-  m_connection_name = parsed_conf.connection_name;
-
-  networkmanager::NetworkManager::get().start_listening(m_connection_name);
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
 }
@@ -83,9 +78,8 @@ FragmentReceiver::do_start(const data_t& payload)
   m_received_fragments = 0;
   m_run_number = payload.value<dunedaq::daqdataformats::run_number_t>("run", 0);
 
-  networkmanager::NetworkManager::get().register_callback(
-    m_connection_name, std::bind(&FragmentReceiver::dispatch_fragment, this, std::placeholders::_1));
-
+  iomanager::IOManager::get()->add_callback<internal_data_t>(m_input_connection,
+							     std::bind(&FragmentReceiver::dispatch_fragment, this, std::placeholders::_1));
   TLOG() << get_name() << " successfully started for run number " << m_run_number;
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
 }
@@ -95,8 +89,7 @@ FragmentReceiver::do_stop(const data_t& /*args*/)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_stop() method";
 
-  networkmanager::NetworkManager::get().clear_callback(m_connection_name);
-
+  iomanager::IOManager::get()->remove_callback<internal_data_t>(m_input_connection);
   TLOG() << get_name() << " successfully stopped";
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_stop() method";
 }
@@ -105,9 +98,6 @@ void
 FragmentReceiver::do_scrap(const data_t& /*args*/)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_scrap() method";
-
-  networkmanager::NetworkManager::get().stop_listening(m_connection_name);
-
   TLOG() << get_name() << " successfully stopped";
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_scrap() method";
 }
@@ -121,10 +111,9 @@ FragmentReceiver::get_info(opmonlib::InfoCollector& ci, int /*level*/)
 }
 
 void
-FragmentReceiver::dispatch_fragment(ipm::Receiver::Response message)
+FragmentReceiver::dispatch_fragment(internal_data_t & fragment)
 {
-  auto fragment = serialization::deserialize<std::unique_ptr<daqdataformats::Fragment>>(message.data);
-  m_fragment_output_queue->push(std::move(fragment), m_queue_timeout);
+  m_fragment_output->send(std::move(fragment), m_queue_timeout);
   m_received_fragments++;
 }
 

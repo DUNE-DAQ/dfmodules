@@ -193,7 +193,7 @@ protected:
 
   unsigned int create_trigger_records_and_dispatch(const dfmessages::TriggerDecision&, std::atomic<bool>& running);
 
-  bool dispatch_data_requests(const dfmessages::DataRequest &,
+  bool dispatch_data_requests(dfmessages::DataRequest,
                               const daqdataformats::GeoID&,
                               std::atomic<bool>& running) const;
 

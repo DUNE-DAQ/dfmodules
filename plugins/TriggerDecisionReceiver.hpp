@@ -54,7 +54,7 @@ private:
 
   void get_info(opmonlib::InfoCollector& ci, int level) override;
 
-  void dispatch_triggerdecision( const dfmessages::TriggerDecision &);
+  void dispatch_triggerdecision(dfmessages::TriggerDecision &);
 
   // Configuration
   std::chrono::milliseconds m_queue_timeout;

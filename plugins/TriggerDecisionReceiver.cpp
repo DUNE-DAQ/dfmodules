@@ -58,7 +58,7 @@ TriggerDecisionReceiver::init(const data_t& data)
   auto qi = appfwk::connection_index(data, { "input", "output" });
 
   m_input_connection = qi["input"];
-  m_triggerdecision_output = iomanagegr::IOManager::get()->get()->get_sender<dfmessages::TriggerDecision>( qi["output"] );
+  m_triggerdecision_output = iomanager::IOManager::get()->get_sender<dfmessages::TriggerDecision>( qi["output"] );
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
@@ -71,7 +71,6 @@ TriggerDecisionReceiver::do_conf(const data_t& payload)
 
   m_queue_timeout = std::chrono::milliseconds(parsed_conf.general_queue_timeout);
 
-  networkmanager::NetworkManager::get().start_listening(m_connection_name);
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
 }
 
@@ -106,8 +105,6 @@ TriggerDecisionReceiver::do_scrap(const data_t& /*args*/)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_scrap() method";
 
-  networkmanager::NetworkManager::get().stop_listening(m_connection_name);
-
   TLOG() << get_name() << " successfully scrapped";
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_scrap() method";
 }
@@ -121,9 +118,9 @@ TriggerDecisionReceiver::get_info(opmonlib::InfoCollector& ci, int /*level*/)
 }
 
 void
-TriggerDecisionReceiver::dispatch_triggerdecision(const dfmessages::TriggerDecision & td)
+TriggerDecisionReceiver::dispatch_triggerdecision(dfmessages::TriggerDecision & td)
 {
-  m_triggerdecision_output->send(std::move(triggerdecision), m_queue_timeout);
+  m_triggerdecision_output->send(std::move(td), m_queue_timeout);
   m_received_triggerdecisions++;
 }
 
