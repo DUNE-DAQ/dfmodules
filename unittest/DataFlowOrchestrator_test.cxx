@@ -95,9 +95,9 @@ send_token(dfmessages::trigger_number_t trigger_number, std::string connection_n
   token.trigger_number = trigger_number;
   token.decision_destination = connection_name;
 
-  iomanager::IOManager iom;
+  auto iom = iomanager::IOManager::get();
   TLOG() << "Sending TriggerDecisionToken with trigger number " << trigger_number << " to DFO";
-  iom.get_sender<dfmessages::TriggerDecisionToken>(  "test.token" ) -> send( token, iomanager::Sender::s_block );
+  iom->get_sender<dfmessages::TriggerDecisionToken>(  "test.token" ) -> send( token, iomanager::Sender::s_block );
 }
 
 void
@@ -125,9 +125,9 @@ send_trigdec(dfmessages::trigger_number_t trigger_number)
   td.trigger_timestamp = 1;
   td.trigger_type = 1;
   td.readout_type = dunedaq::dfmessages::ReadoutType::kLocalized;
-  iomanager::IOManager iom;
+  auto iom = iomanager::IOManager::get();
   TLOG() << "Sending TriggerDecision with trigger number " << trigger_number << " to DFO";
-  iom.get_sender<dfmessages::TriggerDecision>( "test.trigdec") -> send( td, iomanager::Sender::s_block );
+  iom->get_sender<dfmessages::TriggerDecision>( "test.trigdec") -> send( td, iomanager::Sender::s_block );
 }
 
 BOOST_AUTO_TEST_CASE(CopyAndMoveSemantics)
@@ -194,9 +194,9 @@ BOOST_FIXTURE_TEST_CASE(DataFlow, NetworkManagerTestFixture)
 
   dfo->execute_command("conf", "INITIAL", conf_json);
 
-  iomanager::IOManager iom;
-  iom.get_receiver<dfmessages::TriggerDecision>( "test.trigdec_0") -> add_callback(recv_trigdec);
-  iom.get_receiver<dfmessages::TriggerInhibit>( "test.triginh") -> add_callback(recv_triginh );
+  auto iom = iomanager::IOManager::get();
+  iom->get_receiver<dfmessages::TriggerDecision>( "test.trigdec_0") -> add_callback(recv_trigdec);
+  iom->get_receiver<dfmessages::TriggerInhibit>( "test.triginh") -> add_callback(recv_triginh );
   
   send_trigdec(1);
   std::this_thread::sleep_for(std::chrono::milliseconds(50));

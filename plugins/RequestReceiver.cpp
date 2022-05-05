@@ -64,17 +64,17 @@ RequestReceiver::init(const data_t& init_data)
   auto ini = init_data.get<appfwk::app::ModInit>();
 
   // Test for valid output data request queues
-  iomanager::IOManager iom;
+  auto iom = iomanager::IOManager::get() ;
   for (const auto& ref : ini.conn_refs) {
     if ( ref.dir == iomanager::connection::Direction::kOutput) {
       try {
-        iom.get_sender<incoming_t>(ref) ; 
+        iom ->get_sender<incoming_t>(ref) ; 
       } catch (const ers::Issue& excpt) {
         throw InvalidQueueFatalError(ERS_HERE, get_name(), ref.name, excpt);
       }
     } else if (ref.dir == iomanager::connection::Direction::kOutput) {
       try {
-	iom.get_receiver<incoming_t>(ref) ;
+	iom->get_receiver<incoming_t>(ref) ;
 	m_incoming_data_ref = ref;
       } catch (const ers::Issue& excpt) {
         throw InvalidQueueFatalError(ERS_HERE, get_name(), ref.name, excpt);
@@ -93,7 +93,7 @@ RequestReceiver::do_conf(const data_t& payload)
   m_data_request_outputs.clear();
 
   requestreceiver::ConfParams parsed_conf = payload.get<requestreceiver::ConfParams>();
-  iomanager::IOManager iom;
+  auto iom = iomanager::IOManager::get();
   for (auto const& entry : parsed_conf.map) {
 
     daqdataformats::GeoID::SystemType type = daqdataformats::GeoID::string_to_system_type(entry.system);
@@ -101,12 +101,12 @@ RequestReceiver::do_conf(const data_t& payload)
     if (type == daqdataformats::GeoID::SystemType::kInvalid) {
       throw InvalidSystemType(ERS_HERE, entry.system);
     }
-
+    
     daqdataformats::GeoID key;
     key.system_type = type;
     key.region_id = entry.region;
     key.element_id = entry.element;
-    m_data_request_outputs[key] = iom.get_sender<incoming_t>( entry.connection_uid );
+    m_data_request_outputs[key] = iom->get_sender<incoming_t>( entry.connection_uid );
   }
   
   m_queue_timeout = std::chrono::milliseconds(parsed_conf.general_queue_timeout);
@@ -122,9 +122,9 @@ RequestReceiver::do_start(const data_t& payload)
   m_received_requests = 0;
   m_run_number = payload.value<dunedaq::daqdataformats::run_number_t>("run", 0);
 
-  iomanager::IOManager iom;
-  iom.add_callback<incoming_t>( m_incoming_data_ref,
-				std::bind(&RequestReceiver::dispatch_request, this, std::placeholders::_1));
+  auto iom = iomanager::IOManager::get();
+  iom->add_callback<incoming_t>( m_incoming_data_ref,
+				 std::bind(&RequestReceiver::dispatch_request, this, std::placeholders::_1));
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
 }
@@ -134,8 +134,8 @@ RequestReceiver::do_stop(const data_t& /*args*/)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_stop() method";
 
-  iomanager::IOManager iom;
-  iom.remove_callback<incoming_t>( m_incoming_data_ref);
+  auto iom = iomanager::IOManager::get();
+  iom->remove_callback<incoming_t>( m_incoming_data_ref);
 
   TLOG() << get_name() << " successfully stopped";
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_stop() method";

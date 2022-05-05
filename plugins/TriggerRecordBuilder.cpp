@@ -69,10 +69,9 @@ TriggerRecordBuilder::init(const data_t& init_data)
 
   auto ci = appfwk::connection_index(init_data, { "trigger_decision_input", "trigger_record_output" });
 
-  iomanager::IOManager iom;
-  
-  m_trigger_decision_input = iom.get_receiver<dfmessages::TriggerDecision>( ci["trigger_decision_input"] );
-  m_trigger_record_output  = iom.get_sender<std::unique_ptr<daqdataformats::TriggerRecord>>( ci["trigger_record_output"] );
+  auto iom = iomanager::IOManager::get();
+  m_trigger_decision_input = iom->get_receiver<dfmessages::TriggerDecision>( ci["trigger_decision_input"] );
+  m_trigger_record_output  = iom->get_sender<std::unique_ptr<daqdataformats::TriggerRecord>>( ci["trigger_record_output"] );
 
   //----------------------
   // Get dynamic queues
@@ -89,10 +88,10 @@ TriggerRecordBuilder::init(const data_t& init_data)
 
   for (const auto& ref : ini.conn_refs) {
     if (ref.name.rfind("data_fragment_") == 0) {
-      m_fragment_inputs.push_back( iom.get_receiver<std::unique_ptr<daqdataformats::Fragment>>( ref ) );
+      m_fragment_inputs.push_back(iom->get_receiver<std::unique_ptr<daqdataformats::Fragment>>( ref ) );
     }
     else if ( ref.name == "mon_connection" ) {
-      m_mon_receiver = iom.get_receiver<dfmessages::TRMonRequest>( ref );
+      m_mon_receiver = iom->get_receiver<dfmessages::TRMonRequest>( ref );
     }
   }
       
@@ -143,7 +142,7 @@ TriggerRecordBuilder::do_conf(const data_t& payload)
 
   triggerrecordbuilder::ConfParams parsed_conf = payload.get<triggerrecordbuilder::ConfParams>();
 
-  iomanager::IOManager iom;
+  auto iom = iomanager::IOManager::get();
 
   for (auto const& entry : parsed_conf.map) {
 
@@ -157,7 +156,7 @@ TriggerRecordBuilder::do_conf(const data_t& payload)
     key.system_type = type;
     key.region_id = entry.region;
     key.element_id = entry.element;
-    m_map_geoid_connections[key] = iom.get_sender<dfmessages::DataRequest> ( entry.connection_uid ) ;
+    m_map_geoid_connections[key] = iom->get_sender<dfmessages::DataRequest> ( entry.connection_uid ) ;
   }
 
   m_trigger_timeout = duration_type(parsed_conf.trigger_record_timeout_ms);
@@ -645,11 +644,11 @@ TriggerRecordBuilder::send_trigger_record(const TriggerId& id, std::atomic<bool>
     while (it != m_mon_requests.end()) {
       // send TR to mon if correct trigger type
       if (it->trigger_type == temp_record->get_header_data().trigger_type) {
-	iomanager::IOManager iom;
+	auto iom = iomanager::IOManager::get();
 	bool wasSentSuccessfully = false;
 	while ( running.load() && !wasSentSuccessfully ) {
 	  try {
-	    iom.get_sender<trigger_record_ptr_t>( it->data_destination )->send( temp_record, m_queue_timeout);
+	    iom->get_sender<trigger_record_ptr_t>( it->data_destination )->send( temp_record, m_queue_timeout);
 	    ++m_trmon_sent_counter;
 	    wasSentSuccessfully = true;
 	  } catch (const ers::Issue& excpt) {

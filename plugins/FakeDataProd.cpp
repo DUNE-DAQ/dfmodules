@@ -95,9 +95,9 @@ FakeDataProd::do_start(const data_t& payload)
 
   m_timesync_thread.start_working_thread();
   
-  iomanager::IOManager iom;
-  iom.add_callback<dfmessages::DataRequest>( m_data_request_ref,
-		    std::bind( & FakeDataProd::process_data_request, this, std::placeholders::_1) );
+  auto iom = iomanager::IOManager::get();
+  iom->add_callback<dfmessages::DataRequest>( m_data_request_ref,
+					      std::bind( & FakeDataProd::process_data_request, this, std::placeholders::_1) );
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
 }
 
@@ -107,8 +107,8 @@ FakeDataProd::do_stop(const data_t& /*args*/)
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_stop() method";
   m_timesync_thread.stop_working_thread();
 
-  iomanager::IOManager iom;
-  iom.remove_callback<dfmessages::DataRequest>(m_data_request_ref);
+  auto iom = iomanager::IOManager::get();
+  iom->remove_callback<dfmessages::DataRequest>(m_data_request_ref);
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_stop() method";
 }
 
@@ -125,8 +125,8 @@ void
 FakeDataProd::do_timesync(std::atomic<bool>& running_flag)
 {
 
-  iomanager::IOManager iom;
-  auto sender_ptr = iom.get_sender<dfmessages::TimeSync>(m_timesync_ref);
+  auto iom = iomanager::IOManager::get();
+  auto sender_ptr = iom->get_sender<dfmessages::TimeSync>(m_timesync_ref);
   
   int sent_count = 0;
   uint64_t msg_seqno = 0; // NOLINT (build/unsigned)
@@ -143,11 +143,9 @@ FakeDataProd::do_timesync(std::atomic<bool>& running_flag)
                                 << " run=" << timesyncmsg.run_number << " seqno=" << timesyncmsg.sequence_number
                                 << " pid=" << timesyncmsg.source_pid;
     try {
-      
       sender_ptr -> send( timesyncmsg, std::chrono::milliseconds(500) );
       ++sent_count;
     } catch (ers::Issue& excpt) {
-
       ers::warning(
         TimeSyncTransmissionFailed(ERS_HERE, get_name(), m_timesync_ref.uid, excpt));
     }
@@ -196,9 +194,8 @@ FakeDataProd::process_data_request( dfmessages::DataRequest & data_request)
   }
 
   try {
-
-    iomanager::IOManager iom;
-    iom.get_sender<daqdataformats::Fragment>(data_request.data_destination)->send( *data_fragment_ptr, std::chrono::milliseconds(1000));
+    auto iom = iomanager::IOManager::get();
+    iom->get_sender<daqdataformats::Fragment>(data_request.data_destination)->send( *data_fragment_ptr, std::chrono::milliseconds(1000));
   } catch (ers::Issue& e) {
     ers::warning(FragmentTransmissionFailed(ERS_HERE, get_name(), data_request.trigger_number, e));
   }

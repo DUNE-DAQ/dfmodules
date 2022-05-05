@@ -50,8 +50,8 @@ void
 TPSetWriter::init(const nlohmann::json& payload)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
-  iomanager::IOManager iom;
-  m_tpset_source = iom.get_receiver<incoming_t>(appfwk::connection_inst(payload, "tpset_source"));
+  auto iom = iomanager::IOManager::get();
+  m_tpset_source = iom->get_receiver<incoming_t>(appfwk::connection_inst(payload, "tpset_source"));
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
 

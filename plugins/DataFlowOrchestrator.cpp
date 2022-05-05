@@ -59,7 +59,7 @@ DataFlowOrchestrator::init(const data_t& init_data)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
 
-  iomanager::IOManager manager;
+  auto iom = iomanager::IOManager::get();
   auto mandatory_connections = appfwk::connection_index(init_data, { "tocken_connection", "td_connection", "busy_connection" });
 
   m_token_connection = mandatory_connections["tocken_connection"];
@@ -67,9 +67,9 @@ DataFlowOrchestrator::init(const data_t& init_data)
   auto busy_connection = mandatory_connections["busy_connection"];
 
   // these are just tests to check if the connections are ok
-  manager.get_receiver<dfmessages::TriggerDecisionToken>( m_token_connection );
-  manager.get_receiver<dfmessages::TriggerDecision>( m_td_connection );
-  m_busy_sender = manager.get_sender<dfmessages::TriggerInhibit>( busy_connection );
+  iom ->get_receiver<dfmessages::TriggerDecisionToken>( m_token_connection );
+  iom->get_receiver<dfmessages::TriggerDecision>( m_td_connection );
+  m_busy_sender = iom->get_sender<dfmessages::TriggerInhibit>( busy_connection );
     
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
@@ -109,11 +109,11 @@ DataFlowOrchestrator::do_start(const data_t& payload)
 
   m_last_token_received = m_last_td_received = std::chrono::steady_clock::now();
 
-  iomanager::IOManager iom;
-  iom.add_callback<dfmessages::TriggerDecisionToken>( m_token_connection,
+  auto iom = iomanager::IOManager::get();
+  iom -> add_callback<dfmessages::TriggerDecisionToken>( m_token_connection,
 						      std::bind(&DataFlowOrchestrator::receive_trigger_complete_token, this, std::placeholders::_1) );
   
-  iom.add_callback<dfmessages::TriggerDecision>( m_td_connection,
+  iom -> add_callback<dfmessages::TriggerDecision>( m_td_connection,
 						 std::bind(&DataFlowOrchestrator::receive_trigger_decision, this, std::placeholders::_1) );
   
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
@@ -126,9 +126,9 @@ DataFlowOrchestrator::do_stop(const data_t& /*args*/)
 
   m_running_status.store(false);
 
-  iomanager::IOManager iom;
-  iom.remove_callback<dfmessages::TriggerDecision>( m_td_connection );
-  iom.remove_callback<dfmessages::TriggerDecisionToken>( m_token_connection );
+  auto iom = iomanager::IOManager::get();
+  iom->remove_callback<dfmessages::TriggerDecision>( m_td_connection );
+  iom->remove_callback<dfmessages::TriggerDecisionToken>( m_token_connection );
 
   TLOG() << get_name() << " successfully stopped";
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_stop() method";
@@ -348,12 +348,12 @@ DataFlowOrchestrator::dispatch(std::shared_ptr<AssignedTriggerDecision> assignme
 
   bool wasSentSuccessfully = false;
   int retries = m_td_send_retries;
-  iomanager::IOManager iom;
+  auto iom = iomanager::IOManager::get();
   do {
 
     try {
 
-      iom.get_sender<dfmessages::TriggerDecision>( assignment->connection_name ) -> send( assignment->decision,
+      iom->get_sender<dfmessages::TriggerDecision>( assignment->connection_name ) -> send( assignment->decision,
 											  m_queue_timeout );
       wasSentSuccessfully = true;
       ++m_sent_decisions;
