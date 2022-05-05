@@ -593,7 +593,7 @@ TriggerRecordBuilder::create_trigger_records_and_dispatch(const dfmessages::Trig
 }
 
 bool
-TriggerRecordBuilder::dispatch_data_requests(dfmessages::DataRequest dr,
+TriggerRecordBuilder::dispatch_data_requests(const dfmessages::DataRequest & dr,
                                              const daqdataformats::GeoID& geo,
                                              std::atomic<bool>& running) const
 

@@ -12,9 +12,9 @@
 #ifndef DFMODULES_SRC_DFMODULES_TRIGGERINHIBITAGENT_HPP_
 #define DFMODULES_SRC_DFMODULES_TRIGGERINHIBITAGENT_HPP_
 
-#include "appfwk/DAQSink.hpp"
-#include "appfwk/DAQSource.hpp"
-#include "appfwk/NamedObject.hpp"
+#include "iomanager/Sender.hpp"
+#include "iomanager/Receiver.hpp"
+#include "utilities/NamedObject.hpp"
 #include "daqdataformats/Types.hpp"
 #include "dfmessages/TriggerDecision.hpp"
 #include "dfmessages/TriggerInhibit.hpp"
@@ -33,16 +33,18 @@ namespace dfmodules {
 /**
  * @brief
  */
-class TriggerInhibitAgent : public appfwk::NamedObject
+class TriggerInhibitAgent : public utilities::NamedObject
 {
 public:
-  using trigdecsource_t = dunedaq::appfwk::DAQSource<dfmessages::TriggerDecision>;
-  using triginhsink_t = dunedaq::appfwk::DAQSink<dfmessages::TriggerInhibit>;
+  using trigdecreceiver_t = iomanager::ReceiverConcept<dfmessages::TriggerDecision>;
+  using triginhsender_t = iomanager::SenderConcept<dfmessages::TriggerInhibit>;
 
   /**
    * @brief TriggerInhibitAgent Constructor
    */
-  explicit TriggerInhibitAgent(const std::string&, std::unique_ptr<trigdecsource_t>, std::unique_ptr<triginhsink_t>);
+  explicit TriggerInhibitAgent(const std::string&,
+			       std::shared_ptr<trigdecreceiver_t>,
+			       std::shared_ptr<triginhsender_t>);
 
   TriggerInhibitAgent(const TriggerInhibitAgent&) = delete; ///< TriggerInhibitAgent is not copy-constructible
   TriggerInhibitAgent& operator=(const TriggerInhibitAgent&) = delete; ///< TriggerInhibitAgent is not copy-assignable
@@ -73,8 +75,8 @@ private:
   std::atomic<uint32_t> m_threshold_for_inhibit; // NOLINT
 
   // Queue(s)
-  std::unique_ptr<trigdecsource_t> m_trigger_decision_source;
-  std::unique_ptr<triginhsink_t> m_trigger_inhibit_sink;
+  std::shared_ptr<trigdecreceiver_t> m_trigger_decision_receiver;
+  std::shared_ptr<triginhsender_t> m_trigger_inhibit_sender;
 
   // Internal data
   std::atomic<daqdataformats::trigger_number_t> m_trigger_number_at_start_of_processing_chain;
