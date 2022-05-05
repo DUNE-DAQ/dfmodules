@@ -60,9 +60,9 @@ DataFlowOrchestrator::init(const data_t& init_data)
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
 
   auto iom = iomanager::IOManager::get();
-  auto mandatory_connections = appfwk::connection_index(init_data, { "tocken_connection", "td_connection", "busy_connection" });
+  auto mandatory_connections = appfwk::connection_index(init_data, { "token_connection", "td_connection", "busy_connection" });
 
-  m_token_connection = mandatory_connections["tocken_connection"];
+  m_token_connection = mandatory_connections["token_connection"];
   m_td_connection = mandatory_connections["td_connection"];
   auto busy_connection = mandatory_connections["busy_connection"];
 
@@ -82,6 +82,7 @@ DataFlowOrchestrator::do_conf(const data_t& payload)
   datafloworchestrator::ConfParams parsed_conf = payload.get<datafloworchestrator::ConfParams>();
 
   for (auto& app : parsed_conf.dataflow_applications) {
+      TLOG_DEBUG(TLVL_CONFIG) << "Creating dataflow availability struct for uid " << app.connection_uid << ", busy threshold " << app.thresholds.busy << ", free threshold " << app.thresholds.free;
     m_dataflow_availability[app.connection_uid] =
       TriggerRecordBuilderData(app.connection_uid, app.thresholds.busy, app.thresholds.free);
     m_app_infos[app.connection_uid]; // we just need to create the object
@@ -223,6 +224,9 @@ DataFlowOrchestrator::find_slot(dfmessages::TriggerDecision decision)
     m_last_assignement_it = candidate_it;
   }
 
+  if (output != nullptr) {
+      TLOG_DEBUG(TLVL_WORK_STEPS) << "Assigned TriggerDecision with trigger number " << decision.trigger_number << " to TRB with name " << output->connection_name;
+  }
   return output;
 }
 
@@ -256,8 +260,6 @@ DataFlowOrchestrator::get_info(opmonlib::InfoCollector& ci, int /*level*/)
 void
 DataFlowOrchestrator::receive_trigger_complete_token(const dfmessages::TriggerDecisionToken & token)
 {
-  ++m_received_tokens;
-
   // add a check to see if the application data found
   if (token.run_number != m_run_number) {
     ers::warning(
@@ -270,6 +272,7 @@ DataFlowOrchestrator::receive_trigger_complete_token(const dfmessages::TriggerDe
   if (app_it == m_dataflow_availability.end())
     return;
 
+  ++m_received_tokens;
   auto callback_start = std::chrono::steady_clock::now();
 
   try {
@@ -342,7 +345,7 @@ bool
 DataFlowOrchestrator::dispatch(std::shared_ptr<AssignedTriggerDecision> assignment)
 {
 
-  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering dispatch() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering dispatch() method. assignment->connection_name: " << assignment->connection_name;
 
   bool wasSentSuccessfully = false;
   int retries = m_td_send_retries;
