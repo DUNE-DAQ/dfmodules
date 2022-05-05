@@ -20,8 +20,6 @@ local types = {
 		doc="The maximum time between retries of data writes, in microseconds"),
 	s.field("write_retry_time_increase_factor", self.count, "2",
 		doc="The factor that is used to increase the time between subsequent retries of data writes"),
-	s.field("token_connection", self.connection_name, "", 
-	         doc="Connection details to send trigger tokens to trigger modules"),
     s.field("decision_connection", self.connection_name, "", doc="Connection details to put in tokens for TriggerDecisions")
     ], doc="DataWriter configuration parameters"),
 
