@@ -95,9 +95,8 @@ send_token(dfmessages::trigger_number_t trigger_number, std::string connection_n
   token.trigger_number = trigger_number;
   token.decision_destination = connection_name;
 
-  auto iom = iomanager::IOManager::get();
   TLOG() << "Sending TriggerDecisionToken with trigger number " << trigger_number << " to DFO";
-  iom->get_sender<dfmessages::TriggerDecisionToken>(  "test.token" ) -> send( token, iomanager::Sender::s_block );
+  get_iom_sender<dfmessages::TriggerDecisionToken>(  "test.token" ) -> send( std::move(token), iomanager::Sender::s_block );
 }
 
 void
@@ -127,7 +126,7 @@ send_trigdec(dfmessages::trigger_number_t trigger_number)
   td.readout_type = dunedaq::dfmessages::ReadoutType::kLocalized;
   auto iom = iomanager::IOManager::get();
   TLOG() << "Sending TriggerDecision with trigger number " << trigger_number << " to DFO";
-  iom->get_sender<dfmessages::TriggerDecision>( "test.trigdec") -> send( td, iomanager::Sender::s_block );
+  iom->get_sender<dfmessages::TriggerDecision>( "test.trigdec") -> send( std::move(td), iomanager::Sender::s_block );
 }
 
 BOOST_AUTO_TEST_CASE(CopyAndMoveSemantics)

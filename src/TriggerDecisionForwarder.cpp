@@ -74,7 +74,7 @@ TriggerDecisionForwarder::do_work(std::atomic<bool>& running_flag)
       TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Pushing the TriggerDecision for trigger number "
                                   << m_latest_trigger_decision.trigger_number << " onto the output queue.";
       try {
-        m_trigger_decision_sender->send(m_latest_trigger_decision, m_queue_timeout / 2);
+        m_trigger_decision_sender->send(std::move(m_latest_trigger_decision), m_queue_timeout / 2);
         m_trig_dec_has_been_sent = true;
         ++sent_message_count;
       } catch (const iomanager::TimeoutExpired& excpt) {

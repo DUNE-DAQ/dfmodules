@@ -318,15 +318,14 @@ DataFlowOrchestrator::notify_trigger(bool busy) const
   if (busy == m_last_notified_busy.load())
     return;
 
-  dfmessages::TriggerInhibit message{ busy, m_run_number };
   
 
   bool wasSentSuccessfully = false;
 
   do {
-
     try {
-      m_busy_sender -> send( message, m_queue_timeout);
+        dfmessages::TriggerInhibit message{ busy, m_run_number };
+      m_busy_sender -> send( std::move(message), m_queue_timeout);
       wasSentSuccessfully = true;
     } catch (const ers::Issue& excpt) {
       std::ostringstream oss_warn;
@@ -344,7 +343,6 @@ DataFlowOrchestrator::dispatch(std::shared_ptr<AssignedTriggerDecision> assignme
 {
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering dispatch() method";
-  auto serialised_decision = dunedaq::serialization::serialize(assignment->decision, dunedaq::serialization::kMsgPack);
 
   bool wasSentSuccessfully = false;
   int retries = m_td_send_retries;
@@ -352,8 +350,8 @@ DataFlowOrchestrator::dispatch(std::shared_ptr<AssignedTriggerDecision> assignme
   do {
 
     try {
-
-      iom->get_sender<dfmessages::TriggerDecision>( assignment->connection_name ) -> send( assignment->decision,
+        auto decision_copy = dfmessages::TriggerDecision(assignment->decision);
+      iom->get_sender<dfmessages::TriggerDecision>( assignment->connection_name ) -> send( std::move(decision_copy),
 											  m_queue_timeout );
       wasSentSuccessfully = true;
       ++m_sent_decisions;

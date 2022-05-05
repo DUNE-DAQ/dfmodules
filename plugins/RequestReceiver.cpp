@@ -169,7 +169,7 @@ RequestReceiver::dispatch_request(incoming_t & request)
   if (it != m_data_request_outputs.end()) {
     TLOG_DEBUG(10) << get_name() << "Dispatch request to queue "
                    << it->second -> get_name();
-    it -> second -> send(request, m_queue_timeout);
+    it -> second -> send(std::move(request), m_queue_timeout);
   } else {
     ers::error(UnknownGeoID(ERS_HERE, component));
   }

@@ -13,6 +13,7 @@
 #include "appfwk/app/Nljs.hpp"
 #include "dfmodules/triggerrecordbuilder/Nljs.hpp"
 #include "dfmodules/triggerrecordbuilder/Structs.hpp"
+#include "dfmessages/TriggerRecord_serialization.hpp"
 #include "logging/Logging.hpp"
 
 #include "iomanager/IOManager.hpp"
@@ -617,7 +618,7 @@ TriggerRecordBuilder::dispatch_data_requests(dfmessages::DataRequest dr,
 
     // send data request into the corresponding connection
     try {
-      sender->send(dr, m_queue_timeout );
+      sender->send(std::move(dr), m_queue_timeout );
       wasSentSuccessfully = true;
       ++m_generated_data_requests;
     } catch (const ers::Issue& excpt) {
@@ -648,7 +649,10 @@ TriggerRecordBuilder::send_trigger_record(const TriggerId& id, std::atomic<bool>
 	bool wasSentSuccessfully = false;
 	while ( running.load() && !wasSentSuccessfully ) {
 	  try {
-	    iom->get_sender<trigger_record_ptr_t>( it->data_destination )->send( temp_record, m_queue_timeout);
+          // HACK to copy the trigger record so we can send it off to monitoring
+          auto trigger_record_bytes = serialization::serialize(temp_record, serialization::SerializationType::kMsgPack);
+          trigger_record_ptr_t record_copy = serialization::deserialize<trigger_record_ptr_t>(trigger_record_bytes);
+	    iom->get_sender<trigger_record_ptr_t>( it->data_destination )->send(std::move(record_copy), m_queue_timeout);
 	    ++m_trmon_sent_counter;
 	    wasSentSuccessfully = true;
 	  } catch (const ers::Issue& excpt) {
@@ -667,7 +671,7 @@ TriggerRecordBuilder::send_trigger_record(const TriggerId& id, std::atomic<bool>
   bool wasSentSuccessfully = false;
   while ( running.load() && !wasSentSuccessfully ) {
     try {
-      m_trigger_record_output->send( temp_record, m_queue_timeout);
+      m_trigger_record_output->send( std::move(temp_record), m_queue_timeout);
       wasSentSuccessfully = true;
       ++m_generated_trigger_records;
     } catch (const ers::Issue& excpt) {
