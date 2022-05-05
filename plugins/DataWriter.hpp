@@ -12,8 +12,8 @@
 #include "dfmodules/DataStore.hpp"
 
 #include "appfwk/DAQModule.hpp"
-#include "appfwk/DAQSink.hpp"
-#include "appfwk/DAQSource.hpp"
+#include "iomanager/Sender.hpp"
+#include "iomanager/Receiver.hpp"
 #include "daqdataformats/TriggerRecord.hpp"
 #include "dfmessages/TriggerDecisionToken.hpp"
 #include "utilities/WorkerThread.hpp"
@@ -54,9 +54,9 @@ private:
   void do_stop(const data_t&);
   void do_scrap(const data_t&);
 
-  // Threading
-  dunedaq::utilities::WorkerThread m_thread;
-  void do_work(std::atomic<bool>&);
+  // Callback
+  void receive_trigger_record(std::unique_ptr<daqdataformats::TriggerRecord> &);
+  std::atomic<bool> m_running = false;
 
   // Configuration
   // size_t m_sleep_msec_while_running;
@@ -68,24 +68,22 @@ private:
   size_t m_max_write_retry_time_usec;
   int m_write_retry_time_increase_factor;
 
-  // Queue(s)
-  using trigrecsource_t = dunedaq::appfwk::DAQSource<std::unique_ptr<daqdataformats::TriggerRecord>>;
-  std::unique_ptr<trigrecsource_t> m_trigger_record_input_queue;
-
-  // Connection(s)
-  std::string m_trigger_decision_token_connection;
+  // Connections
+  iomanager::connection::ConnectionRef m_trigger_record_connection;
+  using token_sender_t = iomanager::SenderConcept<dfmessages::TriggerDecisionToken>;
+  std::shared_ptr<token_sender_t> m_token_output;
   std::string m_trigger_decision_connection;
-
+  
   // Worker(s)
   std::unique_ptr<DataStore> m_data_writer;
-
+  
   // Metrics
   std::atomic<uint64_t> m_records_received = { 0 };     // NOLINT(build/unsigned)
   std::atomic<uint64_t> m_records_received_tot = { 0 }; // NOLINT(build/unsigned)
   std::atomic<uint64_t> m_records_written = { 0 };      // NOLINT(build/unsigned)
   std::atomic<uint64_t> m_records_written_tot = { 0 };  // NOLINT(build/unsigned)
   std::atomic<uint64_t> m_bytes_output = { 0 };         // NOLINT(build/unsigned)
-
+  
   // Other
   std::map<daqdataformats::trigger_number_t, size_t> m_seqno_counts;
 
@@ -96,7 +94,7 @@ private:
   }
 };
 } // namespace dfmodules
-
+  
 ERS_DECLARE_ISSUE_BASE(dfmodules,
                        InvalidDataWriter,
                        appfwk::GeneralDAQModuleIssue,

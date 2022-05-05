@@ -15,7 +15,7 @@
 #ifndef DFMODULES_INCLUDE_DFMODULES_DATASTORE_HPP_
 #define DFMODULES_INCLUDE_DFMODULES_DATASTORE_HPP_
 
-#include "appfwk/NamedObject.hpp"
+#include "utilities/NamedObject.hpp"
 #include "cetlib/BasicPluginFactory.h"
 #include "cetlib/compiler_macros.h"
 #include "daqdataformats/TimeSlice.hpp"
@@ -91,7 +91,7 @@ namespace dfmodules {
 /**
  * @brief comment
  */
-class DataStore : public appfwk::NamedObject
+class DataStore : public utilities::NamedObject
 {
 public:
   /**
@@ -99,7 +99,7 @@ public:
    * @param name Name of the DataStore instance
    */
   explicit DataStore(const std::string& name)
-    : appfwk::NamedObject(name)
+    : utilities::NamedObject(name)
   {}
 
   /**
