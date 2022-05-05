@@ -14,7 +14,7 @@ local types = {
     geoidconnection : s.record("geoidinst", [s.field("region", self.region_number, doc="" ) , 
                                         s.field("element", self.element_number, doc="" ), 
                                         s.field("system", self.system_type, doc="" ),
-                                        s.field("connection_name", self.connection_id, doc="" ) ], 
+                                        s.field("connection_uid", self.connection_id, doc="" ) ], 
                            doc="TriggerRecordBuilder configuration"),
 
     mapgeoidconnections : s.sequence("mapgeoidconnections",  self.geoidconnection, doc="Map of geoids queues" ),

@@ -177,14 +177,14 @@ protected:
   using trigger_decision_receiver_t = iomanager::ReceiverConcept<dfmessages::TriggerDecision>;
   using data_req_sender_t = iomanager::SenderConcept<dfmessages::DataRequest>;
   using fragment_receiver_t = iomanager::ReceiverConcept<std::unique_ptr<daqdataformats::Fragment>>;
-  using fragment_receivers_t = std::vector<std::shared_ptr<fragment_source_t>>;
+  using fragment_receivers_t = std::vector<std::shared_ptr<fragment_receiver_t>>;
 
   using trigger_record_ptr_t = std::unique_ptr<daqdataformats::TriggerRecord>;
   using trigger_record_sender_t = iomanager::SenderConcept<trigger_record_ptr_t>;
 
-  bool read_fragments(bool drain = false);
+  bool read_fragments();
 
-  bool read_and_process_trigger_decision(std::atomic<bool>& running);
+  bool read_and_process_trigger_decision(iomanager::Receiver::timeout_t, std::atomic<bool>& running);
 
   trigger_record_ptr_t extract_trigger_record(const TriggerId&);
   // build_trigger_record will allocate memory and then orphan it to the caller
@@ -193,7 +193,7 @@ protected:
 
   unsigned int create_trigger_records_and_dispatch(const dfmessages::TriggerDecision&, std::atomic<bool>& running);
 
-  bool dispatch_data_requests(const dfmessages::DataRequest&,
+  bool dispatch_data_requests(dfmessages::DataRequest,
                               const daqdataformats::GeoID&,
                               std::atomic<bool>& running) const;
 
@@ -228,7 +228,7 @@ private:
 
   // Output connections
   std::shared_ptr<trigger_record_sender_t> m_trigger_record_output;
-  std::map<daqdataformats::GeoID, shared_ptr<data_req_sender_t>> m_map_geoid_connections; ///< Mappinng between GeoID and connections
+  std::map<daqdataformats::GeoID, std::shared_ptr<data_req_sender_t>> m_map_geoid_connections; ///< Mappinng between GeoID and connections
 
   // bookeeping
   using clock_type = std::chrono::high_resolution_clock;

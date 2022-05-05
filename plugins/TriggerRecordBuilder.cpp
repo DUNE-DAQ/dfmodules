@@ -89,7 +89,7 @@ TriggerRecordBuilder::init(const data_t& init_data)
 
   for (const auto& ref : ini.conn_refs) {
     if (ref.name.rfind("data_fragment_") == 0) {
-      m_fragment_inputs.push_back( iom.get_receiver<std::unique_ptr<daqdataformats::Fragment>( ref ) );
+      m_fragment_inputs.push_back( iom.get_receiver<std::unique_ptr<daqdataformats::Fragment>>( ref ) );
     }
     else if ( ref.name == "mon_connection" ) {
       m_mon_receiver = iom.get_receiver<dfmessages::TRMonRequest>( ref );
@@ -197,9 +197,9 @@ TriggerRecordBuilder::do_start(const data_t& args)
   m_run_number.reset(new const daqdataformats::run_number_t(args.at("run").get<daqdataformats::run_number_t>()));
 
   // Register the callback to receive monitoring requests
-  if (m_mon_connection) {
+  if (m_mon_receiver) {
     m_mon_requests.clear();
-    m_mon_connection->add_callback( std::bind(&TriggerRecordBuilder::tr_requested, this, std::placeholders::_1) );
+    m_mon_receiver->add_callback( std::bind(&TriggerRecordBuilder::tr_requested, this, std::placeholders::_1) );
   }
 
   m_thread.start_working_thread(get_name());
@@ -213,8 +213,8 @@ TriggerRecordBuilder::do_stop(const data_t& /*args*/)
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_stop() method";
   // Unregister the monitoring requests callback
 
-  if (m_mon_connection) {
-    m_mon_connection->remove_callback();
+  if (m_mon_receiver) {
+    m_mon_receiver->remove_callback();
   }
 
   m_thread.stop_working_thread();
@@ -223,7 +223,7 @@ TriggerRecordBuilder::do_stop(const data_t& /*args*/)
 }
 
 void
-TriggerRecordBuilder::tr_requested(const dfmessages::TRMonRequest & ) 
+TriggerRecordBuilder::tr_requested(const dfmessages::TRMonRequest & req) 
 {
   ++m_trmon_request_counter;
 
@@ -263,17 +263,11 @@ TriggerRecordBuilder::do_work(std::atomic<bool>& running_flag)
     bool book_updates = false;
 
     // read decision requests
-    while (decision_source.can_pop()) {
-
-      book_updates = read_and_process_trigger_decision(decision_source, running_flag);
-      
-      if (book_updates)
-        break;
-
-    } // while loop, so that we can pop a trigger decision
+    book_updates = read_and_process_trigger_decision(iomanager::Receiver::s_no_block,
+						     running_flag);
 
     // read the fragments queues
-    bool new_fragments = read_fragments(frag_sources);
+    bool new_fragments = read_fragments();
 
     //-------------------------------------------------
     // Check if trigger records are complete or timedout
@@ -325,7 +319,7 @@ TriggerRecordBuilder::do_work(std::atomic<bool>& running_flag)
     if (!run_again) {
       if (running_flag.load()) {
         ++m_sleep_counter;
-        run_again = read_and_process_trigger_decision(decision_source, running_flag);
+        run_again = read_and_process_trigger_decision(m_loop_sleep, running_flag);
       }
     } else {
       ++m_loop_counter;
@@ -365,7 +359,7 @@ TriggerRecordBuilder::do_work(std::atomic<bool>& running_flag)
 } // NOLINT(readability/fn_size)
 
 bool
-TriggerRecordBuilder::read_fragments(fragment_sources_t& frag_sources, bool drain)
+TriggerRecordBuilder::read_fragments()
 {
 
   bool new_fragments = false;
@@ -374,78 +368,68 @@ TriggerRecordBuilder::read_fragments(fragment_sources_t& frag_sources, bool drai
   // Try to get Fragments from every queue
   //--------------------------------------------------
 
-  for (unsigned int j = 0; j < frag_sources.size(); ++j) {
+  for (unsigned int j = 0; j < m_fragment_inputs.size(); ++j) {
+    
+    std::unique_ptr<daqdataformats::Fragment> temp_fragment;
+    
+    try {
+      temp_fragment = m_fragment_inputs[j] -> receive( iomanager::Receiver::s_no_block );
+    } catch ( const iomanager::TimeoutExpired& e)  {
+      continue ;
+    }
 
-    while (frag_sources[j]->can_pop()) {
+    new_fragments = true;
+    
+    TriggerId temp_id(*temp_fragment);
+    bool requested = false;
+    
+    auto it = m_trigger_records.find(temp_id);
+    
+    if (it != m_trigger_records.end()) {
+      
+      // check if the fragment has a GeoId that was desired
+      daqdataformats::TriggerRecordHeader& header = it->second.second->get_header_ref();
+      
+      for (size_t i = 0; i < header.get_num_requested_components(); ++i) {
+	
+	const daqdataformats::ComponentRequest& request = header[i];
+	if (request.component == temp_fragment->get_element_id()) {
+	  requested = true;
+	  break;
+	}
+	
+      } // request loop
 
-      std::unique_ptr<daqdataformats::Fragment> temp_fragment;
+    } // if there is a corresponding trigger ID entry in the boook
 
-      try {
-        frag_sources[j]->pop(temp_fragment, m_queue_timeout);
-
-      } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
-        // it is perfectly reasonable that there might be no data in the queue
-        // some fraction of the times that we check, so we just continue on and
-        // try again
-        continue;
-      }
-
-      new_fragments = true;
-
-      TriggerId temp_id(*temp_fragment);
-      bool requested = false;
-
-      auto it = m_trigger_records.find(temp_id);
-
-      if (it != m_trigger_records.end()) {
-
-        // check if the fragment has a GeoId that was desired
-        daqdataformats::TriggerRecordHeader& header = it->second.second->get_header_ref();
-
-        for (size_t i = 0; i < header.get_num_requested_components(); ++i) {
-
-          const daqdataformats::ComponentRequest& request = header[i];
-          if (request.component == temp_fragment->get_element_id()) {
-            requested = true;
-            break;
-          }
-
-        } // request loop
-
-      } // if there is a corresponding trigger ID entry in the boook
-
-      if (requested) {
-        it->second.second->add_fragment(std::move(temp_fragment));
-        ++m_fragment_counter;
-        --m_pending_fragment_counter;
-      } else {
-        ers::error(UnexpectedFragment(
-          ERS_HERE, temp_id, temp_fragment->get_fragment_type_code(), temp_fragment->get_element_id()));
-        ++m_unexpected_fragments;
-      }
-
-      if (!drain)
-        break;
-
-    } // while loop over the j-th queue
-
+    if (requested) {
+      it->second.second->add_fragment(std::move(temp_fragment));
+      ++m_fragment_counter;
+      --m_pending_fragment_counter;
+    } else {
+      ers::error(UnexpectedFragment(
+				    ERS_HERE, temp_id, temp_fragment->get_fragment_type_code(), temp_fragment->get_element_id()));
+      ++m_unexpected_fragments;
+    }
+    
   } // queue loop
-
+  
   return new_fragments;
+  
 }
 
 bool
-TriggerRecordBuilder::read_and_process_trigger_decision(std::atomic<bool>& running)
+TriggerRecordBuilder::read_and_process_trigger_decision(iomanager::Receiver::timeout_t timeout,
+							std::atomic<bool>& running)
 {
-
+  
   dfmessages::TriggerDecision temp_dec;
 
   try {
-
     // get the trigger decision
-    decision_source.pop(temp_dec, m_loop_sleep);
+    temp_dec = m_trigger_decision_input -> receive(timeout);
 
-  } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
+  } catch (const iomanager::TimeoutExpired& ex) {
     return false;
   }
 
@@ -454,11 +438,11 @@ TriggerRecordBuilder::read_and_process_trigger_decision(std::atomic<bool>& runni
     ++m_unexpected_trigger_decisions;
     return false;
   }
-
+  
   ++m_received_trigger_decisions;
 
   bool book_updates = create_trigger_records_and_dispatch(temp_dec, running) > 0;
-
+  
   return book_updates;
 }
 
@@ -609,7 +593,7 @@ TriggerRecordBuilder::create_trigger_records_and_dispatch(const dfmessages::Trig
 }
 
 bool
-TriggerRecordBuilder::dispatch_data_requests(const dfmessages::DataRequest& dr,
+TriggerRecordBuilder::dispatch_data_requests(dfmessages::DataRequest dr,
                                              const daqdataformats::GeoID& geo,
                                              std::atomic<bool>& running) const
 
@@ -632,14 +616,14 @@ TriggerRecordBuilder::dispatch_data_requests(const dfmessages::DataRequest& dr,
     TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Pushing the DataRequest from trigger number " << dr.trigger_number
                                 << " onto connection :" << sender -> get_name();
 
-    // push data request into the corresponding queue
+    // send data request into the corresponding connection
     try {
-      sender->send( dr, m_queue_timeout );
+      sender->send(dr, m_queue_timeout );
       wasSentSuccessfully = true;
       ++m_generated_data_requests;
     } catch (const ers::Issue& excpt) {
       std::ostringstream oss_warn;
-      oss_warn << "Send to connection \"" << name << "\" failed";
+      oss_warn << "Send to connection \"" << sender -> get_name() << "\" failed";
       ers::warning(iomanager::OperationFailed(ERS_HERE, oss_warn.str(), excpt));
     }
   } while (!wasSentSuccessfully && running.load());
@@ -655,29 +639,34 @@ TriggerRecordBuilder::send_trigger_record(const TriggerId& id, std::atomic<bool>
 
   // Send to monitoring, if needed
 
-  if (m_mon_connection) {
+  if (m_mon_receiver) {
     const std::lock_guard<std::mutex> lock(m_mon_mutex);
     auto it = m_mon_requests.begin();
     while (it != m_mon_requests.end()) {
       // send TR to mon if correct trigger type
       if (it->trigger_type == temp_record->get_header_data().trigger_type) {
-        try {
-	  m_mon_connection->send( temp_record, m_queue_timeout);
-          ++m_trmon_sent_counter;
-        } catch (const ers::Issue& excpt) {
-          std::ostringstream oss_warn;
-          oss_warn << "Sending TR to connection \"" << it->data_destination << "\" failed";
-          ers::warning(iomanager::OperationFailed(ERS_HERE, oss_warn.str(), excpt));
-        }
+	iomanager::IOManager iom;
+	bool wasSentSuccessfully = false;
+	while ( running.load() && !wasSentSuccessfully ) {
+	  try {
+	    iom.get_sender<trigger_record_ptr_t>( it->data_destination )->send( temp_record, m_queue_timeout);
+	    ++m_trmon_sent_counter;
+	    wasSentSuccessfully = true;
+	  } catch (const ers::Issue& excpt) {
+	    std::ostringstream oss_warn;
+	    oss_warn << "Sending TR to connection \"" << it->data_destination << "\" failed";
+	    ers::warning(iomanager::OperationFailed(ERS_HERE, oss_warn.str(), excpt));
+	  }
+	}
         it = m_mon_requests.erase(it);
       } else {
         ++it;
       }
     }
-  }
+  }  // if m_mon_receiver
+  
   bool wasSentSuccessfully = false;
-  bool non_atomic_running = running.load();
-  while ((non_atomic_running && (!wasSentSuccessfully)) || ((!non_atomic_running) && sink.can_push())) {
+  while ( running.load() && !wasSentSuccessfully ) {
     try {
       m_trigger_record_output->send( temp_record, m_queue_timeout);
       wasSentSuccessfully = true;
@@ -685,11 +674,6 @@ TriggerRecordBuilder::send_trigger_record(const TriggerId& id, std::atomic<bool>
     } catch (const ers::Issue& excpt) {
       ers::warning( excpt );
     }
-
-    non_atomic_running = running.load();
-    
-    if (!non_atomic_running)
-      break;
   } // push while loop
   
   if (!wasSentSuccessfully) {
@@ -702,7 +686,7 @@ TriggerRecordBuilder::send_trigger_record(const TriggerId& id, std::atomic<bool>
 }
 
 bool
-TriggerRecordBuilder::check_stale_requests(trigger_record_sink_t& sink, std::atomic<bool>& running)
+TriggerRecordBuilder::check_stale_requests(std::atomic<bool>& running)
 {
 
   bool book_updates = false;
@@ -714,29 +698,29 @@ TriggerRecordBuilder::check_stale_requests(trigger_record_sink_t& sink, std::ato
   if (m_trigger_timeout.count() > 0) {
 
     std::vector<TriggerId> stale_triggers;
-
+    
     for (auto it = m_trigger_records.begin(); it != m_trigger_records.end(); ++it) {
 
       daqdataformats::TriggerRecord& tr = *it->second.second;
-
+      
       auto tr_time = clock_type::now() - it->second.first;
-
+      
       if (tr_time > m_trigger_timeout) {
-
+	
         ers::error(TimedOutTriggerDecision(ERS_HERE, it->first, tr.get_header_ref().get_trigger_timestamp()));
-
+	
         // mark trigger record for seding
         stale_triggers.push_back(it->first);
         ++m_timed_out_trigger_records;
-
+	
         book_updates = true;
       }
-
+      
     } // trigger record loop
 
     // create the trigger record and send it
     for (const auto& t : stale_triggers) {
-      send_trigger_record(t, sink, running);
+      send_trigger_record(t, running);
     }
 
   } //  m_trigger_timeout > 0
