@@ -67,18 +67,10 @@ RequestReceiver::init(const data_t& init_data)
   auto iom = iomanager::IOManager::get() ;
   for (const auto& ref : ini.conn_refs) {
     if ( ref.dir == iomanager::connection::Direction::kOutput) {
-      try {
         iom ->get_sender<incoming_t>(ref) ; 
-      } catch (const ers::Issue& excpt) {
-        throw InvalidQueueFatalError(ERS_HERE, get_name(), ref.name, excpt);
-      }
-    } else if (ref.dir == iomanager::connection::Direction::kOutput) {
-      try {
+    } else if (ref.dir == iomanager::connection::Direction::kInput) {
 	iom->get_receiver<incoming_t>(ref) ;
 	m_incoming_data_ref = ref;
-      } catch (const ers::Issue& excpt) {
-        throw InvalidQueueFatalError(ERS_HERE, get_name(), ref.name, excpt);
-      } 
     }
   }
 
