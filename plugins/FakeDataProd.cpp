@@ -58,10 +58,10 @@ void
 FakeDataProd::init(const data_t& init_data)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
-  auto qi = appfwk::connection_index(init_data, { "data_request_input_queue", "timesync" });
+  auto qi = appfwk::connection_index(init_data, { "data_request_input_queue", "timesync_output" });
 
   m_data_request_ref = qi["data_request_input_queue"];
-  m_timesync_ref = qi["timesync"];
+  m_timesync_ref = qi["timesync_output"];
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
