@@ -269,9 +269,11 @@ DataFlowOrchestrator::receive_trigger_complete_token(const dfmessages::TriggerDe
 
   auto app_it = m_dataflow_availability.find(token.decision_destination);
   // check if application data exists;
-  if (app_it == m_dataflow_availability.end())
+  if (app_it == m_dataflow_availability.end()) {
+    ers::warning( UnknownTokenSource(ERS_HERE, token.decision_destination));
     return;
-
+  }
+  
   ++m_received_tokens;
   auto callback_start = std::chrono::steady_clock::now();
 

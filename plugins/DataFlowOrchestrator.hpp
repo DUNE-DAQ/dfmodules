@@ -39,6 +39,10 @@ ERS_DECLARE_ISSUE(dfmodules,
                   "TriggerRecordBuilder app " << connection_name << ": " << message,
                   ((std::string)connection_name)((std::string)message))
 ERS_DECLARE_ISSUE(dfmodules,
+                  UnknownTokenSource,
+                  "Token from unknown source: " << connection_name,
+                  ((std::string)connection_name))
+ERS_DECLARE_ISSUE(dfmodules,
                   DataFlowOrchestratorRunNumberMismatch,
                   "DataFlowOrchestrator encountered run number mismatch: recvd ("
                     << received_run_number << ") != " << run_number << " from " << src_app,
