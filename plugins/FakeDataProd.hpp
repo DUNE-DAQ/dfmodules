@@ -13,7 +13,7 @@
 #include "dfmessages/DataRequest.hpp"
 
 #include "appfwk/DAQModule.hpp"
-#include "iomanager/ConnectionId.hpp" 
+#include "iomanager/ConnectionId.hpp"
 #include "utilities/WorkerThread.hpp"
 
 #include <memory>
@@ -72,7 +72,7 @@ private:
 
   // Threading
   dunedaq::utilities::WorkerThread m_timesync_thread;
-  void process_data_request(dfmessages::DataRequest &);
+  void process_data_request(dfmessages::DataRequest&);
   void do_timesync(std::atomic<bool>&);
 
   // Configuration
@@ -89,7 +89,7 @@ private:
 
   iomanager::connection::ConnectionRef m_data_request_ref;
   iomanager::connection::ConnectionRef m_timesync_ref;
-  
+
   std::atomic<uint64_t> m_received_requests{ 0 }; // NOLINT (build/unsigned)
   std::atomic<uint64_t> m_sent_fragments{ 0 };    // NOLINT (build/unsigned)
 };

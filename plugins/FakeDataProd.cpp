@@ -12,9 +12,9 @@
 #include "dfmodules/fakedataprodinfo/InfoNljs.hpp"
 
 #include "appfwk/DAQModuleHelper.hpp"
-#include "iomanager/IOManager.hpp"
 #include "dfmessages/Fragment_serialization.hpp"
 #include "dfmessages/TimeSync.hpp"
+#include "iomanager/IOManager.hpp"
 #include "logging/Logging.hpp"
 #include "networkmanager/NetworkManager.hpp"
 
@@ -95,10 +95,10 @@ FakeDataProd::do_start(const data_t& payload)
   m_run_number = payload.value<dunedaq::daqdataformats::run_number_t>("run", 0);
 
   m_timesync_thread.start_working_thread();
-  
+
   auto iom = iomanager::IOManager::get();
-  iom->add_callback<dfmessages::DataRequest>( m_data_request_ref,
-					      std::bind( & FakeDataProd::process_data_request, this, std::placeholders::_1) );
+  iom->add_callback<dfmessages::DataRequest>(
+    m_data_request_ref, std::bind(&FakeDataProd::process_data_request, this, std::placeholders::_1));
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
 }
 
@@ -128,7 +128,7 @@ FakeDataProd::do_timesync(std::atomic<bool>& running_flag)
 
   auto iom = iomanager::IOManager::get();
   auto sender_ptr = iom->get_sender<dfmessages::TimeSync>(m_timesync_ref);
-  
+
   int sent_count = 0;
   uint64_t msg_seqno = 0; // NOLINT (build/unsigned)
   while (running_flag.load()) {
@@ -144,11 +144,10 @@ FakeDataProd::do_timesync(std::atomic<bool>& running_flag)
                                 << " run=" << timesyncmsg.run_number << " seqno=" << timesyncmsg.sequence_number
                                 << " pid=" << timesyncmsg.source_pid;
     try {
-      sender_ptr -> send( std::move(timesyncmsg), std::chrono::milliseconds(500), m_timesync_topic_name );
+      sender_ptr->send(std::move(timesyncmsg), std::chrono::milliseconds(500), m_timesync_topic_name);
       ++sent_count;
     } catch (ers::Issue& excpt) {
-      ers::warning(
-        TimeSyncTransmissionFailed(ERS_HERE, get_name(), m_timesync_ref.uid, excpt));
+      ers::warning(TimeSyncTransmissionFailed(ERS_HERE, get_name(), m_timesync_ref.uid, excpt));
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
@@ -156,17 +155,17 @@ FakeDataProd::do_timesync(std::atomic<bool>& running_flag)
 }
 
 void
-FakeDataProd::process_data_request( dfmessages::DataRequest & data_request)
+FakeDataProd::process_data_request(dfmessages::DataRequest& data_request)
 {
 
-  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << "processsing request " << data_request.request_number;
-  
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": processsing request " << data_request.request_number;
+
   m_received_requests++;
 
   // num_frames_to_send = ⌈window_size / tick_diff⌉
   size_t num_frames_to_send = (data_request.request_information.window_end -
-			       data_request.request_information.window_begin + m_time_tick_diff - 1) /
-    m_time_tick_diff;
+                               data_request.request_information.window_begin + m_time_tick_diff - 1) /
+                              m_time_tick_diff;
   size_t num_bytes_to_send = num_frames_to_send * m_frame_size;
 
   // We don't care about the content of the data, but the size should be correct
@@ -177,9 +176,9 @@ FakeDataProd::process_data_request( dfmessages::DataRequest & data_request)
   } catch (const std::bad_alloc&) {
     throw dunedaq::dfmodules::MemoryAllocationFailed(ERS_HERE, get_name(), num_bytes_to_send);
   }
-  
+
   auto data_fragment_ptr = std::make_unique<daqdataformats::Fragment>(fake_data.data(), num_bytes_to_send);
-  
+
   data_fragment_ptr->set_trigger_number(data_request.trigger_number);
   data_fragment_ptr->set_run_number(m_run_number);
   data_fragment_ptr->set_element_id(m_geoid);
@@ -189,19 +188,20 @@ FakeDataProd::process_data_request( dfmessages::DataRequest & data_request)
   data_fragment_ptr->set_window_begin(data_request.request_information.window_begin);
   data_fragment_ptr->set_window_end(data_request.request_information.window_end);
   data_fragment_ptr->set_sequence_number(data_request.sequence_number);
-  
+
   if (m_response_delay > 0) {
     std::this_thread::sleep_for(std::chrono::nanoseconds(m_response_delay));
   }
 
   try {
     auto iom = iomanager::IOManager::get();
-    iom->get_sender<daqdataformats::Fragment>(data_request.data_destination)->send( std::move(*data_fragment_ptr), std::chrono::milliseconds(1000));
+    iom->get_sender<daqdataformats::Fragment>(data_request.data_destination)
+      ->send(std::move(*data_fragment_ptr), std::chrono::milliseconds(1000));
   } catch (ers::Issue& e) {
     ers::warning(FragmentTransmissionFailed(ERS_HERE, get_name(), data_request.trigger_number, e));
   }
-  
-  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": finsihing processing request " << data_request.request_number; 
+
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": finishing processing request " << data_request.request_number;
 }
 
 } // namespace dfmodules
