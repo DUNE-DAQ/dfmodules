@@ -29,14 +29,14 @@ namespace dunedaq {
 namespace dfmodules {
 
 TriggerInhibitAgent::TriggerInhibitAgent(const std::string& parent_name,
-                                         std::unique_ptr<trigdecsource_t> our_input,
-                                         std::unique_ptr<triginhsink_t> our_output)
+                                         std::shared_ptr<trigdecreceiver_t> our_input,
+                                         std::shared_ptr<triginhsender_t> our_output)
   : NamedObject(parent_name + "::TriggerInhibitAgent")
   , m_thread(std::bind(&TriggerInhibitAgent::do_work, this, std::placeholders::_1))
   , m_queue_timeout(100)
   , m_threshold_for_inhibit(1)
-  , m_trigger_decision_source(std::move(our_input))
-  , m_trigger_inhibit_sink(std::move(our_output))
+  , m_trigger_decision_receiver(our_input)
+  , m_trigger_inhibit_sender(our_output)
   , m_trigger_number_at_start_of_processing_chain(0)
   , m_trigger_number_at_end_of_processing_chain(0)
 {}
@@ -93,13 +93,12 @@ TriggerInhibitAgent::do_work(std::atomic<bool>& running_flag)
     // check if a TriggerDecision message has arrived, and save the trigger
     // number contained within it, if one has arrived
     try {
-      dfmessages::TriggerDecision trig_dec;
-      m_trigger_decision_source->pop(trig_dec, m_queue_timeout);
+      dfmessages::TriggerDecision trig_dec = m_trigger_decision_receiver->receive(m_queue_timeout);
       ++received_message_count;
       TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Popped the TriggerDecision for trigger number "
                                   << trig_dec.trigger_number << " off the input queue";
       m_trigger_number_at_start_of_processing_chain.store(trig_dec.trigger_number);
-    } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
+    } catch (const iomanager::TimeoutExpired& excpt) {
       // it is perfectly reasonable that there will be no data in the queue some
       // fraction of the times that we check, so we just continue on and try again later
     }
@@ -139,7 +138,7 @@ TriggerInhibitAgent::do_work(std::atomic<bool>& running_flag)
         TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Pushing a TriggerInhibit message with busy state set to "
                                     << inhibit_message.busy << " onto the output queue";
         try {
-          m_trigger_inhibit_sink->push(inhibit_message, m_queue_timeout);
+          m_trigger_inhibit_sender->send(std::move(inhibit_message), m_queue_timeout);
           ++sent_message_count;
 #if 0
           // temporary logging
@@ -153,7 +152,7 @@ TriggerInhibitAgent::do_work(std::atomic<bool>& running_flag)
           current_state = requested_state;
           requested_state = no_update;
           last_sent_time = std::chrono::steady_clock::now();
-        } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
+        } catch (const iomanager::TimeoutExpired& excpt) {
           // It is not ideal if we fail to send the inhibit message out, but rather than
           // retrying some unknown number of times, we simply output a TRACE message and
           // go on.  This has the benefit of being responsive with pulling TriggerDecision

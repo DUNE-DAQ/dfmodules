@@ -12,8 +12,8 @@
 #ifndef DFMODULES_SRC_DFMODULES_TRIGGERDECISIONFORWARDER_HPP_
 #define DFMODULES_SRC_DFMODULES_TRIGGERDECISIONFORWARDER_HPP_
 
-#include "appfwk/DAQSink.hpp"
-#include "appfwk/NamedObject.hpp"
+#include "iomanager/Sender.hpp"
+#include "utilities/NamedObject.hpp"
 #include "dfmessages/TriggerDecision.hpp"
 #include "utilities/WorkerThread.hpp"
 
@@ -31,15 +31,15 @@ namespace dfmodules {
 /**
  * @brief
  */
-class TriggerDecisionForwarder : public appfwk::NamedObject
+class TriggerDecisionForwarder : public utilities::NamedObject
 {
 public:
-  using trigdecsink_t = dunedaq::appfwk::DAQSink<dfmessages::TriggerDecision>;
+  using trigdecsender_t = iomanager::SenderConcept<dfmessages::TriggerDecision>;
 
   /**
    * @brief TriggerDecisionForwarder Constructor
    */
-  explicit TriggerDecisionForwarder(const std::string&, std::unique_ptr<trigdecsink_t>);
+  explicit TriggerDecisionForwarder(const std::string&, std::shared_ptr<trigdecsender_t>);
 
   TriggerDecisionForwarder(const TriggerDecisionForwarder&) =
     delete; ///< TriggerDecisionForwarder is not copy-constructible
@@ -68,8 +68,8 @@ private:
   // Configuration
   std::chrono::milliseconds m_queue_timeout;
 
-  // Queue(s)
-  std::unique_ptr<trigdecsink_t> m_trigger_decision_sink;
+  // Connections
+  std::shared_ptr<trigdecsender_t> m_trigger_decision_sender;
 
   // Internal data
   std::mutex m_data_mutex;

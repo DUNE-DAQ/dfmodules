@@ -12,8 +12,8 @@
 #include "dfmessages/TriggerDecision.hpp"
 
 #include "appfwk/DAQModule.hpp"
-#include "appfwk/DAQSink.hpp"
-#include "ipm/Receiver.hpp"
+#include "iomanager/Sender.hpp"
+#include "iomanager/ConnectionId.hpp"
 
 #include <map>
 #include <memory>
@@ -54,16 +54,16 @@ private:
 
   void get_info(opmonlib::InfoCollector& ci, int level) override;
 
-  void dispatch_triggerdecision(ipm::Receiver::Response message);
+  void dispatch_triggerdecision(dfmessages::TriggerDecision &);
 
   // Configuration
   std::chrono::milliseconds m_queue_timeout;
   dunedaq::daqdataformats::run_number_t m_run_number;
-  std::string m_connection_name;
 
-  // Queue(s)
-  using triggerdecisionsink_t = dunedaq::appfwk::DAQSink<dfmessages::TriggerDecision>;
-  std::unique_ptr<triggerdecisionsink_t> m_triggerdecision_output_queue;
+  // Connections
+  iomanager::ConnectionRef m_input_connection;
+  using triggerdecisionsender_t = iomanager::SenderConcept<dfmessages::TriggerDecision>;
+  std::shared_ptr<triggerdecisionsender_t> m_triggerdecision_output;
 
   size_t m_received_triggerdecisions{ 0 };
 };

@@ -12,8 +12,8 @@
 #include "daqdataformats/Fragment.hpp"
 
 #include "appfwk/DAQModule.hpp"
-#include "appfwk/DAQSink.hpp"
-#include "ipm/Receiver.hpp"
+#include "iomanager/Sender.hpp"
+#include "iomanager/ConnectionId.hpp"
 
 #include <map>
 #include <memory>
@@ -51,17 +51,18 @@ private:
 
   void get_info(opmonlib::InfoCollector& ci, int level) override;
 
-  void dispatch_fragment(ipm::Receiver::Response message);
+  using internal_data_t = std::unique_ptr<daqdataformats::Fragment>;
+  
+  void dispatch_fragment(internal_data_t &);
 
   // Configuration
   std::chrono::milliseconds m_queue_timeout;
   dunedaq::daqdataformats::run_number_t m_run_number;
-  std::string m_connection_name;
 
-  // Queue(s)
-  using fragmentsink_t = dunedaq::appfwk::DAQSink<std::unique_ptr<daqdataformats::Fragment>>;
-  std::string m_fragment_q_name;
-  std::unique_ptr<fragmentsink_t> m_fragment_output_queue;
+  // Connections
+  iomanager::connection::ConnectionRef m_input_connection;
+  using fragmentsender_t = iomanager::SenderConcept<internal_data_t>;
+  std::shared_ptr<fragmentsender_t> m_fragment_output;
 
   size_t m_received_fragments{ 0 };
 };

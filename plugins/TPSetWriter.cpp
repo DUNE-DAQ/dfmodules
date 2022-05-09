@@ -9,6 +9,7 @@
 #include "TPSetWriter.hpp"
 #include "dfmodules/tpsetwriter/Nljs.hpp"
 
+#include "iomanager/IOManager.hpp" 
 #include "appfwk/DAQModuleHelper.hpp"
 #include "appfwk/app/Nljs.hpp"
 #include "daqdataformats/Fragment.hpp"
@@ -49,7 +50,8 @@ void
 TPSetWriter::init(const nlohmann::json& payload)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
-  m_tpset_source.reset(new source_t(appfwk::queue_inst(payload, "tpset_source")));
+  auto iom = iomanager::IOManager::get();
+  m_tpset_source = iom->get_receiver<incoming_t>(appfwk::connection_inst(payload, "tpset_source"));
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
 
@@ -117,9 +119,9 @@ TPSetWriter::do_work(std::atomic<bool>& running_flag)
   while (running_flag.load()) {
     trigger::TPSet tpset;
     try {
-      m_tpset_source->pop(tpset, std::chrono::milliseconds(100));
+      tpset = m_tpset_source->receive(std::chrono::milliseconds(100));
       ++n_tpset_received;
-    } catch (appfwk::QueueTimeoutExpired&) {
+    } catch (iomanager::TimeoutExpired&) {
       continue;
     }
 

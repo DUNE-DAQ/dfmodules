@@ -15,12 +15,15 @@
 
 #include "dfmessages/DataRequest.hpp"
 #include "dfmessages/TriggerDecision.hpp"
-#include "ipm/Receiver.hpp"
+#include "dfmessages/TriggerDecisionToken.hpp"
+#include "dfmessages/TriggerInhibit.hpp"
+#include "daqdataformats/TriggerRecord.hpp"
+
+#include "iomanager/ConnectionId.hpp"
+#include "iomanager/Sender.hpp"
 
 #include "appfwk/DAQModule.hpp"
-#include "appfwk/DAQSource.hpp"
 #include "logging/Logging.hpp"
-#include "utilities/WorkerThread.hpp"
 
 #include <map>
 #include <memory>
@@ -35,6 +38,10 @@ ERS_DECLARE_ISSUE(dfmodules,
                   TriggerRecordBuilderAppUpdate,
                   "TriggerRecordBuilder app " << connection_name << ": " << message,
                   ((std::string)connection_name)((std::string)message))
+ERS_DECLARE_ISSUE(dfmodules,
+                  UnknownTokenSource,
+                  "Token from unknown source: " << connection_name,
+                  ((std::string)connection_name))
 ERS_DECLARE_ISSUE(dfmodules,
                   DataFlowOrchestratorRunNumberMismatch,
                   "DataFlowOrchestrator encountered run number mismatch: recvd ("
@@ -83,8 +90,8 @@ private:
 
   void get_info(opmonlib::InfoCollector& ci, int level) override;
 
-  virtual void receive_trigger_complete_token(ipm::Receiver::Response message);
-  void receive_trigger_decision(ipm::Receiver::Response message);
+  virtual void receive_trigger_complete_token(const dfmessages::TriggerDecisionToken &);
+  void receive_trigger_decision(const dfmessages::TriggerDecision &);
   virtual bool is_busy() const;
   void notify_trigger(bool busy) const;
   bool dispatch(std::shared_ptr<AssignedTriggerDecision> assignment);
@@ -93,16 +100,14 @@ private:
   // Configuration
   std::chrono::milliseconds m_queue_timeout;
   dunedaq::daqdataformats::run_number_t m_run_number;
-  std::string m_token_connection_name;
-  std::string m_busy_connection_name;
-  std::string m_td_connection_name;
+
+  //Connections
+  std::shared_ptr<iomanager::SenderConcept<dfmessages::TriggerInhibit>> m_busy_sender;
+  iomanager::connection::ConnectionRef m_token_connection;
+  iomanager::connection::ConnectionRef m_td_connection;
   size_t m_td_send_retries;
 
   // Coordination
-  // utilities::WorkerThread m_working_thread;
-  // std::condition_variable m_slot_available_cv;
-  // mutable std::mutex m_slot_available_mutex;
-  // atomic<bool> m_last_notifiled_status{false};
   std::atomic<bool> m_running_status{ false };
   mutable std::atomic<bool> m_last_notified_busy{ false };
   std::chrono::steady_clock::time_point m_last_token_received;

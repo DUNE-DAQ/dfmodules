@@ -12,7 +12,7 @@
 #define DFMODULES_PLUGINS_TPSETWRITER_HPP_
 
 #include "appfwk/DAQModule.hpp"
-#include "appfwk/DAQSource.hpp"
+#include "iomanager/Receiver.hpp"
 #include "trigger/TPSet.hpp"
 #include "utilities/WorkerThread.hpp"
 
@@ -58,8 +58,9 @@ private:
   daqdataformats::run_number_t m_run_number;
 
   // Queue sources and sinks
-  using source_t = appfwk::DAQSource<trigger::TPSet>;
-  std::unique_ptr<source_t> m_tpset_source;
+  using incoming_t = trigger::TPSet;
+  using source_t = iomanager::ReceiverConcept<incoming_t>;
+  std::shared_ptr<source_t> m_tpset_source;
 };
 } // namespace dfmodules
 } // namespace dunedaq

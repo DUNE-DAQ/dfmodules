@@ -29,11 +29,11 @@ namespace dunedaq {
 namespace dfmodules {
 
 TriggerDecisionForwarder::TriggerDecisionForwarder(const std::string& parent_name,
-                                                   std::unique_ptr<trigdecsink_t> our_output)
+                                                   std::shared_ptr<trigdecsender_t> our_output)
   : NamedObject(parent_name + "::TriggerDecisionForwarder")
   , m_thread(std::bind(&TriggerDecisionForwarder::do_work, this, std::placeholders::_1))
   , m_queue_timeout(100)
-  , m_trigger_decision_sink(std::move(our_output))
+  , m_trigger_decision_sender(our_output)
   , m_trig_dec_has_been_sent(true)
 {}
 
@@ -74,15 +74,15 @@ TriggerDecisionForwarder::do_work(std::atomic<bool>& running_flag)
       TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Pushing the TriggerDecision for trigger number "
                                   << m_latest_trigger_decision.trigger_number << " onto the output queue.";
       try {
-        m_trigger_decision_sink->push(m_latest_trigger_decision, m_queue_timeout / 2);
+        m_trigger_decision_sender->send(std::move(m_latest_trigger_decision), m_queue_timeout / 2);
         m_trig_dec_has_been_sent = true;
         ++sent_message_count;
-      } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
+      } catch (const iomanager::TimeoutExpired& excpt) {
         // It is not ideal if we fail to send the TriggerDecision message out, but rather than
         // retrying some unknown number of times, we simply output a TRACE message and
         // go on.  This has the benefit of being responsive to updates to the latest TriggerDecision.
         TLOG_DEBUG(TLVL_WORK_STEPS) << get_name()
-                                    << ": TIMEOUT pushing a TriggerDecision message onto the output queue";
+                                    << ": TIMEOUT pushing a TriggerDecision message onto the output connection";
       }
 
       // this sleep is intended to allow updates to the latest TriggerDecision to happen in parallel
