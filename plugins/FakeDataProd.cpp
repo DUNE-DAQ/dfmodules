@@ -79,6 +79,7 @@ FakeDataProd::do_conf(const data_t& payload)
   m_frame_size = tmpConfig.frame_size;
   m_response_delay = tmpConfig.response_delay;
   m_fragment_type = daqdataformats::string_to_fragment_type(tmpConfig.fragment_type);
+  m_timesync_topic_name = tmpConfig.timesync_topic_name;
 
   TLOG_DEBUG(TLVL_CONFIG) << get_name() << ": configured for link number " << m_geoid.element_id;
 
@@ -143,7 +144,7 @@ FakeDataProd::do_timesync(std::atomic<bool>& running_flag)
                                 << " run=" << timesyncmsg.run_number << " seqno=" << timesyncmsg.sequence_number
                                 << " pid=" << timesyncmsg.source_pid;
     try {
-      sender_ptr -> send( std::move(timesyncmsg), std::chrono::milliseconds(500) );
+      sender_ptr -> send( std::move(timesyncmsg), std::chrono::milliseconds(500), m_timesync_topic_name );
       ++sent_count;
     } catch (ers::Issue& excpt) {
       ers::warning(
