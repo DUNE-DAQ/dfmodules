@@ -38,7 +38,7 @@ confgen_arguments_base=[ "-d", "./frames.bin", "-o", ".", "-s", "10", "-n", str(
 confgen_arguments={"WIB1_System": confgen_arguments_base,
                    "Software_TPG_System": confgen_arguments_base+["--enable-software-tpg", "-c", str(3*number_of_data_producers*number_of_readout_apps)]}
 # The commands to run in nanorc, as a list
-nanorc_command_list="boot init conf start 101 resume wait 180 pause wait 2 stop wait 21 start 102 resume wait 120 pause wait 2 stop wait 21 scrap terminate".split()
+nanorc_command_list="boot test-partition init conf start 101 resume wait 180 pause wait 2 stop wait 21 start 102 resume wait 120 pause wait 2 stop wait 21 scrap terminate".split()
 
 # The tests themselves
 
