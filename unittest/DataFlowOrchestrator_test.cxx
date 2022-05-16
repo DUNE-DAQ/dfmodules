@@ -38,13 +38,13 @@ struct ConfigurationTestFixture
     {
         dunedaq::iomanager::ConnectionIds_t connections;
         connections.emplace_back(
-            dunedaq::iomanager::ConnectionId{ "test.trigdec_0", dunedaq::iomanager::ServiceType::kNetwork, "dfmessages::TriggerDecision", "tcp://127.0.0.10:5050" });
+            dunedaq::iomanager::ConnectionId{ "test.trigdec_0", dunedaq::iomanager::ServiceType::kNetSender, "dfmessages::TriggerDecision", "tcp://127.0.0.10:5050" });
         connections.emplace_back(
-            dunedaq::iomanager::ConnectionId{ "test.trigdec", dunedaq::iomanager::ServiceType::kNetwork, "dfmessages::TriggerDecision", "inproc://trigdec" });
+            dunedaq::iomanager::ConnectionId{ "test.trigdec", dunedaq::iomanager::ServiceType::kNetReceiver, "dfmessages::TriggerDecision", "inproc://trigdec" });
         connections.emplace_back(
-            dunedaq::iomanager::ConnectionId{ "test.triginh", dunedaq::iomanager::ServiceType::kNetwork, "dfmessages::TriggerInhibit", "inproc://triginh" });
+            dunedaq::iomanager::ConnectionId{ "test.triginh", dunedaq::iomanager::ServiceType::kNetReceiver, "dfmessages::TriggerInhibit", "inproc://triginh" });
         connections.emplace_back(
-            dunedaq::iomanager::ConnectionId{ "test.token", dunedaq::iomanager::ServiceType::kNetwork, "dfmessages::TriggerDecisionToken", "inproc://token" });
+            dunedaq::iomanager::ConnectionId{ "test.token", dunedaq::iomanager::ServiceType::kNetReceiver, "dfmessages::TriggerDecisionToken", "inproc://token" });
         connections.emplace_back(
             dunedaq::iomanager::ConnectionId{ "trigger_decision_q", dunedaq::iomanager::ServiceType::kQueue, "dfmessages::TriggerDecision", "queue://FollySPSCQueue:1" });
         
