@@ -38,13 +38,21 @@ struct ConfigurationTestFixture
     {
         dunedaq::iomanager::ConnectionIds_t connections;
         connections.emplace_back(
-            dunedaq::iomanager::ConnectionId{ "test.trigdec_0", dunedaq::iomanager::ServiceType::kNetwork, "dfmessages::TriggerDecision", "tcp://127.0.0.10:5050" });
+            dunedaq::iomanager::ConnectionId{ "test.trigdec_0_s", dunedaq::iomanager::ServiceType::kNetSender, "dfmessages::TriggerDecision", "tcp://127.0.0.10:5050" });
         connections.emplace_back(
-            dunedaq::iomanager::ConnectionId{ "test.trigdec", dunedaq::iomanager::ServiceType::kNetwork, "dfmessages::TriggerDecision", "inproc://trigdec" });
+            dunedaq::iomanager::ConnectionId{ "test.trigdec_s", dunedaq::iomanager::ServiceType::kNetSender, "dfmessages::TriggerDecision", "inproc://trigdec" });
         connections.emplace_back(
-            dunedaq::iomanager::ConnectionId{ "test.triginh", dunedaq::iomanager::ServiceType::kNetwork, "dfmessages::TriggerInhibit", "inproc://triginh" });
+            dunedaq::iomanager::ConnectionId{ "test.triginh_s", dunedaq::iomanager::ServiceType::kNetSender, "dfmessages::TriggerInhibit", "inproc://triginh" });
         connections.emplace_back(
-            dunedaq::iomanager::ConnectionId{ "test.token", dunedaq::iomanager::ServiceType::kNetwork, "dfmessages::TriggerDecisionToken", "inproc://token" });
+            dunedaq::iomanager::ConnectionId{ "test.token_s", dunedaq::iomanager::ServiceType::kNetSender, "dfmessages::TriggerDecisionToken", "inproc://token" });
+        connections.emplace_back(
+            dunedaq::iomanager::ConnectionId{ "test.trigdec_r", dunedaq::iomanager::ServiceType::kNetReceiver, "dfmessages::TriggerDecision", "inproc://trigdec" });
+        connections.emplace_back(
+            dunedaq::iomanager::ConnectionId{ "test.triginh_r", dunedaq::iomanager::ServiceType::kNetReceiver, "dfmessages::TriggerInhibit", "inproc://triginh" });
+        connections.emplace_back(
+            dunedaq::iomanager::ConnectionId{ "test.token_r", dunedaq::iomanager::ServiceType::kNetReceiver, "dfmessages::TriggerDecisionToken", "inproc://token" });
+        connections.emplace_back(
+            dunedaq::iomanager::ConnectionId{ "test.trigdec_0_r", dunedaq::iomanager::ServiceType::kNetReceiver, "dfmessages::TriggerDecision", "tcp://127.0.0.10:5050" });
         connections.emplace_back(
             dunedaq::iomanager::ConnectionId{ "trigger_decision_q", dunedaq::iomanager::ServiceType::kQueue, "dfmessages::TriggerDecision", "queue://FollySPSCQueue:1" });
         
@@ -60,13 +68,13 @@ struct ConfigurationTestFixture
     static nlohmann::json make_init_json() {
         dunedaq::appfwk::app::ModInit data;
         data.conn_refs.emplace_back(
-            dunedaq::iomanager::ConnectionRef{ "td_connection", "test.trigdec" }
+            dunedaq::iomanager::ConnectionRef{ "td_connection", "test.trigdec_r" }
         );
         data.conn_refs.emplace_back(
-            dunedaq::iomanager::ConnectionRef{ "token_connection", "test.token" }
+            dunedaq::iomanager::ConnectionRef{ "token_connection", "test.token_r" }
         );
         data.conn_refs.emplace_back(
-            dunedaq::iomanager::ConnectionRef{ "busy_connection", "test.triginh" }
+            dunedaq::iomanager::ConnectionRef{ "busy_connection", "test.triginh_s" }
         );
         nlohmann::json json;
         dunedaq::appfwk::app::to_json(json, data);
@@ -88,7 +96,7 @@ get_dfo_info(std::shared_ptr<appfwk::DAQModule> dfo)
   return info_obj;
 }
 void
-send_token(dfmessages::trigger_number_t trigger_number, std::string connection_name = "test.trigdec_0", bool different_run = false)
+send_token(dfmessages::trigger_number_t trigger_number, std::string connection_name = "test.trigdec_0_s", bool different_run = false)
 {
   dfmessages::TriggerDecisionToken token;
   token.run_number = different_run ?  2 : 1;
@@ -96,7 +104,7 @@ send_token(dfmessages::trigger_number_t trigger_number, std::string connection_n
   token.decision_destination = connection_name;
 
   TLOG() << "Sending TriggerDecisionToken with trigger number " << trigger_number << " to DFO";
-  get_iom_sender<dfmessages::TriggerDecisionToken>(  "test.token" ) -> send( std::move(token), iomanager::Sender::s_block );
+  get_iom_sender<dfmessages::TriggerDecisionToken>(  "test.token_s" ) -> send( std::move(token), iomanager::Sender::s_block );
 }
 
 void
@@ -126,7 +134,7 @@ send_trigdec(dfmessages::trigger_number_t trigger_number, bool different_run = f
   td.readout_type = dunedaq::dfmessages::ReadoutType::kLocalized;
   auto iom = iomanager::IOManager::get();
   TLOG() << "Sending TriggerDecision with trigger number " << trigger_number << " to DFO";
-  iom->get_sender<dfmessages::TriggerDecision>( "test.trigdec") -> send( std::move(td), iomanager::Sender::s_block );
+  iom->get_sender<dfmessages::TriggerDecision>( "test.trigdec_s") -> send( std::move(td), iomanager::Sender::s_block );
 }
 
 BOOST_AUTO_TEST_CASE(CopyAndMoveSemantics)
@@ -184,7 +192,7 @@ BOOST_FIXTURE_TEST_CASE(DataFlow, ConfigurationTestFixture)
   dfo->init(json);
 
   auto conf_json = "{\"dataflow_applications\": [ { \"thresholds\": { \"free\": 1, \"busy\": 2 }, "
-                   "\"connection_uid\": \"test.trigdec_0\" } ], "
+                   "\"connection_uid\": \"test.trigdec_0_s\" } ], "
                    "\"general_queue_timeout\": 100, \"td_send_retries\": 5}"_json;
   auto start_json = "{\"run\": 1}"_json;
   auto null_json = "{}"_json;
@@ -192,14 +200,14 @@ BOOST_FIXTURE_TEST_CASE(DataFlow, ConfigurationTestFixture)
   dfo->execute_command("conf", "INITIAL", conf_json);
 
   auto iom = iomanager::IOManager::get();
-  iom->get_receiver<dfmessages::TriggerDecision>( "test.trigdec_0") -> add_callback(recv_trigdec);
-  iom->get_receiver<dfmessages::TriggerInhibit>( "test.triginh") -> add_callback(recv_triginh );
+  iom->get_receiver<dfmessages::TriggerDecision>( "test.trigdec_0_r") -> add_callback(recv_trigdec);
+  iom->get_receiver<dfmessages::TriggerInhibit>( "test.triginh_r") -> add_callback(recv_triginh );
   
   send_trigdec(1, true);
   std::this_thread::sleep_for(std::chrono::milliseconds(50));
   
-  send_token(999, "test.trigdec_0", true);
-  send_token(9999, "test.trigdec_0", true);
+  send_token(999, "test.trigdec_0_s", true);
+  send_token(9999, "test.trigdec_0_s", true);
   std::this_thread::sleep_for(std::chrono::milliseconds(50));
   // Note: Counters are reset each time get_dfo_info is called!
   auto info = get_dfo_info(dfo);
