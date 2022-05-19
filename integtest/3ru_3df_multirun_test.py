@@ -27,7 +27,7 @@ wib1_frag_multi_trig_params={"fragment_type_description": "WIB",
                              "min_size_bytes": 80, "max_size_bytes": 37200}
 triggertp_frag_params={"fragment_type_description": "Trigger TP",
                        "hdf5_detector_group": "Trigger", "hdf5_region_prefix": "Region",
-                       "expected_fragment_count": (number_of_data_producers*number_of_readout_apps),
+                       "expected_fragment_count": (number_of_data_producers*number_of_readout_apps), # this will need to be changed
                        "min_size_bytes": 80, "max_size_bytes": 16000}
 ignored_logfile_problems={"dqm": ["client will not be able to connect to Kafka cluster"]}
 
@@ -40,6 +40,8 @@ confgen_name="daqconf_multiru_gen"
 # The arguments to pass to the config generator, excluding the json
 # output directory (the test framework handles that)
 confgen_arguments_base=[ "-d", "./frames.bin", "-o", ".", "-s", "10", "-n", str(number_of_data_producers), "-b", "1000", "-a", "1000", "-t", str(trigger_rate), "--latency-buffer-size", "200000"] + [ "--host-ru", "localhost" ] * number_of_readout_apps + [ "--host-df", "localhost" ] * number_of_dataflow_apps
+for idx in range(number_of_readout_apps):
+    confgen_arguments_base+=["--region-id", str(idx)] 
 confgen_arguments={"WIB1_System": confgen_arguments_base,
                    "Software_TPG_System": confgen_arguments_base+["--enable-software-tpg", "-c", str(3*number_of_data_producers*number_of_readout_apps)],
                    "DQM_System": confgen_arguments_base+["--enable-dqm"],
