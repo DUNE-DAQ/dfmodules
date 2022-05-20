@@ -19,7 +19,7 @@ wib1_frag_hsi_trig_params={"fragment_type_description": "WIB",
 triggercandidate_frag_params={"fragment_type_description": "Trigger Candidate",
                               "hdf5_detector_group": "Trigger", "hdf5_region_prefix": "Region",
                               "expected_fragment_count": 1,
-                              "min_size_bytes": 120, "max_size_bytes": 160}
+                              "min_size_bytes": 130, "max_size_bytes": 150}
 
 # The next three variable declarations *must* be present as globals in the test
 # file. They're read by the "fixtures" in conftest.py to determine how

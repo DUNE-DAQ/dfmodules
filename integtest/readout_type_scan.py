@@ -30,7 +30,11 @@ pds_frag_params={"fragment_type_description": "PDS",
                  "hdf5_detector_group": "PDS", "hdf5_region_prefix": "Region",
                  "expected_fragment_count": number_of_data_producers,
                  "min_size_bytes": 80, "max_size_bytes": 36000}
-triggertp_frag_params={"fragment_type_description": "Trigger TP",
+triggercandidate_frag_params={"fragment_type_description": "Trigger Candidate",
+                              "hdf5_detector_group": "Trigger", "hdf5_region_prefix": "Region",
+                              "expected_fragment_count": 1,
+                              "min_size_bytes": 130, "max_size_bytes": 150}
+triggertp_frag_params={"fragment_type_description": "Trigger with TPs",
                        "hdf5_detector_group": "Trigger", "hdf5_region_prefix": "Region",
                        "expected_fragment_count": number_of_data_producers+2,
                        "min_size_bytes": 80, "max_size_bytes": 16000}
@@ -88,15 +92,17 @@ def test_data_file(run_nanorc):
         local_event_count_tolerance+=(10*number_of_data_producers*run_duration/100)
         fragment_check_list.append(wib1_frag_multi_trig_params)
         fragment_check_list.append(triggertp_frag_params)
-    if "--frontend-type" in run_nanorc.confgen_arguments and \
-       ("pds_list" in run_nanorc.confgen_arguments or \
-        "pds_queue" in run_nanorc.confgen_arguments):
-        fragment_check_list.append(pds_frag_params)
-    if "--frontend-type" in run_nanorc.confgen_arguments and \
-       "wib2" in run_nanorc.confgen_arguments:
-        fragment_check_list.append(wib2_frag_params)
-    if len(fragment_check_list) == 0:
-        fragment_check_list.append(wib1_frag_hsi_trig_params)
+    else:
+        fragment_check_list.append(triggercandidate_frag_params)
+        if "--frontend-type" in run_nanorc.confgen_arguments and \
+           ("pds_list" in run_nanorc.confgen_arguments or \
+            "pds_queue" in run_nanorc.confgen_arguments):
+            fragment_check_list.append(pds_frag_params)
+        elif "--frontend-type" in run_nanorc.confgen_arguments and \
+           "wib2" in run_nanorc.confgen_arguments:
+            fragment_check_list.append(wib2_frag_params)
+        else:
+            fragment_check_list.append(wib1_frag_hsi_trig_params)
 
     # Run some tests on the output data file
     assert len(run_nanorc.data_files)==expected_number_of_data_files
