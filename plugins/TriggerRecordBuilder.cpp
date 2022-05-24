@@ -647,7 +647,7 @@ TriggerRecordBuilder::send_trigger_record(const TriggerId& id, std::atomic<bool>
       if (it->trigger_type == temp_record->get_header_data().trigger_type) {
 	auto iom = iomanager::IOManager::get();
 	bool wasSentSuccessfully = false;
-	while ( running.load() && !wasSentSuccessfully ) {
+	do {
 	  try {
           // HACK to copy the trigger record so we can send it off to monitoring
           auto trigger_record_bytes = serialization::serialize(temp_record, serialization::SerializationType::kMsgPack);
@@ -660,7 +660,7 @@ TriggerRecordBuilder::send_trigger_record(const TriggerId& id, std::atomic<bool>
 	    oss_warn << "Sending TR to connection \"" << it->data_destination << "\" failed";
 	    ers::warning(iomanager::OperationFailed(ERS_HERE, oss_warn.str(), excpt));
 	  }
-	}
+	} while ( running.load() && !wasSentSuccessfully ) ;
         it = m_mon_requests.erase(it);
       } else {
         ++it;
@@ -669,7 +669,7 @@ TriggerRecordBuilder::send_trigger_record(const TriggerId& id, std::atomic<bool>
   }  // if m_mon_receiver
   
   bool wasSentSuccessfully = false;
-  while ( running.load() && !wasSentSuccessfully ) {
+  do {
     try {
       m_trigger_record_output->send( std::move(temp_record), m_queue_timeout);
       wasSentSuccessfully = true;
@@ -677,7 +677,7 @@ TriggerRecordBuilder::send_trigger_record(const TriggerId& id, std::atomic<bool>
     } catch (const ers::Issue& excpt) {
       ers::warning( excpt );
     }
-  } // push while loop
+  } while ( running.load() && !wasSentSuccessfully ) ; // push while loop
   
   if (!wasSentSuccessfully) {
     ++m_abandoned_trigger_records;
