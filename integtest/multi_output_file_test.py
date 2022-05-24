@@ -35,6 +35,8 @@ confgen_name="daqconf_multiru_gen"
 # The arguments to pass to the config generator, excluding the json
 # output directory (the test framework handles that)
 confgen_arguments_base=[ "-d", "./frames.bin", "-o", ".", "-s", "10", "-n", str(number_of_data_producers), "-b", "5000", "-a", "5000", "-t", "10.0", "--max-file-size", "1074000000", "--latency-buffer-size", "200000"] + [ "--host-ru", "localhost" ] * number_of_readout_apps
+for idx in range(number_of_readout_apps):
+    confgen_arguments_base+=["--region-id", str(idx)] 
 confgen_arguments={"WIB1_System": confgen_arguments_base,
                    "Software_TPG_System": confgen_arguments_base+["--enable-software-tpg", "-c", str(3*number_of_data_producers*number_of_readout_apps)]}
 # The commands to run in nanorc, as a list
