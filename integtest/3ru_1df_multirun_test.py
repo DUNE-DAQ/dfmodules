@@ -22,7 +22,7 @@ wib1_frag_hsi_trig_params={"fragment_type_description": "WIB",
                            "min_size_bytes": 37200, "max_size_bytes": 37200}
 wib1_frag_multi_trig_params={"fragment_type_description": "WIB",
                              "hdf5_detector_group": "TPC", "hdf5_region_prefix": "APA",
-                             "expected_fragment_count": (number_of_data_producers*number_of_readout_apps),
+                             "expected_fragment_count": ((number_of_data_producers*number_of_readout_apps)+number_of_readout_apps+1),
                              "min_size_bytes": 80, "max_size_bytes": 37200}
 triggertp_frag_params={"fragment_type_description": "Trigger TP",
                        "hdf5_detector_group": "Trigger", "hdf5_region_prefix": "Region",
@@ -56,6 +56,8 @@ confgen_name="daqconf_multiru_gen"
 # output directory (the test framework handles that)
 if sufficient_resources_on_this_computer:
     confgen_arguments_base=[ "-d", "./frames.bin", "-o", ".", "-s", "10", "-n", str(number_of_data_producers), "-b", "1000", "-a", "1000", "--latency-buffer-size", "200000"] + [ "--host-ru", "localhost" ] * number_of_readout_apps
+    for idx in range(number_of_readout_apps):
+        confgen_arguments_base+=["--region-id", str(idx)] 
     confgen_arguments={"WIB1_System": confgen_arguments_base,
                        "Software_TPG_System": confgen_arguments_base+["--enable-software-tpg", "-c", str(3*number_of_data_producers*number_of_readout_apps)],
                        "DQM_System": confgen_arguments_base+["--enable-dqm"],

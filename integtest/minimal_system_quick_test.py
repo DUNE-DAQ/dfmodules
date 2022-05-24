@@ -16,6 +16,10 @@ wib1_frag_hsi_trig_params={"fragment_type_description": "WIB",
                            "hdf5_detector_group": "TPC", "hdf5_region_prefix": "APA",
                            "expected_fragment_count": number_of_data_producers,
                            "min_size_bytes": 37200, "max_size_bytes": 37200}
+triggercandidate_frag_params={"fragment_type_description": "Trigger Candidate",
+                              "hdf5_detector_group": "Trigger", "hdf5_region_prefix": "Region",
+                              "expected_fragment_count": 1,
+                              "min_size_bytes": 130, "max_size_bytes": 150}
 
 # The next three variable declarations *must* be present as globals in the test
 # file. They're read by the "fixtures" in conftest.py to determine how
@@ -44,10 +48,15 @@ def test_data_file(run_nanorc):
     # Run some tests on the output data file
     assert len(run_nanorc.data_files)==expected_number_of_data_files
 
+    fragment_check_list=[]
+    fragment_check_list.append(wib1_frag_hsi_trig_params)
+    fragment_check_list.append(triggercandidate_frag_params)
+
     for idx in range(len(run_nanorc.data_files)):
         data_file=data_file_checks.DataFile(run_nanorc.data_files[idx])
         assert data_file_checks.sanity_check(data_file)
         assert data_file_checks.check_file_attributes(data_file)
         assert data_file_checks.check_event_count(data_file, expected_event_count, expected_event_count_tolerance)
-        assert data_file_checks.check_fragment_count(data_file, wib1_frag_hsi_trig_params)
-        assert data_file_checks.check_fragment_sizes(data_file, wib1_frag_hsi_trig_params)
+        for jdx in range(len(fragment_check_list)):
+            assert data_file_checks.check_fragment_count(data_file, fragment_check_list[jdx])
+            assert data_file_checks.check_fragment_sizes(data_file, fragment_check_list[jdx])
