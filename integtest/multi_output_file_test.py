@@ -20,9 +20,13 @@ wib1_frag_multi_trig_params={"fragment_type_description": "WIB",
                              "hdf5_detector_group": "TPC", "hdf5_region_prefix": "APA",
                              "expected_fragment_count": (number_of_data_producers*number_of_readout_apps),
                              "min_size_bytes": 80, "max_size_bytes": 185680}
-triggertp_frag_params={"fragment_type_description": "Trigger TP",
+triggercandidate_frag_params={"fragment_type_description": "Trigger Candidate",
+                              "hdf5_detector_group": "Trigger", "hdf5_region_prefix": "Region",
+                              "expected_fragment_count": 1,
+                              "min_size_bytes": 130, "max_size_bytes": 150}
+triggertp_frag_params={"fragment_type_description": "Trigger with TPs",
                        "hdf5_detector_group": "Trigger", "hdf5_region_prefix": "Region",
-                       "expected_fragment_count": (number_of_data_producers*number_of_readout_apps),
+                       "expected_fragment_count": ((number_of_data_producers*number_of_readout_apps)+number_of_readout_apps+1),
                        "min_size_bytes": 80, "max_size_bytes": 16000}
 ignored_logfile_problems={"trigger": ["zipped_tpset_q: Unable to push within timeout period"]}
 
@@ -35,6 +39,8 @@ confgen_name="daqconf_multiru_gen"
 # The arguments to pass to the config generator, excluding the json
 # output directory (the test framework handles that)
 confgen_arguments_base=[ "-d", "./frames.bin", "-o", ".", "-s", "10", "-n", str(number_of_data_producers), "-b", "5000", "-a", "5000", "-t", "10.0", "--max-file-size", "1074000000", "--latency-buffer-size", "200000"] + [ "--host-ru", "localhost" ] * number_of_readout_apps
+for idx in range(number_of_readout_apps):
+    confgen_arguments_base+=["--region-id", str(idx)] 
 confgen_arguments={"WIB1_System": confgen_arguments_base,
                    "Software_TPG_System": confgen_arguments_base+["--enable-software-tpg", "-c", str(3*number_of_data_producers*number_of_readout_apps)]}
 # The commands to run in nanorc, as a list
@@ -66,8 +72,9 @@ def test_data_file(run_nanorc):
         local_file_count=5
         fragment_check_list.append(wib1_frag_multi_trig_params)
         fragment_check_list.append(triggertp_frag_params)
-    if len(fragment_check_list) == 0:
+    else:
         fragment_check_list.append(wib1_frag_hsi_trig_params)
+        fragment_check_list.append(triggercandidate_frag_params)
 
     # Run some tests on the output data file
     assert len(run_nanorc.data_files)==local_file_count

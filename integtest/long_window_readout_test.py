@@ -21,6 +21,10 @@ wib1_frag_hsi_trig_params={"fragment_type_description": "WIB",
                            "hdf5_detector_group": "TPC", "hdf5_region_prefix": "APA",
                            "expected_fragment_count": (number_of_data_producers*number_of_readout_apps),
                            "min_size_bytes": 240000, "max_size_bytes": 251000}
+triggercandidate_frag_params={"fragment_type_description": "Trigger Candidate",
+                              "hdf5_detector_group": "Trigger", "hdf5_region_prefix": "Region",
+                              "expected_fragment_count": 1,
+                              "min_size_bytes": 80, "max_size_bytes": 150}
 
 # The next three variable declarations *must* be present as globals in the test
 # file. They're read by the "fixtures" in conftest.py to determine how
@@ -31,6 +35,8 @@ confgen_name="daqconf_multiru_gen"
 # The arguments to pass to the config generator, excluding the json
 # output directory (the test framework handles that)
 confgen_arguments_base=[ "-d", "./frames.bin", "-o", ".", "-s", "10", "-n", str(number_of_data_producers), "-b", "20000", "-a", "20000", "-t", str(trigger_rate), "--latency-buffer-size", "200000"] + [ "--host-ru", "localhost" ] * number_of_readout_apps + [ "--host-df", "localhost" ] * number_of_dataflow_apps
+for idx in range(number_of_readout_apps):
+    confgen_arguments_base+=["--region-id", str(idx)] 
 confgen_arguments={#"No_TR_Splitting": confgen_arguments_base,
                    "With_TR_Splitting": confgen_arguments_base+["--max-trigger-record-window", "13500"],
                   }
@@ -65,6 +71,7 @@ def test_data_file(run_nanorc):
     local_event_count_tolerance=expected_event_count_tolerance
     fragment_check_list=[]
     fragment_check_list.append(wib1_frag_hsi_trig_params)
+    fragment_check_list.append(triggercandidate_frag_params)
 
     # Run some tests on the output data file
     assert len(run_nanorc.data_files)==expected_number_of_data_files
