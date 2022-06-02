@@ -383,7 +383,7 @@ TriggerRecordBuilder::read_fragments()
     
     new_fragments = true;
     
-    TriggerId temp_id(**temp_fragment);
+    TriggerId temp_id(*temp_fragment.value());
     bool requested = false;
     
     auto it = m_trigger_records.find(temp_id);
