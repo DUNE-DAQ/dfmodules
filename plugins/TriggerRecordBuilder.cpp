@@ -370,17 +370,20 @@ TriggerRecordBuilder::read_fragments()
 
   for (unsigned int j = 0; j < m_fragment_inputs.size(); ++j) {
     
-    std::unique_ptr<daqdataformats::Fragment> temp_fragment;
+    std::optional<std::unique_ptr<daqdataformats::Fragment>> temp_fragment;
     
     try {
-      temp_fragment = m_fragment_inputs[j] -> receive( iomanager::Receiver::s_no_block );
-    } catch ( const iomanager::TimeoutExpired& e)  {
+      temp_fragment = m_fragment_inputs[j] -> try_receive( iomanager::Receiver::s_no_block );
+    } catch ( const ers::Issue & e)  {
+      ers::error(e);
       continue ;
     }
 
+    if ( ! temp_fragment ) continue ;
+    
     new_fragments = true;
     
-    TriggerId temp_id(*temp_fragment);
+    TriggerId temp_id(**temp_fragment);
     bool requested = false;
     
     auto it = m_trigger_records.find(temp_id);
@@ -393,7 +396,7 @@ TriggerRecordBuilder::read_fragments()
       for (size_t i = 0; i < header.get_num_requested_components(); ++i) {
 	
 	const daqdataformats::ComponentRequest& request = header[i];
-	if (request.component == temp_fragment->get_element_id()) {
+	if (request.component == temp_fragment.value()->get_element_id()) {
 	  requested = true;
 	  break;
 	}
@@ -403,12 +406,12 @@ TriggerRecordBuilder::read_fragments()
     } // if there is a corresponding trigger ID entry in the boook
 
     if (requested) {
-      it->second.second->add_fragment(std::move(temp_fragment));
+      it->second.second->add_fragment(std::move(*temp_fragment));
       ++m_fragment_counter;
       --m_pending_fragment_counter;
     } else {
       ers::error(UnexpectedFragment(
-				    ERS_HERE, temp_id, temp_fragment->get_fragment_type_code(), temp_fragment->get_element_id()));
+				    ERS_HERE, temp_id, temp_fragment.value()->get_fragment_type_code(), temp_fragment.value()->get_element_id()));
       ++m_unexpected_fragments;
     }
     
@@ -423,25 +426,27 @@ TriggerRecordBuilder::read_and_process_trigger_decision(iomanager::Receiver::tim
 							std::atomic<bool>& running)
 {
   
-  dfmessages::TriggerDecision temp_dec;
+  std::optional<dfmessages::TriggerDecision> temp_dec;
 
   try {
     // get the trigger decision
-    temp_dec = m_trigger_decision_input -> receive(timeout);
+    temp_dec = m_trigger_decision_input -> try_receive(timeout);
 
-  } catch (const iomanager::TimeoutExpired& ex) {
-    return false;
+  } catch (const ers::Issue & ex) {
+    ers::error(ex) ;
   }
 
-  if (temp_dec.run_number != *m_run_number) {
-    ers::error(UnexpectedTriggerDecision(ERS_HERE, temp_dec.trigger_number, temp_dec.run_number, *m_run_number));
+  if ( ! temp_dec ) return false ;
+  
+  if (temp_dec->run_number != *m_run_number) {
+    ers::error(UnexpectedTriggerDecision(ERS_HERE, temp_dec->trigger_number, temp_dec->run_number, *m_run_number));
     ++m_unexpected_trigger_decisions;
     return false;
   }
   
   ++m_received_trigger_decisions;
 
-  bool book_updates = create_trigger_records_and_dispatch(temp_dec, running) > 0;
+  bool book_updates = create_trigger_records_and_dispatch(*temp_dec, running) > 0;
   
   return book_updates;
 }
