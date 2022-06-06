@@ -34,7 +34,8 @@ triggertp_frag_params={"fragment_type_description": "Trigger with TPs",
                        "min_size_bytes": 80, "max_size_bytes": 16000}
 ignored_logfile_problems={"dqm": ["client will not be able to connect to Kafka cluster",
                                   "Unexpected Trigger Decision", "Unexpected Fragment"],
-                          "trigger": ["zipped_tpset_q: Unable to push within timeout period"],
+                          "trigger": ["zipped_tpset_q: Unable to push within timeout period",
+                                      "Tardy input set from"],
                           "ruemu": [r"Trigger Matching result with empty fragment: TS match result on link .+Requestor=\S+fragx_dqm"],
                          }
 

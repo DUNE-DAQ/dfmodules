@@ -33,7 +33,8 @@ triggertp_frag_params={"fragment_type_description": "Trigger with TPs",
                        "hdf5_detector_group": "Trigger", "hdf5_region_prefix": "Region",
                        "expected_fragment_count": ((number_of_data_producers*number_of_readout_apps)+number_of_readout_apps+1),
                        "min_size_bytes": 80, "max_size_bytes": 16000}
-ignored_logfile_problems={"dqm": ["client will not be able to connect to Kafka cluster"]}
+ignored_logfile_problems={"dqm": ["client will not be able to connect to Kafka cluster"],
+                          "trigger": ["Tardy input set from"]}
 
 # The next three variable declarations *must* be present as globals in the test
 # file. They're read by the "fixtures" in conftest.py to determine how
