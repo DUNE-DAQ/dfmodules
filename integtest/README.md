@@ -2,7 +2,7 @@
 
 Here is a command for fetching a file that has WIB data in it (to be used in generating emulated data):
 
-* `curl -o frames.bin -O https://cernbox.cern.ch/index.php/s/7qNnuxD8igDOVJT/download`
+* `curl -o frames.bin -O https://cernbox.cern.ch/index.php/s/0XzhExSIMQJUsp0/download`
 
 Here is a sample command for invoking a test:
 
