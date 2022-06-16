@@ -44,7 +44,6 @@ namespace dunedaq {
 namespace dfmodules {
 
 using daqdataformats::TriggerRecordErrorBits;
-using networkmanager::NetworkManager;
 
 TriggerRecordBuilder::TriggerRecordBuilder(const std::string& name)
   : dunedaq::appfwk::DAQModule(name)
