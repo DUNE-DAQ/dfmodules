@@ -42,8 +42,6 @@ enum
 namespace dunedaq {
 namespace dfmodules {
 
-using networkmanager::NetworkManager;
-
 DataWriter::DataWriter(const std::string& name)
   : dunedaq::appfwk::DAQModule(name)
   , m_queue_timeout(100)
