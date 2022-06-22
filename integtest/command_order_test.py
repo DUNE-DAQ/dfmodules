@@ -20,13 +20,13 @@ confgen_arguments=[ confgen_arguments_base, confgen_arguments_base+["--enable-so
 nanorc_command_list=[
 
 # No commands are valid before boot
-["init"],
-["conf"],
-["start", "100"],
-["resume"],
-["pause"],
-["stop"],
-["scrap"],
+["test-partition", "init"],
+["test-partition", "conf"],
+["test-partition", "start", "100"],
+["test-partition", "resume"],
+["test-partition", "pause"],
+["test-partition", "stop"],
+["test-partition", "scrap"],
 
 # Only init after boot
 "test-partition boot boot".split(),
