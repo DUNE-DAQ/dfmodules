@@ -16,7 +16,6 @@
 #include "dfmessages/TimeSync.hpp"
 #include "iomanager/IOManager.hpp"
 #include "logging/Logging.hpp"
-#include "networkmanager/NetworkManager.hpp"
 
 #include <chrono>
 #include <cstdlib>
