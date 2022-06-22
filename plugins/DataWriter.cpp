@@ -207,8 +207,16 @@ DataWriter::receive_trigger_record(std::unique_ptr<daqdataformats::TriggerRecord
   TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Obtained the TriggerRecord for trigger number "
 			      << trigger_record_ptr->get_header_ref().get_trigger_number() << "."
 			      << trigger_record_ptr->get_header_ref().get_sequence_number()
+			      << ", run number " << trigger_record_ptr->get_header_ref().get_run_number()
 			      << " off the input connection";
-  
+
+  if (trigger_record_ptr->get_header_ref().get_run_number() != m_run_number) {
+    ers::error(InvalidRunNumber(ERS_HERE, get_name(), "TriggerRecord", trigger_record_ptr->get_header_ref().get_run_number(),
+                                m_run_number, trigger_record_ptr->get_header_ref().get_trigger_number(),
+                                trigger_record_ptr->get_header_ref().get_sequence_number()));
+    return;
+  }
+
   // 03-Feb-2021, KAB: adding support for a data-storage prescale.
   // In this "if" statement, I deliberately compare the result of (N mod prescale) to 1
   // instead of zero, since I think that it would be nice to always get the first event
@@ -231,6 +239,7 @@ DataWriter::receive_trigger_record(std::unique_ptr<daqdataformats::TriggerRecord
 	  ers::error(DataWritingProblem(ERS_HERE,
 					get_name(),
 					trigger_record_ptr->get_header_ref().get_trigger_number(),
+					trigger_record_ptr->get_header_ref().get_sequence_number(),
 					trigger_record_ptr->get_header_ref().get_run_number(),
 					excpt));
 	  if (retry_wait_usec > m_max_write_retry_time_usec) {
@@ -242,6 +251,7 @@ DataWriter::receive_trigger_record(std::unique_ptr<daqdataformats::TriggerRecord
 	  ers::error(DataWritingProblem(ERS_HERE,
 					get_name(),
 					trigger_record_ptr->get_header_ref().get_trigger_number(),
+					trigger_record_ptr->get_header_ref().get_sequence_number(),
 					trigger_record_ptr->get_header_ref().get_run_number(),
 					excpt));
 	}
