@@ -52,7 +52,7 @@ confgen_arguments={"WIB1_System": confgen_arguments_base,
                    "DQM_System": confgen_arguments_base+["--enable-dqm"],
                   }
 # The commands to run in nanorc, as a list
-nanorc_command_list="boot test-partition init conf".split()
+nanorc_command_list="test-partition boot init conf".split()
 nanorc_command_list+="start --resume-wait 1 101 wait ".split() + [str(run_duration)] + "stop               wait 2".split()
 nanorc_command_list+="start --resume-wait 2 102 wait ".split() + [str(run_duration)] + "stop --stop-wait 1 wait 2".split()
 nanorc_command_list+="start                 103 wait ".split() + [str(run_duration)] + "stop --stop-wait 2 wait 2".split()
