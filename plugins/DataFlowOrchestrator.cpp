@@ -137,6 +137,7 @@ DataFlowOrchestrator::do_stop(const data_t& /*args*/)
   while ( ! is_empty() &&
 	  step_counter < wait_steps ) {
     std::this_thread::sleep_for( step_timeout ) ;
+    ++step_counter;
   }
 
   iom->remove_callback<dfmessages::TriggerDecisionToken>( m_token_connection );
