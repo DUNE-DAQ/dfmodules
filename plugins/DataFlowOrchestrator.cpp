@@ -89,7 +89,8 @@ DataFlowOrchestrator::do_conf(const data_t& payload)
   }
 
   m_queue_timeout = std::chrono::milliseconds(parsed_conf.general_queue_timeout);
-
+  m_stop_timeout = std::chrono::microseconds(parsed_conf.stop_timeout*1000);
+  
   m_td_send_retries = parsed_conf.td_send_retries;
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method, there are "
@@ -129,7 +130,28 @@ DataFlowOrchestrator::do_stop(const data_t& /*args*/)
 
   auto iom = iomanager::IOManager::get();
   iom->remove_callback<dfmessages::TriggerDecision>( m_td_connection );
+
+  const int wait_steps = 20 ;
+  auto step_timeout = m_stop_timeout / wait_steps ;
+  int step_counter = 0;
+  while ( ! is_empty() &&
+	  step_counter < wait_steps ) {
+    std::this_thread::sleep_for( step_timeout ) ;
+  }
+
   iom->remove_callback<dfmessages::TriggerDecisionToken>( m_token_connection );
+  
+  std::list<std::shared_ptr<AssignedTriggerDecision>> remnants;
+  for ( auto & app : m_dataflow_availability ) {
+    auto temp = app.flush;
+    for ( auto & td : temp ) {
+      remnants.push_back( td );
+    }
+  }
+
+  for ( auto & r : remnants ) {
+    ers::error( IncompleteTriggerDecision( ERS_HERE, r->decision.trigger_number));
+  }
 
   TLOG() << get_name() << " successfully stopped";
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_stop() method";
@@ -316,6 +338,17 @@ DataFlowOrchestrator::is_busy() const
   return true;
 }
 
+bool
+DataFlowOrchestrator::is_empty() const
+{
+  for (auto& dfapp : m_dataflow_availability) {
+    if (dfapp.second.used_slots() != 0 )
+      return false;
+  }
+  return true;    
+}
+
+  
 void
 DataFlowOrchestrator::notify_trigger(bool busy) const
 {

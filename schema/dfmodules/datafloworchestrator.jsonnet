@@ -24,6 +24,8 @@ local types = {
     conf: s.record("ConfParams", [
         s.field("general_queue_timeout", self.timeout, 100, 
 	        doc="General indication for timeout"),
+        s.field("stop_timeout", self.timeout, 100, 
+	        doc="General indication for timeout"),
         s.field("td_send_retries", self.count, 5, doc="Number of times to retry sending TriggerDecisions"),
         s.field("dataflow_applications", self.appconfigs, doc="Configuration for Dataflow Applications")
     ], doc="DataFlowOchestrator configuration parameters"),

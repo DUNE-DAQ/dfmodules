@@ -47,6 +47,10 @@ ERS_DECLARE_ISSUE(dfmodules,
                   "DataFlowOrchestrator encountered run number mismatch: recvd ("
                     << received_run_number << ") != " << run_number << " from " << src_app,
                   ((uint32_t)received_run_number)((uint32_t)run_number)((std::string)src_app)) // NOLINT(build/unsigned)
+ERS_DECLARE_ISSUE(dfmodules,
+                  IncompleteTriggerDecision,
+                  "TriggerDecision " << trigger_number << " didn't complete within timeout",
+                  ((uint32_t)trigger_number)) // NOLINT(build/unsigned)
 // Re-enable coverage checking LCOV_EXCL_STOP
 
 namespace dfmodules {
@@ -93,12 +97,14 @@ private:
   virtual void receive_trigger_complete_token(const dfmessages::TriggerDecisionToken &);
   void receive_trigger_decision(const dfmessages::TriggerDecision &);
   virtual bool is_busy() const;
+  bool is_empty() const;  
   void notify_trigger(bool busy) const;
   bool dispatch(std::shared_ptr<AssignedTriggerDecision> assignment);
   virtual void assign_trigger_decision(std::shared_ptr<AssignedTriggerDecision> assignment);
 
   // Configuration
   std::chrono::milliseconds m_queue_timeout;
+  std::chrono::microseconds m_stop_timeout;
   dunedaq::daqdataformats::run_number_t m_run_number;
 
   //Connections
