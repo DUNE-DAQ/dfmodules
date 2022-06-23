@@ -174,7 +174,7 @@ DataFlowOrchestrator::receive_trigger_decision(const dfmessages::TriggerDecision
 {
 
   if (decision.run_number != m_run_number) {
-    ers::warning(DataFlowOrchestratorRunNumberMismatch(ERS_HERE, decision.run_number, m_run_number, "MLT"));
+    ers::error(DataFlowOrchestratorRunNumberMismatch(ERS_HERE, decision.run_number, m_run_number, "MLT"));
     return;
   }
   
@@ -284,7 +284,7 @@ DataFlowOrchestrator::receive_trigger_complete_token(const dfmessages::TriggerDe
 {
   // add a check to see if the application data found
   if (token.run_number != m_run_number) {
-    ers::warning(
+    ers::error(
       DataFlowOrchestratorRunNumberMismatch(ERS_HERE, token.run_number, m_run_number, token.decision_destination));
     return;
   }
@@ -292,7 +292,7 @@ DataFlowOrchestrator::receive_trigger_complete_token(const dfmessages::TriggerDe
   auto app_it = m_dataflow_availability.find(token.decision_destination);
   // check if application data exists;
   if (app_it == m_dataflow_availability.end()) {
-    ers::warning( UnknownTokenSource(ERS_HERE, token.decision_destination));
+    ers::error( UnknownTokenSource(ERS_HERE, token.decision_destination));
     return;
   }
   
@@ -309,7 +309,7 @@ DataFlowOrchestrator::receive_trigger_complete_token(const dfmessages::TriggerDe
         .count();
 
   } catch (AssignedTriggerDecisionNotFound const& err) {
-    ers::warning(err);
+    ers::error(err);
   }
   
   if (app_it->second.is_in_error()) {
