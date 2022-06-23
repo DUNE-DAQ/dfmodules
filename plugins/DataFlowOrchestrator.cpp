@@ -143,7 +143,7 @@ DataFlowOrchestrator::do_stop(const data_t& /*args*/)
   
   std::list<std::shared_ptr<AssignedTriggerDecision>> remnants;
   for ( auto & app : m_dataflow_availability ) {
-    auto temp = app.flush;
+    auto temp = app.second.flush();
     for ( auto & td : temp ) {
       remnants.push_back( td );
     }
