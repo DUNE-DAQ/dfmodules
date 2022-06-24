@@ -98,6 +98,7 @@ private:
   void receive_trigger_decision(const dfmessages::TriggerDecision &);
   virtual bool is_busy() const;
   bool is_empty() const;  
+  size_t used_slots() const;  
   void notify_trigger(bool busy) const;
   bool dispatch(std::shared_ptr<AssignedTriggerDecision> assignment);
   virtual void assign_trigger_decision(std::shared_ptr<AssignedTriggerDecision> assignment);

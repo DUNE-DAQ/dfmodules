@@ -136,7 +136,7 @@ DataFlowOrchestrator::do_stop(const data_t& /*args*/)
   int step_counter = 0;
   while ( ! is_empty() &&
 	  step_counter < wait_steps ) {
-    TLOG() << get_name() << " stop delayed while waiting for TD to complete";
+    TLOG() << get_name() << ": stop delayed while waiting for " << used_slots() << " TDs to completed";
     std::this_thread::sleep_for( step_timeout ) ;
     ++step_counter;
   }
@@ -348,6 +348,16 @@ DataFlowOrchestrator::is_empty() const
       return false;
   }
   return true;    
+}
+
+size_t
+DataFlowOrchestrator::used_slots() const
+{
+  size_t total = 0;
+  for (auto& dfapp : m_dataflow_availability) {
+    total += dfapp.second.used_slots();
+  }
+  return total;    
 }
 
   
