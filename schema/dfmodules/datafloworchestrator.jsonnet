@@ -24,7 +24,7 @@ local types = {
     conf: s.record("ConfParams", [
         s.field("general_queue_timeout", self.timeout, 100, 
 	        doc="General indication for timeout"),
-        s.field("stop_timeout", self.timeout, 100, 
+        s.field("stop_timeout", self.timeout, 1000, 
 	        doc="timeout for the stop transition of the DFO to allow collection of remaining tokens"),
         s.field("td_send_retries", self.count, 5, doc="Number of times to retry sending TriggerDecisions"),
         s.field("dataflow_applications", self.appconfigs, doc="Configuration for Dataflow Applications")

@@ -136,6 +136,7 @@ DataFlowOrchestrator::do_stop(const data_t& /*args*/)
   int step_counter = 0;
   while ( ! is_empty() &&
 	  step_counter < wait_steps ) {
+    TLOG() << get_name() << " stop delayed while waiting for TD to complete";
     std::this_thread::sleep_for( step_timeout ) ;
     ++step_counter;
   }
