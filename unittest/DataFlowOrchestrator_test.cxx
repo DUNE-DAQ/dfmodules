@@ -282,5 +282,57 @@ BOOST_FIXTURE_TEST_CASE(SendTrigDecFailed, ConfigurationTestFixture)
   dfo->execute_command("scrap", "CONFIGURED", null_json);
 }
 
+BOOST_FIXTURE_TEST_CASE(StopTransition, ConfigurationTestFixture)
+{
+  auto json = ConfigurationTestFixture::make_init_json();
+  auto dfo = appfwk::make_module("DataFlowOrchestrator", "test");
+  //  auto casted_ptr = dynamic_cast<DataFlowOrchestrator*>( dfo.get() );
+  
+  dfo->init(json);
+
+  auto conf_json = "{\"dataflow_applications\": [ { \"thresholds\": { \"free\": 1, \"busy\": 2 }, "
+                   "\"connection_uid\": \"test.trigdec_0_s\" } ], "
+                   "\"general_queue_timeout\": 100, \"stop_timeout\": 1000, \"td_send_retries\": 5}"_json;
+  auto start_json = "{\"run\": 1}"_json;
+  auto null_json = "{}"_json;
+
+  dfo->execute_command("conf", "INITIAL", conf_json);
+
+  auto iom = iomanager::IOManager::get();
+  iom->get_receiver<dfmessages::TriggerDecision>( "test.trigdec_0_r") -> add_callback(recv_trigdec);
+  iom->get_receiver<dfmessages::TriggerInhibit>( "test.triginh_r") -> add_callback(recv_triginh );
+
+ 
+  // Note: Counters are reset each time get_dfo_info is called!
+  auto info = get_dfo_info(dfo);
+  BOOST_REQUIRE_EQUAL(info.tokens_received, 0);
+  
+  dfo->execute_command("start", "CONFIGURED", start_json);
+  
+  std::this_thread::sleep_for(std::chrono::milliseconds(150));
+  
+  info = get_dfo_info(dfo);
+  BOOST_REQUIRE_EQUAL(info.tokens_received, 0);
+  BOOST_REQUIRE_EQUAL(info.decisions_received, 0);
+  BOOST_REQUIRE_EQUAL(info.decisions_sent, 0);
+  //  BOOST_REQUIRE_EQUAL(casted_ptr->is_empty(), true);
+
+  send_trigdec(1);
+  std::this_thread::sleep_for(std::chrono::milliseconds(50));
+
+  info = get_dfo_info(dfo);
+  BOOST_REQUIRE_EQUAL(info.decisions_received, 1);
+ 
+  //BOOST_REQUIRE_EQUAL(casted_ptr->is_empty(), false);
+  
+  dfo->execute_command("stop", "RUNNING", null_json);
+
+  //BOOST_REQUIRE_EQUAL(casted_ptr->is_empty(), true);
+  
+  dfo->execute_command("scrap", "CONFIGURED", null_json);
+}
+
+
+
 BOOST_AUTO_TEST_SUITE_END()
 } // namespace dunedaq
