@@ -45,12 +45,13 @@ ERS_DECLARE_ISSUE(dfmodules,
 ERS_DECLARE_ISSUE(dfmodules,
                   DataFlowOrchestratorRunNumberMismatch,
                   "DataFlowOrchestrator encountered run number mismatch: recvd ("
-                    << received_run_number << ") != " << run_number << " from " << src_app,
-                  ((uint32_t)received_run_number)((uint32_t)run_number)((std::string)src_app)) // NOLINT(build/unsigned)
+                    << received_run_number << ") != " << run_number << " from " << src_app
+                    << " for trigger_number " << trig_num,
+                  ((uint32_t)received_run_number)((uint32_t)run_number)((std::string)src_app)((uint32_t)trig_num)) // NOLINT(build/unsigned)
 ERS_DECLARE_ISSUE(dfmodules,
                   IncompleteTriggerDecision,
-                  "TriggerDecision " << trigger_number << " didn't complete within timeout",
-                  ((uint32_t)trigger_number)) // NOLINT(build/unsigned)
+                  "TriggerDecision " << trigger_number << " didn't complete within timeout in run " << run_number,
+                  ((uint32_t)trigger_number)((uint32_t)run_number)) // NOLINT(build/unsigned)
 // Re-enable coverage checking LCOV_EXCL_STOP
 
 namespace dfmodules {
