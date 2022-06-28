@@ -37,7 +37,10 @@ enum
 {
   TLVL_ENTER_EXIT_METHODS = 5,
   TLVL_CONFIG = 7,
-  TLVL_WORK_STEPS = 10
+  TLVL_WORK_STEPS = 10,
+  TLVL_TRIGDEC_RECEIVED = 21,
+  TLVL_NOTIFY_TRIGGER = 22,
+  TLVL_DISPATCH_TO_TRB = 23
 };
 
 namespace dunedaq {
@@ -152,7 +155,7 @@ DataFlowOrchestrator::do_stop(const data_t& /*args*/)
   }
 
   for ( auto & r : remnants ) {
-    ers::error( IncompleteTriggerDecision( ERS_HERE, r->decision.trigger_number));
+    ers::error( IncompleteTriggerDecision( ERS_HERE, r->decision.trigger_number, m_run_number));
   }
 
   TLOG() << get_name() << " successfully stopped";
@@ -174,9 +177,11 @@ DataFlowOrchestrator::do_scrap(const data_t& /*args*/)
 void
 DataFlowOrchestrator::receive_trigger_decision(const dfmessages::TriggerDecision & decision)
 {
-
+  TLOG_DEBUG(TLVL_TRIGDEC_RECEIVED) << get_name() << " Received TriggerDecision for trigger_number "
+                                    << decision.trigger_number << " and run " << decision.run_number
+                                    << " (current run is " << m_run_number << ")";
   if (decision.run_number != m_run_number) {
-    ers::error(DataFlowOrchestratorRunNumberMismatch(ERS_HERE, decision.run_number, m_run_number, "MLT"));
+    ers::error(DataFlowOrchestratorRunNumberMismatch(ERS_HERE, decision.run_number, m_run_number, "MLT", decision.trigger_number));
     return;
   }
   
@@ -187,15 +192,22 @@ DataFlowOrchestrator::receive_trigger_decision(const dfmessages::TriggerDecision
   do {
 
     auto assignment = find_slot(decision);
-    
-    if (assignment == nullptr) // this can happen if all application are in error state
+
+    if (assignment == nullptr) { // this can happen if all application are in error state
+      TLOG_DEBUG(TLVL_TRIGDEC_RECEIVED) << get_name() << " NULL assignment ";
+      usleep(500);
       continue;
-    
+    }
+
+    TLOG_DEBUG(TLVL_TRIGDEC_RECEIVED) << get_name() << " Slot found for trigger_number " << decision.trigger_number
+                                      << " on connection " << assignment->connection_name;
     decision_assigned = std::chrono::steady_clock::now();
     auto dispatch_successful = dispatch(assignment);
     
     if (dispatch_successful) {
       assign_trigger_decision(assignment);
+      TLOG_DEBUG(TLVL_TRIGDEC_RECEIVED) << get_name() << " Assigned trigger_number " << decision.trigger_number
+                                        << " to connection " << assignment->connection_name;
       break;
     } else {
       ers::error(
@@ -249,7 +261,7 @@ DataFlowOrchestrator::find_slot(dfmessages::TriggerDecision decision)
   }
 
   if (output != nullptr) {
-      TLOG_DEBUG(TLVL_WORK_STEPS) << "Assigned TriggerDecision with trigger number " << decision.trigger_number << " to TRB with name " << output->connection_name;
+      TLOG_DEBUG(TLVL_WORK_STEPS) << "Assigned TriggerDecision with trigger number " << decision.trigger_number << " to TRB at connection " << output->connection_name;
   }
   return output;
 }
@@ -284,10 +296,14 @@ DataFlowOrchestrator::get_info(opmonlib::InfoCollector& ci, int /*level*/)
 void
 DataFlowOrchestrator::receive_trigger_complete_token(const dfmessages::TriggerDecisionToken & token)
 {
+  TLOG() << get_name() << " Received TriggerDecisionToken for trigger_number "
+         << token.trigger_number << " and run " << token.run_number
+         << " (current run is " << m_run_number << ")";
   // add a check to see if the application data found
   if (token.run_number != m_run_number) {
-    ers::error(
-      DataFlowOrchestratorRunNumberMismatch(ERS_HERE, token.run_number, m_run_number, token.decision_destination));
+    std::ostringstream oss_source;
+    oss_source << "TRB at connection " << token.decision_destination;
+    ers::error(DataFlowOrchestratorRunNumberMismatch(ERS_HERE, token.run_number, m_run_number, oss_source.str(), token.trigger_number));
     return;
   }
 
@@ -377,6 +393,7 @@ DataFlowOrchestrator::notify_trigger(bool busy) const
         dfmessages::TriggerInhibit message{ busy, m_run_number };
       m_busy_sender -> send( std::move(message), m_queue_timeout);
       wasSentSuccessfully = true;
+      TLOG_DEBUG(TLVL_NOTIFY_TRIGGER) << get_name() << " Sent BUSY status " << busy << " to trigger in run " << m_run_number;
     } catch (const ers::Issue& excpt) {
       std::ostringstream oss_warn;
       oss_warn << "Send with sender \"" << m_busy_sender -> get_name() << "\" failed";
@@ -405,6 +422,9 @@ DataFlowOrchestrator::dispatch(std::shared_ptr<AssignedTriggerDecision> assignme
 											  m_queue_timeout );
       wasSentSuccessfully = true;
       ++m_sent_decisions;
+      TLOG_DEBUG(TLVL_DISPATCH_TO_TRB) << get_name() << " Sent TriggerDecision for trigger_number " << decision_copy.trigger_number
+                                       << " to TRB at connection " << assignment->connection_name << " for run number "
+                                       << decision_copy.run_number;
     } catch (const ers::Issue& excpt) {
       std::ostringstream oss_warn;
       oss_warn << "Send to connection \"" << assignment->connection_name << "\" failed";
