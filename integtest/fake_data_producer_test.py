@@ -26,6 +26,8 @@ ignored_logfile_problems={}
 
 # The name of the python module for the config generation
 confgen_name="daqconf_multiru_gen"
+# Don't require the --frame-file option since we don't need it
+frame_file_required=False
 # The arguments to pass to the config generator, excluding the json
 # output directory (the test framework handles that)
 confgen_arguments_base=[ "-o", ".", "-n", "2", "--host-ru", "localhost", "--use-fake-data-producers" ]
