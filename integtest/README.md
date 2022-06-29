@@ -6,7 +6,7 @@ Here is a command for fetching a file that has WIB data in it (to be used in gen
 
 Here is a sample command for invoking a test:
 
-* `pytest -s minimal_system_quick_test.py --frame-file $PWD/frames.bin`
+* `pytest -s minimal_system_quick_test.py [--frame-file $PWD/frames.bin] [--nanorc-option timeout 300] [--nanorc-option partition-number 3]`
 
 For reference, here are the ideas behind the existing tests:
 * minimal_system_quick_test.py - verify that a small emulator system works fine and data gets written in a short run
