@@ -194,7 +194,7 @@ DataFlowOrchestrator::receive_trigger_decision(const dfmessages::TriggerDecision
     auto assignment = find_slot(decision);
 
     if (assignment == nullptr) { // this can happen if all application are in error state
-      TLOG_DEBUG(TLVL_TRIGDEC_RECEIVED) << get_name() << " NULL assignment ";
+      ers::error(UnableToAssign(ERS_HERE, decision.trigger_number));
       usleep(500);
       continue;
     }
@@ -236,10 +236,14 @@ DataFlowOrchestrator::find_slot(dfmessages::TriggerDecision decision)
   // across all the available applications.
   // Applications in error are skipped.
   // we only probe the applications once.
-  // if they are all unavailable we return to the caller
-  // before looping again
+  // if they are all unavailable the assignment is set to
+  // the application with the lowest used slots
+  // returning a nullptr will be considered as an error 
+  // from the upper level code
 
   std::shared_ptr<AssignedTriggerDecision> output = nullptr;
+  auto minimum_occupied = m_dataflow_availability.end();
+  size_t minimum = limits<size_t>::max();
   unsigned int counter = 0;
 
   auto candidate_it = m_last_assignement_it;
@@ -253,11 +257,34 @@ DataFlowOrchestrator::find_slot(dfmessages::TriggerDecision decision)
     if (candidate_it == m_dataflow_availability.end())
       candidate_it = m_dataflow_availability.begin();
 
+    // get rid of the applications in error state
+    if (candidate_it->second.is_in_error()){
+      continue;
+    }
+
+    // monitor 
+    auto slots = candidate_it->second.used_slots();
+    if ( slots < minimum) {
+      minimum = slots;
+      minimum_occupied = candidate_it;
+    }
+
     if (candidate_it->second.is_busy())
       continue;
 
     output = candidate_it->second.make_assignment(decision);
     m_last_assignement_it = candidate_it;
+  }
+
+  if (!output) {
+    // in this case all applications were busy 
+    // so we assign the decision to that with the lowest
+    // number of assignments
+    if (minimum_occupied!=m_dataflow_availability.end()){
+      output = minimum_occupied->second.make_assignment(decision);
+      m_last_assignement_it = minimum_occupied;
+      ers::warning(AssignedToBusyApp(ERS_HERE, decision.trigger_number, minimum_occupied->first, minimum));
+    }
   }
 
   if (output != nullptr) {

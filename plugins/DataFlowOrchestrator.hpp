@@ -52,6 +52,14 @@ ERS_DECLARE_ISSUE(dfmodules,
                   IncompleteTriggerDecision,
                   "TriggerDecision " << trigger_number << " didn't complete within timeout in run " << run_number,
                   ((uint32_t)trigger_number)((uint32_t)run_number)) // NOLINT(build/unsigned)
+ERS_DECLARE_ISSUE(dfmodules,
+                  UnableToAssign,
+                  "TriggerDecision " << trigger_number << " could not be assigned",
+                  ((uint32_t)trigger_number)) // NOLINT(build/unsigned)
+ERS_DECLARE_ISSUE(dfmodules,
+                  AssignedToBusyApp,
+                  "TriggerDecision " << trigger_number << " was assigned to DF app " << app << " that was busy with " << used_slots << " TDs",
+                  ((uint32_t)trigger_number)((std::string)app)((uint16_t)used_slots)) // NOLINT(build/unsigned)                  
 // Re-enable coverage checking LCOV_EXCL_STOP
 
 namespace dfmodules {
