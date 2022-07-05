@@ -296,17 +296,11 @@ DataFlowOrchestrator::find_slot(dfmessages::TriggerDecision decision)
 void
 DataFlowOrchestrator::get_info(opmonlib::InfoCollector& ci, int /*level*/)
 {
-  datafloworchestratorinfo::Info info;
-  info.tokens_received = m_received_tokens.exchange(0);
-  info.decisions_sent = m_sent_decisions.exchange(0);
-  info.decisions_received = m_received_decisions.exchange(0);
-  info.waiting_for_decision = m_waiting_for_decision.exchange(0);
-  info.deciding_destination = m_deciding_destination.exchange(0);
-  info.forwarding_decision = m_forwarding_decision.exchange(0);
-  info.waiting_for_token = m_waiting_for_token.exchange(0);
-  info.processing_token = m_processing_token.exchange(0);
-  ci.add(info);
 
+  unit64_t min_time_since_assignment = limits<uint64_t>::max();
+  unit64_t max_time_since_assignment = 0;
+  unit64_t total_time_since_assignment = 0;
+  
   for (auto& [name, data] : m_app_infos) {
     dfapplicationinfo::Info tmp_info;
     tmp_info.outstanding_decisions = m_dataflow_availability[name].used_slots();
@@ -318,6 +312,19 @@ DataFlowOrchestrator::get_info(opmonlib::InfoCollector& ci, int /*level*/)
 
     ci.add(name, tmp_ic);
   }
+   
+  datafloworchestratorinfo::Info info;
+  info.tokens_received = m_received_tokens.exchange(0);
+  info.decisions_sent = m_sent_decisions.exchange(0);
+  info.decisions_received = m_received_decisions.exchange(0);
+  info.waiting_for_decision = m_waiting_for_decision.exchange(0);
+  info.deciding_destination = m_deciding_destination.exchange(0);
+  info.forwarding_decision = m_forwarding_decision.exchange(0);
+  info.waiting_for_token = m_waiting_for_token.exchange(0);
+  info.processing_token = m_processing_token.exchange(0);
+  ci.add(info);
+
+  
 }
 
 void

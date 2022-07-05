@@ -88,7 +88,8 @@ public:
     std::function<void(nlohmann::json&)> metadata_fun = nullptr);
   std::list<std::shared_ptr<AssignedTriggerDecision>> flush() ;
 
-  
+  void get_info(opmonlib::InfoCollector& ci, int level);
+
   std::chrono::microseconds average_latency(std::chrono::steady_clock::time_point since) const;
 
   bool is_in_error() const { return m_in_error.load(); }
@@ -109,6 +110,9 @@ private:
 
   nlohmann::json m_metadata;
   std::string m_connection_name{ "" };
+
+  // monitoring 
+  std::atomic<uint64_t> m_complete_counter{0}, m_complete_microseconds{0};
 };
 } // namespace dfmodules
 } // namespace dunedaq

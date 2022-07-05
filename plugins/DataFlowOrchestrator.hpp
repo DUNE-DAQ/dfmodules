@@ -59,7 +59,7 @@ ERS_DECLARE_ISSUE(dfmodules,
 ERS_DECLARE_ISSUE(dfmodules,
                   AssignedToBusyApp,
                   "TriggerDecision " << trigger_number << " was assigned to DF app " << app << " that was busy with " << used_slots << " TDs",
-                  ((uint32_t)trigger_number)((std::string)app)((uint16_t)used_slots)) // NOLINT(build/unsigned)                  
+                  ((uint32_t)trigger_number)((std::string)app)((size_t)used_slots)) // NOLINT(build/unsigned)                  
 // Re-enable coverage checking LCOV_EXCL_STOP
 
 namespace dfmodules {
@@ -138,9 +138,7 @@ private:
   std::atomic<uint64_t> m_forwarding_decision{ 0 };  // NOLINT (build/unsigned)
   std::atomic<uint64_t> m_waiting_for_token{ 0 };    // NOLINT (build/unsigned)
   std::atomic<uint64_t> m_processing_token{ 0 };     // NOLINT (build/unsigned)
-  // first counter, second millisecond
-  using df_app_info = std::pair<std::atomic<uint64_t>, std::atomic<uint64_t>>; // NOLINT (build/unsigned)
-  std::map<std::string, df_app_info> m_app_infos;
+  
 };
 } // namespace dfmodules
 } // namespace dunedaq

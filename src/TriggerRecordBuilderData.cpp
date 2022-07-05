@@ -59,6 +59,9 @@ TriggerRecordBuilderData::TriggerRecordBuilderData(TriggerRecordBuilderData&& ot
 
   m_metadata = std::move(other.m_metadata);
   m_in_error = other.m_in_error.load();
+
+  m_complete_counter = other.m_complete_counter.load();
+  m_complete_microsecond = other.m_complete_microsecond.load();
 }
 
 TriggerRecordBuilderData&
@@ -76,6 +79,9 @@ TriggerRecordBuilderData::operator=(TriggerRecordBuilderData&& other)
   m_metadata = std::move(other.m_metadata);
   m_in_error = other.m_in_error.load();
 
+  m_complete_counter = other.m_complete_counter.load();
+  m_complete_microsecond = other.m_complete_microsecond.load();
+}
   return *this;
 }
 
@@ -134,6 +140,9 @@ TriggerRecordBuilderData::complete_assignment(daqdataformats::trigger_number_t t
   if (metadata_fun)
     metadata_fun(m_metadata);
 
+  ++m_complete_counter;
+  m_complete_microsecond+=std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - dec_ptr->assigned_time).count();
+
   return dec_ptr;
 }
 
@@ -179,6 +188,35 @@ TriggerRecordBuilderData::add_assignment(std::shared_ptr<AssignedTriggerDecision
   if (m_assigned_trigger_decisions.size() >= m_busy_threshold.load()) {
     m_is_busy.store(true);
   }
+}
+
+void
+TriggerRecordBuiklderData::get_info(opmonlib::InfoCollector& ci, int /*level*/)
+{ 
+  dfapplicationinfo::Info info;
+
+  // fill metrics for complete TDs
+  info.completed_trigger_records = m_complete_counter.exchange(0);
+  info.waiting_time = m_complete_microsecond.exchange(0);
+
+  // fill metrics for pending TDs
+  info.min_time_since_assignment = limits<decltype(info.min_time_since_assignment)>::max();
+  info.max_time_since_assignment = 0;
+  info.total_time_since_assignment = 0;
+ 
+  auto lk = std::lock_guard<std::mutex>(m_assigned_trigger_decisions_mutex);
+
+  info.outstanding_decisions = m_assigned_trigger_decisions.size();
+  auto current_time = std::chrono::steady_clock::now();
+  for ( const auto& dec_ptr : m_assigned_trigger_decisions ) {
+    auto us_since_assignment = std::chrono::duration_cast<std::chrono::microseconds>(current_time - dec_ptr->assigned_time);
+    total_time_since_assignment+=us_since_assignment.count();
+    if ( us_since_assignment.load() < info.min_time_since_assignment ) info.min_time_since_assignment = us_since_assignment.load();
+    if ( us_since_assignment.load() > info.max_time_since_assignment ) info.max_time_since_assignment = us_since_assignment.load();
+  }
+  
+  ci.add(info);
+    
 }
 
 std::chrono::microseconds
