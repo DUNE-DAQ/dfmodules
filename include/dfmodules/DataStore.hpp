@@ -15,13 +15,13 @@
 #ifndef DFMODULES_INCLUDE_DFMODULES_DATASTORE_HPP_
 #define DFMODULES_INCLUDE_DFMODULES_DATASTORE_HPP_
 
-#include "utilities/NamedObject.hpp"
 #include "cetlib/BasicPluginFactory.h"
 #include "cetlib/compiler_macros.h"
 #include "daqdataformats/TimeSlice.hpp"
 #include "daqdataformats/TriggerRecord.hpp"
 #include "daqdataformats/Types.hpp"
 #include "logging/Logging.hpp"
+#include "utilities/NamedObject.hpp"
 
 #include "nlohmann/json.hpp"
 

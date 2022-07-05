@@ -138,27 +138,27 @@ TriggerRecordBuilderData::complete_assignment(daqdataformats::trigger_number_t t
 }
 
 std::list<std::shared_ptr<AssignedTriggerDecision>>
-TriggerRecordBuilderData::flush() {
+TriggerRecordBuilderData::flush()
+{
 
   auto lk = std::lock_guard<std::mutex>(m_assigned_trigger_decisions_mutex);
   std::list<std::shared_ptr<AssignedTriggerDecision>> ret;
-  
-  for ( const auto & td : m_assigned_trigger_decisions ) {
-    ret.push_back( td ) ;
+
+  for (const auto& td : m_assigned_trigger_decisions) {
+    ret.push_back(td);
   }
   m_assigned_trigger_decisions.clear();
-  
+
   auto stat_lock = std::lock_guard<std::mutex>(m_latency_info_mutex);
   m_latency_info.clear();
-  m_is_busy = false ;
+  m_is_busy = false;
 
-  m_in_error = false ;
+  m_in_error = false;
   m_metadata = nlohmann::json();
 
   return ret;
 }
 
-  
 std::shared_ptr<AssignedTriggerDecision>
 TriggerRecordBuilderData::make_assignment(dfmessages::TriggerDecision decision)
 {

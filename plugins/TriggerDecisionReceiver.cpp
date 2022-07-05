@@ -14,8 +14,8 @@
 #include "dfmodules/triggerdecisionreceiver/Nljs.hpp"
 #include "dfmodules/triggerdecisionreceiver/Structs.hpp"
 #include "dfmodules/triggerdecisionreceiverinfo/InfoNljs.hpp"
-#include "logging/Logging.hpp"
 #include "iomanager/IOManager.hpp"
+#include "logging/Logging.hpp"
 
 #include <chrono>
 #include <cstdlib>
@@ -58,7 +58,7 @@ TriggerDecisionReceiver::init(const data_t& data)
   auto qi = appfwk::connection_index(data, { "input", "output" });
 
   m_input_connection = qi["input"];
-  m_triggerdecision_output = iomanager::IOManager::get()->get_sender<dfmessages::TriggerDecision>( qi["output"] );
+  m_triggerdecision_output = iomanager::IOManager::get()->get_sender<dfmessages::TriggerDecision>(qi["output"]);
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
@@ -82,8 +82,8 @@ TriggerDecisionReceiver::do_start(const data_t& payload)
   m_received_triggerdecisions = 0;
   m_run_number = payload.value<dunedaq::daqdataformats::run_number_t>("run", 0);
 
-  iomanager::IOManager::get()->add_callback<dfmessages::TriggerDecision>( m_input_connection,
-									  std::bind(&TriggerDecisionReceiver::dispatch_triggerdecision, this, std::placeholders::_1));
+  iomanager::IOManager::get()->add_callback<dfmessages::TriggerDecision>(
+    m_input_connection, std::bind(&TriggerDecisionReceiver::dispatch_triggerdecision, this, std::placeholders::_1));
 
   TLOG() << get_name() << " successfully started for run number " << m_run_number;
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
@@ -94,7 +94,7 @@ TriggerDecisionReceiver::do_stop(const data_t& /*args*/)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_stop() method";
 
-  iomanager::IOManager::get()->remove_callback<dfmessages::TriggerDecision>( m_input_connection );
+  iomanager::IOManager::get()->remove_callback<dfmessages::TriggerDecision>(m_input_connection);
 
   TLOG() << get_name() << " successfully stopped";
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_stop() method";
@@ -118,7 +118,7 @@ TriggerDecisionReceiver::get_info(opmonlib::InfoCollector& ci, int /*level*/)
 }
 
 void
-TriggerDecisionReceiver::dispatch_triggerdecision(dfmessages::TriggerDecision & td)
+TriggerDecisionReceiver::dispatch_triggerdecision(dfmessages::TriggerDecision& td)
 {
   m_triggerdecision_output->send(std::move(td), m_queue_timeout);
   m_received_triggerdecisions++;

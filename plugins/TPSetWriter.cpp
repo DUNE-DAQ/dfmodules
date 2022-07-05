@@ -9,10 +9,10 @@
 #include "TPSetWriter.hpp"
 #include "dfmodules/tpsetwriter/Nljs.hpp"
 
-#include "iomanager/IOManager.hpp" 
 #include "appfwk/DAQModuleHelper.hpp"
 #include "appfwk/app/Nljs.hpp"
 #include "daqdataformats/Fragment.hpp"
+#include "iomanager/IOManager.hpp"
 #include "logging/Logging.hpp"
 #include "rcif/cmd/Nljs.hpp"
 #include "readoutlibs/utils/BufferedFileWriter.hpp"

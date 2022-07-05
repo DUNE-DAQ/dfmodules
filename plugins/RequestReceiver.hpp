@@ -42,10 +42,9 @@ public:
   void init(const data_t&) override;
 
 private:
-
-  //type defionition
+  // type defionition
   using incoming_t = dfmessages::DataRequest;
-  
+
   // Commands
   void do_conf(const data_t&);
   void do_start(const data_t&);
@@ -54,7 +53,7 @@ private:
 
   void get_info(opmonlib::InfoCollector& ci, int level) override;
 
-  void dispatch_request(incoming_t &);
+  void dispatch_request(incoming_t&);
 
   // Configuration
   std::chrono::milliseconds m_queue_timeout;

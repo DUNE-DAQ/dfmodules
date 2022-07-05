@@ -12,9 +12,9 @@
 #ifndef DFMODULES_SRC_DFMODULES_TRIGGERDECISIONFORWARDER_HPP_
 #define DFMODULES_SRC_DFMODULES_TRIGGERDECISIONFORWARDER_HPP_
 
+#include "dfmessages/TriggerDecision.hpp"
 #include "iomanager/Sender.hpp"
 #include "utilities/NamedObject.hpp"
-#include "dfmessages/TriggerDecision.hpp"
 #include "utilities/WorkerThread.hpp"
 
 #include <atomic>

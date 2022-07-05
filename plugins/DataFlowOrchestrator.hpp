@@ -13,11 +13,11 @@
 
 #include "dfmodules/TriggerRecordBuilderData.hpp"
 
+#include "daqdataformats/TriggerRecord.hpp"
 #include "dfmessages/DataRequest.hpp"
 #include "dfmessages/TriggerDecision.hpp"
 #include "dfmessages/TriggerDecisionToken.hpp"
 #include "dfmessages/TriggerInhibit.hpp"
-#include "daqdataformats/TriggerRecord.hpp"
 
 #include "iomanager/ConnectionId.hpp"
 #include "iomanager/Sender.hpp"
@@ -45,9 +45,10 @@ ERS_DECLARE_ISSUE(dfmodules,
 ERS_DECLARE_ISSUE(dfmodules,
                   DataFlowOrchestratorRunNumberMismatch,
                   "DataFlowOrchestrator encountered run number mismatch: recvd ("
-                    << received_run_number << ") != " << run_number << " from " << src_app
-                    << " for trigger_number " << trig_num,
-                  ((uint32_t)received_run_number)((uint32_t)run_number)((std::string)src_app)((uint32_t)trig_num)) // NOLINT(build/unsigned)
+                    << received_run_number << ") != " << run_number << " from " << src_app << " for trigger_number "
+                    << trig_num,
+                  ((uint32_t)received_run_number)((uint32_t)run_number)((std::string)src_app)(
+                    (uint32_t)trig_num)) // NOLINT(build/unsigned)
 ERS_DECLARE_ISSUE(dfmodules,
                   IncompleteTriggerDecision,
                   "TriggerDecision " << trigger_number << " didn't complete within timeout in run " << run_number,
@@ -95,11 +96,11 @@ private:
 
   void get_info(opmonlib::InfoCollector& ci, int level) override;
 
-  virtual void receive_trigger_complete_token(const dfmessages::TriggerDecisionToken &);
-  void receive_trigger_decision(const dfmessages::TriggerDecision &);
+  virtual void receive_trigger_complete_token(const dfmessages::TriggerDecisionToken&);
+  void receive_trigger_decision(const dfmessages::TriggerDecision&);
   virtual bool is_busy() const;
-  bool is_empty() const;  
-  size_t used_slots() const;  
+  bool is_empty() const;
+  size_t used_slots() const;
   void notify_trigger(bool busy) const;
   bool dispatch(std::shared_ptr<AssignedTriggerDecision> assignment);
   virtual void assign_trigger_decision(std::shared_ptr<AssignedTriggerDecision> assignment);
@@ -109,7 +110,7 @@ private:
   std::chrono::microseconds m_stop_timeout;
   dunedaq::daqdataformats::run_number_t m_run_number;
 
-  //Connections
+  // Connections
   std::shared_ptr<iomanager::SenderConcept<dfmessages::TriggerInhibit>> m_busy_sender;
   iomanager::connection::ConnectionRef m_token_connection;
   iomanager::connection::ConnectionRef m_td_connection;

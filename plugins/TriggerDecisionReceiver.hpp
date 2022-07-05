@@ -12,8 +12,8 @@
 #include "dfmessages/TriggerDecision.hpp"
 
 #include "appfwk/DAQModule.hpp"
-#include "iomanager/Sender.hpp"
 #include "iomanager/ConnectionId.hpp"
+#include "iomanager/Sender.hpp"
 
 #include <map>
 #include <memory>
@@ -54,7 +54,7 @@ private:
 
   void get_info(opmonlib::InfoCollector& ci, int level) override;
 
-  void dispatch_triggerdecision(dfmessages::TriggerDecision &);
+  void dispatch_triggerdecision(dfmessages::TriggerDecision&);
 
   // Configuration
   std::chrono::milliseconds m_queue_timeout;

@@ -14,8 +14,8 @@
 #include "dfmodules/fragmentreceiver/Nljs.hpp"
 #include "dfmodules/fragmentreceiver/Structs.hpp"
 #include "dfmodules/fragmentreceiverinfo/InfoNljs.hpp"
-#include "logging/Logging.hpp"
 #include "iomanager/IOManager.hpp"
+#include "logging/Logging.hpp"
 
 #include <chrono>
 #include <cstdlib>
@@ -55,7 +55,8 @@ FragmentReceiver::init(const data_t& iniobj)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
   m_input_connection = appfwk::connection_inst(iniobj, "input");
-  m_fragment_output = iomanager::IOManager::get()->get_sender<internal_data_t>( appfwk::connection_inst(iniobj, "output") );
+  m_fragment_output =
+    iomanager::IOManager::get()->get_sender<internal_data_t>(appfwk::connection_inst(iniobj, "output"));
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
 
@@ -78,8 +79,8 @@ FragmentReceiver::do_start(const data_t& payload)
   m_received_fragments = 0;
   m_run_number = payload.value<dunedaq::daqdataformats::run_number_t>("run", 0);
 
-  iomanager::IOManager::get()->add_callback<internal_data_t>(m_input_connection,
-							     std::bind(&FragmentReceiver::dispatch_fragment, this, std::placeholders::_1));
+  iomanager::IOManager::get()->add_callback<internal_data_t>(
+    m_input_connection, std::bind(&FragmentReceiver::dispatch_fragment, this, std::placeholders::_1));
   TLOG() << get_name() << " successfully started for run number " << m_run_number;
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
 }
@@ -111,7 +112,7 @@ FragmentReceiver::get_info(opmonlib::InfoCollector& ci, int /*level*/)
 }
 
 void
-FragmentReceiver::dispatch_fragment(internal_data_t & fragment)
+FragmentReceiver::dispatch_fragment(internal_data_t& fragment)
 {
   m_fragment_output->send(std::move(fragment), m_queue_timeout);
   m_received_fragments++;

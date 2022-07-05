@@ -12,8 +12,8 @@
 #include "daqdataformats/Fragment.hpp"
 
 #include "appfwk/DAQModule.hpp"
-#include "iomanager/Sender.hpp"
 #include "iomanager/ConnectionId.hpp"
+#include "iomanager/Sender.hpp"
 
 #include <map>
 #include <memory>
@@ -52,8 +52,8 @@ private:
   void get_info(opmonlib::InfoCollector& ci, int level) override;
 
   using internal_data_t = std::unique_ptr<daqdataformats::Fragment>;
-  
-  void dispatch_fragment(internal_data_t &);
+
+  void dispatch_fragment(internal_data_t&);
 
   // Configuration
   std::chrono::milliseconds m_queue_timeout;

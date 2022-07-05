@@ -21,10 +21,10 @@
 #include "dfmessages/Types.hpp"
 
 #include "appfwk/DAQModule.hpp"
-#include "utilities/WorkerThread.hpp"
 #include "iomanager/ConnectionId.hpp"
-#include "iomanager/Sender.hpp"
 #include "iomanager/Receiver.hpp"
+#include "iomanager/Sender.hpp"
+#include "utilities/WorkerThread.hpp"
 
 #include <chrono>
 #include <list>
@@ -193,9 +193,7 @@ protected:
 
   unsigned int create_trigger_records_and_dispatch(const dfmessages::TriggerDecision&, std::atomic<bool>& running);
 
-  bool dispatch_data_requests(dfmessages::DataRequest,
-                              const daqdataformats::GeoID&,
-                              std::atomic<bool>& running) const;
+  bool dispatch_data_requests(dfmessages::DataRequest, const daqdataformats::GeoID&, std::atomic<bool>& running) const;
 
   bool send_trigger_record(const TriggerId&, std::atomic<bool>& running);
   // this creates a trigger record and send it
@@ -211,7 +209,7 @@ private:
   void do_stop(const data_t&);
 
   // Monitoring callback
-  void tr_requested(const dfmessages::TRMonRequest &);
+  void tr_requested(const dfmessages::TRMonRequest&);
 
   // Threading
   dunedaq::utilities::WorkerThread m_thread;
@@ -228,7 +226,8 @@ private:
 
   // Output connections
   std::shared_ptr<trigger_record_sender_t> m_trigger_record_output;
-  std::map<daqdataformats::GeoID, std::shared_ptr<data_req_sender_t>> m_map_geoid_connections; ///< Mappinng between GeoID and connections
+  std::map<daqdataformats::GeoID, std::shared_ptr<data_req_sender_t>>
+    m_map_geoid_connections; ///< Mappinng between GeoID and connections
 
   // bookeeping
   using clock_type = std::chrono::high_resolution_clock;
