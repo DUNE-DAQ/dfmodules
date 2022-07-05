@@ -28,8 +28,7 @@ triggertp_frag_params={"fragment_type_description": "Trigger with TPs",
                        "hdf5_detector_group": "Trigger", "hdf5_region_prefix": "Region",
                        "expected_fragment_count": ((number_of_data_producers*number_of_readout_apps)+number_of_readout_apps+1),
                        "min_size_bytes": 80, "max_size_bytes": 16000}
-ignored_logfile_problems={"trigger": ["zipped_tpset_q: Unable to push within timeout period",
-                                      r"TriggerZipper.hpp.+Tardy input set from .+ DAQModule: tazipper"]}
+ignored_logfile_problems={"trigger": ["zipped_tpset_q: Unable to push within timeout period"]}
 
 # The next three variable declarations *must* be present as globals in the test
 # file. They're read by the "fixtures" in conftest.py to determine how
@@ -87,3 +86,25 @@ def test_data_file(run_nanorc):
         for jdx in range(len(fragment_check_list)):
             assert data_file_checks.check_fragment_count(data_file, fragment_check_list[jdx])
             assert data_file_checks.check_fragment_sizes(data_file, fragment_check_list[jdx])
+
+def test_cleanup(run_nanorc):
+    print("============================================")
+    print("Listing the hdf5 files before deleting them:")
+    print("============================================")
+    pathlist_string=""
+    filelist_string=""
+    for data_file in run_nanorc.data_files:
+        filelist_string += " " + str(data_file)
+        if str(data_file.parent) not in pathlist_string:
+            pathlist_string += " " + str(data_file.parent)
+
+    os.system(f"df -h {pathlist_string}")
+    print("--------------------")
+    os.system(f"ls -alF {filelist_string}");
+
+    for data_file in run_nanorc.data_files:
+        data_file.unlink()
+
+    print("--------------------")
+    os.system(f"df -h {pathlist_string}")
+    print("============================================")

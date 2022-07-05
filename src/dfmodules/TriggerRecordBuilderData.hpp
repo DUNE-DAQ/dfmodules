@@ -86,7 +86,9 @@ public:
   std::shared_ptr<AssignedTriggerDecision> complete_assignment(
     daqdataformats::trigger_number_t trigger_number,
     std::function<void(nlohmann::json&)> metadata_fun = nullptr);
+  std::list<std::shared_ptr<AssignedTriggerDecision>> flush() ;
 
+  
   std::chrono::microseconds average_latency(std::chrono::steady_clock::time_point since) const;
 
   bool is_in_error() const { return m_in_error.load(); }

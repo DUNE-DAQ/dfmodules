@@ -121,6 +121,13 @@ BOOST_AUTO_TEST_CASE(Assignments)
   BOOST_REQUIRE_EQUAL(null_got_assignment, nullptr);
   auto null_extracted_assignment = trbd.extract_assignment(3);
   BOOST_REQUIRE_EQUAL(null_extracted_assignment, nullptr);
+
+  trbd.add_assignment(assignment);
+  BOOST_REQUIRE_EQUAL(trbd.used_slots(), 1);
+  auto remnants = trbd.flush();
+  BOOST_REQUIRE_EQUAL(trbd.used_slots(), 0);
+  BOOST_REQUIRE_EQUAL(remnants.size(), 1);
+  
 }
 
 BOOST_AUTO_TEST_CASE(Exceptions)
@@ -179,5 +186,7 @@ BOOST_AUTO_TEST_CASE(Exceptions)
   BOOST_REQUIRE_EXCEPTION(
     trbd.add_assignment(err_assignment), NoSlotsAvailable, [](NoSlotsAvailable const&) { return true; });
 }
+
+
 
 BOOST_AUTO_TEST_SUITE_END()

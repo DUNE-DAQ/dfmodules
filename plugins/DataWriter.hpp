@@ -12,10 +12,10 @@
 #include "dfmodules/DataStore.hpp"
 
 #include "appfwk/DAQModule.hpp"
-#include "iomanager/Sender.hpp"
-#include "iomanager/Receiver.hpp"
 #include "daqdataformats/TriggerRecord.hpp"
 #include "dfmessages/TriggerDecisionToken.hpp"
+#include "iomanager/Receiver.hpp"
+#include "iomanager/Sender.hpp"
 #include "utilities/WorkerThread.hpp"
 
 #include <chrono>
@@ -55,7 +55,7 @@ private:
   void do_scrap(const data_t&);
 
   // Callback
-  void receive_trigger_record(std::unique_ptr<daqdataformats::TriggerRecord> &);
+  void receive_trigger_record(std::unique_ptr<daqdataformats::TriggerRecord>&);
   std::atomic<bool> m_running = false;
 
   // Configuration
@@ -73,17 +73,17 @@ private:
   using token_sender_t = iomanager::SenderConcept<dfmessages::TriggerDecisionToken>;
   std::shared_ptr<token_sender_t> m_token_output;
   std::string m_trigger_decision_connection;
-  
+
   // Worker(s)
   std::unique_ptr<DataStore> m_data_writer;
-  
+
   // Metrics
   std::atomic<uint64_t> m_records_received = { 0 };     // NOLINT(build/unsigned)
   std::atomic<uint64_t> m_records_received_tot = { 0 }; // NOLINT(build/unsigned)
   std::atomic<uint64_t> m_records_written = { 0 };      // NOLINT(build/unsigned)
   std::atomic<uint64_t> m_records_written_tot = { 0 };  // NOLINT(build/unsigned)
   std::atomic<uint64_t> m_bytes_output = { 0 };         // NOLINT(build/unsigned)
-  
+
   // Other
   std::map<daqdataformats::trigger_number_t, size_t> m_seqno_counts;
 
@@ -94,7 +94,7 @@ private:
   }
 };
 } // namespace dfmodules
-  
+
 ERS_DECLARE_ISSUE_BASE(dfmodules,
                        InvalidDataWriter,
                        appfwk::GeneralDAQModuleIssue,
@@ -106,9 +106,20 @@ ERS_DECLARE_ISSUE_BASE(dfmodules,
 ERS_DECLARE_ISSUE_BASE(dfmodules,
                        DataWritingProblem,
                        appfwk::GeneralDAQModuleIssue,
-                       "A problem was encountered when writing TriggerRecord number " << trnum << " in run " << runnum,
+                       "A problem was encountered when writing TriggerRecord number " << trnum << "." << seqnum
+                                                                                      << " in run " << runnum,
                        ((std::string)name),
-                       ((size_t)trnum)((size_t)runnum))
+                       ((size_t)trnum)((size_t)seqnum)((size_t)runnum))
+
+ERS_DECLARE_ISSUE_BASE(dfmodules,
+                       InvalidRunNumber,
+                       appfwk::GeneralDAQModuleIssue,
+                       "An invalid run number was received in a "
+                         << msg_type << "message, "
+                         << "received=" << received << ", expected=" << expected << ", trig/seq_number=" << trnum << "."
+                         << seqnum,
+                       ((std::string)name),
+                       ((std::string)msg_type)((size_t)received)((size_t)expected)((size_t)trnum)((size_t)seqnum))
 
 } // namespace dunedaq
 
