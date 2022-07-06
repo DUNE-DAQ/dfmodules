@@ -16,6 +16,7 @@
 #include "dfmessages/TriggerDecision.hpp"
 
 #include "ers/Issue.hpp"
+#include "opmonlib/InfoCollector.hpp"
 #include "nlohmann/json.hpp"
 
 #include <atomic>
@@ -112,7 +113,7 @@ private:
   std::string m_connection_name{ "" };
 
   // monitoring 
-  std::atomic<uint64_t> m_complete_counter{0}, m_complete_microseconds{0};
+  std::atomic<uint64_t> m_complete_counter{0}, m_complete_microsecond{0};
 };
 } // namespace dfmodules
 } // namespace dunedaq

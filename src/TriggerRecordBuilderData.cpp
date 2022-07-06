@@ -10,12 +10,14 @@
  */
 
 #include "dfmodules/TriggerRecordBuilderData.hpp"
+#include "dfmodules/dfapplicationinfo/InfoNljs.hpp"
 
 #include "logging/Logging.hpp"
 
 #include <memory>
 #include <string>
 #include <utility>
+#include <limits>
 
 /**
  * @brief Name used by TRACE TLOG calls from this source file
@@ -81,7 +83,7 @@ TriggerRecordBuilderData::operator=(TriggerRecordBuilderData&& other)
 
   m_complete_counter = other.m_complete_counter.load();
   m_complete_microsecond = other.m_complete_microsecond.load();
-}
+
   return *this;
 }
 
@@ -191,7 +193,7 @@ TriggerRecordBuilderData::add_assignment(std::shared_ptr<AssignedTriggerDecision
 }
 
 void
-TriggerRecordBuiklderData::get_info(opmonlib::InfoCollector& ci, int /*level*/)
+TriggerRecordBuilderData::get_info(opmonlib::InfoCollector& ci, int /*level*/)
 { 
   dfapplicationinfo::Info info;
 
@@ -200,7 +202,7 @@ TriggerRecordBuiklderData::get_info(opmonlib::InfoCollector& ci, int /*level*/)
   info.waiting_time = m_complete_microsecond.exchange(0);
 
   // fill metrics for pending TDs
-  info.min_time_since_assignment = limits<decltype(info.min_time_since_assignment)>::max();
+  info.min_time_since_assignment = std::numeric_limits<decltype(info.min_time_since_assignment)>::max();
   info.max_time_since_assignment = 0;
   info.total_time_since_assignment = 0;
  
@@ -210,9 +212,9 @@ TriggerRecordBuiklderData::get_info(opmonlib::InfoCollector& ci, int /*level*/)
   auto current_time = std::chrono::steady_clock::now();
   for ( const auto& dec_ptr : m_assigned_trigger_decisions ) {
     auto us_since_assignment = std::chrono::duration_cast<std::chrono::microseconds>(current_time - dec_ptr->assigned_time);
-    total_time_since_assignment+=us_since_assignment.count();
-    if ( us_since_assignment.load() < info.min_time_since_assignment ) info.min_time_since_assignment = us_since_assignment.load();
-    if ( us_since_assignment.load() > info.max_time_since_assignment ) info.max_time_since_assignment = us_since_assignment.load();
+    info.total_time_since_assignment+=us_since_assignment.count();
+    if ( us_since_assignment.count() < info.min_time_since_assignment ) info.min_time_since_assignment = us_since_assignment.count();
+    if ( us_since_assignment.count() > info.max_time_since_assignment ) info.max_time_since_assignment = us_since_assignment.count();
   }
   
   ci.add(info);

@@ -11,7 +11,6 @@
 
 #include "dfmodules/datafloworchestrator/Nljs.hpp"
 #include "dfmodules/datafloworchestratorinfo/InfoNljs.hpp"
-#include "dfmodules/dfapplicationinfo/InfoNljs.hpp"
 
 #include "appfwk/DAQModuleHelper.hpp"
 #include "appfwk/app/Nljs.hpp"
@@ -88,7 +87,6 @@ DataFlowOrchestrator::do_conf(const data_t& payload)
       TLOG_DEBUG(TLVL_CONFIG) << "Creating dataflow availability struct for uid " << app.connection_uid << ", busy threshold " << app.thresholds.busy << ", free threshold " << app.thresholds.free;
     m_dataflow_availability[app.connection_uid] =
       TriggerRecordBuilderData(app.connection_uid, app.thresholds.busy, app.thresholds.free);
-    m_app_infos[app.connection_uid]; // we just need to create the object
   }
 
   m_queue_timeout = std::chrono::milliseconds(parsed_conf.general_queue_timeout);
@@ -168,7 +166,6 @@ DataFlowOrchestrator::do_scrap(const data_t& /*args*/)
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_scrap() method";
 
   m_dataflow_availability.clear();
-  m_app_infos.clear();
 
   TLOG() << get_name() << " successfully scrapped";
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_scrap() method";
@@ -243,7 +240,7 @@ DataFlowOrchestrator::find_slot(dfmessages::TriggerDecision decision)
 
   std::shared_ptr<AssignedTriggerDecision> output = nullptr;
   auto minimum_occupied = m_dataflow_availability.end();
-  size_t minimum = limits<size_t>::max();
+  size_t minimum = std::numeric_limits<size_t>::max();
   unsigned int counter = 0;
 
   auto candidate_it = m_last_assignement_it;
@@ -294,22 +291,12 @@ DataFlowOrchestrator::find_slot(dfmessages::TriggerDecision decision)
 }
 
 void
-DataFlowOrchestrator::get_info(opmonlib::InfoCollector& ci, int /*level*/)
+DataFlowOrchestrator::get_info(opmonlib::InfoCollector& ci, int level)
 {
 
-  unit64_t min_time_since_assignment = limits<uint64_t>::max();
-  unit64_t max_time_since_assignment = 0;
-  unit64_t total_time_since_assignment = 0;
-  
-  for (auto& [name, data] : m_app_infos) {
-    dfapplicationinfo::Info tmp_info;
-    tmp_info.outstanding_decisions = m_dataflow_availability[name].used_slots();
-    tmp_info.completed_trigger_records = data.first.exchange(0);
-    tmp_info.waiting_time = data.second.exchange(0);
-
+  for (auto& [name, app] : m_dataflow_availability) {
     opmonlib::InfoCollector tmp_ic;
-    tmp_ic.add(tmp_info);
-
+    app.get_info(tmp_ic, level);
     ci.add(name, tmp_ic);
   }
    
