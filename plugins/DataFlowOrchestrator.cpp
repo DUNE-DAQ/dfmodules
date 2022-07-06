@@ -340,13 +340,6 @@ DataFlowOrchestrator::receive_trigger_complete_token(const dfmessages::TriggerDe
 
   try {
     auto dec_ptr = app_it->second.complete_assignment(token.trigger_number, m_metadata_function);
-
-    auto& info_data = m_app_infos[app_it->first];
-    ++info_data.first;
-    info_data.second +=
-      std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - dec_ptr->assigned_time)
-        .count();
-
   } catch (AssignedTriggerDecisionNotFound const& err) {
     ers::error(err);
   }
