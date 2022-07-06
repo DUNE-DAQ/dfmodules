@@ -60,7 +60,7 @@ confgen_arguments={"WIB1_System": confgen_arguments_base,
                    "PDS_(list)_System": confgen_arguments_base+["--frontend-type", "pds_list"], 
                    "PDS_(queue)_System": confgen_arguments_base+["--frontend-type", "pds_queue"]}
 # The commands to run in nanorc, as a list
-nanorc_command_list="boot partition-test init conf start 101 wait 1 resume wait ".split() + [str(run_duration)] + "pause wait 2 stop wait 2 scrap terminate".split()
+nanorc_command_list="test-partition boot init conf start 101 wait 1 resume wait ".split() + [str(run_duration)] + "pause wait 2 stop wait 2 scrap terminate".split()
 
 # The tests themselves
 

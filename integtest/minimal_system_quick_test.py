@@ -31,7 +31,7 @@ confgen_name="daqconf_multiru_gen"
 # output directory (the test framework handles that)
 confgen_arguments=[ "-d", "./frames.bin", "-o", ".", "-s", "10", "-n", str(number_of_data_producers), "-b", "1000", "-a", "1000", "--host-ru", "localhost"]
 # The commands to run in nanorc, as a list
-nanorc_command_list="boot partition-test init conf start 101 wait 1 resume wait ".split() + [str(run_duration)] + "pause wait 2 stop wait 2 scrap terminate".split()
+nanorc_command_list="partition-test boot init conf start 101 wait 1 resume wait ".split() + [str(run_duration)] + "pause wait 2 stop wait 2 scrap terminate".split()
 
 # The tests themselves
 
