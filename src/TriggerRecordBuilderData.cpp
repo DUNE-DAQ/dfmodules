@@ -143,7 +143,10 @@ TriggerRecordBuilderData::complete_assignment(daqdataformats::trigger_number_t t
     metadata_fun(m_metadata);
 
   ++m_complete_counter;
-  m_complete_microsecond+=std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - dec_ptr->assigned_time).count();
+  auto completion_time = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - dec_ptr->assigned_time);
+  m_complete_microsecond+=completion_time.count();
+  if ( completion_time.count() < m_min_complete_time.load() ) m_min_complete_time.store(completion_time.count());
+  if ( completion_time.count() > m_max_complete_time.load() ) m_max_complete_time.store(completion_time.count());
 
   return dec_ptr;
 }
@@ -200,6 +203,8 @@ TriggerRecordBuilderData::get_info(opmonlib::InfoCollector& ci, int /*level*/)
   // fill metrics for complete TDs
   info.completed_trigger_records = m_complete_counter.exchange(0);
   info.waiting_time = m_complete_microsecond.exchange(0);
+  info.min_completion_time = m_min_complete_time.exchange(std::numeric_limits<int64_t>::max());
+  info.max_completion_time = m_max_complete_time.exchange(0);
 
   // fill metrics for pending TDs
   info.min_time_since_assignment = std::numeric_limits<decltype(info.min_time_since_assignment)>::max();

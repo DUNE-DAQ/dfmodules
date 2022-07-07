@@ -114,6 +114,7 @@ private:
 
   // monitoring 
   std::atomic<uint64_t> m_complete_counter{0}, m_complete_microsecond{0};
+  std::atomic<int64_t> m_min_complete_time{std::numeric_limits<int64_t>::max()}, m_max_complete_time{0};
 };
 } // namespace dfmodules
 } // namespace dunedaq

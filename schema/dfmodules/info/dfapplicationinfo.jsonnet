@@ -11,6 +11,8 @@ local info = {
    info: s.record("Info", [
        s.field("outstanding_decisions", self.counter, 0, doc="Decisions currently in progress"),	 
        s.field("completed_trigger_records", self.counter, 0, doc="Number of completed TR"),
+       s.field("min_completion_time", self.counter, 0, doc="Minimum time (us) for decision to complete"),
+       s.field("max_completion_time", self.counter, 0, doc="Maximum time (us) for decision to complete"),
        s.field("waiting_time", self.counter, 0, doc="cumulative time (microseconds) for decisions to be completed"),
        s.field("total_time_since_assignment", self.counter, 0, doc="total time since assignment for all current TDs (ms)"),
        s.field("min_time_since_assignment", self.counter, 0, doc="shortest time since assignment among current TDs (ms)"),
