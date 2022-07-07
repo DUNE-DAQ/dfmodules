@@ -27,6 +27,7 @@
 #include <thread>
 #include <utility>
 #include <vector>
+#include <list>
 
 /**
  * @brief Name used by TRACE TLOG calls from this source file
@@ -42,8 +43,7 @@ enum
   TLVL_DISPATCH_TO_TRB = 23
 };
 
-namespace dunedaq {
-namespace dfmodules {
+namespace dunedaq::dfmodules {
 
 DataFlowOrchestrator::DataFlowOrchestrator(const std::string& name)
   : dunedaq::appfwk::DAQModule(name)
@@ -81,7 +81,7 @@ DataFlowOrchestrator::do_conf(const data_t& payload)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
 
-  datafloworchestrator::ConfParams parsed_conf = payload.get<datafloworchestrator::ConfParams>();
+  auto parsed_conf = payload.get<datafloworchestrator::ConfParams>();
 
   for (auto& app : parsed_conf.dataflow_applications) {
       TLOG_DEBUG(TLVL_CONFIG) << "Creating dataflow availability struct for uid " << app.connection_uid << ", busy threshold " << app.thresholds.busy << ", free threshold " << app.thresholds.free;
@@ -117,7 +117,7 @@ DataFlowOrchestrator::do_start(const data_t& payload)
 						      std::bind(&DataFlowOrchestrator::receive_trigger_complete_token, this, std::placeholders::_1) );
   
   iom -> add_callback<dfmessages::TriggerDecision>( m_td_connection,
-						 std::bind(&DataFlowOrchestrator::receive_trigger_decision, this, std::placeholders::_1) );
+						    std::bind(&DataFlowOrchestrator::receive_trigger_decision, this, std::placeholders::_1) );
   
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
 }
@@ -226,7 +226,7 @@ DataFlowOrchestrator::receive_trigger_decision(const dfmessages::TriggerDecision
 }
 
 std::shared_ptr<AssignedTriggerDecision>
-DataFlowOrchestrator::find_slot(dfmessages::TriggerDecision decision)
+DataFlowOrchestrator::find_slot(const dfmessages::TriggerDecision & decision)
 {
 
   // this find_slot assings the decision with a round-robin logic
@@ -404,7 +404,7 @@ DataFlowOrchestrator::notify_trigger(bool busy) const
 
   do {
     try {
-        dfmessages::TriggerInhibit message{ busy, m_run_number };
+      dfmessages::TriggerInhibit message{ busy, m_run_number };
       m_busy_sender -> send( std::move(message), m_queue_timeout);
       wasSentSuccessfully = true;
       TLOG_DEBUG(TLVL_NOTIFY_TRIGGER) << get_name() << " Sent BUSY status " << busy << " to trigger in run " << m_run_number;
@@ -420,7 +420,7 @@ DataFlowOrchestrator::notify_trigger(bool busy) const
 }
 
 bool
-DataFlowOrchestrator::dispatch(std::shared_ptr<AssignedTriggerDecision> assignment)
+DataFlowOrchestrator::dispatch(const std::shared_ptr<AssignedTriggerDecision> & assignment)
 {
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering dispatch() method. assignment->connection_name: " << assignment->connection_name;
@@ -431,7 +431,7 @@ DataFlowOrchestrator::dispatch(std::shared_ptr<AssignedTriggerDecision> assignme
   do {
 
     try {
-        auto decision_copy = dfmessages::TriggerDecision(assignment->decision);
+      auto decision_copy = dfmessages::TriggerDecision(assignment->decision);
       iom->get_sender<dfmessages::TriggerDecision>( assignment->connection_name ) -> send( std::move(decision_copy),
 											  m_queue_timeout );
       wasSentSuccessfully = true;
@@ -454,12 +454,12 @@ DataFlowOrchestrator::dispatch(std::shared_ptr<AssignedTriggerDecision> assignme
 }
 
 void
-DataFlowOrchestrator::assign_trigger_decision(std::shared_ptr<AssignedTriggerDecision> assignment)
+DataFlowOrchestrator::assign_trigger_decision(const std::shared_ptr<AssignedTriggerDecision> & assignment)
 {
   m_dataflow_availability[assignment->connection_name].add_assignment(assignment);
 }
 
-} // namespace dfmodules
-} // namespace dunedaq
+} // namespace dunedaq::dfmodules
+
 
 DEFINE_DUNE_DAQ_MODULE(dunedaq::dfmodules::DataFlowOrchestrator)

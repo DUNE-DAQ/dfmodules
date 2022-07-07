@@ -86,7 +86,7 @@ public:
   void init(const data_t&) override;
 
 protected:
-  virtual std::shared_ptr<AssignedTriggerDecision> find_slot(dfmessages::TriggerDecision decision);
+  virtual std::shared_ptr<AssignedTriggerDecision> find_slot(const dfmessages::TriggerDecision & decision);
   // find_slot operates on a round-robin logic
 
   using data_structure_t = std::map<std::string, TriggerRecordBuilderData>;
@@ -109,8 +109,8 @@ private:
   bool is_empty() const;  
   size_t used_slots() const;  
   void notify_trigger(bool busy) const;
-  bool dispatch(std::shared_ptr<AssignedTriggerDecision> assignment);
-  virtual void assign_trigger_decision(std::shared_ptr<AssignedTriggerDecision> assignment);
+  bool dispatch(const std::shared_ptr<AssignedTriggerDecision> & assignment);
+  virtual void assign_trigger_decision(const std::shared_ptr<AssignedTriggerDecision> & assignment);
 
   // Configuration
   std::chrono::milliseconds m_queue_timeout;
