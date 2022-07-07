@@ -7,15 +7,15 @@ import integrationtest.log_file_checks as log_file_checks
 
 # Values that help determine the running conditions
 number_of_data_producers=2
-number_of_readout_apps=3
-number_of_dataflow_apps=3
-trigger_rate=3.0 # Hz
-run_duration=20  # seconds
+number_of_readout_apps=2
+number_of_dataflow_apps=2
+pulser_trigger_rate=1.0 # Hz
+run_duration=30  # seconds
 
 # Default values for validation parameters
 expected_number_of_data_files=3*number_of_dataflow_apps
 check_for_logfile_errors=True
-expected_event_count=run_duration*trigger_rate/number_of_dataflow_apps
+expected_event_count=run_duration*pulser_trigger_rate/number_of_dataflow_apps
 expected_event_count_tolerance=expected_event_count/10
 wib1_frag_hsi_trig_params={"fragment_type_description": "WIB",
                            "hdf5_detector_group": "TPC", "hdf5_region_prefix": "APA",
@@ -43,18 +43,15 @@ ignored_logfile_problems={"dqm": ["client will not be able to connect to Kafka c
 confgen_name="daqconf_multiru_gen"
 # The arguments to pass to the config generator, excluding the json
 # output directory (the test framework handles that)
-confgen_arguments_base=[ "-d", "./frames.bin", "-o", ".", "-s", "10", "-n", str(number_of_data_producers), "-b", "1000", "-a", "1000", "-t", str(trigger_rate), "--latency-buffer-size", "200000"] + [ "--host-ru", "localhost" ] * number_of_readout_apps + [ "--host-df", "localhost" ] * number_of_dataflow_apps
+confgen_arguments_base=[ "-d", "./frames.bin", "-o", ".", "-s", "10", "-n", str(number_of_data_producers), "-b", "1000", "-a", "1000", "-t", str(pulser_trigger_rate), "--latency-buffer-size", "200000"] + [ "--host-ru", "localhost" ] * number_of_readout_apps + [ "--host-df", "localhost" ] * number_of_dataflow_apps
 for idx in range(number_of_readout_apps):
     confgen_arguments_base+=["--region-id", str(idx)] 
-confgen_arguments={"WIB1_System": confgen_arguments_base,
-                   "Software_TPG_System": confgen_arguments_base+["--enable-software-tpg", "-c", str(3*number_of_data_producers*number_of_readout_apps)],
-                   "DQM_System": confgen_arguments_base+["--enable-dqm"],
+confgen_arguments={"Software_TPG_System": confgen_arguments_base+["--enable-software-tpg", "--enable-tpset-writing", "-c", str(3*number_of_data_producers*number_of_readout_apps)],
                   }
 # The commands to run in nanorc, as a list
 nanorc_command_list="integtest-partition boot init conf".split()
-nanorc_command_list+="start --resume-wait 1 101 wait ".split() + [str(run_duration)] + "stop               wait 2".split()
-nanorc_command_list+="start --resume-wait 2 102 wait ".split() + [str(run_duration)] + "stop --stop-wait 1 wait 2".split()
-nanorc_command_list+="start                 103 wait ".split() + [str(run_duration)] + "stop --stop-wait 2 wait 2".split()
+nanorc_command_list+="start --resume-wait 2 101 wait ".split() + [str(run_duration)] + "stop               wait 2".split()
+nanorc_command_list+="start                 102 wait ".split() + [str(run_duration)] + "stop --stop-wait 2 wait 2".split()
 nanorc_command_list+="scrap terminate".split()
 
 # The tests themselves

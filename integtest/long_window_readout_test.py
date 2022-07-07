@@ -7,20 +7,26 @@ import integrationtest.log_file_checks as log_file_checks
 
 # Values that help determine the running conditions
 number_of_data_producers=2
-run_duration=62  # seconds
-number_of_readout_apps=1
+run_duration=32  # seconds
+number_of_readout_apps=3
 number_of_dataflow_apps=1
-trigger_rate=0.2 # Hz
+trigger_rate=0.1 # Hz
+token_count=1
+readout_window_time_before=37200000  # 0.764 second is the intention for b+a
+readout_window_time_after=1000000
+trigger_record_max_window=200000     # intention is 4 msec
+clock_speed_hz=50000000
+latency_buffer_size=600000
 
 # Default values for validation parameters
-expected_number_of_data_files=3*number_of_dataflow_apps
+expected_number_of_data_files=6
 check_for_logfile_errors=True
-expected_event_count=3*run_duration*trigger_rate/number_of_dataflow_apps
-expected_event_count_tolerance=6
+expected_event_count=191 # 3*run_duration*trigger_rate/number_of_dataflow_apps
+expected_event_count_tolerance=5
 wib1_frag_hsi_trig_params={"fragment_type_description": "WIB",
                            "hdf5_detector_group": "TPC", "hdf5_region_prefix": "APA",
                            "expected_fragment_count": (number_of_data_producers*number_of_readout_apps),
-                           "min_size_bytes": 240000, "max_size_bytes": 251000}
+                           "min_size_bytes": 3712080, "max_size_bytes": 3712080}
 triggercandidate_frag_params={"fragment_type_description": "Trigger Candidate",
                               "hdf5_detector_group": "Trigger", "hdf5_region_prefix": "Region",
                               "expected_fragment_count": 1,
@@ -34,17 +40,16 @@ triggercandidate_frag_params={"fragment_type_description": "Trigger Candidate",
 confgen_name="daqconf_multiru_gen"
 # The arguments to pass to the config generator, excluding the json
 # output directory (the test framework handles that)
-confgen_arguments_base=[ "-d", "./frames.bin", "-o", ".", "-s", "10", "-n", str(number_of_data_producers), "-b", "20000", "-a", "20000", "-t", str(trigger_rate), "--latency-buffer-size", "200000"] + [ "--host-ru", "localhost" ] * number_of_readout_apps + [ "--host-df", "localhost" ] * number_of_dataflow_apps
+confgen_arguments_base=[ "-d", "./frames.bin", "-o", ".", "-s", "20", "-n", str(number_of_data_producers), "-b", str(readout_window_time_before), "-a", str(readout_window_time_after), "-t", str(trigger_rate), "--latency-buffer-size", str(latency_buffer_size), "-c", str(token_count), "--clock-speed-hz", str(clock_speed_hz)] + [ "--host-ru", "localhost" ] * number_of_readout_apps + [ "--host-df", "localhost" ] * number_of_dataflow_apps
 for idx in range(number_of_readout_apps):
     confgen_arguments_base+=["--region-id", str(idx)] 
 confgen_arguments={#"No_TR_Splitting": confgen_arguments_base,
-                   "With_TR_Splitting": confgen_arguments_base+["--max-trigger-record-window", "13500"],
+                   "With_TR_Splitting": confgen_arguments_base+["--max-trigger-record-window", str(trigger_record_max_window)],
                   }
 # The commands to run in nanorc, as a list
-nanorc_command_list="partition-test boot init conf".split()
-nanorc_command_list+="start                 101 wait ".split() + [str(run_duration)] + "stop --stop-wait 2 wait 2".split()
-nanorc_command_list+="start --resume-wait 1 102 wait ".split() + [str(run_duration)] + "stop               wait 2".split()
-nanorc_command_list+="start --resume-wait 2 103 wait ".split() + [str(run_duration)] + "stop --stop-wait 1 wait 2".split()
+nanorc_command_list="integtest-partition boot init conf".split()
+nanorc_command_list+="start --resume-wait 15 101 wait ".split() + [str(run_duration)] + "stop --stop-wait 2 wait 2".split()
+nanorc_command_list+="start --resume-wait 15 102 wait ".split() + [str(run_duration)] + "stop               wait 2".split()
 nanorc_command_list+="scrap terminate".split()
 
 # The tests themselves
@@ -64,9 +69,9 @@ def test_nanorc_success(run_nanorc):
 def test_log_files(run_nanorc):
     if check_for_logfile_errors:
         # Check that there are no warnings or errors in the log files
-        assert log_file_checks.logs_are_error_free(run_nanorc.log_files)
+        assert log_file_checks.logs_are_error_free(run_nanorc.log_files, True, True)
 
-def test_data_file(run_nanorc):
+def test_data_files(run_nanorc):
     local_expected_event_count=expected_event_count
     local_event_count_tolerance=expected_event_count_tolerance
     fragment_check_list=[]
@@ -84,3 +89,25 @@ def test_data_file(run_nanorc):
         for jdx in range(len(fragment_check_list)):
             assert data_file_checks.check_fragment_count(data_file, fragment_check_list[jdx])
             assert data_file_checks.check_fragment_sizes(data_file, fragment_check_list[jdx])
+
+def test_cleanup(run_nanorc):
+    print("============================================")
+    print("Listing the hdf5 files before deleting them:")
+    print("============================================")
+    pathlist_string=""
+    filelist_string=""
+    for data_file in run_nanorc.data_files:
+        filelist_string += " " + str(data_file)
+        if str(data_file.parent) not in pathlist_string:
+            pathlist_string += " " + str(data_file.parent)
+
+    os.system(f"df -h {pathlist_string}")
+    print("--------------------")
+    os.system(f"ls -alF {filelist_string}");
+
+    for data_file in run_nanorc.data_files:
+        data_file.unlink()
+
+    print("--------------------")
+    os.system(f"df -h {pathlist_string}")
+    print("============================================")
