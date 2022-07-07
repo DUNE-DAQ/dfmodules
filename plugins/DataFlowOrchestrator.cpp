@@ -14,20 +14,20 @@
 
 #include "appfwk/DAQModuleHelper.hpp"
 #include "appfwk/app/Nljs.hpp"
-#include "logging/Logging.hpp"
 #include "iomanager/IOManager.hpp"
+#include "logging/Logging.hpp"
 
 #include <chrono>
 #include <cstdlib>
 #include <future>
 #include <limits>
+#include <list>
 #include <map>
 #include <memory>
 #include <string>
 #include <thread>
 #include <utility>
 #include <vector>
-#include <list>
 
 /**
  * @brief Name used by TRACE TLOG calls from this source file
@@ -62,17 +62,18 @@ DataFlowOrchestrator::init(const data_t& init_data)
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
 
   auto iom = iomanager::IOManager::get();
-  auto mandatory_connections = appfwk::connection_index(init_data, { "token_connection", "td_connection", "busy_connection" });
+  auto mandatory_connections =
+    appfwk::connection_index(init_data, { "token_connection", "td_connection", "busy_connection" });
 
   m_token_connection = mandatory_connections["token_connection"];
   m_td_connection = mandatory_connections["td_connection"];
   auto busy_connection = mandatory_connections["busy_connection"];
 
   // these are just tests to check if the connections are ok
-  iom ->get_receiver<dfmessages::TriggerDecisionToken>( m_token_connection );
-  iom->get_receiver<dfmessages::TriggerDecision>( m_td_connection );
-  m_busy_sender = iom->get_sender<dfmessages::TriggerInhibit>( busy_connection );
-    
+  iom->get_receiver<dfmessages::TriggerDecisionToken>(m_token_connection);
+  iom->get_receiver<dfmessages::TriggerDecision>(m_td_connection);
+  m_busy_sender = iom->get_sender<dfmessages::TriggerInhibit>(busy_connection);
+
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
 
@@ -84,14 +85,15 @@ DataFlowOrchestrator::do_conf(const data_t& payload)
   auto parsed_conf = payload.get<datafloworchestrator::ConfParams>();
 
   for (auto& app : parsed_conf.dataflow_applications) {
-      TLOG_DEBUG(TLVL_CONFIG) << "Creating dataflow availability struct for uid " << app.connection_uid << ", busy threshold " << app.thresholds.busy << ", free threshold " << app.thresholds.free;
+    TLOG_DEBUG(TLVL_CONFIG) << "Creating dataflow availability struct for uid " << app.connection_uid
+                            << ", busy threshold " << app.thresholds.busy << ", free threshold " << app.thresholds.free;
     m_dataflow_availability[app.connection_uid] =
       TriggerRecordBuilderData(app.connection_uid, app.thresholds.busy, app.thresholds.free);
   }
 
   m_queue_timeout = std::chrono::milliseconds(parsed_conf.general_queue_timeout);
-  m_stop_timeout = std::chrono::microseconds(parsed_conf.stop_timeout*1000);
-  
+  m_stop_timeout = std::chrono::microseconds(parsed_conf.stop_timeout * 1000);
+
   m_td_send_retries = parsed_conf.td_send_retries;
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method, there are "
@@ -113,12 +115,12 @@ DataFlowOrchestrator::do_start(const data_t& payload)
   m_last_token_received = m_last_td_received = std::chrono::steady_clock::now();
 
   auto iom = iomanager::IOManager::get();
-  iom -> add_callback<dfmessages::TriggerDecisionToken>( m_token_connection,
-						      std::bind(&DataFlowOrchestrator::receive_trigger_complete_token, this, std::placeholders::_1) );
-  
-  iom -> add_callback<dfmessages::TriggerDecision>( m_td_connection,
-						    std::bind(&DataFlowOrchestrator::receive_trigger_decision, this, std::placeholders::_1) );
-  
+  iom->add_callback<dfmessages::TriggerDecisionToken>(
+    m_token_connection, std::bind(&DataFlowOrchestrator::receive_trigger_complete_token, this, std::placeholders::_1));
+
+  iom->add_callback<dfmessages::TriggerDecision>(
+    m_td_connection, std::bind(&DataFlowOrchestrator::receive_trigger_decision, this, std::placeholders::_1));
+
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
 }
 
@@ -130,30 +132,29 @@ DataFlowOrchestrator::do_stop(const data_t& /*args*/)
   m_running_status.store(false);
 
   auto iom = iomanager::IOManager::get();
-  iom->remove_callback<dfmessages::TriggerDecision>( m_td_connection );
+  iom->remove_callback<dfmessages::TriggerDecision>(m_td_connection);
 
-  const int wait_steps = 20 ;
-  auto step_timeout = m_stop_timeout / wait_steps ;
+  const int wait_steps = 20;
+  auto step_timeout = m_stop_timeout / wait_steps;
   int step_counter = 0;
-  while ( ! is_empty() &&
-	  step_counter < wait_steps ) {
+  while (!is_empty() && step_counter < wait_steps) {
     TLOG() << get_name() << ": stop delayed while waiting for " << used_slots() << " TDs to completed";
-    std::this_thread::sleep_for( step_timeout ) ;
+    std::this_thread::sleep_for(step_timeout);
     ++step_counter;
   }
 
-  iom->remove_callback<dfmessages::TriggerDecisionToken>( m_token_connection );
-  
+  iom->remove_callback<dfmessages::TriggerDecisionToken>(m_token_connection);
+
   std::list<std::shared_ptr<AssignedTriggerDecision>> remnants;
-  for ( auto & app : m_dataflow_availability ) {
+  for (auto& app : m_dataflow_availability) {
     auto temp = app.second.flush();
-    for ( auto & td : temp ) {
-      remnants.push_back( td );
+    for (auto& td : temp) {
+      remnants.push_back(td);
     }
   }
 
-  for ( auto & r : remnants ) {
-    ers::error( IncompleteTriggerDecision( ERS_HERE, r->decision.trigger_number, m_run_number));
+  for (auto& r : remnants) {
+    ers::error(IncompleteTriggerDecision(ERS_HERE, r->decision.trigger_number, m_run_number));
   }
 
   TLOG() << get_name() << " successfully stopped";
@@ -172,16 +173,17 @@ DataFlowOrchestrator::do_scrap(const data_t& /*args*/)
 }
 
 void
-DataFlowOrchestrator::receive_trigger_decision(const dfmessages::TriggerDecision & decision)
+DataFlowOrchestrator::receive_trigger_decision(const dfmessages::TriggerDecision& decision)
 {
   TLOG_DEBUG(TLVL_TRIGDEC_RECEIVED) << get_name() << " Received TriggerDecision for trigger_number "
                                     << decision.trigger_number << " and run " << decision.run_number
                                     << " (current run is " << m_run_number << ")";
   if (decision.run_number != m_run_number) {
-    ers::error(DataFlowOrchestratorRunNumberMismatch(ERS_HERE, decision.run_number, m_run_number, "MLT", decision.trigger_number));
+    ers::error(DataFlowOrchestratorRunNumberMismatch(
+      ERS_HERE, decision.run_number, m_run_number, "MLT", decision.trigger_number));
     return;
   }
-  
+
   ++m_received_decisions;
   auto decision_received = std::chrono::steady_clock::now();
 
@@ -200,7 +202,7 @@ DataFlowOrchestrator::receive_trigger_decision(const dfmessages::TriggerDecision
                                       << " on connection " << assignment->connection_name;
     decision_assigned = std::chrono::steady_clock::now();
     auto dispatch_successful = dispatch(assignment);
-    
+
     if (dispatch_successful) {
       assign_trigger_decision(assignment);
       TLOG_DEBUG(TLVL_TRIGDEC_RECEIVED) << get_name() << " Assigned trigger_number " << decision.trigger_number
@@ -226,7 +228,7 @@ DataFlowOrchestrator::receive_trigger_decision(const dfmessages::TriggerDecision
 }
 
 std::shared_ptr<AssignedTriggerDecision>
-DataFlowOrchestrator::find_slot(const dfmessages::TriggerDecision & decision)
+DataFlowOrchestrator::find_slot(const dfmessages::TriggerDecision& decision)
 {
 
   // this find_slot assings the decision with a round-robin logic
@@ -235,7 +237,7 @@ DataFlowOrchestrator::find_slot(const dfmessages::TriggerDecision & decision)
   // we only probe the applications once.
   // if they are all unavailable the assignment is set to
   // the application with the lowest used slots
-  // returning a nullptr will be considered as an error 
+  // returning a nullptr will be considered as an error
   // from the upper level code
 
   std::shared_ptr<AssignedTriggerDecision> output = nullptr;
@@ -255,13 +257,13 @@ DataFlowOrchestrator::find_slot(const dfmessages::TriggerDecision & decision)
       candidate_it = m_dataflow_availability.begin();
 
     // get rid of the applications in error state
-    if (candidate_it->second.is_in_error()){
+    if (candidate_it->second.is_in_error()) {
       continue;
     }
 
-    // monitor 
+    // monitor
     auto slots = candidate_it->second.used_slots();
-    if ( slots < minimum) {
+    if (slots < minimum) {
       minimum = slots;
       minimum_occupied = candidate_it;
     }
@@ -274,10 +276,10 @@ DataFlowOrchestrator::find_slot(const dfmessages::TriggerDecision & decision)
   }
 
   if (!output) {
-    // in this case all applications were busy 
+    // in this case all applications were busy
     // so we assign the decision to that with the lowest
     // number of assignments
-    if (minimum_occupied!=m_dataflow_availability.end()){
+    if (minimum_occupied != m_dataflow_availability.end()) {
       output = minimum_occupied->second.make_assignment(decision);
       m_last_assignement_it = minimum_occupied;
       ers::warning(AssignedToBusyApp(ERS_HERE, decision.trigger_number, minimum_occupied->first, minimum));
@@ -285,7 +287,8 @@ DataFlowOrchestrator::find_slot(const dfmessages::TriggerDecision & decision)
   }
 
   if (output != nullptr) {
-      TLOG_DEBUG(TLVL_WORK_STEPS) << "Assigned TriggerDecision with trigger number " << decision.trigger_number << " to TRB at connection " << output->connection_name;
+    TLOG_DEBUG(TLVL_WORK_STEPS) << "Assigned TriggerDecision with trigger number " << decision.trigger_number
+                                << " to TRB at connection " << output->connection_name;
   }
   return output;
 }
@@ -299,7 +302,7 @@ DataFlowOrchestrator::get_info(opmonlib::InfoCollector& ci, int level)
     app.get_info(tmp_ic, level);
     ci.add(name, tmp_ic);
   }
-   
+
   datafloworchestratorinfo::Info info;
   info.tokens_received = m_received_tokens.exchange(0);
   info.decisions_sent = m_sent_decisions.exchange(0);
@@ -310,31 +313,29 @@ DataFlowOrchestrator::get_info(opmonlib::InfoCollector& ci, int level)
   info.waiting_for_token = m_waiting_for_token.exchange(0);
   info.processing_token = m_processing_token.exchange(0);
   ci.add(info);
-
-  
 }
 
 void
-DataFlowOrchestrator::receive_trigger_complete_token(const dfmessages::TriggerDecisionToken & token)
+DataFlowOrchestrator::receive_trigger_complete_token(const dfmessages::TriggerDecisionToken& token)
 {
-  TLOG() << get_name() << " Received TriggerDecisionToken for trigger_number "
-         << token.trigger_number << " and run " << token.run_number
-         << " (current run is " << m_run_number << ")";
+  TLOG() << get_name() << " Received TriggerDecisionToken for trigger_number " << token.trigger_number << " and run "
+         << token.run_number << " (current run is " << m_run_number << ")";
   // add a check to see if the application data found
   if (token.run_number != m_run_number) {
     std::ostringstream oss_source;
     oss_source << "TRB at connection " << token.decision_destination;
-    ers::error(DataFlowOrchestratorRunNumberMismatch(ERS_HERE, token.run_number, m_run_number, oss_source.str(), token.trigger_number));
+    ers::error(DataFlowOrchestratorRunNumberMismatch(
+      ERS_HERE, token.run_number, m_run_number, oss_source.str(), token.trigger_number));
     return;
   }
 
   auto app_it = m_dataflow_availability.find(token.decision_destination);
   // check if application data exists;
   if (app_it == m_dataflow_availability.end()) {
-    ers::error( UnknownTokenSource(ERS_HERE, token.decision_destination));
+    ers::error(UnknownTokenSource(ERS_HERE, token.decision_destination));
     return;
   }
-  
+
   ++m_received_tokens;
   auto callback_start = std::chrono::steady_clock::now();
 
@@ -343,7 +344,7 @@ DataFlowOrchestrator::receive_trigger_complete_token(const dfmessages::TriggerDe
   } catch (AssignedTriggerDecisionNotFound const& err) {
     ers::error(err);
   }
-  
+
   if (app_it->second.is_in_error()) {
     TLOG() << TriggerRecordBuilderAppUpdate(ERS_HERE, token.decision_destination, "Has reconnected");
     app_it->second.set_in_error(false);
@@ -374,10 +375,10 @@ bool
 DataFlowOrchestrator::is_empty() const
 {
   for (auto& dfapp : m_dataflow_availability) {
-    if (dfapp.second.used_slots() != 0 )
+    if (dfapp.second.used_slots() != 0)
       return false;
   }
-  return true;    
+  return true;
 }
 
 size_t
@@ -387,10 +388,9 @@ DataFlowOrchestrator::used_slots() const
   for (auto& dfapp : m_dataflow_availability) {
     total += dfapp.second.used_slots();
   }
-  return total;    
+  return total;
 }
 
-  
 void
 DataFlowOrchestrator::notify_trigger(bool busy) const
 {
@@ -398,19 +398,18 @@ DataFlowOrchestrator::notify_trigger(bool busy) const
   if (busy == m_last_notified_busy.load())
     return;
 
-  
-
   bool wasSentSuccessfully = false;
 
   do {
     try {
       dfmessages::TriggerInhibit message{ busy, m_run_number };
-      m_busy_sender -> send( std::move(message), m_queue_timeout);
+      m_busy_sender->send(std::move(message), m_queue_timeout);
       wasSentSuccessfully = true;
-      TLOG_DEBUG(TLVL_NOTIFY_TRIGGER) << get_name() << " Sent BUSY status " << busy << " to trigger in run " << m_run_number;
+      TLOG_DEBUG(TLVL_NOTIFY_TRIGGER) << get_name() << " Sent BUSY status " << busy << " to trigger in run "
+                                      << m_run_number;
     } catch (const ers::Issue& excpt) {
       std::ostringstream oss_warn;
-      oss_warn << "Send with sender \"" << m_busy_sender -> get_name() << "\" failed";
+      oss_warn << "Send with sender \"" << m_busy_sender->get_name() << "\" failed";
       ers::warning(iomanager::OperationFailed(ERS_HERE, oss_warn.str(), excpt));
     }
 
@@ -420,10 +419,11 @@ DataFlowOrchestrator::notify_trigger(bool busy) const
 }
 
 bool
-DataFlowOrchestrator::dispatch(const std::shared_ptr<AssignedTriggerDecision> & assignment)
+DataFlowOrchestrator::dispatch(const std::shared_ptr<AssignedTriggerDecision>& assignment)
 {
 
-  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering dispatch() method. assignment->connection_name: " << assignment->connection_name;
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering dispatch() method. assignment->connection_name: "
+                                      << assignment->connection_name;
 
   bool wasSentSuccessfully = false;
   int retries = m_td_send_retries;
@@ -432,13 +432,13 @@ DataFlowOrchestrator::dispatch(const std::shared_ptr<AssignedTriggerDecision> & 
 
     try {
       auto decision_copy = dfmessages::TriggerDecision(assignment->decision);
-      iom->get_sender<dfmessages::TriggerDecision>( assignment->connection_name ) -> send( std::move(decision_copy),
-											  m_queue_timeout );
+      iom->get_sender<dfmessages::TriggerDecision>(assignment->connection_name)
+        ->send(std::move(decision_copy), m_queue_timeout);
       wasSentSuccessfully = true;
       ++m_sent_decisions;
-      TLOG_DEBUG(TLVL_DISPATCH_TO_TRB) << get_name() << " Sent TriggerDecision for trigger_number " << decision_copy.trigger_number
-                                       << " to TRB at connection " << assignment->connection_name << " for run number "
-                                       << decision_copy.run_number;
+      TLOG_DEBUG(TLVL_DISPATCH_TO_TRB) << get_name() << " Sent TriggerDecision for trigger_number "
+                                       << decision_copy.trigger_number << " to TRB at connection "
+                                       << assignment->connection_name << " for run number " << decision_copy.run_number;
     } catch (const ers::Issue& excpt) {
       std::ostringstream oss_warn;
       oss_warn << "Send to connection \"" << assignment->connection_name << "\" failed";
@@ -454,12 +454,11 @@ DataFlowOrchestrator::dispatch(const std::shared_ptr<AssignedTriggerDecision> & 
 }
 
 void
-DataFlowOrchestrator::assign_trigger_decision(const std::shared_ptr<AssignedTriggerDecision> & assignment)
+DataFlowOrchestrator::assign_trigger_decision(const std::shared_ptr<AssignedTriggerDecision>& assignment)
 {
   m_dataflow_availability[assignment->connection_name].add_assignment(assignment);
 }
 
 } // namespace dunedaq::dfmodules
-
 
 DEFINE_DUNE_DAQ_MODULE(dunedaq::dfmodules::DataFlowOrchestrator)

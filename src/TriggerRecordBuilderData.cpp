@@ -14,10 +14,10 @@
 
 #include "logging/Logging.hpp"
 
+#include <limits>
 #include <memory>
 #include <string>
 #include <utility>
-#include <limits>
 
 /**
  * @brief Name used by TRACE TLOG calls from this source file
@@ -143,36 +143,39 @@ TriggerRecordBuilderData::complete_assignment(daqdataformats::trigger_number_t t
     metadata_fun(m_metadata);
 
   ++m_complete_counter;
-  auto completion_time = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - dec_ptr->assigned_time);
-  m_complete_microsecond+=completion_time.count();
-  if ( completion_time.count() < m_min_complete_time.load() ) m_min_complete_time.store(completion_time.count());
-  if ( completion_time.count() > m_max_complete_time.load() ) m_max_complete_time.store(completion_time.count());
+  auto completion_time =
+    std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - dec_ptr->assigned_time);
+  m_complete_microsecond += completion_time.count();
+  if (completion_time.count() < m_min_complete_time.load())
+    m_min_complete_time.store(completion_time.count());
+  if (completion_time.count() > m_max_complete_time.load())
+    m_max_complete_time.store(completion_time.count());
 
   return dec_ptr;
 }
 
 std::list<std::shared_ptr<AssignedTriggerDecision>>
-TriggerRecordBuilderData::flush() {
+TriggerRecordBuilderData::flush()
+{
 
   auto lk = std::lock_guard<std::mutex>(m_assigned_trigger_decisions_mutex);
   std::list<std::shared_ptr<AssignedTriggerDecision>> ret;
-  
-  for ( const auto & td : m_assigned_trigger_decisions ) {
-    ret.push_back( td ) ;
+
+  for (const auto& td : m_assigned_trigger_decisions) {
+    ret.push_back(td);
   }
   m_assigned_trigger_decisions.clear();
-  
+
   auto stat_lock = std::lock_guard<std::mutex>(m_latency_info_mutex);
   m_latency_info.clear();
-  m_is_busy = false ;
+  m_is_busy = false;
 
-  m_in_error = false ;
+  m_in_error = false;
   m_metadata = nlohmann::json();
 
   return ret;
 }
 
-  
 std::shared_ptr<AssignedTriggerDecision>
 TriggerRecordBuilderData::make_assignment(dfmessages::TriggerDecision decision)
 {
@@ -197,7 +200,7 @@ TriggerRecordBuilderData::add_assignment(std::shared_ptr<AssignedTriggerDecision
 
 void
 TriggerRecordBuilderData::get_info(opmonlib::InfoCollector& ci, int /*level*/)
-{ 
+{
   dfapplicationinfo::Info info;
 
   // fill metrics for complete TDs
@@ -210,20 +213,22 @@ TriggerRecordBuilderData::get_info(opmonlib::InfoCollector& ci, int /*level*/)
   info.min_time_since_assignment = std::numeric_limits<decltype(info.min_time_since_assignment)>::max();
   info.max_time_since_assignment = 0;
   info.total_time_since_assignment = 0;
- 
+
   auto lk = std::lock_guard<std::mutex>(m_assigned_trigger_decisions_mutex);
 
   info.outstanding_decisions = m_assigned_trigger_decisions.size();
   auto current_time = std::chrono::steady_clock::now();
-  for ( const auto& dec_ptr : m_assigned_trigger_decisions ) {
-    auto us_since_assignment = std::chrono::duration_cast<std::chrono::microseconds>(current_time - dec_ptr->assigned_time);
-    info.total_time_since_assignment+=us_since_assignment.count();
-    if ( us_since_assignment.count() < info.min_time_since_assignment ) info.min_time_since_assignment = us_since_assignment.count();
-    if ( us_since_assignment.count() > info.max_time_since_assignment ) info.max_time_since_assignment = us_since_assignment.count();
+  for (const auto& dec_ptr : m_assigned_trigger_decisions) {
+    auto us_since_assignment =
+      std::chrono::duration_cast<std::chrono::microseconds>(current_time - dec_ptr->assigned_time);
+    info.total_time_since_assignment += us_since_assignment.count();
+    if (us_since_assignment.count() < info.min_time_since_assignment)
+      info.min_time_since_assignment = us_since_assignment.count();
+    if (us_since_assignment.count() > info.max_time_since_assignment)
+      info.max_time_since_assignment = us_since_assignment.count();
   }
-  
+
   ci.add(info);
-    
 }
 
 std::chrono::microseconds

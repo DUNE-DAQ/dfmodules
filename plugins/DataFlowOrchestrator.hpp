@@ -13,11 +13,11 @@
 
 #include "dfmodules/TriggerRecordBuilderData.hpp"
 
+#include "daqdataformats/TriggerRecord.hpp"
 #include "dfmessages/DataRequest.hpp"
 #include "dfmessages/TriggerDecision.hpp"
 #include "dfmessages/TriggerDecisionToken.hpp"
 #include "dfmessages/TriggerInhibit.hpp"
-#include "daqdataformats/TriggerRecord.hpp"
 
 #include "iomanager/ConnectionId.hpp"
 #include "iomanager/Sender.hpp"
@@ -45,9 +45,10 @@ ERS_DECLARE_ISSUE(dfmodules,
 ERS_DECLARE_ISSUE(dfmodules,
                   DataFlowOrchestratorRunNumberMismatch,
                   "DataFlowOrchestrator encountered run number mismatch: recvd ("
-                    << received_run_number << ") != " << run_number << " from " << src_app
-                    << " for trigger_number " << trig_num,
-                  ((uint32_t)received_run_number)((uint32_t)run_number)((std::string)src_app)((uint32_t)trig_num)) // NOLINT(build/unsigned)
+                    << received_run_number << ") != " << run_number << " from " << src_app << " for trigger_number "
+                    << trig_num,
+                  ((uint32_t)received_run_number)((uint32_t)run_number)((std::string)src_app)(
+                    (uint32_t)trig_num)) // NOLINT(build/unsigned)
 ERS_DECLARE_ISSUE(dfmodules,
                   IncompleteTriggerDecision,
                   "TriggerDecision " << trigger_number << " didn't complete within timeout in run " << run_number,
@@ -58,8 +59,9 @@ ERS_DECLARE_ISSUE(dfmodules,
                   ((uint32_t)trigger_number)) // NOLINT(build/unsigned)
 ERS_DECLARE_ISSUE(dfmodules,
                   AssignedToBusyApp,
-                  "TriggerDecision " << trigger_number << " was assigned to DF app " << app << " that was busy with " << used_slots << " TDs",
-                  ((uint32_t)trigger_number)((std::string)app)((size_t)used_slots)) // NOLINT(build/unsigned)                  
+                  "TriggerDecision " << trigger_number << " was assigned to DF app " << app << " that was busy with "
+                                     << used_slots << " TDs",
+                  ((uint32_t)trigger_number)((std::string)app)((size_t)used_slots)) // NOLINT(build/unsigned)
 // Re-enable coverage checking LCOV_EXCL_STOP
 
 namespace dfmodules {
@@ -86,7 +88,7 @@ public:
   void init(const data_t&) override;
 
 protected:
-  virtual std::shared_ptr<AssignedTriggerDecision> find_slot(const dfmessages::TriggerDecision & decision);
+  virtual std::shared_ptr<AssignedTriggerDecision> find_slot(const dfmessages::TriggerDecision& decision);
   // find_slot operates on a round-robin logic
 
   using data_structure_t = std::map<std::string, TriggerRecordBuilderData>;
@@ -103,21 +105,21 @@ private:
 
   void get_info(opmonlib::InfoCollector& ci, int level) override;
 
-  virtual void receive_trigger_complete_token(const dfmessages::TriggerDecisionToken &);
-  void receive_trigger_decision(const dfmessages::TriggerDecision &);
+  virtual void receive_trigger_complete_token(const dfmessages::TriggerDecisionToken&);
+  void receive_trigger_decision(const dfmessages::TriggerDecision&);
   virtual bool is_busy() const;
-  bool is_empty() const;  
-  size_t used_slots() const;  
+  bool is_empty() const;
+  size_t used_slots() const;
   void notify_trigger(bool busy) const;
-  bool dispatch(const std::shared_ptr<AssignedTriggerDecision> & assignment);
-  virtual void assign_trigger_decision(const std::shared_ptr<AssignedTriggerDecision> & assignment);
+  bool dispatch(const std::shared_ptr<AssignedTriggerDecision>& assignment);
+  virtual void assign_trigger_decision(const std::shared_ptr<AssignedTriggerDecision>& assignment);
 
   // Configuration
   std::chrono::milliseconds m_queue_timeout;
   std::chrono::microseconds m_stop_timeout;
   dunedaq::daqdataformats::run_number_t m_run_number;
 
-  //Connections
+  // Connections
   std::shared_ptr<iomanager::SenderConcept<dfmessages::TriggerInhibit>> m_busy_sender;
   iomanager::connection::ConnectionRef m_token_connection;
   iomanager::connection::ConnectionRef m_td_connection;
@@ -138,7 +140,6 @@ private:
   std::atomic<uint64_t> m_forwarding_decision{ 0 };  // NOLINT (build/unsigned)
   std::atomic<uint64_t> m_waiting_for_token{ 0 };    // NOLINT (build/unsigned)
   std::atomic<uint64_t> m_processing_token{ 0 };     // NOLINT (build/unsigned)
-  
 };
 } // namespace dfmodules
 } // namespace dunedaq
