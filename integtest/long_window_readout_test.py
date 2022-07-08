@@ -7,7 +7,7 @@ import integrationtest.log_file_checks as log_file_checks
 
 # Values that help determine the running conditions
 number_of_data_producers=2
-run_duration=32  # seconds
+run_duration=22  # seconds
 number_of_readout_apps=3
 number_of_dataflow_apps=1
 trigger_rate=0.1 # Hz
@@ -19,7 +19,7 @@ clock_speed_hz=50000000
 latency_buffer_size=600000
 
 # Default values for validation parameters
-expected_number_of_data_files=6
+expected_number_of_data_files=4
 check_for_logfile_errors=True
 expected_event_count=191 # 3*run_duration*trigger_rate/number_of_dataflow_apps
 expected_event_count_tolerance=5
