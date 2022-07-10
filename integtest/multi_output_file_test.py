@@ -44,7 +44,7 @@ for idx in range(number_of_readout_apps):
 confgen_arguments={"WIB1_System": confgen_arguments_base,
                    "Software_TPG_System": confgen_arguments_base+["--enable-software-tpg", "-c", str(3*number_of_data_producers*number_of_readout_apps)]}
 # The commands to run in nanorc, as a list
-nanorc_command_list="test-partition boot init conf start 101 resume wait 180 pause wait 2 stop wait 21 start 102 resume wait 120 pause wait 2 stop wait 21 scrap terminate".split()
+nanorc_command_list="integtest-partition boot init conf start 101 resume wait 180 pause wait 2 stop wait 21 start 102 resume wait 120 pause wait 2 stop wait 21 scrap terminate".split()
 
 # The tests themselves
 
@@ -65,7 +65,7 @@ def test_log_files(run_nanorc):
         # Check that there are no warnings or errors in the log files
         assert log_file_checks.logs_are_error_free(run_nanorc.log_files, True, True, ignored_logfile_problems)
 
-def test_data_file(run_nanorc):
+def test_data_files(run_nanorc):
     local_file_count=expected_number_of_data_files
     fragment_check_list=[]
     if "--enable-software-tpg" in run_nanorc.confgen_arguments:

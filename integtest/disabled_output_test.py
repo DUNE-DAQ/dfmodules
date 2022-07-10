@@ -43,7 +43,7 @@ confgen_arguments_base=[ "-d", "./frames.bin", "-o", ".", "-s", "10", "-n", str(
 confgen_arguments={"WIB1_System": confgen_arguments_base,
                    "Software_TPG_System": confgen_arguments_base+["--enable-software-tpg"]}
 # The commands to run in nanorc, as a list
-nanorc_command_list="test-partition boot init conf".split()
+nanorc_command_list="integtest-partition boot init conf".split()
 nanorc_command_list+="start --disable-data-storage 101 wait ".split() + [str(run_duration)] + "stop --stop-wait 2 wait 2".split()
 nanorc_command_list+="start                        102 wait ".split() + [str(run_duration)] + "stop --stop-wait 2 wait 2".split()
 nanorc_command_list+="start --disable-data-storage 103 wait ".split() + [str(run_duration)] + "pause wait 2 stop  wait 2".split()
@@ -69,7 +69,7 @@ def test_log_files(run_nanorc):
         # Check that there are no warnings or errors in the log files
         assert log_file_checks.logs_are_error_free(run_nanorc.log_files)
 
-def test_data_file(run_nanorc):
+def test_data_files(run_nanorc):
     local_expected_event_count=expected_event_count
     local_event_count_tolerance=expected_event_count_tolerance
     fragment_check_list=[]

@@ -29,9 +29,9 @@ triggercandidate_frag_params={"fragment_type_description": "Trigger Candidate",
 confgen_name="daqconf_multiru_gen"
 # The arguments to pass to the config generator, excluding the json
 # output directory (the test framework handles that)
-confgen_arguments=[ "-d", "./frames.bin", "-o", ".", "-s", "10", "-n", str(number_of_data_producers), "-b", "1000", "-a", "1000", "--host-ru", "localhost"]
+confgen_arguments=[ "-d", "./frames.bin", "-o", ".", "-s", "10", "-n", str(number_of_data_producers), "-b", "1000", "-a", "1000", "--host-ru", "localhost", "--op-env", "integtest"]
 # The commands to run in nanorc, as a list
-nanorc_command_list="partition-test boot init conf start 101 wait 1 resume wait ".split() + [str(run_duration)] + "pause wait 2 stop wait 2 scrap terminate".split()
+nanorc_command_list="integtest-partition boot init conf start 101 wait 1 resume wait ".split() + [str(run_duration)] + "pause wait 2 stop wait 2 scrap terminate".split()
 
 # The tests themselves
 
@@ -44,7 +44,7 @@ def test_log_files(run_nanorc):
         # Check that there are no warnings or errors in the log files
         assert log_file_checks.logs_are_error_free(run_nanorc.log_files)
 
-def test_data_file(run_nanorc):
+def test_data_files(run_nanorc):
     # Run some tests on the output data file
     assert len(run_nanorc.data_files)==expected_number_of_data_files
 

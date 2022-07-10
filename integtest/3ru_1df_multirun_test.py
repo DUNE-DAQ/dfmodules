@@ -71,7 +71,7 @@ else:
 
 # The commands to run in nanorc, as a list
 if sufficient_resources_on_this_computer:
-    nanorc_command_list="test-partition boot init conf".split()
+    nanorc_command_list="integtest-partition boot init conf".split()
     nanorc_command_list+="start --resume-wait 1 101 wait ".split() + [str(run_duration)] + "stop               wait 2".split()
     nanorc_command_list+="start --resume-wait 2 102 wait ".split() + [str(run_duration)] + "stop --stop-wait 1 wait 2".split()
     nanorc_command_list+="start                 103 wait ".split() + [str(run_duration)] + "stop --stop-wait 2 wait 2".split()
@@ -98,7 +98,7 @@ def test_log_files(run_nanorc):
         # Check that there are no warnings or errors in the log files
         assert log_file_checks.logs_are_error_free(run_nanorc.log_files, True, True, ignored_logfile_problems)
 
-def test_data_file(run_nanorc):
+def test_data_files(run_nanorc):
     if not sufficient_resources_on_this_computer:
         print(f"This computer ({hostname}) does not have enough resources to run this test.")
         print(f"    (CPU count is {cpu_count}, free and total memory are {free_mem} GB and {total_mem} GB.)")
