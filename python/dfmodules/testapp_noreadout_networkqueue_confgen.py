@@ -234,7 +234,7 @@ def generate(
                 ),
 
                 ("tde", tde.ConfParams(
-                        links=[idx for idx in range(NUMBER_OF_DATA_PRODUCERS)],
+                        sourceids=[idx for idx in range(NUMBER_OF_DATA_PRODUCERS)],
                         min_links_in_request=NUMBER_OF_DATA_PRODUCERS,
                         max_links_in_request=NUMBER_OF_DATA_PRODUCERS,
                         min_readout_window_ticks=1200,
@@ -250,8 +250,8 @@ def generate(
                         clock_frequency_hz=CLOCK_SPEED_HZ/DATA_RATE_SLOWDOWN_FACTOR                    
                         )),
                 ("rqg", rqg.ConfParams(
-                        map=rqg.mapgeoidqueue([
-                                rqg.geoidinst(apa=0, link=idx, queueinstance=f"data_requests_{idx}") for idx in range(NUMBER_OF_DATA_PRODUCERS)
+                        map=rqg.mapsourceidqueue([
+                                rqg.sourceidinst(source_id=idx, queueinstance=f"data_requests_{idx}") for idx in range(NUMBER_OF_DATA_PRODUCERS)
                             ])  
                         )),
                 ("ffr", ffr.ConfParams(

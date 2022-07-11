@@ -65,7 +65,7 @@ public:
       m_slice_number = other.m_slice_number;
       m_run_number = other.m_run_number;
       m_update_time = other.m_update_time;
-      m_tpbundles_by_geoid_and_start_time = other.m_tpbundles_by_geoid_and_start_time;
+      m_tpbundles_by_sourceid_and_start_time = other.m_tpbundles_by_sourceid_and_start_time;
     }
     return *this;
   }
@@ -87,8 +87,8 @@ private:
   daqdataformats::run_number_t m_run_number;
   std::chrono::steady_clock::time_point m_update_time;
   typedef std::map<daqdataformats::timestamp_t, trigger::TPSet> tpbundles_by_start_time_t;
-  typedef std::map<daqdataformats::GeoID, tpbundles_by_start_time_t> bundles_by_geoid_t;
-  bundles_by_geoid_t m_tpbundles_by_geoid_and_start_time;
+  typedef std::map<daqdataformats::SourceID, tpbundles_by_start_time_t> bundles_by_sourceid_t;
+  bundles_by_sourceid_t m_tpbundles_by_sourceid_and_start_time;
   mutable std::mutex m_bundle_map_mutex;
 };
 

@@ -64,8 +64,6 @@ create_file_layout_params()
   dunedaq::hdf5libs::hdf5filelayout::PathParams params1;
   params1.detector_group_type = "TPC";
   params1.detector_group_name = "TPC";
-  params1.region_name_prefix = "APA";
-  params1.digits_for_region_number = 5;
   params1.element_name_prefix = "Link";
   params1.digits_for_element_number = 10;
 
@@ -82,7 +80,7 @@ dunedaq::daqdataformats::TriggerRecord
 create_trigger_record(int trig_num, int fragment_size, int region_count, int element_count)
 {
   const int run_number = 53;
-  const dunedaq::daqdataformats::GeoID::SystemType gtype_to_use = dunedaq::daqdataformats::GeoID::SystemType::kTPC;
+  const dunedaq::daqdataformats::SourceID::Subsystem gtype_to_use = dunedaq::daqdataformats::SourceID::Subsystem::kDRO;
 
   // setup our dummy_data
   std::vector<char> dummy_vector(fragment_size);
@@ -119,7 +117,7 @@ create_trigger_record(int trig_num, int fragment_size, int region_count, int ele
       fh.window_end = ts;
       fh.run_number = run_number;
       fh.fragment_type = 0;
-      fh.element_id = dunedaq::daqdataformats::GeoID(gtype_to_use, reg_num, ele_num);
+      fh.element_id = dunedaq::daqdataformats::SourceID(gtype_to_use, ele_num);
 
       std::unique_ptr<dunedaq::daqdataformats::Fragment> frag_ptr(
         new dunedaq::daqdataformats::Fragment(dummy_data, fragment_size));

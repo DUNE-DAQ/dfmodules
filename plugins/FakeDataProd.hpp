@@ -79,7 +79,7 @@ private:
   // size_t m_sleep_msec_while_running;
   std::chrono::milliseconds m_queue_timeout;
   dunedaq::daqdataformats::run_number_t m_run_number;
-  daqdataformats::GeoID m_geoid;
+  daqdataformats::SourceID m_sourceid;
   uint64_t m_time_tick_diff; // NOLINT (build/unsigned)
   uint64_t m_frame_size;     // NOLINT (build/unsigned)
   uint64_t m_response_delay; // NOLINT (build/unsigned)

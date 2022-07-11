@@ -71,16 +71,15 @@ FakeDataProd::do_conf(const data_t& payload)
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
 
   fakedataprod::ConfParams tmpConfig = payload.get<fakedataprod::ConfParams>();
-  m_geoid.system_type = daqdataformats::GeoID::string_to_system_type(tmpConfig.system_type);
-  m_geoid.region_id = tmpConfig.apa_number;
-  m_geoid.element_id = tmpConfig.link_number;
+  m_sourceid.subsystem = daqdataformats::SourceID::string_to_subsystem(tmpConfig.system_type);
+  m_sourceid.id = tmpConfig.source_id;
   m_time_tick_diff = tmpConfig.time_tick_diff;
   m_frame_size = tmpConfig.frame_size;
   m_response_delay = tmpConfig.response_delay;
   m_fragment_type = daqdataformats::string_to_fragment_type(tmpConfig.fragment_type);
   m_timesync_topic_name = tmpConfig.timesync_topic_name;
 
-  TLOG_DEBUG(TLVL_CONFIG) << get_name() << ": configured for link number " << m_geoid.element_id;
+  TLOG_DEBUG(TLVL_CONFIG) << get_name() << ": configured for link number " << m_sourceid.id;
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
 }
@@ -180,7 +179,7 @@ FakeDataProd::process_data_request(dfmessages::DataRequest& data_request)
 
   data_fragment_ptr->set_trigger_number(data_request.trigger_number);
   data_fragment_ptr->set_run_number(m_run_number);
-  data_fragment_ptr->set_element_id(m_geoid);
+  data_fragment_ptr->set_element_id(m_sourceid);
   data_fragment_ptr->set_error_bits(0);
   data_fragment_ptr->set_type(m_fragment_type);
   data_fragment_ptr->set_trigger_timestamp(data_request.trigger_timestamp);

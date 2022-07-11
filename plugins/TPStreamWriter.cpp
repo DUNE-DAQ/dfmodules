@@ -166,7 +166,7 @@ TPStreamWriter::do_work(std::atomic<bool>& running_flag)
       continue;
     }
 
-    TLOG_DEBUG(21) << "Number of TPs in TPSet is " << tpset.objects.size() << ", GeoID is " << tpset.origin
+    TLOG_DEBUG(21) << "Number of TPs in TPSet is " << tpset.objects.size() << ", Source ID is " << tpset.origin
                    << ", seqno is " << tpset.seqno << ", start timestamp is " << tpset.start_time << ", run number is "
                    << tpset.run_number << ", slice id is " << (tpset.start_time / m_accumulation_interval_ticks);
 
@@ -175,7 +175,7 @@ TPStreamWriter::do_work(std::atomic<bool>& running_flag)
     // next (which we have observed in v2.10.x systems).
     if (tpset.run_number != m_run_number) {
       TLOG_DEBUG(22) << "Discarding TPSet with invalid run number " << tpset.run_number << " (current is "
-                     << m_run_number << "), GeoID is " << tpset.origin << ", seqno is " << tpset.seqno;
+                     << m_run_number << "),  Source ID is " << tpset.origin << ", seqno is " << tpset.seqno;
       continue;
     }
 

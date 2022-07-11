@@ -138,7 +138,7 @@ TriggerRecordBuilder::do_conf(const data_t& payload)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
 
-  m_map_geoid_connections.clear();
+  m_map_sourceid_connections.clear();
 
   triggerrecordbuilder::ConfParams parsed_conf = payload.get<triggerrecordbuilder::ConfParams>();
 
@@ -146,25 +146,24 @@ TriggerRecordBuilder::do_conf(const data_t& payload)
 
   for (auto const& entry : parsed_conf.map) {
 
-    daqdataformats::GeoID::SystemType type = daqdataformats::GeoID::string_to_system_type(entry.system);
+    daqdataformats::SourceID::Subsystem type = daqdataformats::SourceID::string_to_subsystem(entry.system);
 
-    if (type == daqdataformats::GeoID::SystemType::kInvalid) {
+    if (type == daqdataformats::SourceID::Subsystem::kUNDEFINED) {
       throw InvalidSystemType(ERS_HERE, entry.system);
     }
 
-    daqdataformats::GeoID key;
-    key.system_type = type;
-    key.region_id = entry.region;
-    key.element_id = entry.element;
-    m_map_geoid_connections[key] = iom->get_sender<dfmessages::DataRequest> ( entry.connection_uid ) ;
+    daqdataformats::SourceID key;
+    key.subsystem = type;
+    key.id = entry.source_id;
+    m_map_sourceid_connections[key] = iom->get_sender<dfmessages::DataRequest> ( entry.connection_uid ) ;
   }
 
   m_trigger_timeout = duration_type(parsed_conf.trigger_record_timeout_ms);
 
   m_loop_sleep = m_queue_timeout = std::chrono::milliseconds(parsed_conf.general_queue_timeout);
 
-  if (m_map_geoid_connections.size() > 1) {
-    m_loop_sleep /= (2. + log2(m_map_geoid_connections.size()));
+  if (m_map_sourceid_connections.size() > 1) {
+    m_loop_sleep /= (2. + log2(m_map_sourceid_connections.size()));
     if (m_loop_sleep.count() == 0)
       m_loop_sleep = m_queue_timeout = std::chrono::milliseconds(parsed_conf.general_queue_timeout);
   }
@@ -182,7 +181,7 @@ TriggerRecordBuilder::do_scrap(const data_t& /*args*/)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_scrap() method";
 
-  m_map_geoid_connections.clear();
+  m_map_sourceid_connections.clear();
 
   TLOG() << get_name() << " successfully scrapped";
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_scrap() method";
@@ -389,7 +388,7 @@ TriggerRecordBuilder::read_fragments()
     
     if (it != m_trigger_records.end()) {
       
-      // check if the fragment has a GeoId that was desired
+      // check if the fragment has a Source Id that was desired
       daqdataformats::TriggerRecordHeader& header = it->second.second->get_header_ref();
       
       for (size_t i = 0; i < header.get_num_requested_components(); ++i) {
@@ -583,7 +582,7 @@ TriggerRecordBuilder::create_trigger_records_and_dispatch(const dfmessages::Trig
       dataReq.request_information = component;
       dataReq.data_destination = m_reply_connection;
       TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": TR " << slice_id << ": trig_timestamp "
-                                  << dataReq.trigger_timestamp << ": GeoID " << component.component << ": window ["
+                                  << dataReq.trigger_timestamp << ": SourceID " << component.component << ": window ["
                                   << dataReq.request_information.window_begin << ", "
                                   << dataReq.request_information.window_end << ']';
 
@@ -598,16 +597,16 @@ TriggerRecordBuilder::create_trigger_records_and_dispatch(const dfmessages::Trig
 
 bool
 TriggerRecordBuilder::dispatch_data_requests(dfmessages::DataRequest dr,
-                                             const daqdataformats::GeoID& geo,
+                                             const daqdataformats::SourceID& sid,
                                              std::atomic<bool>& running) const
 
 {
 
-  // find the queue for geoid_req in the map
-  auto it_req = m_map_geoid_connections.find(geo);
-  if (it_req == m_map_geoid_connections.end()) {
-    // if geoid request is not valid. then trhow error and continue
-    ers::error(dunedaq::dfmodules::UnknownGeoID(ERS_HERE, geo));
+  // find the queue for sourceid_req in the map
+  auto it_req = m_map_sourceid_connections.find(sid);
+  if (it_req == m_map_sourceid_connections.end()) {
+    // if sourceid request is not valid. then trhow error and continue
+    ers::error(dunedaq::dfmodules::UnknownSourceID(ERS_HERE, sid));
     ++m_invalid_requests;
     return false;
   }

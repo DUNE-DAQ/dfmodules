@@ -153,7 +153,7 @@ TPSetWriter::do_work(std::atomic<bool>& running_flag)
     // TLOG_DEBUG(9) << "Size of serialized TPSet is " << tpset_bytes.size() << ", TPSet size is " <<
     // tpset.objects.size();
 
-    TLOG_DEBUG(9) << "Number of TPs in TPSet is " << tpset.objects.size() << ", GeoID is " << tpset.origin
+    TLOG_DEBUG(9) << "Number of TPs in TPSet is " << tpset.objects.size() << ", Source ID is " << tpset.origin
                   << ", seqno is " << tpset.seqno << ", start timestamp is " << tpset.start_time << ", run number is "
                   << m_run_number;
 
@@ -173,12 +173,11 @@ TPSetWriter::do_work(std::atomic<bool>& running_flag)
     frag.set_run_number(m_run_number);
     frag.set_window_begin(tpset.start_time);
     frag.set_window_end(tpset.end_time);
-    daqdataformats::GeoID geoid;
-    geoid.system_type = tpset.origin.system_type;
-    geoid.region_id = tpset.origin.region_id;
-    geoid.element_id = tpset.origin.element_id;
-    frag.set_element_id(geoid);
-    frag.set_type(daqdataformats::FragmentType::kTriggerPrimitives);
+    daqdataformats::SourceID sourceid;
+    sourceid.subsystem = tpset.origin.subsystem;
+    sourceid.id = tpset.origin.id;
+    frag.set_element_id(sourceid);
+    frag.set_type(daqdataformats::FragmentType::kTP);
 
     tpset_writer.write(static_cast<const char*>(frag.get_storage_location()), frag.get_size());
 

@@ -60,15 +60,15 @@ TimeSliceAccumulator::add_tpset(trigger::TPSet&& tpset)
     tpset = std::move(working_tpset);
   }
 
-  // create an entry in the top-level map for the geoid in this TPSet, if needed
+  // create an entry in the top-level map for the sourceid in this TPSet, if needed
   auto lk = std::lock_guard<std::mutex>(m_bundle_map_mutex);
-  if (m_tpbundles_by_geoid_and_start_time.count(tpset.origin) == 0) {
+  if (m_tpbundles_by_sourceid_and_start_time.count(tpset.origin) == 0) {
     tpbundles_by_start_time_t empty_bundle_map;
-    m_tpbundles_by_geoid_and_start_time[tpset.origin] = empty_bundle_map;
+    m_tpbundles_by_sourceid_and_start_time[tpset.origin] = empty_bundle_map;
   }
 
   // store the TPSet in the map
-  m_tpbundles_by_geoid_and_start_time[tpset.origin].emplace(tpset.start_time, std::move(tpset));
+  m_tpbundles_by_sourceid_and_start_time[tpset.origin].emplace(tpset.start_time, std::move(tpset));
   m_update_time = std::chrono::steady_clock::now();
 }
 
@@ -78,8 +78,8 @@ TimeSliceAccumulator::get_timeslice()
   auto lk = std::lock_guard<std::mutex>(m_bundle_map_mutex);
   std::vector<std::unique_ptr<daqdataformats::Fragment>> list_of_fragments;
 
-  // loop over all GeoIDs present in this accumulator
-  for (auto& [geoid, bundle_map] : m_tpbundles_by_geoid_and_start_time) {
+  // loop over all SourceID present in this accumulator
+  for (auto& [sourceid, bundle_map] : m_tpbundles_by_sourceid_and_start_time) {
 
     // build up the list of pieces that we will use to contruct the Fragment
     std::vector<std::pair<void*, size_t>> list_of_pieces;
@@ -93,11 +93,11 @@ TimeSliceAccumulator::get_timeslice()
     frag->set_trigger_number(m_slice_number);
     frag->set_window_begin(m_begin_time);
     frag->set_window_end(m_end_time);
-    frag->set_element_id(geoid);
-    frag->set_type(daqdataformats::FragmentType::kTriggerPrimitives);
+    frag->set_element_id(sourceid);
+    frag->set_type(daqdataformats::FragmentType::kTP);
 
     size_t frag_payload_size = frag->get_size() - sizeof(dunedaq::daqdataformats::FragmentHeader);
-    TLOG_DEBUG(21) << "In get_timeslice, GeoID is " << geoid << ", number of pieces is " << list_of_pieces.size()
+    TLOG_DEBUG(21) << "In get_timeslice, Source ID is " << sourceid << ", number of pieces is " << list_of_pieces.size()
                    << ", size of Fragment payload is " << frag_payload_size << ", size of TP is "
                    << sizeof(detdataformats::trigger::TriggerPrimitive);
 

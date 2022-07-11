@@ -21,7 +21,7 @@ local info = {
        s.field("unexpected_trigger_decisions", self.uint8, 0, doc="Number of unexpected trigger decisions in the run"),
        s.field("abandoned_trigger_records", self.uint8, 0, doc="Number of trigger records that failed to send to writing in the run"),
        s.field("lost_fragments", self.uint8, 0, doc="Number of fragments that not stored in a file in the run"),
-       s.field("invalid_requests", self.uint8, 0, doc="Number of requests with unknown GeoID in the run"),
+       s.field("invalid_requests", self.uint8, 0, doc="Number of requests with unknown SourceID in the run"),
        s.field("duplicated_trigger_ids", self.uint8, 0, doc="Number of TR not created because redundant"),
 
        // operation metrics
