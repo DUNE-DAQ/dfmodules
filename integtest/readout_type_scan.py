@@ -60,7 +60,7 @@ confgen_arguments={"WIB1_System": confgen_arguments_base,
                    "PDS_(list)_System": confgen_arguments_base+["--frontend-type", "pds_list"], 
                    "PDS_(queue)_System": confgen_arguments_base+["--frontend-type", "pds_queue"]}
 # The commands to run in nanorc, as a list
-nanorc_command_list="boot partition-test init conf start 101 wait 1 resume wait ".split() + [str(run_duration)] + "pause wait 2 stop wait 2 scrap terminate".split()
+nanorc_command_list="integtest-partition boot init conf start 101 wait 1 resume wait ".split() + [str(run_duration)] + "pause wait 2 stop wait 2 scrap terminate".split()
 
 # The tests themselves
 
@@ -83,7 +83,7 @@ def test_log_files(run_nanorc):
         # Check that there are no warnings or errors in the log files
         assert log_file_checks.logs_are_error_free(run_nanorc.log_files, True, True, ignored_logfile_problems)
 
-def test_data_file(run_nanorc):
+def test_data_files(run_nanorc):
     local_expected_event_count=expected_event_count
     local_event_count_tolerance=expected_event_count_tolerance
     fragment_check_list=[]

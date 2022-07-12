@@ -37,7 +37,7 @@ confgen_arguments={"Baseline_Window_Size": confgen_arguments_base+["-b", "1000",
 # The commands to run in nanorc, as a list
 # (the first run [#100] is included to warm up the DAQ processes and avoid warnings and errors caused by
 # startup sluggishness seen on slower test computers)
-nanorc_command_list="boot partition-test init conf".split()
+nanorc_command_list="integtest-partition boot init conf".split()
 nanorc_command_list+="start                 101 wait ".split() + [str(run_duration)] + "stop --stop-wait 2 wait 2".split()
 nanorc_command_list+="start --resume-wait 1 102 wait ".split() + [str(run_duration)] + "stop               wait 2".split()
 nanorc_command_list+="start --resume-wait 2 103 wait ".split() + [str(run_duration)] + "stop --stop-wait 1 wait 2".split()
@@ -64,7 +64,7 @@ def test_log_files(run_nanorc):
         # Check that there are no warnings or errors in the log files
         assert log_file_checks.logs_are_error_free(run_nanorc.log_files, True, True, ignored_logfile_problems)
 
-def test_data_file(run_nanorc):
+def test_data_files(run_nanorc):
     local_expected_event_count=expected_event_count
     local_event_count_tolerance=expected_event_count_tolerance
     frag_params=wib1_frag_hsi_trig_params
