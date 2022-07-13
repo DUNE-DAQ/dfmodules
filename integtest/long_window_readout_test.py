@@ -47,9 +47,9 @@ confgen_arguments={#"No_TR_Splitting": confgen_arguments_base,
                    "With_TR_Splitting": confgen_arguments_base+["--max-trigger-record-window", str(trigger_record_max_window)],
                   }
 # The commands to run in nanorc, as a list
-nanorc_command_list="integtest-partition boot init conf".split()
-nanorc_command_list+="start --resume-wait 15 101 wait ".split() + [str(run_duration)] + "stop --stop-wait 2 wait 2".split()
-nanorc_command_list+="start --resume-wait 15 102 wait ".split() + [str(run_duration)] + "stop               wait 2".split()
+nanorc_command_list="integtest-partition boot conf".split()
+nanorc_command_list+="start_run --wait 15 101 wait ".split() + [str(run_duration)] + "stop_run --wait 2 wait 2".split()
+nanorc_command_list+="start 102 wait 15 enable_triggers wait ".split() + [str(run_duration)] + "stop_run wait 2".split()
 nanorc_command_list+="scrap terminate".split()
 
 # The tests themselves

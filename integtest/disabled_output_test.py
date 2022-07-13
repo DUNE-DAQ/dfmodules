@@ -46,8 +46,8 @@ confgen_arguments={"WIB1_System": confgen_arguments_base,
 nanorc_command_list="integtest-partition boot init conf".split()
 nanorc_command_list+="start --disable-data-storage 101 wait ".split() + [str(run_duration)] + "stop --stop-wait 2 wait 2".split()
 nanorc_command_list+="start                        102 wait ".split() + [str(run_duration)] + "stop --stop-wait 2 wait 2".split()
-nanorc_command_list+="start --disable-data-storage 103 wait ".split() + [str(run_duration)] + "pause wait 2 stop  wait 2".split()
-nanorc_command_list+="start                        104 wait ".split() + [str(run_duration)] + "pause wait 2 stop  wait 2".split()
+nanorc_command_list+="start --disable-data-storage 103 wait ".split() + [str(run_duration)] + "disable_triggers wait 2 stop  wait 2".split()
+nanorc_command_list+="start                        104 wait ".split() + [str(run_duration)] + "disable_triggers wait 2 stop  wait 2".split()
 nanorc_command_list+="scrap terminate".split()
 
 # The tests themselves
