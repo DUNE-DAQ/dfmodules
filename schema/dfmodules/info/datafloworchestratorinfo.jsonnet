@@ -16,7 +16,10 @@ local info = {
        s.field("deciding_destination", self.uint8, 0, doc="Time spent making a decision on the receving DF app"),
        s.field("forwarding_decision", self.uint8, 0, doc="Time spent sending the Trigger Decision to TRB"),
        s.field("waiting_for_token", self.uint8, 0, doc="Time spent waiting in token thread for tokens"),
-       s.field("processing_token", self.uint8, 0, doc="Time spent in token thread updating data structure")
+       s.field("processing_token", self.uint8, 0, doc="Time spent in token thread updating data structure"),
+       s.field("average_time_since_assignment", self.uint8, 0, doc="average time since assignment for current TDs (ms)"),
+       s.field("min_time_since_assignment", self.uint8, 0, doc="shortest time since assignment among current TDs (ms)"),
+       s.field("max_time_since_assignment", self.uint8, 0, doc="longest time since assignment among current TDs (ms)")
    ], doc="Data Flow Orchestrator information")
 };
 
