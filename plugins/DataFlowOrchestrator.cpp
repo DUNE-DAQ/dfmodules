@@ -52,7 +52,7 @@ DataFlowOrchestrator::DataFlowOrchestrator(const std::string& name)
 {
   register_command("conf", &DataFlowOrchestrator::do_conf);
   register_command("start", &DataFlowOrchestrator::do_start);
-  register_command("stop", &DataFlowOrchestrator::do_stop);
+  register_command("drain_dataflow", &DataFlowOrchestrator::do_stop);
   register_command("scrap", &DataFlowOrchestrator::do_scrap);
 }
 
