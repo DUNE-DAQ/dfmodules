@@ -48,7 +48,7 @@ confgen_arguments={#"No_TR_Splitting": confgen_arguments_base,
                   }
 # The commands to run in nanorc, as a list
 nanorc_command_list="integtest-partition boot conf".split()
-nanorc_command_list+="start_run --wait 15 101 wait ".split() + [str(run_duration-15)] + "stop_run --wait 2 wait 2".split()
+nanorc_command_list+="start_run --wait 15 101 wait ".split() + [str(run_duration)] + "stop_run --wait 2 wait 2".split()
 nanorc_command_list+="start 102 wait 15 enable_triggers wait ".split() + [str(run_duration)] + "stop_run wait 2".split()
 nanorc_command_list+="scrap terminate".split()
 
