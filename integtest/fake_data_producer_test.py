@@ -26,8 +26,6 @@ ignored_logfile_problems={}
 
 # The name of the python module for the config generation
 confgen_name="daqconf_multiru_gen"
-# Don't require the --frame-file option since we don't need it
-frame_file_required=False
 # The arguments to pass to the config generator, excluding the json
 # output directory (the test framework handles that)
 confgen_arguments_base=[ "-o", ".", "-n", "2", "--host-ru", "localhost", "--use-fake-data-producers" ]
@@ -42,6 +40,8 @@ nanorc_command_list+="start_run          101 wait ".split() + [str(run_duration)
 nanorc_command_list+="start_run --wait 1 102 wait ".split() + [str(run_duration)] + "stop_run          wait 2".split()
 nanorc_command_list+="start_run --wait 2 103 wait ".split() + [str(run_duration)] + "stop_run --wait 1 wait 2".split()
 nanorc_command_list+="scrap terminate".split()
+# Don't require the --frame-file option since we don't need it
+frame_file_required=False
 
 # The tests themselves
 
