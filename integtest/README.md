@@ -1,4 +1,4 @@
-# 10-Aug-2021, KAB: notes on some initial integrationtests...
+# 19-Jul-2022, KAB: notes on some initial integrationtests...
 
 Here is a command for fetching a file that has WIB data in it (to be used in generating emulated data):
 
@@ -6,7 +6,7 @@ Here is a command for fetching a file that has WIB data in it (to be used in gen
 
 Here is a sample command for invoking a test:
 
-* `pytest -s minimal_system_quick_test.py [--frame-file $PWD/frames.bin] [--nanorc-option timeout 300] [--nanorc-option partition-number 3]`
+* `pytest -s minimal_system_quick_test.py [--frame-file $PWD/frames.bin] [--nanorc-option partition-number 3] [--nanorc-option timeout 300]`
 
 For reference, here are the ideas behind the existing tests:
 * minimal_system_quick_test.py - verify that a small emulator system works fine and data gets written in a short run
@@ -16,6 +16,11 @@ For reference, here are the ideas behind the existing tests:
 * long_window_readout_test.py - verify that readout windows that require TriggerRecords to be split into multiple sequences works as expected
 * 3ru_1df_multirun_test.py - verify that we don't get empty fragments at end run
   * this test is also useful in looking into high-CPU-usage scenarios because it has 3 RUs
-* command_order_test.py - verify that only certain sequences of commands are allowed
 * disabled_output_test.py - verify that the --disable-data-storage option works
 * multi_output_file_test.py - test that the file size maximum config parameter works
+* command_order_test.py - verify that only certain sequences of commands are allowed
+
+Specialty tests:
+* iceberg_real_hsi_test.py - tests the generation of pulser triggers by the real TLU/HSI electronics at the ICEBERG teststand
+  * needs to be run on the the iceberg01 computer at the ICEBERG teststand
+  * for now, it needs the global timing partition to be started separately (hints provided in output of the test script)

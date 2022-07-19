@@ -1,15 +1,10 @@
 import pytest
 import os
 import re
+import psutil
 
 import dfmodules.data_file_checks as data_file_checks
 import integrationtest.log_file_checks as log_file_checks
-
-# This test requires that a global timing partition is configured and running.
-# --> daqconf_timing_gen --host-thi iceberg01-priv --host-tmc iceberg01-priv --master-device-name BOREAS_TLU_ICEBERG --clock-speed-hz 62500000 timing_partition_config
-# --> nanotimingrc timing_partition_config ${USER}-timing-partition boot conf wait 1200 scrap terminate
-
-# And, it probably requires this test driver to be run in nanorc partition zero, but that is to-be-confirmed
 
 # Values that help determine the running conditions
 number_of_data_producers=2
@@ -33,24 +28,46 @@ triggercandidate_frag_params={"fragment_type_description": "Trigger Candidate",
                               "expected_fragment_count": 1,
                               "min_size_bytes": 130, "max_size_bytes": 150}
 
+# Determine if the conditions are right for these tests
+we_are_running_on_an_iceberg_computer=False
+hostname=os.uname().nodename
+#if "iceberg01" in hostname or "protodune-daq02" in hostname:
+if "iceberg01" in hostname:
+    we_are_running_on_an_iceberg_computer=True
+the_global_timing_partition_is_running=False
+username=os.environ.get('USER')
+for proc in psutil.process_iter(['pid', 'name', 'username']):
+    if proc.username() == username and "nanotimingrc" in proc.name():
+        the_global_timing_partition_is_running=True
+print(f"DEBUG: hostname is {hostname}, iceberg-computer flag is {we_are_running_on_an_iceberg_computer} and global-timing-running flag is {the_global_timing_partition_is_running}.")
+
 # The next three variable declarations *must* be present as globals in the test
 # file. They're read by the "fixtures" in conftest.py to determine how
 # to run the config generation and nanorc
 
 # The name of the python module for the config generation
 confgen_name="daqconf_multiru_gen"
+
 # The arguments to pass to the config generator, excluding the json
 # output directory (the test framework handles that)
-confgen_arguments_base=["-o", ".", "-n", str(number_of_data_producers), "-b", "1000", "-a", "1000", "--latency-buffer-size", "200000"] + [ "--host-ru", "localhost" ] * number_of_readout_apps + [ "--host-df", "localhost" ] * number_of_dataflow_apps + ["--use-hsi-hw", "--host-hsi", "iceberg01-priv", "--control-hsi-hw", "--hsi-device-name", "BOREAS_TLU_ICEBERG", "--hsi-source", "1", "--ttcm-s1", "1", "--hsi-re-mask", "1", "--host-timing", "iceberg01-priv", "--control-timing-partition", "--host-tprtc", "iceberg01-priv", "--timing-partition-master-device-name", "BOREAS_TLU_ICEBERG", "--hsi-trigger-type-passthrough", "--use-fake-data-producers", "--frontend-type", "wib2", "--clock-speed-hz", "62500000"]
-confgen_arguments={"Base_Trigger_Rate": confgen_arguments_base+["-t", str(base_trigger_rate)],
-                   "Trigger_Rate_with_Factor": confgen_arguments_base+["-t", str(base_trigger_rate*trigger_rate_factor)]
-                  }
+if we_are_running_on_an_iceberg_computer and the_global_timing_partition_is_running:
+    confgen_arguments_base=["-o", ".", "-n", str(number_of_data_producers), "-b", "1000", "-a", "1000", "--latency-buffer-size", "200000"] + [ "--host-ru", "localhost" ] * number_of_readout_apps + [ "--host-df", "localhost" ] * number_of_dataflow_apps + ["--use-hsi-hw", "--host-hsi", "iceberg01-priv", "--control-hsi-hw", "--hsi-device-name", "BOREAS_TLU_ICEBERG", "--hsi-source", "1", "--ttcm-s1", "1", "--hsi-re-mask", "1", "--host-timing", "iceberg01-priv", "--control-timing-partition", "--host-tprtc", "iceberg01-priv", "--timing-partition-master-device-name", "BOREAS_TLU_ICEBERG", "--hsi-trigger-type-passthrough", "--use-fake-data-producers", "--frontend-type", "wib2", "--clock-speed-hz", "62500000"]
+    confgen_arguments={"Base_Trigger_Rate": confgen_arguments_base+["-t", str(base_trigger_rate)],
+                       "Trigger_Rate_with_Factor": confgen_arguments_base+["-t", str(base_trigger_rate*trigger_rate_factor)]
+                      }
+else:
+    confgen_arguments=["-d", "./frames.bin", "-o", ".", "-s", "10"]
+
 # The commands to run in nanorc, as a list
-nanorc_command_list="integtest-partition boot conf".split()
-nanorc_command_list+="start 101 enable_triggers wait ".split() + [str(run_duration)] + "stop_run wait 2".split()
-nanorc_command_list+="start 102 wait 1 enable_triggers wait ".split() + [str(run_duration)] + "disable_triggers wait 1 stop_run".split()
-nanorc_command_list+="start_run 103 wait ".split() + [str(run_duration)] + "disable_triggers wait 1 drain_dataflow wait 1 stop_trigger_sources wait 1 stop wait 2".split()
-nanorc_command_list+="scrap terminate".split()
+if we_are_running_on_an_iceberg_computer and the_global_timing_partition_is_running:
+    nanorc_command_list="integtest-partition boot conf".split()
+    nanorc_command_list+="start 101 enable_triggers wait ".split() + [str(run_duration)] + "stop_run wait 2".split()
+    nanorc_command_list+="start 102 wait 1 enable_triggers wait ".split() + [str(run_duration)] + "disable_triggers wait 1 stop_run".split()
+    nanorc_command_list+="start_run 103 wait ".split() + [str(run_duration)] + "disable_triggers wait 1 drain_dataflow wait 1 stop_trigger_sources wait 1 stop wait 2".split()
+    nanorc_command_list+="scrap terminate".split()
+else:
+    nanorc_command_list=["integtest-partition", "boot", "terminate"]
+
 # Don't require the --frame-file option since we don't need it
 frame_file_required=False
 
@@ -74,6 +91,16 @@ def test_log_files(run_nanorc):
         assert log_file_checks.logs_are_error_free(run_nanorc.log_files, True, True)
 
 def test_data_files(run_nanorc):
+    if not we_are_running_on_an_iceberg_computer:
+        print(f"This computer ({hostname}) is not part of the ICEBERG DAQ cluster and therefore can not run this test.")
+        return
+    if not the_global_timing_partition_is_running:
+        print(f"The global timing partition does not appear to be running on this computer ({hostname}).")
+        print("    Please check whether it is, and start it, if needed.")
+        print("Hints: daqconf_timing_gen --host-thi iceberg01-priv --host-tmc iceberg01-priv --master-device-name BOREAS_TLU_ICEBERG --clock-speed-hz 62500000 timing_partition_config")
+        print("       nanotimingrc timing_partition_config ${USER}-timing-partition boot conf wait 1200 scrap terminate")
+        return
+
     fragment_check_list=[]
     fragment_check_list.append(wib2_frag_hsi_trig_params)
     fragment_check_list.append(triggercandidate_frag_params)
