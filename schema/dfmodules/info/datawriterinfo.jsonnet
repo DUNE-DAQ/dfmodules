@@ -14,6 +14,7 @@ local info = {
        s.field("records_written", self.uint8, 0, doc="Integral trigger records written counter"), 
        s.field("new_records_written", self.uint8, 0, doc="Incremental trigger records written counter"), 
        s.field("bytes_output", self.uint8, 0, doc="Number of bytes that have been written out"), 
+       s.field("new_bytes_output", self.uint8, 0, doc="incremental bytes that have been written out")
    ], doc="Data writer information")
 };
 
