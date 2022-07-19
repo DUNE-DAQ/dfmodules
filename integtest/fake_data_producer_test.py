@@ -37,10 +37,10 @@ confgen_arguments={"Baseline_Window_Size": confgen_arguments_base+["-b", "1000",
 # The commands to run in nanorc, as a list
 # (the first run [#100] is included to warm up the DAQ processes and avoid warnings and errors caused by
 # startup sluggishness seen on slower test computers)
-nanorc_command_list="integtest-partition boot init conf".split()
-nanorc_command_list+="start                 101 wait ".split() + [str(run_duration)] + "stop --stop-wait 2 wait 2".split()
-nanorc_command_list+="start --resume-wait 1 102 wait ".split() + [str(run_duration)] + "stop               wait 2".split()
-nanorc_command_list+="start --resume-wait 2 103 wait ".split() + [str(run_duration)] + "stop --stop-wait 1 wait 2".split()
+nanorc_command_list="integtest-partition boot conf".split()
+nanorc_command_list+="start_run          101 wait ".split() + [str(run_duration)] + "stop_run --wait 2 wait 2".split()
+nanorc_command_list+="start_run --wait 1 102 wait ".split() + [str(run_duration)] + "stop_run          wait 2".split()
+nanorc_command_list+="start_run --wait 2 103 wait ".split() + [str(run_duration)] + "stop_run --wait 1 wait 2".split()
 nanorc_command_list+="scrap terminate".split()
 
 # The tests themselves

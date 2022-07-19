@@ -43,11 +43,11 @@ confgen_arguments_base=[ "-d", "./frames.bin", "-o", ".", "-s", "10", "-n", str(
 confgen_arguments={"WIB1_System": confgen_arguments_base,
                    "Software_TPG_System": confgen_arguments_base+["--enable-software-tpg"]}
 # The commands to run in nanorc, as a list
-nanorc_command_list="integtest-partition boot init conf".split()
-nanorc_command_list+="start --disable-data-storage 101 wait ".split() + [str(run_duration)] + "stop --stop-wait 2 wait 2".split()
-nanorc_command_list+="start                        102 wait ".split() + [str(run_duration)] + "stop --stop-wait 2 wait 2".split()
-nanorc_command_list+="start --disable-data-storage 103 wait ".split() + [str(run_duration)] + "pause wait 2 stop  wait 2".split()
-nanorc_command_list+="start                        104 wait ".split() + [str(run_duration)] + "pause wait 2 stop  wait 2".split()
+nanorc_command_list="integtest-partition boot conf".split()
+nanorc_command_list+="start_run --disable-data-storage 101 wait ".split() + [str(run_duration)] + "stop_run --wait 2 wait 2".split()
+nanorc_command_list+="start_run                        102 wait ".split() + [str(run_duration)] + "stop_run --wait 2 wait 2".split()
+nanorc_command_list+="start_run --disable-data-storage 103 wait ".split() + [str(run_duration)] + "disable_triggers wait 2 stop_run wait 2".split()
+nanorc_command_list+="start_run                        104 wait ".split() + [str(run_duration)] + "disable_triggers wait 2 stop_run wait 2".split()
 nanorc_command_list+="scrap terminate".split()
 
 # The tests themselves

@@ -24,7 +24,7 @@ nanorc_command_list=[
 ["integtest-partition", "conf"],
 ["integtest-partition", "start", "100"],
 ["integtest-partition", "resume"],
-["integtest-partition", "pause"],
+["integtest-partition", "disable_triggers"],
 ["integtest-partition", "stop"],
 ["integtest-partition", "scrap"],
 
@@ -33,7 +33,7 @@ nanorc_command_list=[
 "integtest-partition boot conf".split(),
 "integtest-partition boot start 101".split(),
 "integtest-partition boot resume".split(),
-"integtest-partition boot pause".split(),
+"integtest-partition boot disable_triggers".split(),
 "integtest-partition boot stop".split(),
 "integtest-partition boot scrap".split(),
 
@@ -42,7 +42,7 @@ nanorc_command_list=[
 "integtest-partition boot init init".split(),
 "integtest-partition boot init start 102".split(),
 "integtest-partition boot init resume".split(),
-"integtest-partition boot init pause".split(),
+"integtest-partition boot init disable_triggers".split(),
 "integtest-partition boot init stop".split(),
 "integtest-partition boot init scrap".split(),
 
@@ -51,10 +51,10 @@ nanorc_command_list=[
 "integtest-partition boot init conf init".split(),
 "integtest-partition boot init conf conf".split(),
 "integtest-partition boot init conf resume".split(),
-"integtest-partition boot init conf pause".split(),
+"integtest-partition boot init conf disable_triggers".split(),
 "integtest-partition boot init conf stop".split(),
 
-# Only resume pause stop after start
+# Only resume disable_triggers stop after start
 "integtest-partition boot init conf start 103 boot".split(),
 "integtest-partition boot init conf start 104 init".split(),
 "integtest-partition boot init conf start 105 conf".split(),
@@ -66,7 +66,7 @@ nanorc_command_list=[
 "integtest-partition boot init conf start 109 stop init".split(),
 "integtest-partition boot init conf start 110 stop conf".split(),
 "integtest-partition boot init conf start 111 stop resume".split(),
-"integtest-partition boot init conf start 112 stop pause".split(),
+"integtest-partition boot init conf start 112 stop disable_triggers".split(),
 "integtest-partition boot init conf start 113 stop stop".split(),
 
 # After scrap is same as init
@@ -74,7 +74,7 @@ nanorc_command_list=[
 "integtest-partition boot init conf start 115 stop scrap init".split(),
 "integtest-partition boot init conf start 116 stop scrap start 121".split(),
 "integtest-partition boot init conf start 117 stop scrap resume".split(),
-"integtest-partition boot init conf start 118 stop scrap pause".split(),
+"integtest-partition boot init conf start 118 stop scrap disable_triggers".split(),
 "integtest-partition boot init conf start 119 stop scrap stop".split(),
 "integtest-partition boot init conf start 120 stop scrap scrap".split(),
 

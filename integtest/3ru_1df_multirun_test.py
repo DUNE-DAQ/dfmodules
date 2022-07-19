@@ -71,10 +71,10 @@ else:
 
 # The commands to run in nanorc, as a list
 if sufficient_resources_on_this_computer:
-    nanorc_command_list="integtest-partition boot init conf".split()
-    nanorc_command_list+="start --resume-wait 1 101 wait ".split() + [str(run_duration)] + "stop               wait 2".split()
-    nanorc_command_list+="start --resume-wait 2 102 wait ".split() + [str(run_duration)] + "stop --stop-wait 1 wait 2".split()
-    nanorc_command_list+="start                 103 wait ".split() + [str(run_duration)] + "stop --stop-wait 2 wait 2".split()
+    nanorc_command_list="integtest-partition boot conf".split()
+    nanorc_command_list+="start_run --wait 1 101 wait ".split() + [str(run_duration)] + "stop_run          wait 2".split()
+    nanorc_command_list+="start_run --wait 2 102 wait ".split() + [str(run_duration)] + "stop_run --wait 1 wait 2".split()
+    nanorc_command_list+="start_run          103 wait ".split() + [str(run_duration)] + "stop_run --wait 2 wait 2".split()
     nanorc_command_list+="scrap terminate".split()
 else:
     nanorc_command_list=["boot", "terminate"]
