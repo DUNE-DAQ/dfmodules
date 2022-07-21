@@ -1,4 +1,4 @@
-# 19-Jul-2022, KAB: notes on some initial integrationtests...
+# 21-Jul-2022, KAB: notes on some initial integrationtests...
 
 Here is a command for fetching a file that has WIB data in it (to be used in generating emulated data):
 
@@ -27,3 +27,8 @@ Specialty tests:
   * for now, it needs the global timing partition to be started separately (hints provided in output of the test script)
   * this test does not need "--frame-file $PWD/frames.bin"
   * it is useful to run this test with a couple of partition numbers to verify that it can talk to the global timing partition independent of its own partition number
+
+Not ready for general use:
+* insufficient_disk_space_test.py
+* felix_emu_wib2_test.py
+* large_trigger_record_test.py
