@@ -56,7 +56,7 @@ if we_are_running_on_an_iceberg_computer and the_global_timing_partition_is_runn
                        "Trigger_Rate_with_Factor": confgen_arguments_base+["-t", str(base_trigger_rate*trigger_rate_factor)]
                       }
 else:
-    confgen_arguments=["-d", "./frames.bin", "-o", ".", "-s", "10"]
+    confgen_arguments=["-o", ".", "-s", "10"]
 
 # The commands to run in nanorc, as a list
 if we_are_running_on_an_iceberg_computer and the_global_timing_partition_is_running:
