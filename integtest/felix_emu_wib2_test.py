@@ -23,7 +23,7 @@ expected_event_count_tolerance=expected_event_count/10
 wib2_frag_hsi_trig_params={"fragment_type_description": "WIB2",
                            "hdf5_detector_group": "TPC", "hdf5_region_prefix": "APA",
                            "expected_fragment_count": (number_of_data_producers*number_of_readout_apps),
-                           "min_size_bytes": 289416, "max_size_bytes": 295080}
+                           "min_size_bytes": 295080, "max_size_bytes": 295080}
 triggercandidate_frag_params={"fragment_type_description": "Trigger Candidate",
                               "hdf5_detector_group": "Trigger", "hdf5_region_prefix": "Region",
                               "expected_fragment_count": 1,
@@ -32,7 +32,8 @@ triggercandidate_frag_params={"fragment_type_description": "Trigger Candidate",
 # Determine if the conditions are right for these tests
 hostname=os.uname().nodename
 felix_is_ready=True
-print(f"DEBUG: felix-read flag is {felix_is_ready}.")
+#print(f"DEBUG: felix-read flag is {felix_is_ready}.")
+print("HINT: flxlibs_emu_confgen --chunkSize 472; flx-config -d 0 load emuconfigreg_472_1_0; femu -d 0 -e; flx-config -d 1 load emuconfigreg_472_1_0; femu -d 1 -e")
 
 # The next three variable declarations *must* be present as globals in the test
 # file. They're read by the "fixtures" in conftest.py to determine how
@@ -84,10 +85,7 @@ def test_log_files(run_nanorc):
 
 def test_data_files(run_nanorc):
     if not felix_is_ready:
-        print(f"The global timing partition does not appear to be running on this computer ({hostname}).")
-        print("    Please check whether it is, and start it, if needed.")
-        print("Hints: daqconf_timing_gen --host-thi iceberg01-priv --host-tmc iceberg01-priv --master-device-name BOREAS_TLU_ICEBERG --clock-speed-hz 62500000 timing_partition_config")
-        print("       nanotimingrc timing_partition_config ${USER}-timing-partition boot conf wait 1200 scrap terminate")
+        print(f"A FELIX card does not appear to be accessible from this computer ({hostname}).")
         return
 
     fragment_check_list=[]
@@ -96,11 +94,6 @@ def test_data_files(run_nanorc):
 
     local_expected_event_count=expected_event_count
     local_event_count_tolerance=expected_event_count_tolerance
-    #current_test=os.environ.get('PYTEST_CURRENT_TEST')
-    #match_obj = re.search(r"Factor", current_test)
-    #if match_obj:
-    #    local_expected_event_count*=trigger_rate_factor
-    #    local_event_count_tolerance*=trigger_rate_factor
 
     # Run some tests on the output data files
     assert len(run_nanorc.data_files)==expected_number_of_data_files
