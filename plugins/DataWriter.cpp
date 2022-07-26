@@ -77,7 +77,8 @@ DataWriter::get_info(opmonlib::InfoCollector& ci, int /*level*/)
   dwi.new_records_received = m_records_received.exchange(0);
   dwi.records_written = m_records_written_tot.load();
   dwi.new_records_written = m_records_written.exchange(0);
-  dwi.bytes_output = m_bytes_output.load();
+  dwi.bytes_output = m_bytes_output_tot.load();
+  dwi.new_bytes_output = m_bytes_output.exchange(0);
 
   ci.add(dwi);
 }
@@ -150,6 +151,7 @@ DataWriter::do_start(const data_t& payload)
   m_records_written = 0;
   m_records_written_tot = 0;
   m_bytes_output = 0;
+  m_bytes_output_tot = 0;
 
   m_running.store(true);
 
@@ -232,6 +234,7 @@ DataWriter::receive_trigger_record(std::unique_ptr<daqdataformats::TriggerRecord
 	  ++m_records_written;
 	  ++m_records_written_tot;
 	  m_bytes_output += trigger_record_ptr->get_total_size_bytes();
+	  m_bytes_output_tot += trigger_record_ptr->get_total_size_bytes();
 	} catch (const RetryableDataStoreProblem& excpt) {
 	  should_retry = true;
 	  ers::error(DataWritingProblem(ERS_HERE,
