@@ -22,7 +22,7 @@ expected_event_count_tolerance=expected_event_count/10
 wib2_frag_hsi_trig_params={"fragment_type_description": "WIB2",
                            "hdf5_detector_group": "TPC", "hdf5_region_prefix": "APA",
                            "expected_fragment_count": (number_of_data_producers*number_of_readout_apps),
-                           "min_size_bytes": 37200, "max_size_bytes": 37200}
+                           "min_size_bytes": 29816, "max_size_bytes": 29816}
 triggercandidate_frag_params={"fragment_type_description": "Trigger Candidate",
                               "hdf5_detector_group": "Trigger", "hdf5_region_prefix": "Region",
                               "expected_fragment_count": 1,
