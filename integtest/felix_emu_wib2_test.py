@@ -2,6 +2,7 @@ import pytest
 import os
 import re
 import psutil
+import sh
 
 import dfmodules.data_file_checks as data_file_checks
 import integrationtest.log_file_checks as log_file_checks
@@ -31,8 +32,13 @@ triggercandidate_frag_params={"fragment_type_description": "Trigger Candidate",
 
 # Determine if the conditions are right for these tests
 hostname=os.uname().nodename
-felix_is_ready=True
-#print(f"DEBUG: felix-read flag is {felix_is_ready}.")
+felix_is_connected=False
+lspci_output=sh.lspci()
+if "CERN" in lspci_output or "Xilinx" in lspci_output:
+    retcode=os.system("flx-info >/dev/null")
+    if retcode == 0:
+        felix_is_connected=True
+print(f"DEBUG: felix-is-connected flag is {felix_is_connected}.")
 print("HINT: flxlibs_emu_confgen --chunkSize 472; flx-config -d 0 load emuconfigreg_472_1_0; femu -d 0 -e; flx-config -d 1 load emuconfigreg_472_1_0; femu -d 1 -e")
 
 # The next three variable declarations *must* be present as globals in the test
@@ -44,7 +50,7 @@ confgen_name="daqconf_multiru_gen"
 
 # The arguments to pass to the config generator, excluding the json
 # output directory (the test framework handles that)
-if felix_is_ready:
+if felix_is_connected:
     confgen_arguments_base=["-o", ".", "-s", "10", "-n", str(number_of_data_producers), "-b", str(readout_window_time_before), "-a", str(readout_window_time_after), "-t", str(trigger_rate), "--latency-buffer-size", "200000", "--clock-speed-hz", "62500000", "--use-felix", "--emulator-mode", "--frontend-type", "wib2"] + [ "--host-ru", "localhost" ] * number_of_readout_apps + [ "--host-df", "localhost" ] * number_of_dataflow_apps
     confgen_arguments={"Base_System": confgen_arguments_base,
                       }
@@ -52,7 +58,7 @@ else:
     confgen_arguments=["-o", ".", "-s", "10"]
 
 # The commands to run in nanorc, as a list
-if felix_is_ready:
+if felix_is_connected:
     nanorc_command_list="integtest-partition boot conf".split()
     nanorc_command_list+="start 101 enable_triggers wait ".split() + [str(run_duration)] + "stop_run wait 2".split()
     nanorc_command_list+="start 102 wait 1 enable_triggers wait ".split() + [str(run_duration)] + "disable_triggers wait 1 stop_run".split()
@@ -84,7 +90,7 @@ def test_log_files(run_nanorc):
         assert log_file_checks.logs_are_error_free(run_nanorc.log_files, True, True)
 
 def test_data_files(run_nanorc):
-    if not felix_is_ready:
+    if not felix_is_connected:
         print(f"A FELIX card does not appear to be accessible from this computer ({hostname}).")
         return
 
