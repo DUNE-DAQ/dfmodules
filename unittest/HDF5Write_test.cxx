@@ -11,6 +11,7 @@
 #include "dfmodules/hdf5datastore/Nljs.hpp"
 #include "dfmodules/hdf5datastore/Structs.hpp"
 
+#include "detdataformats/DetID.hpp"
 #include "hdf5libs/hdf5filelayout/Nljs.hpp"
 #include "hdf5libs/hdf5filelayout/Structs.hpp"
 
@@ -80,7 +81,7 @@ dunedaq::daqdataformats::TriggerRecord
 create_trigger_record(int trig_num, int fragment_size, int region_count, int element_count)
 {
   const int run_number = 53;
-  const dunedaq::daqdataformats::SourceID::Subsystem gtype_to_use = dunedaq::daqdataformats::SourceID::Subsystem::kDRO;
+  const dunedaq::daqdataformats::SourceID::Subsystem stype_to_use = dunedaq::daqdataformats::SourceID::Subsystem::kDetectorReadout;
 
   // setup our dummy_data
   std::vector<char> dummy_vector(fragment_size);
@@ -116,9 +117,9 @@ create_trigger_record(int trig_num, int fragment_size, int region_count, int ele
       fh.window_begin = ts - 10;
       fh.window_end = ts;
       fh.run_number = run_number;
-      fh.fragment_type = 0;
-      fh.element_id = dunedaq::daqdataformats::SourceID(gtype_to_use, ele_num);
-
+      fh.fragment_type = static_cast<dunedaq::daqdataformats::fragment_type_t>(dunedaq::daqdataformats::FragmentType::kWIB);
+      fh.detector_id = static_cast<uint16_t>(dunedaq::detdataformats::DetID::Subdetector::kHD_TPC);
+      fh.element_id = dunedaq::daqdataformats::SourceID(stype_to_use, ele_num);
       std::unique_ptr<dunedaq::daqdataformats::Fragment> frag_ptr(
         new dunedaq::daqdataformats::Fragment(dummy_data, fragment_size));
       frag_ptr->set_header_fields(fh);

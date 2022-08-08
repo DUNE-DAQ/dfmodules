@@ -177,7 +177,7 @@ TPSetWriter::do_work(std::atomic<bool>& running_flag)
     sourceid.subsystem = tpset.origin.subsystem;
     sourceid.id = tpset.origin.id;
     frag.set_element_id(sourceid);
-    frag.set_type(daqdataformats::FragmentType::kTP);
+    frag.set_type(daqdataformats::FragmentType::kSW_TriggerPrimitive);
 
     tpset_writer.write(static_cast<const char*>(frag.get_storage_location()), frag.get_size());
 

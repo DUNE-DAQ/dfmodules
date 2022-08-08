@@ -94,7 +94,7 @@ TimeSliceAccumulator::get_timeslice()
     frag->set_window_begin(m_begin_time);
     frag->set_window_end(m_end_time);
     frag->set_element_id(sourceid);
-    frag->set_type(daqdataformats::FragmentType::kTP);
+    frag->set_type(daqdataformats::FragmentType::kSW_TriggerPrimitive);
 
     size_t frag_payload_size = frag->get_size() - sizeof(dunedaq::daqdataformats::FragmentHeader);
     TLOG_DEBUG(21) << "In get_timeslice, Source ID is " << sourceid << ", number of pieces is " << list_of_pieces.size()

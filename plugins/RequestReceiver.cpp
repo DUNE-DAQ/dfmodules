@@ -90,7 +90,7 @@ RequestReceiver::do_conf(const data_t& payload)
 
     daqdataformats::SourceID::Subsystem type = daqdataformats::SourceID::string_to_subsystem(entry.system);
 
-    if (type == daqdataformats::SourceID::Subsystem::kUNDEFINED) {
+    if (type == daqdataformats::SourceID::Subsystem::kUnknown) {
       throw InvalidSystemType(ERS_HERE, entry.system);
     }
     
