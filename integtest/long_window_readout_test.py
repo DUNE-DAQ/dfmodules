@@ -40,7 +40,7 @@ triggercandidate_frag_params={"fragment_type_description": "Trigger Candidate",
 confgen_name="daqconf_multiru_gen"
 # The arguments to pass to the config generator, excluding the json
 # output directory (the test framework handles that)
-confgen_arguments_base=[ "-d", "./frames.bin", "-o", ".", "-s", "20", "-n", str(number_of_data_producers), "-b", str(readout_window_time_before), "-a", str(readout_window_time_after), "-t", str(trigger_rate), "--latency-buffer-size", str(latency_buffer_size), "-c", str(token_count), "--clock-speed-hz", str(clock_speed_hz)] + [ "--host-ru", "localhost" ] * number_of_readout_apps + [ "--host-df", "localhost" ] * number_of_dataflow_apps
+confgen_arguments_base=[ "-d", "./frames.bin", "-o", ".", "-s", "10", "-n", str(number_of_data_producers), "-b", str(readout_window_time_before), "-a", str(readout_window_time_after), "-t", str(trigger_rate), "--latency-buffer-size", str(latency_buffer_size), "-c", str(token_count), "--clock-speed-hz", str(clock_speed_hz)] + [ "--host-ru", "localhost" ] * number_of_readout_apps + [ "--host-df", "localhost" ] * number_of_dataflow_apps
 for idx in range(number_of_readout_apps):
     confgen_arguments_base+=["--region-id", str(idx)] 
 confgen_arguments={#"No_TR_Splitting": confgen_arguments_base,
