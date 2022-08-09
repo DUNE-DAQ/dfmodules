@@ -16,6 +16,8 @@ expected_number_of_data_files=3
 check_for_logfile_errors=True
 expected_event_count=run_duration
 expected_event_count_tolerance=2
+minimum_cpu_count=18
+minimum_free_memory_gb=24
 wib1_frag_hsi_trig_params={"fragment_type_description": "WIB",
                            "hdf5_detector_group": "TPC", "hdf5_region_prefix": "APA",
                            "expected_fragment_count": (number_of_data_producers*number_of_readout_apps),
@@ -46,7 +48,7 @@ mem_obj=psutil.virtual_memory()
 free_mem=round((mem_obj.available/(1024*1024*1024)), 2)
 total_mem=round((mem_obj.total/(1024*1024*1024)), 2)
 print(f"DEBUG: CPU count is {cpu_count}, free and total memory are {free_mem} GB and {total_mem} GB.")
-if cpu_count < 18 or free_mem < 24:
+if cpu_count < minimum_cpu_count or free_mem < minimum_free_memory_gb:
     sufficient_resources_on_this_computer=False
 
 # The next three variable declarations *must* be present as globals in the test
@@ -102,6 +104,7 @@ def test_data_files(run_nanorc):
     if not sufficient_resources_on_this_computer:
         print(f"This computer ({hostname}) does not have enough resources to run this test.")
         print(f"    (CPU count is {cpu_count}, free and total memory are {free_mem} GB and {total_mem} GB.)")
+        print(f"    (Minimum CPU count is {minimum_cpu_count} and minimum free memory is {minimum_free_memory_gb} GB.)")
         return
 
     local_expected_event_count=expected_event_count
