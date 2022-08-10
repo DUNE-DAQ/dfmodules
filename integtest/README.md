@@ -17,6 +17,7 @@ For reference, here are the ideas behind the existing tests:
 * long_window_readout_test.py - verify that readout windows that require TriggerRecords to be split into multiple sequences works as expected
 * 3ru_1df_multirun_test.py - verify that we don't get empty fragments at end run
   * this test is also useful in looking into high-CPU-usage scenarios because it has 3 RUs
+* tpstream_writing_test.py - verify that TPSets are written to the TP-stream file(s)
 * disabled_output_test.py - verify that the --disable-data-storage option works
 * multi_output_file_test.py - test that the file size maximum config parameter works
 * command_order_test.py - verify that only certain sequences of commands are allowed
@@ -27,8 +28,11 @@ Specialty tests:
   * for now, it needs the global timing partition to be started separately (hints provided in output of the test script)
   * this test does not need "--frame-file $PWD/frames.bin"
   * it is useful to run this test with a couple of partition numbers to verify that it can talk to the global timing partition independent of its own partition number
+* felix_emu_wib2_test.py - tests the readout of emulated WIB2 data from a real FELIX card
+  * requires that the emulated data has already been loaded into the FELIX card (hints provided at the start of the output from the test script)
+  * has only been tested at the ICEBERG teststand so far
+  * this test does not need "--frame-file $PWD/frames.bin"
 
 Not ready for general use:
 * insufficient_disk_space_test.py
-* felix_emu_wib2_test.py
 * large_trigger_record_test.py
