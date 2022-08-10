@@ -120,6 +120,9 @@ def test_data_files(run_nanorc):
             assert data_file_checks.check_fragment_sizes(data_file, fragment_check_list[jdx])
 
 def test_cleanup(run_nanorc):
+    if not sufficient_disk_space:
+        return
+
     print("============================================")
     print("Listing the hdf5 files before deleting them:")
     print("============================================")
