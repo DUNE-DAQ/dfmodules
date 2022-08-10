@@ -1,32 +1,25 @@
 import pytest
 import os
 import re
-import shutil
 
 import dfmodules.data_file_checks as data_file_checks
 import integrationtest.log_file_checks as log_file_checks
 
 # Values that help determine the running conditions
-output_path_parameter="."
-number_of_data_producers=2
-run_duration=40  # seconds
+number_of_data_producers=10
+run_duration=23  # seconds
 number_of_readout_apps=3
 number_of_dataflow_apps=1
-trigger_rate=0.05 # Hz
+trigger_rate=0.2 # Hz
 token_count=1
-readout_window_time_before=37200000  # 0.764 second is the intention for b+a
+readout_window_time_before=9000000
 readout_window_time_after=1000000
-trigger_record_max_window=200000     # intention is 4 msec
-clock_speed_hz=50000000
-latency_buffer_size=600000
 
 # Default values for validation parameters
 expected_number_of_data_files=4
 check_for_logfile_errors=True
-expected_event_count=191 # 3*run_duration*trigger_rate/number_of_dataflow_apps
-expected_event_count_tolerance=5
-minimum_total_disk_space_gb=32  # double what we need
-minimum_free_disk_space_gb=24   # 50% more than what we need
+expected_event_count=4
+expected_event_count_tolerance=1
 wib1_frag_hsi_trig_params={"fragment_type_description": "WIB",
                            "hdf5_detector_group": "TPC", "hdf5_region_prefix": "APA",
                            "expected_fragment_count": (number_of_data_producers*number_of_readout_apps),
@@ -36,18 +29,6 @@ triggercandidate_frag_params={"fragment_type_description": "Trigger Candidate",
                               "expected_fragment_count": 1,
                               "min_size_bytes": 80, "max_size_bytes": 150}
 
-# Determine if the conditions are right for these tests
-sufficient_disk_space=True
-actual_output_path=output_path_parameter
-if output_path_parameter == ".":
-    actual_output_path="/tmp"
-disk_space=shutil.disk_usage(actual_output_path)
-total_disk_space_gb=(disk_space.total/(1024*1024*1024))
-free_disk_space_gb=(disk_space.free/(1024*1024*1024))
-print(f"DEBUG: Space on disk for output path {actual_output_path}: total = {total_disk_space_gb} GB and free = {free_disk_space_gb} GB.")
-if total_disk_space_gb < minimum_total_disk_space_gb or free_disk_space_gb < minimum_free_disk_space_gb:
-    sufficient_disk_space=False
-
 # The next three variable declarations *must* be present as globals in the test
 # file. They're read by the "fixtures" in conftest.py to determine how
 # to run the config generation and nanorc
@@ -56,24 +37,14 @@ if total_disk_space_gb < minimum_total_disk_space_gb or free_disk_space_gb < min
 confgen_name="daqconf_multiru_gen"
 # The arguments to pass to the config generator, excluding the json
 # output directory (the test framework handles that)
-if sufficient_disk_space:
-    confgen_arguments_base=[ "-d", "./frames.bin", "-o", output_path_parameter, "-s", "20", "-n", str(number_of_data_producers), "-b", str(readout_window_time_before), "-a", str(readout_window_time_after), "-t", str(trigger_rate), "--latency-buffer-size", str(latency_buffer_size), "-c", str(token_count), "--clock-speed-hz", str(clock_speed_hz)] + [ "--host-ru", "localhost" ] * number_of_readout_apps + [ "--host-df", "localhost" ] * number_of_dataflow_apps
-    for idx in range(number_of_readout_apps):
-        confgen_arguments_base+=["--region-id", str(idx)] 
-    confgen_arguments={#"No_TR_Splitting": confgen_arguments_base,
-                       "With_TR_Splitting": confgen_arguments_base+["--max-trigger-record-window", str(trigger_record_max_window)],
-                      }
-else:
-    confgen_arguments=["-d", "./frames.bin", "-o", ".", "-s", "10"]
-
+confgen_arguments_base=["-o", ".", "-s", "10", "-n", str(number_of_data_producers), "-b", str(readout_window_time_before), "-a", str(readout_window_time_after), "-t", str(trigger_rate), "--use-fake-data-producers", "--clock-speed-hz", "50000000"] + [ "--host-ru", "localhost" ] * number_of_readout_apps + [ "--host-df", "localhost" ] * number_of_dataflow_apps
+confgen_arguments={"Base_System": confgen_arguments_base,
+                  }
 # The commands to run in nanorc, as a list
-if sufficient_disk_space:
-    nanorc_command_list="integtest-partition boot conf".split()
-    nanorc_command_list+="start_run --wait 15 101 wait ".split() + [str(run_duration)] + "stop_run --wait 2 wait 2".split()
-    nanorc_command_list+="start 102 wait 15 enable_triggers wait ".split() + [str(run_duration)] + "stop_run wait 2".split()
-    nanorc_command_list+="scrap terminate".split()
-else:
-    nanorc_command_list=["integtest-partition", "boot", "terminate"]
+nanorc_command_list="integtest-partition boot conf".split()
+nanorc_command_list+="start_run 101 wait ".split() + [str(run_duration)] + "stop_run --wait 2 wait 2".split()
+nanorc_command_list+="start 102 wait 3 enable_triggers wait ".split() + [str(run_duration)] + "stop_run wait 2".split()
+nanorc_command_list+="scrap terminate".split()
 
 # The tests themselves
 
@@ -95,12 +66,6 @@ def test_log_files(run_nanorc):
         assert log_file_checks.logs_are_error_free(run_nanorc.log_files, True, True)
 
 def test_data_files(run_nanorc):
-    if not sufficient_disk_space:
-        print(f"The raw data output path ({actual_output_path}) does not have enough space to run this test.")
-        print(f"    (Free and total space are {free_disk_space_gb} GB and {total_disk_space_gb} GB.)")
-        print(f"    (Minimums are {minimum_free_disk_space_gb} GB and {minimum_total_disk_space_gb} GB.)")
-        return
-
     local_expected_event_count=expected_event_count
     local_event_count_tolerance=expected_event_count_tolerance
     fragment_check_list=[]
@@ -120,9 +85,6 @@ def test_data_files(run_nanorc):
             assert data_file_checks.check_fragment_sizes(data_file, fragment_check_list[jdx])
 
 def test_cleanup(run_nanorc):
-    if not sufficient_disk_space:
-        return
-
     print("============================================")
     print("Listing the hdf5 files before deleting them:")
     print("============================================")
