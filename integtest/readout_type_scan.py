@@ -36,7 +36,7 @@ triggercandidate_frag_params={"fragment_type_description": "Trigger Candidate",
                               "min_size_bytes": 130, "max_size_bytes": 150}
 triggertp_frag_params={"fragment_type_description": "Trigger with TPs",
                        "hdf5_detector_group": "Trigger", "hdf5_region_prefix": "Region",
-                       "expected_fragment_count": number_of_data_producers+2,
+                       "expected_fragment_count": 3,
                        "min_size_bytes": 80, "max_size_bytes": 16000}
 ignored_logfile_problems={"dqm": ["client will not be able to connect to Kafka cluster",
                                   "Unexpected Trigger Decision", "Unexpected Fragment"],
