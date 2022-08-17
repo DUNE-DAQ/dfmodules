@@ -37,7 +37,9 @@ enum
 {
   TLVL_ENTER_EXIT_METHODS = 5,
   TLVL_WORK_STEPS = 10,
-  TLVL_BOOKKEEPING = 15
+  TLVL_BOOKKEEPING = 15,
+  TLVL_DISPATCH_DATAREQ = 21,
+  TLVL_FRAGMENT_RECEIVE = 22
 };
 
 namespace dunedaq {
@@ -381,6 +383,10 @@ TriggerRecordBuilder::read_fragments()
     if ( ! temp_fragment ) continue ;
     
     new_fragments = true;
+    TLOG_DEBUG(TLVL_FRAGMENT_RECEIVE) << get_name() << " Received fragment for trigger/sequence_number "
+                                      << temp_fragment.value()->get_trigger_number() << "."
+                                      << temp_fragment.value()->get_sequence_number()
+                                      << " from " << temp_fragment.value()->get_element_id();
     
     TriggerId temp_id(*temp_fragment.value());
     bool requested = false;
@@ -617,8 +623,9 @@ TriggerRecordBuilder::dispatch_data_requests(dfmessages::DataRequest dr,
 
   bool wasSentSuccessfully = false;
   do {
-    TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Pushing the DataRequest from trigger number " << dr.trigger_number
-                                << " onto connection :" << sender -> get_name();
+    TLOG_DEBUG(TLVL_DISPATCH_DATAREQ) << get_name() << ": Pushing the DataRequest from trigger/sequence number "
+                                      << dr.trigger_number << "." << dr.sequence_number
+                                      << " onto connection :" << sender -> get_name();
 
     // send data request into the corresponding connection
     try {
