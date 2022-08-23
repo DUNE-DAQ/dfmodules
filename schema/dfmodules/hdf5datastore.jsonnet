@@ -54,6 +54,8 @@ local types = {
 		doc="Parameters that are used for the file layout of the HDF5 files"),
         s.field("free_space_safety_factor_for_write", self.factor, 5.0,
                 doc="The safety factor that should be used when determining if there is sufficient free disk space during write operations"),
+        s.field("hardware_map_file", self.ds_string, "./HardwareMap.txt",
+                doc="The full path to the Hardware Map file that is being used in the current DAQ session"),
     ], doc="HDF5DataStore configuration"),
 
 };

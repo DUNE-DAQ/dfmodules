@@ -17,7 +17,7 @@
 #include "dfmodules/hdf5datastore/Nljs.hpp"
 #include "dfmodules/hdf5datastore/Structs.hpp"
 
-#include "hdf5libs/HDF5RawDataFile.hpp"
+#include "hdf5libs/HDF5RawDataFileSid.hpp"
 #include "hdf5libs/hdf5filelayout/Nljs.hpp"
 #include "hdf5libs/hdf5filelayout/Structs.hpp"
 
@@ -121,6 +121,7 @@ public:
 
     m_config_params = conf.get<hdf5datastore::ConfParams>();
     m_file_layout_params = m_config_params.file_layout_parameters;
+    m_hardware_map_file = m_config_params.hardware_map_file;
 
     m_operation_mode = m_config_params.mode;
     m_path = m_config_params.directory_path;
@@ -304,12 +305,13 @@ private:
   HDF5DataStore(HDF5DataStore&&) = delete;
   HDF5DataStore& operator=(HDF5DataStore&&) = delete;
 
-  std::unique_ptr<hdf5libs::HDF5RawDataFile> m_file_handle;
+  std::unique_ptr<hdf5libs::HDF5RawDataFileSid> m_file_handle;
   hdf5libs::hdf5filelayout::FileLayoutParams m_file_layout_params;
   std::string m_basic_name_of_open_file;
   unsigned m_open_flags_of_open_file;
   daqdataformats::run_number_t m_run_number;
   std::string m_application_name;
+  std::string m_hardware_map_file;
 
   // Total number of generated files
   size_t m_file_index;
@@ -416,13 +418,16 @@ private:
       m_basic_name_of_open_file = file_name;
       m_open_flags_of_open_file = open_flags;
       try {
-        m_file_handle.reset(new hdf5libs::HDF5RawDataFile(unique_filename,
-                                                          m_run_number,
-                                                          m_file_index,
-                                                          m_application_name,
-                                                          m_file_layout_params,
-                                                          ".writing",
-                                                          open_flags));
+        std::shared_ptr<detchannelmaps::HardwareMapService> hw_map_svc(
+          new detchannelmaps::HardwareMapService(m_hardware_map_file));
+        m_file_handle.reset(new hdf5libs::HDF5RawDataFileSid(unique_filename,
+                                                             m_run_number,
+                                                             m_file_index,
+                                                             m_application_name,
+                                                             m_file_layout_params,
+                                                             hw_map_svc,
+                                                             ".writing",
+                                                             open_flags));
       } catch (std::exception const& excpt) {
         throw FileOperationProblem(ERS_HERE, get_name(), unique_filename, excpt);
       } catch (...) { // NOLINT(runtime/exceptions)
