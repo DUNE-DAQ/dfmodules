@@ -173,6 +173,9 @@ TriggerRecordBuilder::do_conf(const data_t& payload)
 
   m_reply_connection = parsed_conf.reply_connection_name;
 
+  m_this_trb_source_id.subsystem = daqdataformats::SourceID::Subsystem::kTRBuilder;
+  m_this_trb_source_id.id = parsed_conf.source_id;
+
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
 }
 
@@ -563,6 +566,7 @@ TriggerRecordBuilder::create_trigger_records_and_dispatch(const dfmessages::Trig
     tr.get_header_ref().set_run_number(td.run_number);
     tr.get_header_ref().set_trigger_timestamp(td.trigger_timestamp);
     tr.get_header_ref().set_trigger_type(td.trigger_type);
+    tr.get_header_ref().set_element_id(m_this_trb_source_id);
 
     m_trigger_decisions_counter++;
     m_pending_fragment_counter += slice_components.size();
