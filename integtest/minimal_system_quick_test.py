@@ -1,10 +1,13 @@
 import pytest
 
 import dfmodules.data_file_checks as data_file_checks
+import dfmodules.integtest_file_gen as integtest_file_gen
 import integrationtest.log_file_checks as log_file_checks
+import integrationtest.config_file_gen as config_file_gen
 
 # Values that help determine the running conditions
 number_of_data_producers=2
+data_rate_slowdown_factor=10
 run_duration=20  # seconds
 
 # Default values for validation parameters
@@ -29,7 +32,14 @@ triggercandidate_frag_params={"fragment_type_description": "Trigger Candidate",
 confgen_name="daqconf_multiru_gen"
 # The arguments to pass to the config generator, excluding the json
 # output directory (the test framework handles that)
-confgen_arguments=[ "-d", "./frames.bin", "-o", ".", "-s", "10", "-n", str(number_of_data_producers), "-b", "1000", "-a", "1000", "--host-ru", "localhost", "--op-env", "integtest"]
+
+hardware_map_contents = integtest_file_gen.generate_hwmap_file( number_of_data_producers)
+
+conf_dict = config_file_gen.get_default_config_dict()
+conf_dict["daqconf"]["op_env"] = "integtest"
+conf_dict["readout"]["data_rate_slowdown_factor"] = data_rate_slowdown_factor
+
+confgen_arguments={"MinimalSystem": conf_dict}
 # The commands to run in nanorc, as a list
 nanorc_command_list="integtest-partition boot conf start 101 wait 1 enable_triggers wait ".split() + [str(run_duration)] + "disable_triggers wait 2 stop_run wait 2 scrap terminate".split()
 
