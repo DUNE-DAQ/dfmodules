@@ -1,9 +1,12 @@
 import pytest
 import os
 import re
+import copy
 
 import dfmodules.data_file_checks as data_file_checks
 import integrationtest.log_file_checks as log_file_checks
+import integrationtest.config_file_gen as config_file_gen
+import dfmodules.integtest_file_gen as integtest_file_gen
 
 # Values that help determine the running conditions
 number_of_data_producers=2
@@ -17,6 +20,7 @@ readout_window_time_after=1000000
 trigger_record_max_window=200000     # intention is 4 msec
 clock_speed_hz=50000000
 latency_buffer_size=600000
+data_rate_slowdown_factor=20
 
 # Default values for validation parameters
 expected_number_of_data_files=4
@@ -40,12 +44,29 @@ triggercandidate_frag_params={"fragment_type_description": "Trigger Candidate",
 confgen_name="daqconf_multiru_gen"
 # The arguments to pass to the config generator, excluding the json
 # output directory (the test framework handles that)
-confgen_arguments_base=[ "-d", "./frames.bin", "-o", ".", "-s", "20", "-n", str(number_of_data_producers), "-b", str(readout_window_time_before), "-a", str(readout_window_time_after), "-t", str(trigger_rate), "--latency-buffer-size", str(latency_buffer_size), "-c", str(token_count), "--clock-speed-hz", str(clock_speed_hz)] + [ "--host-ru", "localhost" ] * number_of_readout_apps + [ "--host-df", "localhost" ] * number_of_dataflow_apps
-for idx in range(number_of_readout_apps):
-    confgen_arguments_base+=["--region-id", str(idx)] 
-confgen_arguments={#"No_TR_Splitting": confgen_arguments_base,
-                   "With_TR_Splitting": confgen_arguments_base+["--max-trigger-record-window", str(trigger_record_max_window)],
+hardware_map_contents = integtest_file_gen.generate_hwmap_file(number_of_data_producers, number_of_readout_apps)
+
+conf_dict = config_file_gen.get_default_config_dict()
+conf_dict["readout"]["data_rate_slowdown_factor"] = data_rate_slowdown_factor
+conf_dict["readout"]["clock_speed_hz"] = clock_speed_hz
+conf_dict["readout"]["latency_buffer_size"] = latency_buffer_size
+conf_dict["trigger"]["trigger_rate_hz"] = trigger_rate
+conf_dict["trigger"]["trigger_window_before_ticks"] = readout_window_time_before
+conf_dict["trigger"]["trigger_window_after_ticks"] = readout_window_time_after
+
+for df_app in range(1, number_of_dataflow_apps):
+    dfapp_key = f"dataflow.dataflow{df_app}"
+    conf_dict[dfapp_key] = {}
+
+trsplit_conf = copy.deepcopy(conf_dict)
+for df_app in range(number_of_dataflow_apps):
+    dfapp_key = f"dataflow.dataflow{df_app}"
+    trsplit_conf[dfapp_key]["max_trigger_record_window"] = trigger_record_max_window
+
+confgen_arguments={#"No_TR_Splitting": conf_dict,
+                   "With_TR_Splitting": trsplit_conf,
                   }
+
 # The commands to run in nanorc, as a list
 nanorc_command_list="integtest-partition boot conf".split()
 nanorc_command_list+="start_run --wait 15 101 wait ".split() + [str(run_duration)] + "stop_run --wait 2 wait 2".split()

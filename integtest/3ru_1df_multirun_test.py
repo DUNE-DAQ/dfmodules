@@ -2,14 +2,18 @@ import pytest
 import os
 import re
 #import psutil
+import copy
 
 import dfmodules.data_file_checks as data_file_checks
 import integrationtest.log_file_checks as log_file_checks
+import integrationtest.config_file_gen as config_file_gen
+import dfmodules.integtest_file_gen as integtest_file_gen
 
 # Values that help determine the running conditions
 number_of_data_producers=3
 number_of_readout_apps=3
 run_duration=20  # seconds
+data_rate_slowdown_factor=10
 
 # Default values for validation parameters
 expected_number_of_data_files=3
@@ -46,7 +50,7 @@ hostname=os.uname().nodename
 free_mem=999  #round((mem_obj.available/(1024*1024*1024)), 2)
 total_mem=999 #round((mem_obj.total/(1024*1024*1024)), 2)
 print(f"DEBUG: CPU count is {cpu_count}, free and total memory are {free_mem} GB and {total_mem} GB.")
-if cpu_count < 18 or free_mem < 24:
+if cpu_count < 16 or free_mem < 24:
     sufficient_resources_on_this_computer=False
 
 # The next three variable declarations *must* be present as globals in the test
@@ -58,16 +62,23 @@ confgen_name="daqconf_multiru_gen"
 
 # The arguments to pass to the config generator, excluding the json
 # output directory (the test framework handles that)
-if sufficient_resources_on_this_computer:
-    confgen_arguments_base=[ "-d", "./frames.bin", "-o", ".", "-s", "10", "-n", str(number_of_data_producers), "-b", "1000", "-a", "1000", "--latency-buffer-size", "200000"] + [ "--host-ru", "localhost" ] * number_of_readout_apps
-    for idx in range(number_of_readout_apps):
-        confgen_arguments_base+=["--region-id", str(idx)] 
-    confgen_arguments={"WIB1_System": confgen_arguments_base,
-                       "Software_TPG_System": confgen_arguments_base+["--enable-software-tpg", "-c", str(3*number_of_data_producers*number_of_readout_apps)],
-                       "DQM_System": confgen_arguments_base+["--enable-dqm"],
-                      }
-else:
-    confgen_arguments=["-d", "./frames.bin", "-o", ".", "-s", "10"]
+hardware_map_contents = integtest_file_gen.generate_hwmap_file(number_of_data_producers, number_of_readout_apps)
+
+conf_dict = config_file_gen.get_default_config_dict()
+conf_dict["readout"]["data_rate_slowdown_factor"] = data_rate_slowdown_factor
+conf_dict["readout"]["latency_buffer_size"] = 200000
+
+swtpg_conf = copy.deepcopy(conf_dict)
+swtpg_conf["readout"]["enable_software_tpg"] = True
+swtpg_conf["dataflow.dataflow0"]["token_count"] = 3*number_of_readout_apps
+
+dqm_conf = copy.deepcopy(conf_dict)
+dqm_conf["dqm"]["enable_dqm"] = True
+
+confgen_arguments={"WIB1_System": conf_dict,
+                   "Software_TPG_System": swtpg_conf,
+                   "DQM_System": dqm_conf,
+                  }
 
 # The commands to run in nanorc, as a list
 if sufficient_resources_on_this_computer:
@@ -107,7 +118,7 @@ def test_data_files(run_nanorc):
     local_expected_event_count=expected_event_count
     local_event_count_tolerance=expected_event_count_tolerance
     fragment_check_list=[]
-    if "--enable-software-tpg" in run_nanorc.confgen_arguments:
+    if "enable_software_tpg" in run_nanorc.confgen_config["readout"].keys() and run_nanorc.confgen_config["readout"]["enable_software_tpg"]:
         local_expected_event_count+=(270*number_of_data_producers*number_of_readout_apps*run_duration/100)
         local_event_count_tolerance+=(10*number_of_data_producers*number_of_readout_apps*run_duration/100)
         fragment_check_list.append(wib1_frag_multi_trig_params)
