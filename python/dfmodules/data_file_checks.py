@@ -15,13 +15,17 @@ def find_fragments_of_specified_type(grp, subsystem='', fragment_type=''):
         nonlocal frag_list  # non-local to the visitor function
         pattern = ".*"
         if subsystem != '':
-            pattern = f"{subsystem}" + pattern
+            pattern = f'.*/{subsystem}_0x\\d+_'
         if fragment_type != '':
-            pattern += f"{fragment_type}"
+            pattern += f'{fragment_type}'
+        else:
+            pattern += ".*"
         if isinstance(obj, h5py.Dataset):
+            #print(f"checking {obj.name} against pattern {pattern}")
             if re.match(pattern, obj.name):
                 frag_list.append(obj)
     grp["RawData"].visititems(visitor)
+    #print(f"find_fragments_of_specified_type returning {len(frag_list)} fragments")
     return frag_list
 
 def sanity_check(datafile):
