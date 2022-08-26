@@ -19,9 +19,11 @@ expected_number_of_data_files=3
 check_for_logfile_errors=True
 expected_event_count=run_duration
 expected_event_count_tolerance=2
-wib1_frag_hsi_trig_params={"fragment_type_description": "WIB",
-                           "hdf5_detector_group": "TPC", "hdf5_region_prefix": "APA",
-                           "expected_fragment_count": 2, "min_size_bytes": baseline_fragment_size_bytes,
+wib1_frag_hsi_trig_params={"fragment_type_description": "WIB", 
+                           "fragment_type": "ProtoWIB",
+                           "hdf5_source_subsystem": "Detector_Readout",
+                           "expected_fragment_count": number_of_data_producers,
+                           "min_size_bytes": baseline_fragment_size_bytes, 
                            "max_size_bytes": baseline_fragment_size_bytes}
 ignored_logfile_problems={}
 

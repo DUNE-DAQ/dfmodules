@@ -16,20 +16,24 @@ data_rate_slowdown_factor=10
 # Default values for validation parameters
 expected_number_of_data_files=4
 check_for_logfile_errors=True
-wib1_frag_hsi_trig_params={"fragment_type_description": "WIB",
-                           "hdf5_detector_group": "TPC", "hdf5_region_prefix": "APA",
+wib1_frag_hsi_trig_params={"fragment_type_description": "WIB", 
+                           "fragment_type": "ProtoWIB",
+                           "hdf5_source_subsystem": "Detector_Readout",
                            "expected_fragment_count": (number_of_data_producers*number_of_readout_apps),
                            "min_size_bytes": 37200, "max_size_bytes": 185680}
 wib1_frag_multi_trig_params={"fragment_type_description": "WIB",
-                             "hdf5_detector_group": "TPC", "hdf5_region_prefix": "APA",
+                             "fragment_type": "ProtoWIB",
+                             "hdf5_source_subsystem": "Detector_Readout",
                              "expected_fragment_count": (number_of_data_producers*number_of_readout_apps),
                              "min_size_bytes": 80, "max_size_bytes": 185680}
 triggercandidate_frag_params={"fragment_type_description": "Trigger Candidate",
-                              "hdf5_detector_group": "Trigger", "hdf5_region_prefix": "Region",
+                              "fragment_type": "Trigger_Candidate",
+                              "hdf5_source_subsystem": "Trigger",
                               "expected_fragment_count": 1,
                               "min_size_bytes": 130, "max_size_bytes": 150}
 triggertp_frag_params={"fragment_type_description": "Trigger with TPs",
-                       "hdf5_detector_group": "Trigger", "hdf5_region_prefix": "Region",
+                       "fragment_type": "SW_Trigger_Primitive",
+                       "hdf5_source_subsystem": "Trigger",
                        "expected_fragment_count": ((number_of_data_producers*number_of_readout_apps)+number_of_readout_apps+1),
                        "min_size_bytes": 80, "max_size_bytes": 16000}
 ignored_logfile_problems={"trigger": ["zipped_tpset_q: Unable to push within timeout period"]}

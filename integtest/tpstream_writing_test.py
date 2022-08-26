@@ -22,23 +22,28 @@ check_for_logfile_errors=True
 expected_event_count=run_duration*pulser_trigger_rate/number_of_dataflow_apps
 expected_event_count_tolerance=expected_event_count/10
 wib1_frag_hsi_trig_params={"fragment_type_description": "WIB",
-                           "hdf5_detector_group": "TPC", "hdf5_region_prefix": "APA",
+                           "fragment_type": "ProtoWIB",
+                           "hdf5_source_subsystem": "Detector_Readout",
                            "expected_fragment_count": (number_of_data_producers*number_of_readout_apps),
                            "min_size_bytes": 37200, "max_size_bytes": 37200}
 wib1_frag_multi_trig_params={"fragment_type_description": "WIB",
-                             "hdf5_detector_group": "TPC", "hdf5_region_prefix": "APA",
+                             "fragment_type": "ProtoWIB",
+                             "hdf5_source_subsystem": "Detector_Readout",
                              "expected_fragment_count": (number_of_data_producers*number_of_readout_apps),
                              "min_size_bytes": 80, "max_size_bytes": 37200}
-wib1_tpset_params={"fragment_type_description": "TP Stream",
-                             "hdf5_detector_group": "TPC", "hdf5_region_prefix": "APA",
-                             "expected_fragment_count": (number_of_data_producers*number_of_readout_apps),
-                             "min_size_bytes": 80, "max_size_bytes": 2800000}
-triggercandidate_frag_params={"fragment_type_description": "Trigger Candidate",
-                              "hdf5_detector_group": "Trigger", "hdf5_region_prefix": "Region",
+wib1_tpset_params={"fragment_type_description": "TP Stream", 
+                   "fragment_type": "SW_Trigger_Primitive",
+                   "hdf5_source_subsystem": "Trigger",
+                   "expected_fragment_count": (number_of_data_producers*number_of_readout_apps),
+                   "min_size_bytes": 80, "max_size_bytes": 2800000}
+triggercandidate_frag_params={"fragment_type_description": "Trigger Candidate", 
+                              "fragment_type": "Trigger_Candidate",
+                              "hdf5_source_subsystem": "Trigger",
                               "expected_fragment_count": 1,
                               "min_size_bytes": 130, "max_size_bytes": 150}
 triggertp_frag_params={"fragment_type_description": "Trigger with TPs",
-                       "hdf5_detector_group": "Trigger", "hdf5_region_prefix": "Region",
+                       "fragment_type": "SW_Trigger_Primitive",
+                       "hdf5_source_subsystem": "Trigger",
                        "expected_fragment_count": ((number_of_data_producers*number_of_readout_apps)+number_of_readout_apps+1),
                        "min_size_bytes": 80, "max_size_bytes": 16000}
 ignored_logfile_problems={"dqm": ["client will not be able to connect to Kafka cluster"]}
