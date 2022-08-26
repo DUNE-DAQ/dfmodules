@@ -27,6 +27,8 @@ local types = {
                 doc="Prefix for the file index part of the filename"),
         s.field("digits_for_file_index", self.count, 4,
                 doc="Number of digits to use for the file index when formatting the filename"),
+        s.field("writer_identifier", self.ds_string, "",
+                doc="String identifying the writer in the filename"),
         s.field("trigger_number_prefix", self.ds_string, "",
                 doc="Prefix for the trigger number part of the filename"),
         s.field("digits_for_trigger_number", self.count, 6,
