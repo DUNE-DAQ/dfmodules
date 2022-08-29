@@ -1,10 +1,14 @@
 import pytest
+import copy
 
 import dfmodules.data_file_checks as data_file_checks
 import integrationtest.log_file_checks as log_file_checks
+import integrationtest.config_file_gen as config_file_gen
+import dfmodules.integtest_file_gen as integtest_file_gen
 
 # Values that help determine the running conditions
 number_of_data_producers=2
+data_rate_slowdown_factor=10
 
 # The next three variable declarations *must* be present as globals in the test
 # file. They're read by the "fixtures" in conftest.py to determine how
@@ -14,8 +18,16 @@ number_of_data_producers=2
 confgen_name="daqconf_multiru_gen"
 # The arguments to pass to the config generator, excluding the json
 # output directory (the test framework handles that)
-confgen_arguments_base=[ "-d", "./frames.bin", "-o", ".", "-s", "10", "-n", str(number_of_data_producers), "-b", "1000", "-a", "1000", "--host-ru", "localhost"]
-confgen_arguments=[ confgen_arguments_base, confgen_arguments_base+["--enable-software-tpg"], confgen_arguments_base+["--enable-dqm"] ]
+hardware_map_contents = integtest_file_gen.generate_hwmap_file(number_of_data_producers)
+
+conf_dict = config_file_gen.get_default_config_dict()
+conf_dict["readout"]["data_rate_slowdown_factor"] = data_rate_slowdown_factor
+conf_dict["readout"]["latency_buffer_size"] = 200000
+conf_dict["readout"]["enable_software_tpg"] = True
+conf_dict["dqm"]["enable_dqm"] = True
+
+confgen_arguments={"Test_System": conf_dict
+                  }
 # The commands to run in nanorc, as a list
 nanorc_command_list=[
 

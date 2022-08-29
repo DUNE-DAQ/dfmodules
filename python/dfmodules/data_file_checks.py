@@ -9,19 +9,23 @@ class DataFile:
         self.events=self.h5file.keys()
         self.n_events=len(self.events)
 
-def find_fragments_of_specified_type(grp, detector_group='', region_prefix=''):
+def find_fragments_of_specified_type(grp, subsystem='', fragment_type=''):
     frag_list = [] # Local variable here
     def visitor(name, obj):
         nonlocal frag_list  # non-local to the visitor function
         pattern = ".*"
-        if detector_group != '':
-            pattern += f"/{detector_group}"
-        if region_prefix != '':
-            pattern += f"/{region_prefix}\\d+"
+        if subsystem != '':
+            pattern = f'.*/{subsystem}_0x\\d+_'
+        if fragment_type != '':
+            pattern += f'{fragment_type}'
+        else:
+            pattern += ".*"
         if isinstance(obj, h5py.Dataset):
+            #print(f"checking {obj.name} against pattern {pattern}")
             if re.match(pattern, obj.name):
                 frag_list.append(obj)
-    grp.visititems(visitor)
+    grp["RawData"].visititems(visitor)
+    #print(f"find_fragments_of_specified_type returning {len(frag_list)} fragments")
     return frag_list
 
 def sanity_check(datafile):
@@ -34,8 +38,15 @@ def sanity_check(datafile):
     # assert list(datafile.events)[-1] == ("TriggerRecord%05d" % datafile.n_events)
     # Check that every event has a TriggerRecordHeader
     for event in datafile.events:
-        if "TriggerRecordHeader" not in datafile.h5file[event].keys():
+        triggerrecordheader_count = 0
+        for key in datafile.h5file[event]["RawData"].keys():
+            if "TriggerRecordHeader" in key:
+                triggerrecordheader_count += 1
+        if triggerrecordheader_count == 0:
             print(f"No TriggerRecordHeader in event {event}")
+            passed=False
+        if triggerrecordheader_count > 1:
+            print(f"More than one TriggerRecordHeader in event {event}")
             passed=False
     if passed:
         print("Sanity-check passed")
@@ -112,17 +123,16 @@ def check_event_count(datafile, expected_value, tolerance):
 #
 # The parameters that are required by this routine are the following:
 # * fragment_type_description - descriptive text for the fragment type, e.g. "WIB" or "PDS" or "Raw TP"
-# * hdf5_detector_group - the HDF5 Group in the DataSet path just below the TriggerRecord identifier,
-#                         e.g. "TPC" or "PDS"
-# * hdf5_region_prefix - the prefix that should be used to identify the desired "region" in the DataSet path,
-#                        e.g. "APA" or "Region" or "TP_APA"
+# * fragment_type - Type of the Fragment, e.g. "ProtoWIB" or "SW_Trigger_Primitive"
+# * hdf5_source_subsystem - the Subsystem of the Fragments to find,
+#                         e.g. "Detector_Readout" or "Trigger"
 # * expected_fragment_count - the expected number of fragments of this type
 def check_fragment_count(datafile, params):
     "Checking that there are {params['expected_fragment_count']} {params['fragment_type_description']} fragments in each event in file"
     passed=True
     for event in datafile.events:
-        frag_list = find_fragments_of_specified_type(datafile.h5file[event], params['hdf5_detector_group'],
-                                                     params['hdf5_region_prefix']);
+        frag_list = find_fragments_of_specified_type(datafile.h5file[event], params['hdf5_source_subsystem'],
+                                                     params['fragment_type']);
         fragment_count=len(frag_list)
         if fragment_count != params['expected_fragment_count']:
             passed=False
@@ -139,18 +149,17 @@ def check_fragment_count(datafile, params):
 #
 # The parameters that are required by this routine are the following:
 # * fragment_type_description - descriptive text for the fragment type, e.g. "WIB" or "PDS" or "Raw TP"
-# * hdf5_detector_group - the HDF5 Group in the DataSet path just below the TriggerRecord identifier,
-#                         e.g. "TPC" or "PDS"
-# * hdf5_region_prefix - the prefix that should be used to identify the desired "region" in the DataSet path,
-#                        e.g. "APA" or "Region" or "TP_APA"
+# * fragment_type - Type of the Fragment, e.g. "ProtoWIB" or "SW_Trigger_Primitive"
+# * hdf5_source_subsystem - the Subsystem of the Fragments to find,
+#                         e.g. "Detector_Readout" or "Trigger"
 # * min_size_bytes - the minimum size of fragments of this type
 # * max_size_bytes - the maximum size of fragments of this type
 def check_fragment_sizes(datafile, params):
     "Check that every {params['fragment_type_description']} fragment size is between {params['min_size_bytes']} and {params['max_size_bytes']}"
     passed=True
     for event in datafile.events:
-        frag_list = find_fragments_of_specified_type(datafile.h5file[event], params['hdf5_detector_group'],
-                                                     params['hdf5_region_prefix']);
+        frag_list = find_fragments_of_specified_type(datafile.h5file[event], params['hdf5_source_subsystem'],
+                                                     params['fragment_type']);
         for frag in frag_list:
             size=frag.shape[0]
             if size<params['min_size_bytes'] or size>params['max_size_bytes']:

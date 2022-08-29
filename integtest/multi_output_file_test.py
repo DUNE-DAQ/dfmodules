@@ -1,33 +1,41 @@
 import pytest
 import os
 import re
+import copy
 
 import dfmodules.data_file_checks as data_file_checks
 import integrationtest.log_file_checks as log_file_checks
+import integrationtest.config_file_gen as config_file_gen
+import dfmodules.integtest_file_gen as integtest_file_gen
 
 # Values that help determine the running conditions
 number_of_data_producers=2
 number_of_readout_apps=3
+data_rate_slowdown_factor=10
 
 # Default values for validation parameters
 expected_number_of_data_files=4
 check_for_logfile_errors=True
-wib1_frag_hsi_trig_params={"fragment_type_description": "WIB",
-                           "hdf5_detector_group": "TPC", "hdf5_region_prefix": "APA",
+wib1_frag_hsi_trig_params={"fragment_type_description": "WIB", 
+                           "fragment_type": "ProtoWIB",
+                           "hdf5_source_subsystem": "Detector_Readout",
                            "expected_fragment_count": (number_of_data_producers*number_of_readout_apps),
-                           "min_size_bytes": 37200, "max_size_bytes": 185680}
+                           "min_size_bytes": 37192, "max_size_bytes": 185680}
 wib1_frag_multi_trig_params={"fragment_type_description": "WIB",
-                             "hdf5_detector_group": "TPC", "hdf5_region_prefix": "APA",
+                             "fragment_type": "ProtoWIB",
+                             "hdf5_source_subsystem": "Detector_Readout",
                              "expected_fragment_count": (number_of_data_producers*number_of_readout_apps),
-                             "min_size_bytes": 80, "max_size_bytes": 185680}
+                             "min_size_bytes": 72, "max_size_bytes": 185680}
 triggercandidate_frag_params={"fragment_type_description": "Trigger Candidate",
-                              "hdf5_detector_group": "Trigger", "hdf5_region_prefix": "Region",
+                              "fragment_type": "Trigger_Candidate",
+                              "hdf5_source_subsystem": "Trigger",
                               "expected_fragment_count": 1,
-                              "min_size_bytes": 130, "max_size_bytes": 150}
+                              "min_size_bytes": 120, "max_size_bytes": 150}
 triggertp_frag_params={"fragment_type_description": "Trigger with TPs",
-                       "hdf5_detector_group": "Trigger", "hdf5_region_prefix": "Region",
+                       "fragment_type": "SW_Trigger_Primitive",
+                       "hdf5_source_subsystem": "Trigger",
                        "expected_fragment_count": ((number_of_data_producers*number_of_readout_apps)+number_of_readout_apps+1),
-                       "min_size_bytes": 80, "max_size_bytes": 16000}
+                       "min_size_bytes": 72, "max_size_bytes": 16000}
 ignored_logfile_problems={"trigger": ["zipped_tpset_q: Unable to push within timeout period"]}
 
 # The next three variable declarations *must* be present as globals in the test
@@ -38,11 +46,24 @@ ignored_logfile_problems={"trigger": ["zipped_tpset_q: Unable to push within tim
 confgen_name="daqconf_multiru_gen"
 # The arguments to pass to the config generator, excluding the json
 # output directory (the test framework handles that)
-confgen_arguments_base=[ "-d", "./frames.bin", "-o", ".", "-s", "10", "-n", str(number_of_data_producers), "-b", "5000", "-a", "5000", "-t", "10.0", "--max-file-size", "1074000000", "--latency-buffer-size", "200000"] + [ "--host-ru", "localhost" ] * number_of_readout_apps
-for idx in range(number_of_readout_apps):
-    confgen_arguments_base+=["--region-id", str(idx)] 
-confgen_arguments={"WIB1_System": confgen_arguments_base,
-                   "Software_TPG_System": confgen_arguments_base+["--enable-software-tpg", "-c", str(3*number_of_data_producers*number_of_readout_apps)]}
+hardware_map_contents = integtest_file_gen.generate_hwmap_file(number_of_data_producers, number_of_readout_apps)
+
+conf_dict = config_file_gen.get_default_config_dict()
+conf_dict["readout"]["data_rate_slowdown_factor"] = data_rate_slowdown_factor
+conf_dict["readout"]["latency_buffer_size"] = 200000
+conf_dict["trigger"]["trigger_rate_hz"] = 10
+conf_dict["trigger"]["trigger_window_before_ticks"] = 5000
+conf_dict["trigger"]["trigger_window_after_ticks"] = 5000
+conf_dict["dataflow.dataflow0"]["max_file_size"] = 1074000000
+
+swtpg_conf = copy.deepcopy(conf_dict)
+swtpg_conf["readout"]["enable_software_tpg"] = True
+swtpg_conf["dataflow.dataflow0"]["token_count"] = 3*number_of_readout_apps
+
+confgen_arguments={"WIB1_System": conf_dict,
+                   "Software_TPG_System": swtpg_conf,
+                  }
+
 # The commands to run in nanorc, as a list
 nanorc_command_list="integtest-partition boot conf start_run 101 wait 180 disable_triggers wait 2 stop_run wait 21 start_run 102 wait 120 disable_triggers wait 2 stop_run wait 21 scrap terminate".split()
 
@@ -68,7 +89,7 @@ def test_log_files(run_nanorc):
 def test_data_files(run_nanorc):
     local_file_count=expected_number_of_data_files
     fragment_check_list=[]
-    if "--enable-software-tpg" in run_nanorc.confgen_arguments:
+    if "enable_software_tpg" in run_nanorc.confgen_config["readout"].keys() and run_nanorc.confgen_config["readout"]["enable_software_tpg"]:
         local_file_count=5
         fragment_check_list.append(wib1_frag_multi_trig_params)
         fragment_check_list.append(triggertp_frag_params)

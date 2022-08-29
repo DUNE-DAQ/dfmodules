@@ -1,43 +1,53 @@
 import pytest
 import os
 import re
+import copy
 
 import dfmodules.data_file_checks as data_file_checks
 import integrationtest.log_file_checks as log_file_checks
+import integrationtest.config_file_gen as config_file_gen
+import dfmodules.integtest_file_gen as integtest_file_gen
 
 # Values that help determine the running conditions
 number_of_data_producers=2
 run_duration=20  # seconds
+data_rate_slowdown_factor=10
 
 # Default values for validation parameters
 expected_number_of_data_files=1
 check_for_logfile_errors=True
 expected_event_count=run_duration
 expected_event_count_tolerance=2
-wib1_frag_hsi_trig_params={"fragment_type_description": "WIB",
-                           "hdf5_detector_group": "TPC", "hdf5_region_prefix": "APA",
+wib1_frag_hsi_trig_params={"fragment_type_description": "WIB", 
+                           "fragment_type": "ProtoWIB",
+                           "hdf5_source_subsystem": "Detector_Readout",
                            "expected_fragment_count": number_of_data_producers,
-                           "min_size_bytes": 37200, "max_size_bytes": 37200}
+                           "min_size_bytes": 37192, "max_size_bytes": 37192}
 wib1_frag_multi_trig_params={"fragment_type_description": "WIB",
-                             "hdf5_detector_group": "TPC", "hdf5_region_prefix": "APA",
+                             "fragment_type": "ProtoWIB",
+                             "hdf5_source_subsystem": "Detector_Readout",
                              "expected_fragment_count": number_of_data_producers,
-                             "min_size_bytes": 80, "max_size_bytes": 37200}
+                             "min_size_bytes": 72, "max_size_bytes": 37192}
 wib2_frag_params={"fragment_type_description": "WIB2",
-                  "hdf5_detector_group": "TPC", "hdf5_region_prefix": "APA",
+                  "fragment_type": "WIB",
+                  "hdf5_source_subsystem": "Detector_Readout",
                   "expected_fragment_count": number_of_data_producers,
                   "min_size_bytes": 29000, "max_size_bytes": 30000}
 pds_frag_params={"fragment_type_description": "PDS",
-                 "hdf5_detector_group": "PDS", "hdf5_region_prefix": "Region",
+                 "fragment_type": "PDS",
+                 "hdf5_source_subsystem": "Detector_Readout",
                  "expected_fragment_count": number_of_data_producers,
-                 "min_size_bytes": 80, "max_size_bytes": 36000}
+                 "min_size_bytes": 72, "max_size_bytes": 36000}
 triggercandidate_frag_params={"fragment_type_description": "Trigger Candidate",
-                              "hdf5_detector_group": "Trigger", "hdf5_region_prefix": "Region",
+                              "fragment_type": "Trigger_Candidate",
+                              "hdf5_source_subsystem": "Trigger",
                               "expected_fragment_count": 1,
-                              "min_size_bytes": 130, "max_size_bytes": 150}
+                              "min_size_bytes": 120, "max_size_bytes": 150}
 triggertp_frag_params={"fragment_type_description": "Trigger with TPs",
-                       "hdf5_detector_group": "Trigger", "hdf5_region_prefix": "Region",
+                       "fragment_type": "SW_Trigger_Primitive",
+                       "hdf5_source_subsystem": "Trigger",
                        "expected_fragment_count": number_of_data_producers+2,
-                       "min_size_bytes": 80, "max_size_bytes": 16000}
+                       "min_size_bytes": 72, "max_size_bytes": 16000}
 ignored_logfile_problems={"dqm": ["client will not be able to connect to Kafka cluster",
                                   "Unexpected Trigger Decision", "Unexpected Fragment"],
                           "trigger": ["zipped_tpset_q: Unable to push within timeout period"],
@@ -52,13 +62,43 @@ ignored_logfile_problems={"dqm": ["client will not be able to connect to Kafka c
 confgen_name="daqconf_multiru_gen"
 # The arguments to pass to the config generator, excluding the json
 # output directory (the test framework handles that)
-confgen_arguments_base=[ "-d", "./frames.bin", "-o", ".", "-s", "10", "-n", str(number_of_data_producers), "-b", "1000", "-a", "1000", "--host-ru", "localhost"]
-confgen_arguments={"WIB1_System": confgen_arguments_base, 
-                   "Software_TPG_System": confgen_arguments_base+["--enable-software-tpg"], 
-                   "DQM_System": confgen_arguments_base+["--enable-dqm"], 
-                   "WIB2_System": confgen_arguments_base+["--frontend-type", "wib2"], 
-                   "PDS_(list)_System": confgen_arguments_base+["--frontend-type", "pds_list"], 
-                   "PDS_(queue)_System": confgen_arguments_base+["--frontend-type", "pds_queue"]}
+hardware_map_contents = integtest_file_gen.generate_hwmap_file(number_of_data_producers)
+
+conf_dict = config_file_gen.get_default_config_dict()
+conf_dict["readout"]["data_rate_slowdown_factor"] = data_rate_slowdown_factor
+conf_dict["readout"]["system_type"] = "wib"
+
+swtpg_conf = copy.deepcopy(conf_dict)
+swtpg_conf["readout"]["enable_software_tpg"] = True
+swtpg_conf["readout"]["system_type"] = "wib"
+
+dqm_conf = copy.deepcopy(conf_dict)
+dqm_conf["dqm"]["enable_dqm"] = True
+dqm_conf["readout"]["system_type"] = "wib"
+
+wib2_conf = copy.deepcopy(conf_dict)
+wib2_conf["readout"]["clock_speed_hz"] = 62500000
+wib2_conf["readout"]["system_type"] = "wib2"
+
+pds_list_conf = copy.deepcopy(conf_dict)
+pds_list_conf["readout"]["hardware_map"] = integtest_file_gen.generate_hwmap_file(number_of_data_producers, 1, 2) # det_id = 2 for HD_PDS
+pds_list_conf["readout"]["system_type"] = "pds"
+#tde_conf = copy.deepcopy(conf_dict)
+#tde_conf["readout"]["hardware_map"] = integtest_file_gen.generate_hwmap_file(number_of_data_producers, 1, 11) # det_id = 11 for VD_Top_TPC
+#tde_conf["readout"]["system_type"] = "tde"
+#pacman_conf = copy.deepcopy(conf_dict)
+#pacman_conf["readout"]["hardware_map"] = integtest_file_gen.generate_hwmap_file(number_of_data_producers, 1, 32) # det_id = 32 for ND_LAR
+#pacman_conf["readout"]["system_type"] = "pacman"
+
+confgen_arguments={"WIB1_System": conf_dict,
+                   "Software_TPG_System": swtpg_conf,
+                   "DQM_System": dqm_conf,
+                   "WIB2_System": wib2_conf,
+                   "PDS_(list)_System": pds_list_conf,
+                   #"TDE_System": tde_conf,
+                   #"PACMAN_System": pacman_conf
+                  }
+
 # The commands to run in nanorc, as a list
 nanorc_command_list="integtest-partition boot conf start 101 wait 1 enable_triggers wait ".split() + [str(run_duration)] + "disable_triggers wait 2 stop_run wait 2 scrap terminate".split()
 
@@ -87,19 +127,16 @@ def test_data_files(run_nanorc):
     local_expected_event_count=expected_event_count
     local_event_count_tolerance=expected_event_count_tolerance
     fragment_check_list=[]
-    if "--enable-software-tpg" in run_nanorc.confgen_arguments:
+    if "enable_software_tpg" in run_nanorc.confgen_config["readout"].keys() and run_nanorc.confgen_config["readout"]["enable_software_tpg"]:
         local_expected_event_count+=(285*number_of_data_producers*run_duration/100)
         local_event_count_tolerance+=(10*number_of_data_producers*run_duration/100)
         fragment_check_list.append(wib1_frag_multi_trig_params)
         fragment_check_list.append(triggertp_frag_params)
     else:
         fragment_check_list.append(triggercandidate_frag_params)
-        if "--frontend-type" in run_nanorc.confgen_arguments and \
-           ("pds_list" in run_nanorc.confgen_arguments or \
-            "pds_queue" in run_nanorc.confgen_arguments):
+        if run_nanorc.confgen_config["readout"]["system_type"] == "pds":
             fragment_check_list.append(pds_frag_params)
-        elif "--frontend-type" in run_nanorc.confgen_arguments and \
-           "wib2" in run_nanorc.confgen_arguments:
+        elif run_nanorc.confgen_config["readout"]["system_type"] == "wib2":
             fragment_check_list.append(wib2_frag_params)
         else:
             fragment_check_list.append(wib1_frag_hsi_trig_params)
