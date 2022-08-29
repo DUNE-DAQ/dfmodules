@@ -23,7 +23,7 @@ latency_buffer_size=600000
 data_rate_slowdown_factor=20
 
 # Default values for validation parameters
-expected_number_of_data_files=4
+expected_number_of_data_files=2*number_of_dataflow_apps
 check_for_logfile_errors=True
 expected_event_count=191 # 3*run_duration*trigger_rate/number_of_dataflow_apps
 expected_event_count_tolerance=5
