@@ -142,13 +142,6 @@ public:
       throw InvalidOperationMode(ERS_HERE, get_name(), m_operation_mode);
     }
 
-    m_application_name = "Unknown";
-    char* appname_ptr = getenv("DUNEDAQ_APPLICATION_NAME");
-    if (appname_ptr != nullptr) {
-      std::string tmpstr(appname_ptr);
-      m_application_name = tmpstr;
-    }
-
     // 05-Apr-2022, KAB: added warning message when the output destination
     // is not a valid directory.
     struct statvfs vfs_results;
@@ -310,7 +303,6 @@ private:
   std::string m_basic_name_of_open_file;
   unsigned m_open_flags_of_open_file;
   daqdataformats::run_number_t m_run_number;
-  std::string m_application_name;
   std::string m_hardware_map_file;
 
   // Total number of generated files
@@ -360,7 +352,7 @@ private:
       work_oss << std::setw(m_config_params.filename_parameters.digits_for_file_index) << std::setfill('0')
                << m_file_index;
     }
-
+    work_oss << "_" << m_config_params.filename_parameters.writer_identifier;
     work_oss << ".hdf5";
     return work_oss.str();
   }
@@ -383,15 +375,9 @@ private:
       std::string unique_filename = file_name;
       time_t now = time(0);
       std::string file_creation_timestamp = boost::posix_time::to_iso_string(boost::posix_time::from_time_t(now));
-      // app_name substring
-      size_t ufn_len = unique_filename.length();
-      if (ufn_len > 6) { // len GT 6 gives us some confidence that we have at least x.hdf5
-        std::string appname_substring = "_" + m_application_name;
-        unique_filename.insert(ufn_len - 5, appname_substring);
-      }
       if (!m_disable_unique_suffix) {
         // timestamp substring
-        ufn_len = unique_filename.length();
+        size_t ufn_len = unique_filename.length();
         if (ufn_len > 6) { // len GT 6 gives us some confidence that we have at least x.hdf5
           std::string timestamp_substring = "_" + file_creation_timestamp;
           TLOG_DEBUG(TLVL_BASIC) << get_name() << ": timestamp substring for filename: " << timestamp_substring;
@@ -423,7 +409,7 @@ private:
         m_file_handle.reset(new hdf5libs::HDF5RawDataFile(unique_filename,
                                                           m_run_number,
                                                           m_file_index,
-                                                          m_application_name,
+                                                          m_config_params.filename_parameters.writer_identifier,
                                                           m_file_layout_params,
                                                           hw_map_svc,
                                                           ".writing",
