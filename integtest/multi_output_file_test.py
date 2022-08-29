@@ -25,7 +25,7 @@ wib1_frag_multi_trig_params={"fragment_type_description": "WIB",
                              "fragment_type": "ProtoWIB",
                              "hdf5_source_subsystem": "Detector_Readout",
                              "expected_fragment_count": (number_of_data_producers*number_of_readout_apps),
-                             "min_size_bytes": 80, "max_size_bytes": 185680}
+                             "min_size_bytes": 72, "max_size_bytes": 185680}
 triggercandidate_frag_params={"fragment_type_description": "Trigger Candidate",
                               "fragment_type": "Trigger_Candidate",
                               "hdf5_source_subsystem": "Trigger",
@@ -35,7 +35,7 @@ triggertp_frag_params={"fragment_type_description": "Trigger with TPs",
                        "fragment_type": "SW_Trigger_Primitive",
                        "hdf5_source_subsystem": "Trigger",
                        "expected_fragment_count": ((number_of_data_producers*number_of_readout_apps)+number_of_readout_apps+1),
-                       "min_size_bytes": 80, "max_size_bytes": 16000}
+                       "min_size_bytes": 72, "max_size_bytes": 16000}
 ignored_logfile_problems={"trigger": ["zipped_tpset_q: Unable to push within timeout period"]}
 
 # The next three variable declarations *must* be present as globals in the test

@@ -22,12 +22,12 @@ wib1_frag_hsi_trig_params={"fragment_type_description": "WIB",
                            "fragment_type": "ProtoWIB",
                            "hdf5_source_subsystem": "Detector_Readout",
                            "expected_fragment_count": number_of_data_producers,
-                           "min_size_bytes": 37192, "max_size_bytes": 37200}
+                           "min_size_bytes": 37192, "max_size_bytes": 37192}
 wib1_frag_multi_trig_params={"fragment_type_description": "WIB",
                              "fragment_type": "ProtoWIB",
                              "hdf5_source_subsystem": "Detector_Readout",
                              "expected_fragment_count": number_of_data_producers,
-                             "min_size_bytes": 80, "max_size_bytes": 37200}
+                             "min_size_bytes": 72, "max_size_bytes": 37192}
 wib2_frag_params={"fragment_type_description": "WIB2",
                   "fragment_type": "WIB",
                   "hdf5_source_subsystem": "Detector_Readout",
@@ -37,7 +37,7 @@ pds_frag_params={"fragment_type_description": "PDS",
                  "fragment_type": "PDS",
                  "hdf5_source_subsystem": "Detector_Readout",
                  "expected_fragment_count": number_of_data_producers,
-                 "min_size_bytes": 80, "max_size_bytes": 36000}
+                 "min_size_bytes": 72, "max_size_bytes": 36000}
 triggercandidate_frag_params={"fragment_type_description": "Trigger Candidate",
                               "fragment_type": "Trigger_Candidate",
                               "hdf5_source_subsystem": "Trigger",
@@ -47,7 +47,7 @@ triggertp_frag_params={"fragment_type_description": "Trigger with TPs",
                        "fragment_type": "SW_Trigger_Primitive",
                        "hdf5_source_subsystem": "Trigger",
                        "expected_fragment_count": number_of_data_producers+2,
-                       "min_size_bytes": 80, "max_size_bytes": 16000}
+                       "min_size_bytes": 72, "max_size_bytes": 16000}
 ignored_logfile_problems={"dqm": ["client will not be able to connect to Kafka cluster",
                                   "Unexpected Trigger Decision", "Unexpected Fragment"],
                           "trigger": ["zipped_tpset_q: Unable to push within timeout period"],
