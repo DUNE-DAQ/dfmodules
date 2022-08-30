@@ -1,22 +1,29 @@
 import pytest
 import os
 import re
+import copy
 
 import dfmodules.data_file_checks as data_file_checks
 import integrationtest.log_file_checks as log_file_checks
+import integrationtest.config_file_gen as config_file_gen
+import dfmodules.integtest_file_gen as integtest_file_gen
 
 # Values that help determine the running conditions
 run_duration=20  # seconds
-baseline_fragment_size_bytes=37200
+baseline_fragment_size_bytes=37192
+data_rate_slowdown_factor=10
+number_of_data_producers = 2
 
 # Default values for validation parameters
 expected_number_of_data_files=3
 check_for_logfile_errors=True
 expected_event_count=run_duration
 expected_event_count_tolerance=2
-wib1_frag_hsi_trig_params={"fragment_type_description": "WIB",
-                           "hdf5_detector_group": "TPC", "hdf5_region_prefix": "APA",
-                           "expected_fragment_count": 2, "min_size_bytes": baseline_fragment_size_bytes,
+wib1_frag_hsi_trig_params={"fragment_type_description": "WIB", 
+                           "fragment_type": "Unknown",
+                           "hdf5_source_subsystem": "Detector_Readout",
+                           "expected_fragment_count": number_of_data_producers,
+                           "min_size_bytes": baseline_fragment_size_bytes, 
                            "max_size_bytes": baseline_fragment_size_bytes}
 ignored_logfile_problems={}
 
@@ -28,9 +35,20 @@ ignored_logfile_problems={}
 confgen_name="daqconf_multiru_gen"
 # The arguments to pass to the config generator, excluding the json
 # output directory (the test framework handles that)
-confgen_arguments_base=[ "-o", ".", "-n", "2", "--host-ru", "localhost", "--use-fake-data-producers" ]
-confgen_arguments={"Baseline_Window_Size": confgen_arguments_base+["-b", "1000", "-a", "1000"],
-                   "Double_Window_Size": confgen_arguments_base+["-b", "2000", "-a", "2000"],
+hardware_map_contents = integtest_file_gen.generate_hwmap_file(number_of_data_producers)
+
+conf_dict = config_file_gen.get_default_config_dict()
+conf_dict["readout"]["data_rate_slowdown_factor"] = data_rate_slowdown_factor
+conf_dict["readout"]["use_fake_data_producers"] = True
+conf_dict["trigger"]["trigger_window_before_ticks"] = 1000
+conf_dict["trigger"]["trigger_window_after_ticks"] = 1000
+
+doublewindow_conf = copy.deepcopy(conf_dict)
+doublewindow_conf["trigger"]["trigger_window_before_ticks"] = 2000
+doublewindow_conf["trigger"]["trigger_window_after_ticks"] = 2000
+
+confgen_arguments={"Baseline_Window_Size": conf_dict,
+                   "Double_Window_Size": doublewindow_conf,
                   }
 # The commands to run in nanorc, as a list
 # (the first run [#100] is included to warm up the DAQ processes and avoid warnings and errors caused by
@@ -68,9 +86,9 @@ def test_data_files(run_nanorc):
     local_expected_event_count=expected_event_count
     local_event_count_tolerance=expected_event_count_tolerance
     frag_params=wib1_frag_hsi_trig_params
-    if "2000" in run_nanorc.confgen_arguments:
-        frag_params["min_size_bytes"]=74320  #baseline_fragment_size_bytes*2
-        frag_params["max_size_bytes"]=74320  #baseline_fragment_size_bytes*2
+    if run_nanorc.confgen_config["trigger"]["trigger_window_before_ticks"] == 2000:
+        frag_params["min_size_bytes"]=74312  #baseline_fragment_size_bytes*2
+        frag_params["max_size_bytes"]=74312  #baseline_fragment_size_bytes*2
     fragment_check_list=[frag_params]
 
     # Run some tests on the output data file

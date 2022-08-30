@@ -1,35 +1,43 @@
 import pytest
 import os
 import re
+import copy
 
 import dfmodules.data_file_checks as data_file_checks
 import integrationtest.log_file_checks as log_file_checks
+import integrationtest.config_file_gen as config_file_gen
+import dfmodules.integtest_file_gen as integtest_file_gen
 
 # Values that help determine the running conditions
 number_of_data_producers=2
 run_duration=20  # seconds
+data_rate_slowdown_factor=10
 
 # Default values for validation parameters
 expected_number_of_data_files=2
 check_for_logfile_errors=True
 expected_event_count=run_duration
 expected_event_count_tolerance=2
-wib1_frag_hsi_trig_params={"fragment_type_description": "WIB",
-                           "hdf5_detector_group": "TPC", "hdf5_region_prefix": "APA",
+wib1_frag_hsi_trig_params={"fragment_type_description": "WIB", 
+                           "fragment_type": "ProtoWIB",
+                           "hdf5_source_subsystem": "Detector_Readout",
                            "expected_fragment_count": number_of_data_producers,
-                           "min_size_bytes": 37200, "max_size_bytes": 37200}
+                           "min_size_bytes": 37192, "max_size_bytes": 37192}
 wib1_frag_multi_trig_params={"fragment_type_description": "WIB",
-                             "hdf5_detector_group": "TPC", "hdf5_region_prefix": "APA",
+                             "fragment_type": "ProtoWIB",
+                             "hdf5_source_subsystem": "Detector_Readout",
                              "expected_fragment_count": number_of_data_producers,
-                             "min_size_bytes": 80, "max_size_bytes": 54000}
+                             "min_size_bytes": 72, "max_size_bytes": 54000}
 triggercandidate_frag_params={"fragment_type_description": "Trigger Candidate",
-                              "hdf5_detector_group": "Trigger", "hdf5_region_prefix": "Region",
+                              "fragment_type": "Trigger_Candidate",
+                              "hdf5_source_subsystem": "Trigger",
                               "expected_fragment_count": 1,
-                              "min_size_bytes": 130, "max_size_bytes": 150}
+                              "min_size_bytes": 120, "max_size_bytes": 150}
 triggertp_frag_params={"fragment_type_description": "Trigger with TPs",
-                       "hdf5_detector_group": "Trigger", "hdf5_region_prefix": "Region",
-                       "expected_fragment_count": 3,
-                       "min_size_bytes": 80, "max_size_bytes": 16000}
+                       "fragment_type": "SW_Trigger_Primitive",
+                       "hdf5_source_subsystem": "Trigger",
+                       "expected_fragment_count": number_of_data_producers,
+                       "min_size_bytes": 72, "max_size_bytes": 16000}
 
 # The next three variable declarations *must* be present as globals in the test
 # file. They're read by the "fixtures" in conftest.py to determine how
@@ -39,9 +47,20 @@ triggertp_frag_params={"fragment_type_description": "Trigger with TPs",
 confgen_name="daqconf_multiru_gen"
 # The arguments to pass to the config generator, excluding the json
 # output directory (the test framework handles that)
-confgen_arguments_base=[ "-d", "./frames.bin", "-o", ".", "-s", "10", "-n", str(number_of_data_producers), "-b", "1000", "-a", "1000", "--host-ru", "localhost"]
-confgen_arguments={"WIB1_System": confgen_arguments_base,
-                   "Software_TPG_System": confgen_arguments_base+["--enable-software-tpg"]}
+hardware_map_contents = integtest_file_gen.generate_hwmap_file(number_of_data_producers)
+
+conf_dict = config_file_gen.get_default_config_dict()
+conf_dict["readout"]["data_rate_slowdown_factor"] = data_rate_slowdown_factor
+conf_dict["readout"]["latency_buffer_size"] = 200000
+conf_dict["trigger"]["trigger_rate_hz"] = 1.0
+
+swtpg_conf = copy.deepcopy(conf_dict)
+swtpg_conf["readout"]["enable_software_tpg"] = True
+
+confgen_arguments={"WIB1_System": conf_dict,
+                   "Software_TPG_System": swtpg_conf,
+                  }
+
 # The commands to run in nanorc, as a list
 nanorc_command_list="integtest-partition boot conf".split()
 nanorc_command_list+="start_run --disable-data-storage 101 wait ".split() + [str(run_duration)] + "stop_run --wait 2 wait 2".split()
@@ -73,7 +92,7 @@ def test_data_files(run_nanorc):
     local_expected_event_count=expected_event_count
     local_event_count_tolerance=expected_event_count_tolerance
     fragment_check_list=[]
-    if "--enable-software-tpg" in run_nanorc.confgen_arguments:
+    if "enable_software_tpg" in run_nanorc.confgen_config["readout"].keys() and run_nanorc.confgen_config["readout"]["enable_software_tpg"]:
         local_expected_event_count+=(270*number_of_data_producers*run_duration/100)
         local_event_count_tolerance+=(10*number_of_data_producers*run_duration/100)
         fragment_check_list.append(wib1_frag_multi_trig_params)

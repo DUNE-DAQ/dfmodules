@@ -1,10 +1,13 @@
 import pytest
 
 import dfmodules.data_file_checks as data_file_checks
+import dfmodules.integtest_file_gen as integtest_file_gen
 import integrationtest.log_file_checks as log_file_checks
+import integrationtest.config_file_gen as config_file_gen
 
 # Values that help determine the running conditions
 number_of_data_producers=2
+data_rate_slowdown_factor=10
 run_duration=20  # seconds
 
 # Default values for validation parameters
@@ -12,14 +15,16 @@ expected_number_of_data_files=1
 check_for_logfile_errors=True
 expected_event_count=run_duration
 expected_event_count_tolerance=2
-wib1_frag_hsi_trig_params={"fragment_type_description": "WIB",
-                           "hdf5_detector_group": "TPC", "hdf5_region_prefix": "APA",
+wib1_frag_hsi_trig_params={"fragment_type_description": "WIB", 
+                           "fragment_type": "ProtoWIB",
+                           "hdf5_source_subsystem": "Detector_Readout",
                            "expected_fragment_count": number_of_data_producers,
-                           "min_size_bytes": 37200, "max_size_bytes": 37200}
+                           "min_size_bytes": 37192, "max_size_bytes": 37192}
 triggercandidate_frag_params={"fragment_type_description": "Trigger Candidate",
-                              "hdf5_detector_group": "Trigger", "hdf5_region_prefix": "Region",
+                              "fragment_type": "Trigger_Candidate",
+                              "hdf5_source_subsystem": "Trigger",
                               "expected_fragment_count": 1,
-                              "min_size_bytes": 130, "max_size_bytes": 150}
+                              "min_size_bytes": 72, "max_size_bytes": 150}
 
 # The next three variable declarations *must* be present as globals in the test
 # file. They're read by the "fixtures" in conftest.py to determine how
@@ -29,7 +34,14 @@ triggercandidate_frag_params={"fragment_type_description": "Trigger Candidate",
 confgen_name="daqconf_multiru_gen"
 # The arguments to pass to the config generator, excluding the json
 # output directory (the test framework handles that)
-confgen_arguments=[ "-d", "./frames.bin", "-o", ".", "-s", "10", "-n", str(number_of_data_producers), "-b", "1000", "-a", "1000", "--host-ru", "localhost", "--op-env", "integtest"]
+
+hardware_map_contents = integtest_file_gen.generate_hwmap_file( number_of_data_producers)
+
+conf_dict = config_file_gen.get_default_config_dict()
+conf_dict["daqconf"]["op_env"] = "integtest"
+conf_dict["readout"]["data_rate_slowdown_factor"] = data_rate_slowdown_factor
+
+confgen_arguments={"MinimalSystem": conf_dict}
 # The commands to run in nanorc, as a list
 nanorc_command_list="integtest-partition boot conf start 101 wait 1 enable_triggers wait ".split() + [str(run_duration)] + "disable_triggers wait 2 stop_run wait 2 scrap terminate".split()
 

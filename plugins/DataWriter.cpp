@@ -46,6 +46,7 @@ DataWriter::DataWriter(const std::string& name)
   : dunedaq::appfwk::DAQModule(name)
   , m_queue_timeout(100)
   , m_data_storage_is_enabled(true)
+  , m_thread(std::bind(&DataWriter::do_work, this, std::placeholders::_1))
 {
   register_command("conf", &DataWriter::do_conf);
   register_command("start", &DataWriter::do_start);
@@ -61,7 +62,7 @@ DataWriter::init(const data_t& init_data)
   auto qi = appfwk::connection_index(init_data, { "trigger_record_input", "token_output" });
   m_trigger_record_connection = qi["trigger_record_input"] ;
   // try to create the receiver to see test the connection anyway
-  iom -> get_receiver<std::unique_ptr<daqdataformats::TriggerRecord>>(m_trigger_record_connection);
+  m_tr_receiver = iom -> get_receiver<std::unique_ptr<daqdataformats::TriggerRecord>>(m_trigger_record_connection);
 
   m_token_output = iom-> get_sender<dfmessages::TriggerDecisionToken>(qi["token_output"]);
   
@@ -155,8 +156,9 @@ DataWriter::do_start(const data_t& payload)
 
   m_running.store(true);
 
-  iomanager::IOManager::get()->add_callback<std::unique_ptr<daqdataformats::TriggerRecord>>( m_trigger_record_connection,
-											     bind( &DataWriter::receive_trigger_record, this, std::placeholders::_1) );
+  m_thread.start_working_thread(get_name());
+  //iomanager::IOManager::get()->add_callback<std::unique_ptr<daqdataformats::TriggerRecord>>( m_trigger_record_connection,
+  //											     bind( &DataWriter::receive_trigger_record, this, std::placeholders::_1) );
 
   TLOG() << get_name() << " successfully started for run number " << m_run_number;
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
@@ -168,8 +170,8 @@ DataWriter::do_stop(const data_t& /*args*/)
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_stop() method";
 
   m_running.store(false);
-  
-  iomanager::IOManager::get()->remove_callback<std::unique_ptr<daqdataformats::TriggerRecord>>( m_trigger_record_connection );
+  m_thread.stop_working_thread(); 
+  //iomanager::IOManager::get()->remove_callback<std::unique_ptr<daqdataformats::TriggerRecord>>( m_trigger_record_connection );
 
   // 04-Feb-2021, KAB: added this call to allow DataStore to finish up with this run.
   // I've put this call fairly late in this method so that any draining of queues
@@ -308,6 +310,21 @@ DataWriter::receive_trigger_record(std::unique_ptr<daqdataformats::TriggerRecord
   
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": operations completed for TR";
 } // NOLINT(readability/fn_size)
+
+void
+DataWriter::do_work(std::atomic<bool>& running_flag) {
+  while (running_flag.load()) {
+	  try {
+		std::unique_ptr<daqdataformats::TriggerRecord> tr = m_tr_receiver-> receive(std::chrono::milliseconds(10));   
+                receive_trigger_record(tr);
+	  }
+	  catch(const iomanager::TimeoutExpired& excpt) {
+	  }
+	  catch(const ers::Issue & excpt) {
+		ers::warning(excpt);
+	  }
+  }
+}
 
 } // namespace dfmodules
 } // namespace dunedaq

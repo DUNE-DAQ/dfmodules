@@ -88,16 +88,15 @@ RequestReceiver::do_conf(const data_t& payload)
   auto iom = iomanager::IOManager::get();
   for (auto const& entry : parsed_conf.map) {
 
-    daqdataformats::GeoID::SystemType type = daqdataformats::GeoID::string_to_system_type(entry.system);
+    daqdataformats::SourceID::Subsystem type = daqdataformats::SourceID::string_to_subsystem(entry.system);
 
-    if (type == daqdataformats::GeoID::SystemType::kInvalid) {
+    if (type == daqdataformats::SourceID::Subsystem::kUnknown) {
       throw InvalidSystemType(ERS_HERE, entry.system);
     }
     
-    daqdataformats::GeoID key;
-    key.system_type = type;
-    key.region_id = entry.region;
-    key.element_id = entry.element;
+    daqdataformats::SourceID key;
+    key.subsystem = type;
+    key.id = entry.source_id;
     m_data_request_outputs[key] = iom->get_sender<incoming_t>( entry.connection_uid );
   }
   
@@ -163,7 +162,7 @@ RequestReceiver::dispatch_request(incoming_t & request)
                    << it->second -> get_name();
     it -> second -> send(std::move(request), m_queue_timeout);
   } else {
-    ers::error(UnknownGeoID(ERS_HERE, component));
+    ers::error(UnknownSourceID(ERS_HERE, component));
   }
   m_received_requests++;
 }

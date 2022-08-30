@@ -63,7 +63,7 @@ private:
   // Connections
   iomanager::connection::ConnectionRef m_incoming_data_ref;
   using datareqsender_t = dunedaq::iomanager::SenderConcept<incoming_t>;
-  std::map<daqdataformats::GeoID, std::shared_ptr<datareqsender_t>> m_data_request_outputs;
+  std::map<daqdataformats::SourceID, std::shared_ptr<datareqsender_t>> m_data_request_outputs;
 
   std::atomic<uint64_t> m_received_requests{ 0 }; // NOLINT (build/unsigned)
 };

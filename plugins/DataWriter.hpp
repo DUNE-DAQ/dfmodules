@@ -70,11 +70,17 @@ private:
 
   // Connections
   iomanager::connection::ConnectionRef m_trigger_record_connection;
+  using tr_receiver_ct = iomanager::ReceiverConcept<std::unique_ptr<daqdataformats::TriggerRecord>>;
+  std::shared_ptr<tr_receiver_ct> m_tr_receiver;
+
   using token_sender_t = iomanager::SenderConcept<dfmessages::TriggerDecisionToken>;
   std::shared_ptr<token_sender_t> m_token_output;
   std::string m_trigger_decision_connection;
 
   // Worker(s)
+  dunedaq::utilities::WorkerThread m_thread;
+  void do_work(std::atomic<bool>&);
+
   std::unique_ptr<DataStore> m_data_writer;
 
   // Metrics

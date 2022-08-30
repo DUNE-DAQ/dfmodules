@@ -14,10 +14,8 @@ local types = {
     conf: s.record("ConfParams", [
         s.field("system_type", self.system_type_t,
                     doc="The system type of the link"),
-        s.field("apa_number", self.count, 0,
-                    doc="The APA number of this link"),
-        s.field("link_number", self.count, 0,
-                    doc="The link number of this link"),
+        s.field("source_id", self.count, 0,
+                    doc="The SourceID of this link"),
         s.field("time_tick_diff", self.count, 1,
                     doc="Time tick difference between frames"),
         s.field("frame_size", self.count, 0,

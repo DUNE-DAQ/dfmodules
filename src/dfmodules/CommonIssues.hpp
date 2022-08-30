@@ -13,7 +13,7 @@
 #define DFMODULES_SRC_DFMODULES_COMMONISSUES_HPP_
 
 #include "appfwk/DAQModule.hpp"
-#include "daqdataformats/GeoID.hpp"
+#include "daqdataformats/SourceID.hpp"
 
 #include <string>
 
@@ -64,12 +64,12 @@ ERS_DECLARE_ISSUE_BASE(dfmodules,
                        ((size_t)run_number))
 
 /**
- * @brief Unknown GeoID
+ * @brief Unknown SourceID
  */
 ERS_DECLARE_ISSUE(dfmodules,    ///< Namespace
-                  UnknownGeoID, ///< Issue class name
-                  "Unknown GeoID: " << geo_id,
-                  ((daqdataformats::GeoID)geo_id) ///< Message parameters
+                  UnknownSourceID, ///< Issue class name
+                  "Unknown SourceID: " << source_id,
+                  ((daqdataformats::SourceID)source_id) ///< Message parameters
 )
 
 /**

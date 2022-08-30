@@ -13,6 +13,7 @@
 #include "dfmodules/triggerrecordbuilderinfo/InfoNljs.hpp"
 
 #include "daqdataformats/Fragment.hpp"
+#include "daqdataformats/SourceID.hpp"
 #include "daqdataformats/TriggerRecord.hpp"
 #include "daqdataformats/Types.hpp"
 #include "dfmessages/DataRequest.hpp"
@@ -123,10 +124,10 @@ ERS_DECLARE_ISSUE(dfmodules,               ///< Namespace
  */
 ERS_DECLARE_ISSUE(dfmodules,          ///< Namespace
                   UnexpectedFragment, ///< Issue class name
-                  "Unexpected Fragment for triggerID " << trigger_id << ", type " << fragment_type << ", " << geo_id,
+                  "Unexpected Fragment for triggerID " << trigger_id << ", type " << fragment_type << ", " << source_id,
                   ((dfmodules::TriggerId)trigger_id)               ///< Message parameters
                   ((daqdataformats::fragment_type_t)fragment_type) ///< Message parameters
-                  ((daqdataformats::GeoID)geo_id)                  ///< Message parameters
+                  ((daqdataformats::SourceID)source_id)                  ///< Message parameters
 )
 
 /**
@@ -194,7 +195,7 @@ protected:
   unsigned int create_trigger_records_and_dispatch(const dfmessages::TriggerDecision&, std::atomic<bool>& running);
 
   bool dispatch_data_requests(dfmessages::DataRequest,
-                              const daqdataformats::GeoID&,
+                              const daqdataformats::SourceID&,
                               std::atomic<bool>& running) const;
 
   bool send_trigger_record(const TriggerId&, std::atomic<bool>& running);
@@ -221,6 +222,7 @@ private:
   std::chrono::milliseconds m_queue_timeout;
   std::chrono::milliseconds m_loop_sleep;
   std::string m_reply_connection;
+  daqdataformats::SourceID m_this_trb_source_id;
 
   // Input Connections
   std::shared_ptr<trigger_decision_receiver_t> m_trigger_decision_input;
@@ -228,7 +230,7 @@ private:
 
   // Output connections
   std::shared_ptr<trigger_record_sender_t> m_trigger_record_output;
-  std::map<daqdataformats::GeoID, std::shared_ptr<data_req_sender_t>> m_map_geoid_connections; ///< Mappinng between GeoID and connections
+  std::map<daqdataformats::SourceID, std::shared_ptr<data_req_sender_t>> m_map_sourceid_connections; ///< Mappinng between SourceID and connections
 
   // bookeeping
   using clock_type = std::chrono::high_resolution_clock;

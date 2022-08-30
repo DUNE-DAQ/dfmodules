@@ -27,6 +27,8 @@ local types = {
                 doc="Prefix for the file index part of the filename"),
         s.field("digits_for_file_index", self.count, 4,
                 doc="Number of digits to use for the file index when formatting the filename"),
+        s.field("writer_identifier", self.ds_string, "",
+                doc="String identifying the writer in the filename"),
         s.field("trigger_number_prefix", self.ds_string, "",
                 doc="Prefix for the trigger number part of the filename"),
         s.field("digits_for_trigger_number", self.count, 6,
@@ -54,6 +56,8 @@ local types = {
 		doc="Parameters that are used for the file layout of the HDF5 files"),
         s.field("free_space_safety_factor_for_write", self.factor, 5.0,
                 doc="The safety factor that should be used when determining if there is sufficient free disk space during write operations"),
+        s.field("hardware_map_file", self.ds_string, "./HardwareMap.txt",
+                doc="The full path to the Hardware Map file that is being used in the current DAQ session"),
     ], doc="HDF5DataStore configuration"),
 
 };
