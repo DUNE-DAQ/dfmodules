@@ -2,6 +2,7 @@ import pytest
 import os
 import re
 import copy
+import shutil
 
 import dfmodules.data_file_checks as data_file_checks
 import integrationtest.log_file_checks as log_file_checks
@@ -9,11 +10,12 @@ import integrationtest.config_file_gen as config_file_gen
 import dfmodules.integtest_file_gen as integtest_file_gen
 
 # Values that help determine the running conditions
+output_path_parameter="."
 number_of_data_producers=2
-run_duration=22  # seconds
+run_duration=40  # seconds
 number_of_readout_apps=3
 number_of_dataflow_apps=1
-trigger_rate=0.1 # Hz
+trigger_rate=0.05 # Hz
 token_count=1
 readout_window_time_before=37200000  # 0.764 second is the intention for b+a
 readout_window_time_after=1000000
@@ -27,6 +29,8 @@ expected_number_of_data_files=2*number_of_dataflow_apps
 check_for_logfile_errors=True
 expected_event_count=191 # 3*run_duration*trigger_rate/number_of_dataflow_apps
 expected_event_count_tolerance=5
+minimum_total_disk_space_gb=32  # double what we need
+minimum_free_disk_space_gb=24   # 50% more than what we need
 wib1_frag_hsi_trig_params={"fragment_type_description": "WIB", 
                            "fragment_type": "ProtoWIB",
                            "hdf5_source_subsystem": "Detector_Readout",
@@ -37,6 +41,18 @@ triggercandidate_frag_params={"fragment_type_description": "Trigger Candidate",
                               "hdf5_source_subsystem": "Trigger",
                               "expected_fragment_count": 1,
                               "min_size_bytes": 72, "max_size_bytes": 150}
+
+# Determine if the conditions are right for these tests
+sufficient_disk_space=True
+actual_output_path=output_path_parameter
+if output_path_parameter == ".":
+    actual_output_path="/tmp"
+disk_space=shutil.disk_usage(actual_output_path)
+total_disk_space_gb=(disk_space.total/(1024*1024*1024))
+free_disk_space_gb=(disk_space.free/(1024*1024*1024))
+print(f"DEBUG: Space on disk for output path {actual_output_path}: total = {total_disk_space_gb} GB and free = {free_disk_space_gb} GB.")
+if total_disk_space_gb < minimum_total_disk_space_gb or free_disk_space_gb < minimum_free_disk_space_gb:
+    sufficient_disk_space=False
 
 # The next three variable declarations *must* be present as globals in the test
 # file. They're read by the "fixtures" in conftest.py to determine how
@@ -70,10 +86,13 @@ confgen_arguments={#"No_TR_Splitting": conf_dict,
                   }
 
 # The commands to run in nanorc, as a list
-nanorc_command_list="integtest-partition boot conf".split()
-nanorc_command_list+="start_run --wait 15 101 wait ".split() + [str(run_duration)] + "stop_run --wait 2 wait 2".split()
-nanorc_command_list+="start 102 wait 15 enable_triggers wait ".split() + [str(run_duration)] + "stop_run wait 2".split()
-nanorc_command_list+="scrap terminate".split()
+if sufficient_disk_space:
+    nanorc_command_list="integtest-partition boot conf".split()
+    nanorc_command_list+="start_run --wait 15 101 wait ".split() + [str(run_duration)] + "stop_run --wait 2 wait 2".split()
+    nanorc_command_list+="start 102 wait 15 enable_triggers wait ".split() + [str(run_duration)] + "stop_run wait 2".split()
+    nanorc_command_list+="scrap terminate".split()
+else:
+    nanorc_command_list=["integtest-partition", "boot", "terminate"]
 
 # The tests themselves
 
@@ -95,6 +114,12 @@ def test_log_files(run_nanorc):
         assert log_file_checks.logs_are_error_free(run_nanorc.log_files, True, True)
 
 def test_data_files(run_nanorc):
+    if not sufficient_disk_space:
+        print(f"The raw data output path ({actual_output_path}) does not have enough space to run this test.")
+        print(f"    (Free and total space are {free_disk_space_gb} GB and {total_disk_space_gb} GB.)")
+        print(f"    (Minimums are {minimum_free_disk_space_gb} GB and {minimum_total_disk_space_gb} GB.)")
+        return
+
     local_expected_event_count=expected_event_count
     local_event_count_tolerance=expected_event_count_tolerance
     fragment_check_list=[]
@@ -114,6 +139,9 @@ def test_data_files(run_nanorc):
             assert data_file_checks.check_fragment_sizes(data_file, fragment_check_list[jdx])
 
 def test_cleanup(run_nanorc):
+    if not sufficient_disk_space:
+        return
+
     print("============================================")
     print("Listing the hdf5 files before deleting them:")
     print("============================================")

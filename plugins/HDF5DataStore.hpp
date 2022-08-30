@@ -165,9 +165,15 @@ public:
     size_t current_free_space = get_free_space(m_path);
     size_t tr_size = tr.get_total_size_bytes();
     if (current_free_space < (m_free_space_safety_factor_for_write * tr_size)) {
-      InsufficientDiskSpace issue(
-        ERS_HERE, get_name(), m_path, current_free_space, tr_size, "a multiple of the data block size");
-      std::string msg = "writing a data block to file " + m_file_handle->get_file_name();
+      std::ostringstream msg_oss;
+      msg_oss << "a safety factor of " << m_free_space_safety_factor_for_write << " times the trigger record size";
+      InsufficientDiskSpace issue(ERS_HERE,
+                                  get_name(),
+                                  m_path,
+                                  current_free_space,
+                                  (m_free_space_safety_factor_for_write * tr_size),
+                                  msg_oss.str());
+      std::string msg = "writing a trigger record to file " + m_file_handle->get_file_name();
       throw RetryableDataStoreProblem(ERS_HERE, get_name(), msg, issue);
     }
 
@@ -206,9 +212,15 @@ public:
     size_t current_free_space = get_free_space(m_path);
     size_t ts_size = ts.get_total_size_bytes();
     if (current_free_space < (m_free_space_safety_factor_for_write * ts_size)) {
-      InsufficientDiskSpace issue(
-        ERS_HERE, get_name(), m_path, current_free_space, ts_size, "a multiple of the data block size");
-      std::string msg = "writing a data block to file " + m_file_handle->get_file_name();
+      std::ostringstream msg_oss;
+      msg_oss << "a safety factor of " << m_free_space_safety_factor_for_write << " times the time slice size";
+      InsufficientDiskSpace issue(ERS_HERE,
+                                  get_name(),
+                                  m_path,
+                                  current_free_space,
+                                  (m_free_space_safety_factor_for_write * ts_size),
+                                  msg_oss.str());
+      std::string msg = "writing a time slice to file " + m_file_handle->get_file_name();
       throw RetryableDataStoreProblem(ERS_HERE, get_name(), msg, issue);
     }
 

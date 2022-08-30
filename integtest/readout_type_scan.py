@@ -27,7 +27,7 @@ wib1_frag_multi_trig_params={"fragment_type_description": "WIB",
                              "fragment_type": "ProtoWIB",
                              "hdf5_source_subsystem": "Detector_Readout",
                              "expected_fragment_count": number_of_data_producers,
-                             "min_size_bytes": 72, "max_size_bytes": 37192}
+                             "min_size_bytes": 72, "max_size_bytes": 54000}
 wib2_frag_params={"fragment_type_description": "WIB2",
                   "fragment_type": "WIB",
                   "hdf5_source_subsystem": "Detector_Readout",

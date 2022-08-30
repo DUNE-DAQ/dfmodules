@@ -1,8 +1,8 @@
 import pytest
 import os
 import re
-#import psutil
 import copy
+import psutil
 
 import dfmodules.data_file_checks as data_file_checks
 import integrationtest.log_file_checks as log_file_checks
@@ -20,6 +20,8 @@ expected_number_of_data_files=3
 check_for_logfile_errors=True
 expected_event_count=run_duration
 expected_event_count_tolerance=2
+minimum_cpu_count=18
+minimum_free_memory_gb=24
 wib1_frag_hsi_trig_params={"fragment_type_description": "WIB", 
                            "fragment_type": "ProtoWIB",
                            "hdf5_source_subsystem": "Detector_Readout",
@@ -29,7 +31,7 @@ wib1_frag_multi_trig_params={"fragment_type_description": "WIB",
                              "fragment_type": "ProtoWIB",
                              "hdf5_source_subsystem": "Detector_Readout",
                              "expected_fragment_count": (number_of_data_producers*number_of_readout_apps),
-                             "min_size_bytes": 72, "max_size_bytes": 37192}
+                             "min_size_bytes": 72, "max_size_bytes": 54000}
 triggercandidate_frag_params={"fragment_type_description": "Trigger Candidate",
                               "fragment_type": "Trigger_Candidate",
                               "hdf5_source_subsystem": "Trigger",
@@ -50,11 +52,11 @@ ignored_logfile_problems={"dqm": ["client will not be able to connect to Kafka c
 sufficient_resources_on_this_computer=True
 cpu_count=os.cpu_count()
 hostname=os.uname().nodename
-#mem_obj=psutil.virtual_memory()
-free_mem=999  #round((mem_obj.available/(1024*1024*1024)), 2)
-total_mem=999 #round((mem_obj.total/(1024*1024*1024)), 2)
+mem_obj=psutil.virtual_memory()
+free_mem=round((mem_obj.available/(1024*1024*1024)), 2)
+total_mem=round((mem_obj.total/(1024*1024*1024)), 2)
 print(f"DEBUG: CPU count is {cpu_count}, free and total memory are {free_mem} GB and {total_mem} GB.")
-if cpu_count < 16 or free_mem < 24:
+if cpu_count < minimum_cpu_count or free_mem < minimum_free_memory_gb:
     sufficient_resources_on_this_computer=False
 
 # The next three variable declarations *must* be present as globals in the test
@@ -92,7 +94,7 @@ if sufficient_resources_on_this_computer:
     nanorc_command_list+="start_run          103 wait ".split() + [str(run_duration)] + "stop_run --wait 2 wait 2".split()
     nanorc_command_list+="scrap terminate".split()
 else:
-    nanorc_command_list=["boot", "terminate"]
+    nanorc_command_list=["integtest-partition", "boot", "terminate"]
 
 # The tests themselves
 
@@ -117,6 +119,7 @@ def test_data_files(run_nanorc):
     if not sufficient_resources_on_this_computer:
         print(f"This computer ({hostname}) does not have enough resources to run this test.")
         print(f"    (CPU count is {cpu_count}, free and total memory are {free_mem} GB and {total_mem} GB.)")
+        print(f"    (Minimum CPU count is {minimum_cpu_count} and minimum free memory is {minimum_free_memory_gb} GB.)")
         return
 
     local_expected_event_count=expected_event_count
