@@ -10,8 +10,9 @@ def generate_hwmap_file(n_links, n_apps = 1, det_id = 3):
     for app in range(n_apps):
         for link in range(n_links):
             card = app
+            crate = app
             slr = link // 5
             link_num = link % 5
-            conf+=f"{sid} {sid % 2} {sid // 2} 0 {det_id} localhost {card} {slr} {link_num}\n"
+            conf+=f"{sid} {sid % 2} {sid // 2} {crate} {det_id} localhost {card} {slr} {link_num}\n"
             sid += 1
     return conf
