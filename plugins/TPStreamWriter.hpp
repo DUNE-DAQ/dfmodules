@@ -60,6 +60,7 @@ private:
   std::chrono::milliseconds m_queue_timeout;
   size_t m_accumulation_interval_ticks;
   daqdataformats::run_number_t m_run_number;
+  uint32_t m_source_id; // NOLINT(build/unsigned)
 
   // Queue sources and sinks
   using incoming_t = trigger::TPSet;
