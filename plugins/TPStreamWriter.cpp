@@ -74,6 +74,7 @@ TPStreamWriter::do_conf(const data_t& payload)
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
   tpstreamwriter::ConfParams conf_params = payload.get<tpstreamwriter::ConfParams>();
   m_accumulation_interval_ticks = conf_params.tp_accumulation_interval_ticks;
+  m_source_id = conf_params.source_id;
 
   // create the DataStore instance here
   try {
@@ -184,6 +185,8 @@ TPStreamWriter::do_work(std::atomic<bool>& running_flag)
     std::vector<std::unique_ptr<daqdataformats::TimeSlice>> list_of_timeslices =
       tp_bundle_handler.get_properly_aged_timeslices();
     for (auto& timeslice_ptr : list_of_timeslices) {
+      daqdataformats::SourceID sid(daqdataformats::SourceID::Subsystem::kTRBuilder, m_source_id);
+      timeslice_ptr->set_element_id(sid);
 
       // write the TSH and the fragments as a set of data blocks
       bool should_retry = true;
