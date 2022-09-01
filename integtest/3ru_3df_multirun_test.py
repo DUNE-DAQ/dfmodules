@@ -39,7 +39,7 @@ triggercandidate_frag_params={"fragment_type_description": "Trigger Candidate",
 triggertp_frag_params={"fragment_type_description": "Trigger with TPs",
                        "fragment_type": "SW_Trigger_Primitive",
                        "hdf5_source_subsystem": "Trigger",
-                       "expected_fragment_count": ((number_of_data_producers*number_of_readout_apps)+number_of_readout_apps+1),
+                       "expected_fragment_count": ((number_of_data_producers*number_of_readout_apps)),
                        "min_size_bytes": 72, "max_size_bytes": 16000}
 ignored_logfile_problems={"dqm": ["client will not be able to connect to Kafka cluster"]}
 
