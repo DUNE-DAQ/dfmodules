@@ -35,13 +35,24 @@ triggercandidate_frag_params={"fragment_type_description": "Trigger Candidate",
                               "fragment_type": "Trigger_Candidate",
                               "hdf5_source_subsystem": "Trigger",
                               "expected_fragment_count": 1,
-                              "min_size_bytes": 72, "max_size_bytes": 150}
+                              "min_size_bytes": 72, "max_size_bytes": 216}
+triggeractivity_frag_params={"fragment_type_description": "Trigger Activity",
+                              "fragment_type": "Trigger_Activity",
+                              "hdf5_source_subsystem": "Trigger",
+                              "expected_fragment_count": number_of_readout_apps,
+                              "min_size_bytes": 73, "max_size_bytes": 216}
 triggertp_frag_params={"fragment_type_description": "Trigger with TPs",
                        "fragment_type": "SW_Trigger_Primitive",
                        "hdf5_source_subsystem": "Trigger",
                        "expected_fragment_count": ((number_of_data_producers*number_of_readout_apps)),
                        "min_size_bytes": 72, "max_size_bytes": 16000}
-ignored_logfile_problems={"dqm": ["client will not be able to connect to Kafka cluster"]}
+hsi_frag_params ={"fragment_type_description": "HSI",
+                             "fragment_type": "Hardware_Signal",
+                             "hdf5_source_subsystem": "HW_Signals_Interface",
+                             "expected_fragment_count": 1,
+                             "min_size_bytes": 72, "max_size_bytes": 96}
+# TODO, Eric Flumerfelt <eflumerf@github.com> Sep-02-2022: Remove HSI exception once empty fragment issue is fixed
+ignored_logfile_problems={"dqm": ["client will not be able to connect to Kafka cluster"], "hsi": ["Trigger Matching result with empty fragment", "Request on empty buffer: Data not found"]}
 
 # The next three variable declarations *must* be present as globals in the test
 # file. They're read by the "fixtures" in conftest.py to determine how
@@ -106,18 +117,18 @@ def test_data_files(run_nanorc):
     local_event_count_tolerance=expected_event_count_tolerance
     low_number_of_files=expected_number_of_data_files
     high_number_of_files=expected_number_of_data_files
-    fragment_check_list=[]
+    fragment_check_list=[triggercandidate_frag_params, hsi_frag_params]
     if "enable_software_tpg" in run_nanorc.confgen_config["readout"].keys() and run_nanorc.confgen_config["readout"]["enable_software_tpg"]:
         local_expected_event_count+=(270*number_of_data_producers*number_of_readout_apps*run_duration/(100*number_of_dataflow_apps))
         local_event_count_tolerance+=(10*number_of_data_producers*number_of_readout_apps*run_duration/(100*number_of_dataflow_apps))
         fragment_check_list.append(wib1_frag_multi_trig_params)
         fragment_check_list.append(triggertp_frag_params)
+        fragment_check_list.append(triggeractivity_frag_params)
     else:
         low_number_of_files-=number_of_dataflow_apps
         if low_number_of_files < 1:
             low_number_of_files=1
         fragment_check_list.append(wib1_frag_hsi_trig_params)
-        fragment_check_list.append(triggercandidate_frag_params)
 
     # Run some tests on the output data file
     assert len(run_nanorc.data_files)==high_number_of_files or len(run_nanorc.data_files)==low_number_of_files
