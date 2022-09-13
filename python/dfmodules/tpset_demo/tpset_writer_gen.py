@@ -13,7 +13,7 @@ moo.otypes.load_types('appfwk/app.jsonnet')
 
 moo.otypes.load_types('nwqueueadapters/networktoqueue.jsonnet')
 moo.otypes.load_types('nwqueueadapters/networkobjectreceiver.jsonnet')
-moo.otypes.load_types('dfmodules/tpsetwriter.jsonnet')
+moo.otypes.load_types('dfmodules/tpstreamwriter.jsonnet')
 
 
 # Import new types
@@ -24,7 +24,7 @@ import dunedaq.appfwk.app as app # AddressedCmd,
 
 import dunedaq.nwqueueadapters.networktoqueue as ntoq
 import dunedaq.nwqueueadapters.networkobjectreceiver as nor
-import dunedaq.dfmodules.tpsetwriter as tpsw
+import dunedaq.dfmodules.tpstreamwriter as tpsw
 
 from appfwk.utils import acmd, mcmd, mrccmd, mspec
 
@@ -45,7 +45,7 @@ def generate(
     ]
 
     mod_specs = [
-        mspec("tps_writer", "TPSetWriter",
+        mspec("tps_writer", "TPStreamWriter",
               [app.QueueInfo(name="tpset_source", inst="tpset_q", dir="input")]
               ),
 

@@ -1,7 +1,7 @@
 # tpset_demo
 
-This is a demo system that runs TriggerPrimativeMaker` to read TPs
-from a file and send them to a TPSetWriter running in another process.
+This is a demo system that runs TriggerPrimitiveMaker` to read TPs
+from a file and send them to a TPStreamWriter running in another process.
 
 ## Generating the system configuration files
 

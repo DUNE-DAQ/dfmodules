@@ -13,10 +13,6 @@ find_package(opmonlib REQUIRED)
 find_package(iomanager REQUIRED)
 find_package(detdataformats REQUIRED)
 
-# 22-Jul-2021, KAB: all of the packages in this block are needed for the first version
-# of the TPSetWriter. Some of these may be able to be removed, at some point in time,
-# if we choose different tools for handling the TPSet writing.
-
 # JCF, Dec-1-2021: removed timinglibs
 find_package(triggeralgs REQUIRED)
 find_package(trigger REQUIRED)
@@ -37,7 +33,6 @@ daq_add_plugin( HDF5DataStore      duneDataStore LINK_LIBRARIES logging::logging
 daq_add_plugin( DataWriter            duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager )
 daq_add_plugin( DataFlowOrchestrator  duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager )
 daq_add_plugin( TriggerRecordBuilder  duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager )
-daq_add_plugin( TPSetWriter           duneDAQModule LINK_LIBRARIES dfmodules trigger::trigger serialization::serialization readoutlibs::readoutlibs Boost::iostreams )
 daq_add_plugin( FakeDataProd          duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager)
 daq_add_plugin( RequestReceiver       duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager)
 daq_add_plugin( FragmentReceiver      duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager)
