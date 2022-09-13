@@ -7,8 +7,6 @@ local types = {
     connection_name : s.string("connection_name"),
     dsparams: s.any("DataStoreParams", doc="Parameters that configure a data store"),
 
-    flag: s.boolean("Flag", doc="Parameter that can be used to enable or disable functionality"),
-
     conf: s.record("ConfParams", [
         s.field("data_storage_prescale", self.count, "1",
                 doc="Prescale value for writing TriggerRecords to storage"),
