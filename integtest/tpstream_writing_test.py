@@ -66,11 +66,13 @@ conf_dict["trigger"]["enable_tpset_writing"] = True
 conf_dict["trigger"]["tpset_output_path"] = output_dir
 conf_dict["readout"]["enable_software_tpg"] = True
 
+conf_dict["dataflow"]["apps"] = [] # Remove preconfigured dataflow0 app
 for df_app in range(number_of_dataflow_apps):
-    dfapp_key = f"dataflow.dataflow{df_app}"
-    conf_dict[dfapp_key] = {}
-    conf_dict[dfapp_key]["output_path"] = output_dir
-    conf_dict[dfapp_key]["token_count"] = 3*number_of_readout_apps
+    dfapp_conf = {}
+    dfapp_conf["app_name"] = f"dataflow{df_app}"
+    dfapp_conf["output_path"] = output_dir
+    dfapp_conf["token_count"] = 3*number_of_readout_apps
+    conf_dict["dataflow"]["apps"].append(dfapp_conf)
 
 confgen_arguments={"Software_TPG_System": conf_dict                  }
 
