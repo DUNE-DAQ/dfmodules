@@ -11,6 +11,7 @@
 
 #include "dfmodules/TPBundleHandler.hpp"
 
+#include "detdataformats/DetID.hpp"
 #include "logging/Logging.hpp"
 
 #include <memory>
@@ -94,7 +95,12 @@ TimeSliceAccumulator::get_timeslice()
     frag->set_window_begin(m_begin_time);
     frag->set_window_end(m_end_time);
     frag->set_element_id(sourceid);
-    frag->set_type(daqdataformats::FragmentType::kSW_TriggerPrimitive);
+    frag->set_detector_id(static_cast<uint16_t>(detdataformats::DetID::Subdetector::kDAQ));
+    if (m_fw_tpg_enabled) {
+      frag->set_type(daqdataformats::FragmentType::kFW_TriggerPrimitive);
+    } else {
+      frag->set_type(daqdataformats::FragmentType::kSW_TriggerPrimitive);
+    }
 
     size_t frag_payload_size = frag->get_size() - sizeof(dunedaq::daqdataformats::FragmentHeader);
     TLOG_DEBUG(21) << "In get_timeslice, Source ID is " << sourceid << ", number of pieces is " << list_of_pieces.size()
@@ -129,8 +135,11 @@ TPBundleHandler::add_tpset(trigger::TPSet&& tpset)
     {
       auto lk = std::lock_guard<std::mutex>(m_accumulator_map_mutex);
       if (m_timeslice_accumulators.count(tsidx) == 0) {
-        TimeSliceAccumulator accum(
-          tsidx * m_slice_interval, (tsidx + 1) * m_slice_interval, tsidx - m_slice_index_offset, m_run_number);
+        TimeSliceAccumulator accum(tsidx * m_slice_interval,
+                                   (tsidx + 1) * m_slice_interval,
+                                   tsidx - m_slice_index_offset,
+                                   m_run_number,
+                                   m_fw_tpg_enabled);
         m_timeslice_accumulators[tsidx] = accum;
       }
     }
@@ -145,7 +154,8 @@ TPBundleHandler::add_tpset(trigger::TPSet&& tpset)
       TimeSliceAccumulator accum(tsidx_from_begin_time * m_slice_interval,
                                  (tsidx_from_begin_time + 1) * m_slice_interval,
                                  tsidx_from_begin_time - m_slice_index_offset,
-                                 m_run_number);
+                                 m_run_number,
+                                 m_fw_tpg_enabled);
       m_timeslice_accumulators[tsidx_from_begin_time] = accum;
     }
   }
