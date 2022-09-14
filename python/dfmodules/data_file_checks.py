@@ -15,7 +15,7 @@ def find_fragments_of_specified_type(grp, subsystem='', fragment_type=''):
         nonlocal frag_list  # non-local to the visitor function
         pattern = ".*"
         if subsystem != '':
-            pattern = f'.*/{subsystem}_0x\\d+_'
+            pattern = f'.*/{subsystem}_0x[0-9a-fA-F]+_'
         if fragment_type != '':
             pattern += f'{fragment_type}'
         else:
