@@ -69,15 +69,16 @@ conf_dict["readout"]["data_rate_slowdown_factor"] = data_rate_slowdown_factor
 conf_dict["readout"]["latency_buffer_size"] = 200000
 conf_dict["trigger"]["trigger_rate_hz"] = trigger_rate
 
-for df_app in range(1, number_of_dataflow_apps):
-    dfapp_key = f"dataflow.dataflow{df_app}"
-    conf_dict[dfapp_key] = {}
+conf_dict["dataflow"]["apps"] = [] # Remove preconfigured dataflow0 app
+for df_app in range(number_of_dataflow_apps):
+    dfapp_conf = {}
+    dfapp_conf["app_name"] = f"dataflow{df_app}"
+    conf_dict["dataflow"]["apps"].append(dfapp_conf)
 
 swtpg_conf = copy.deepcopy(conf_dict)
 swtpg_conf["readout"]["enable_software_tpg"] = True
 for df_app in range(number_of_dataflow_apps):
-    dfapp_key = f"dataflow.dataflow{df_app}"
-    swtpg_conf[dfapp_key]["token_count"] = 3*number_of_readout_apps
+    swtpg_conf["dataflow"]["apps"][df_app]["token_count"] = 3*number_of_readout_apps
 
 dqm_conf = copy.deepcopy(conf_dict)
 dqm_conf["dqm"]["enable_dqm"] = True

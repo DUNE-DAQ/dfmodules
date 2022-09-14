@@ -79,14 +79,15 @@ conf_dict["trigger"]["trigger_rate_hz"] = trigger_rate
 conf_dict["trigger"]["trigger_window_before_ticks"] = readout_window_time_before
 conf_dict["trigger"]["trigger_window_after_ticks"] = readout_window_time_after
 
-for df_app in range(1, number_of_dataflow_apps):
-    dfapp_key = f"dataflow.dataflow{df_app}"
-    conf_dict[dfapp_key] = {}
+conf_dict["dataflow"]["apps"] = [] # Remove preconfigured dataflow0 app
+for df_app in range(number_of_dataflow_apps):
+    dfapp_conf = {}
+    dfapp_conf["app_name"] = f"dataflow{df_app}"
+    conf_dict["dataflow"]["apps"].append(dfapp_conf)
 
 trsplit_conf = copy.deepcopy(conf_dict)
 for df_app in range(number_of_dataflow_apps):
-    dfapp_key = f"dataflow.dataflow{df_app}"
-    trsplit_conf[dfapp_key]["max_trigger_record_window"] = trigger_record_max_window
+    trsplit_conf["dataflow"]["apps"][df_app]["max_trigger_record_window"] = trigger_record_max_window
 
 confgen_arguments={#"No_TR_Splitting": conf_dict,
                    "With_TR_Splitting": trsplit_conf,

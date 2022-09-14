@@ -9,12 +9,15 @@ local types = {
 
     sourceid_number : s.number("sourceid_number", "u4", doc="Source identifier"),
 
+    flag: s.boolean("Flag", doc="Parameter that can be used to enable or disable functionality"),
+
     conf: s.record("ConfParams", [
         s.field("tp_accumulation_interval_ticks", self.size, 50000000,
                 doc="Size of the TP accumulation window, measured in clock ticks"),
         s.field("data_store_parameters", self.dsparams,
                 doc="Parameters that configure the DataStore associated with this TPStreamWriter"),
         s.field("source_id", self.sourceid_number, 999, doc="Source ID of TPSW instance, added to time slice header"),
+        s.field("firmware_tpg_enabled", self.flag, 0, doc="Indicates whether firmware TP generation is enabled"),
     ], doc="TPStreamWriter configuration parameters"),
 
 };

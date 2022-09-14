@@ -5,6 +5,8 @@ import shutil
 
 import dfmodules.data_file_checks as data_file_checks
 import integrationtest.log_file_checks as log_file_checks
+import integrationtest.config_file_gen as config_file_gen
+import dfmodules.integtest_file_gen as integtest_file_gen
 
 # 21-Jul-2022, KAB: 
 # --> changes that are needed in this script include the following:
@@ -26,6 +28,7 @@ run_duration=23  # seconds
 number_of_readout_apps=3
 number_of_dataflow_apps=1
 trigger_rate=0.2 # Hz
+data_rate_slowdown_factor = 10
 token_count=1
 readout_window_time_before=9000000
 readout_window_time_after=1000000
@@ -63,8 +66,24 @@ ignored_logfile_problems={"dataflow": ["A problem was encountered when writing T
 confgen_name="daqconf_multiru_gen"
 # The arguments to pass to the config generator, excluding the json
 # output directory (the test framework handles that)
-confgen_arguments_base=["-o", output_path, "-s", "10", "-n", str(number_of_data_producers), "-b", str(readout_window_time_before), "-a", str(readout_window_time_after), "-t", str(trigger_rate), "--use-fake-data-producers", "--clock-speed-hz", "50000000"] + [ "--host-ru", "localhost" ] * number_of_readout_apps + [ "--host-df", "localhost" ] * number_of_dataflow_apps
-confgen_arguments={"Base_System": confgen_arguments_base,
+hardware_map_contents = integtest_file_gen.generate_hwmap_file(number_of_data_producers, number_of_readout_apps)
+
+conf_dict = config_file_gen.get_default_config_dict()
+conf_dict["readout"]["data_rate_slowdown_factor"] = data_rate_slowdown_factor
+conf_dict["readout"]["use_fake_data_producers"] = True
+conf_dict["readout"]["clock_speed_hz"] = 50000000
+conf_dict["trigger"]["trigger_rate_hz"] = trigger_rate
+conf_dict["trigger"]["trigger_window_before_ticks"] = readout_window_time_before
+conf_dict["trigger"]["trigger_window_after_ticks"] = readout_window_time_after
+
+conf_dict["dataflow"]["apps"] = [] # Remove preconfigured dataflow0 app
+for df_app in range(number_of_dataflow_apps):
+    dfapp_conf = {}
+    dfapp_conf["app_name"] = f"dataflow{df_app}"
+    dfapp_conf["output_path"] = output_path
+    conf_dict["dataflow"]["apps"].append(dfapp_conf)
+
+confgen_arguments={"Base_System": conf_dict,
                   }
 # The commands to run in nanorc, as a list
 nanorc_command_list="integtest-partition boot conf".split()

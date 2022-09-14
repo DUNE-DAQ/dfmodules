@@ -65,11 +65,11 @@ conf_dict["readout"]["latency_buffer_size"] = 200000
 conf_dict["trigger"]["trigger_rate_hz"] = 10
 conf_dict["trigger"]["trigger_window_before_ticks"] = 5000
 conf_dict["trigger"]["trigger_window_after_ticks"] = 5000
-conf_dict["dataflow.dataflow0"]["max_file_size"] = 1074000000
+conf_dict["dataflow"]["apps"][0]["max_file_size"] = 1074000000
 
 swtpg_conf = copy.deepcopy(conf_dict)
 swtpg_conf["readout"]["enable_software_tpg"] = True
-swtpg_conf["dataflow.dataflow0"]["token_count"] = 3*number_of_readout_apps
+swtpg_conf["dataflow"]["apps"][0]["token_count"] = 3*number_of_readout_apps
 
 confgen_arguments={"WIB1_System": conf_dict,
                    "Software_TPG_System": swtpg_conf,
