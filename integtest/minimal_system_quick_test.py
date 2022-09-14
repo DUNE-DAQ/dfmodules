@@ -24,7 +24,14 @@ triggercandidate_frag_params={"fragment_type_description": "Trigger Candidate",
                               "fragment_type": "Trigger_Candidate",
                               "hdf5_source_subsystem": "Trigger",
                               "expected_fragment_count": 1,
-                              "min_size_bytes": 72, "max_size_bytes": 150}
+                              "min_size_bytes": 72, "max_size_bytes": 216}
+hsi_frag_params ={"fragment_type_description": "HSI",
+                             "fragment_type": "Hardware_Signal",
+                             "hdf5_source_subsystem": "HW_Signals_Interface",
+                             "expected_fragment_count": 1,
+                             "min_size_bytes": 72, "max_size_bytes": 96}
+# TODO, Eric Flumerfelt <eflumerf@github.com> Sep-02-2022: Remove HSI exception once empty fragment issue is fixed
+ignored_logfile_problems={"dqm": ["client will not be able to connect to Kafka cluster"], "hsi": ["Trigger Matching result with empty fragment", "Request on empty buffer: Data not found"]}
 
 # The next three variable declarations *must* be present as globals in the test
 # file. They're read by the "fixtures" in conftest.py to determine how
@@ -54,15 +61,14 @@ def test_nanorc_success(run_nanorc):
 def test_log_files(run_nanorc):
     if check_for_logfile_errors:
         # Check that there are no warnings or errors in the log files
-        assert log_file_checks.logs_are_error_free(run_nanorc.log_files)
+        assert log_file_checks.logs_are_error_free(run_nanorc.log_files, True, True, ignored_logfile_problems)
 
 def test_data_files(run_nanorc):
     # Run some tests on the output data file
     assert len(run_nanorc.data_files)==expected_number_of_data_files
 
-    fragment_check_list=[]
+    fragment_check_list=[triggercandidate_frag_params, hsi_frag_params]
     fragment_check_list.append(wib1_frag_hsi_trig_params)
-    fragment_check_list.append(triggercandidate_frag_params)
 
     for idx in range(len(run_nanorc.data_files)):
         data_file=data_file_checks.DataFile(run_nanorc.data_files[idx])

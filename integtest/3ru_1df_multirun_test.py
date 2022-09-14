@@ -36,16 +36,28 @@ triggercandidate_frag_params={"fragment_type_description": "Trigger Candidate",
                               "fragment_type": "Trigger_Candidate",
                               "hdf5_source_subsystem": "Trigger",
                               "expected_fragment_count": 1,
-                              "min_size_bytes": 120, "max_size_bytes": 150}
+                              "min_size_bytes": 120, "max_size_bytes": 280}
+triggeractivity_frag_params={"fragment_type_description": "Trigger Activity",
+                              "fragment_type": "Trigger_Activity",
+                              "hdf5_source_subsystem": "Trigger",
+                              "expected_fragment_count": number_of_readout_apps,
+                              "min_size_bytes": 72, "max_size_bytes": 216}
 triggertp_frag_params={"fragment_type_description": "Trigger with TPs",
                        "fragment_type": "SW_Trigger_Primitive",
                        "hdf5_source_subsystem": "Trigger",
-                       "expected_fragment_count": ((number_of_data_producers*number_of_readout_apps)+number_of_readout_apps+1),
+                       "expected_fragment_count": ((number_of_data_producers*number_of_readout_apps)),
                        "min_size_bytes": 72, "max_size_bytes": 16000}
+hsi_frag_params ={"fragment_type_description": "HSI",
+                             "fragment_type": "Hardware_Signal",
+                             "hdf5_source_subsystem": "HW_Signals_Interface",
+                             "expected_fragment_count": 1,
+                             "min_size_bytes": 72, "max_size_bytes": 96}
+# TODO, Eric Flumerfelt <eflumerf@github.com> Sep-02-2022: Remove HSI exception once empty fragment issue is fixed
 ignored_logfile_problems={"dqm": ["client will not be able to connect to Kafka cluster",
                                   "Unexpected Trigger Decision", "Unexpected Fragment"],
                           "trigger": ["zipped_tpset_q: Unable to push within timeout period"],
                           "ruemu": [r"Trigger Matching result with empty fragment: TS match result on link .+Requestor=\S+fragx_dqm"],
+                          "hsi": ["Trigger Matching result with empty fragment", "Request on empty buffer: Data not found"],
                          }
 
 # Determine if this computer is powerful enough for these tests
@@ -124,15 +136,15 @@ def test_data_files(run_nanorc):
 
     local_expected_event_count=expected_event_count
     local_event_count_tolerance=expected_event_count_tolerance
-    fragment_check_list=[]
+    fragment_check_list=[triggercandidate_frag_params, hsi_frag_params]
     if "enable_software_tpg" in run_nanorc.confgen_config["readout"].keys() and run_nanorc.confgen_config["readout"]["enable_software_tpg"]:
         local_expected_event_count+=(270*number_of_data_producers*number_of_readout_apps*run_duration/100)
         local_event_count_tolerance+=(10*number_of_data_producers*number_of_readout_apps*run_duration/100)
         fragment_check_list.append(wib1_frag_multi_trig_params)
         fragment_check_list.append(triggertp_frag_params)
+        fragment_check_list.append(triggeractivity_frag_params)
     else:
         fragment_check_list.append(wib1_frag_hsi_trig_params)
-        fragment_check_list.append(triggercandidate_frag_params)
 
     # Run some tests on the output data file
     assert len(run_nanorc.data_files)==expected_number_of_data_files

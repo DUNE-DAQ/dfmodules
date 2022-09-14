@@ -25,7 +25,13 @@ wib1_frag_hsi_trig_params={"fragment_type_description": "WIB",
                            "expected_fragment_count": number_of_data_producers,
                            "min_size_bytes": baseline_fragment_size_bytes, 
                            "max_size_bytes": baseline_fragment_size_bytes}
-ignored_logfile_problems={}
+hsi_frag_params ={"fragment_type_description": "HSI",
+                             "fragment_type": "Hardware_Signal",
+                             "hdf5_source_subsystem": "HW_Signals_Interface",
+                             "expected_fragment_count": 1,
+                             "min_size_bytes": 72, "max_size_bytes": 96}
+# TODO, Eric Flumerfelt <eflumerf@github.com> Sep-02-2022: Remove HSI exception once empty fragment issue is fixed
+ignored_logfile_problems={"hsi": ["Trigger Matching result with empty fragment", "Request on empty buffer: Data not found"]}
 
 # The next three variable declarations *must* be present as globals in the test
 # file. They're read by the "fixtures" in conftest.py to determine how
@@ -89,7 +95,7 @@ def test_data_files(run_nanorc):
     if run_nanorc.confgen_config["trigger"]["trigger_window_before_ticks"] == 2000:
         frag_params["min_size_bytes"]=74312  #baseline_fragment_size_bytes*2
         frag_params["max_size_bytes"]=74312  #baseline_fragment_size_bytes*2
-    fragment_check_list=[frag_params]
+    fragment_check_list=[frag_params, hsi_frag_params]
 
     # Run some tests on the output data file
     assert len(run_nanorc.data_files)==expected_number_of_data_files
