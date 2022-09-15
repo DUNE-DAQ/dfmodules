@@ -51,8 +51,7 @@ hsi_frag_params ={"fragment_type_description": "HSI",
                              "hdf5_source_subsystem": "HW_Signals_Interface",
                              "expected_fragment_count": 1,
                              "min_size_bytes": 72, "max_size_bytes": 96}
-# TODO, Eric Flumerfelt <eflumerf@github.com> Sep-02-2022: Remove HSI exception once empty fragment issue is fixed
-ignored_logfile_problems={"dqm": ["client will not be able to connect to Kafka cluster"], "hsi": ["Trigger Matching result with empty fragment", "Request on empty buffer: Data not found"]}
+ignored_logfile_problems={"dqm": ["client will not be able to connect to Kafka cluster"]}
 
 # The next three variable declarations *must* be present as globals in the test
 # file. They're read by the "fixtures" in conftest.py to determine how
