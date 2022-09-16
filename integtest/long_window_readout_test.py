@@ -25,7 +25,7 @@ latency_buffer_size=600000
 data_rate_slowdown_factor=20
 
 # Default values for validation parameters
-expected_number_of_data_files=2*number_of_dataflow_apps
+expected_number_of_data_files=4
 check_for_logfile_errors=True
 expected_event_count=191 # 3*run_duration*trigger_rate/number_of_dataflow_apps
 expected_event_count_tolerance=5
@@ -46,8 +46,7 @@ hsi_frag_params ={"fragment_type_description": "HSI",
                              "hdf5_source_subsystem": "HW_Signals_Interface",
                              "expected_fragment_count": 1,
                              "min_size_bytes": 72, "max_size_bytes": 96}
-# TODO, Eric Flumerfelt <eflumerf@github.com> Sep-02-2022: Remove HSI exception once empty fragment issue is fixed
-ignored_logfile_problems={"hsi": ["Trigger Matching result with empty fragment", "Request on empty buffer: Data not found"]}
+ignored_logfile_problems={}
 
 # Determine if the conditions are right for these tests
 sufficient_disk_space=True

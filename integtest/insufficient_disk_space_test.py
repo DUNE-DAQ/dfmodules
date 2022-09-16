@@ -51,11 +51,9 @@ hsi_frag_params ={"fragment_type_description": "HSI",
                              "hdf5_source_subsystem": "HW_Signals_Interface",
                              "expected_fragment_count": 1,
                              "min_size_bytes": 72, "max_size_bytes": 96}
-# TODO, Eric Flumerfelt <eflumerf@github.com> Sep-02-2022: Remove HSI exception once empty fragment issue is fixed
 ignored_logfile_problems={"dataflow": ["A problem was encountered when writing TriggerRecord number",
                                        "A problem was encountered when writing a trigger record to file",
                                        r"There are \d+ bytes free, and the required minimum is \d+ bytes based on a safety factor of 5 times the trigger record size"],
-                            "hsi": ["Trigger Matching result with empty fragment", "Request on empty buffer: Data not found"]
                          }
 
 # The next three variable declarations *must* be present as globals in the test
