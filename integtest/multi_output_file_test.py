@@ -20,12 +20,12 @@ wib1_frag_hsi_trig_params={"fragment_type_description": "WIB",
                            "fragment_type": "ProtoWIB",
                            "hdf5_source_subsystem": "Detector_Readout",
                            "expected_fragment_count": (number_of_data_producers*number_of_readout_apps),
-                           "min_size_bytes": 37192, "max_size_bytes": 185680}
+                           "min_size_bytes": 37192, "max_size_bytes": 185960}
 wib1_frag_multi_trig_params={"fragment_type_description": "WIB",
                              "fragment_type": "ProtoWIB",
                              "hdf5_source_subsystem": "Detector_Readout",
                              "expected_fragment_count": (number_of_data_producers*number_of_readout_apps),
-                             "min_size_bytes": 72, "max_size_bytes": 185680}
+                             "min_size_bytes": 72, "max_size_bytes": 270000}
 triggercandidate_frag_params={"fragment_type_description": "Trigger Candidate",
                               "fragment_type": "Trigger_Candidate",
                               "hdf5_source_subsystem": "Trigger",
@@ -35,11 +35,11 @@ triggeractivity_frag_params={"fragment_type_description": "Trigger Activity",
                               "fragment_type": "Trigger_Activity",
                               "hdf5_source_subsystem": "Trigger",
                               "expected_fragment_count": number_of_readout_apps,
-                              "min_size_bytes": 72, "max_size_bytes": 216}
+                              "min_size_bytes": 72, "max_size_bytes": 520}
 triggertp_frag_params={"fragment_type_description": "Trigger with TPs",
                        "fragment_type": "SW_Trigger_Primitive",
                        "hdf5_source_subsystem": "Trigger",
-                       "expected_fragment_count": ((number_of_data_producers*number_of_readout_apps)+number_of_readout_apps+1),
+                       "expected_fragment_count": ((number_of_data_producers*number_of_readout_apps)),
                        "min_size_bytes": 72, "max_size_bytes": 16000}
 hsi_frag_params ={"fragment_type_description": "HSI",
                              "fragment_type": "Hardware_Signal",
@@ -68,7 +68,7 @@ conf_dict["dataflow"]["apps"][0]["max_file_size"] = 1074000000
 
 swtpg_conf = copy.deepcopy(conf_dict)
 swtpg_conf["readout"]["enable_software_tpg"] = True
-swtpg_conf["dataflow"]["apps"][0]["token_count"] = 3*number_of_readout_apps
+swtpg_conf["dataflow"]["apps"][0]["token_count"] = max(10, 3*number_of_data_producers*number_of_readout_apps)
 
 confgen_arguments={"WIB1_System": conf_dict,
                    "Software_TPG_System": swtpg_conf,
