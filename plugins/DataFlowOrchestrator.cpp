@@ -199,7 +199,8 @@ DataFlowOrchestrator::receive_trigger_decision(const dfmessages::TriggerDecision
     }
 
     TLOG_DEBUG(TLVL_TRIGDEC_RECEIVED) << get_name() << " Slot found for trigger_number " << decision.trigger_number
-                                      << " on connection " << assignment->connection_name;
+                                      << " on connection " << assignment->connection_name
+                                      << ", number of used slots is " << used_slots();
     decision_assigned = std::chrono::steady_clock::now();
     auto dispatch_successful = dispatch(assignment);
 
