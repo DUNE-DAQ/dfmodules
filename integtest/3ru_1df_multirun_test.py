@@ -86,7 +86,7 @@ conf_dict["readout"]["latency_buffer_size"] = 200000
 
 swtpg_conf = copy.deepcopy(conf_dict)
 swtpg_conf["readout"]["enable_software_tpg"] = True
-swtpg_conf["dataflow"]["apps"][0]["token_count"] = 3*number_of_readout_apps
+swtpg_conf["dataflow"]["apps"][0]["token_count"] = max(10, 3*number_of_data_producers*number_of_readout_apps)
 
 dqm_conf = copy.deepcopy(conf_dict)
 dqm_conf["dqm"]["enable_dqm"] = True
