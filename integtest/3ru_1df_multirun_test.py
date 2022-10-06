@@ -43,7 +43,7 @@ triggeractivity_frag_params={"fragment_type_description": "Trigger Activity",
                               "expected_fragment_count": number_of_readout_apps,
                               "min_size_bytes": 72, "max_size_bytes": 400}
 triggertp_frag_params={"fragment_type_description": "Trigger with TPs",
-                       "fragment_type": "SW_Trigger_Primitive",
+                       "fragment_type": "Trigger_Primitive",
                        "hdf5_source_subsystem": "Trigger",
                        "expected_fragment_count": ((number_of_data_producers*number_of_readout_apps)),
                        "min_size_bytes": 72, "max_size_bytes": 16000}
