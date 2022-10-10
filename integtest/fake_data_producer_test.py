@@ -20,7 +20,7 @@ check_for_logfile_errors=True
 expected_event_count=run_duration
 expected_event_count_tolerance=2
 wib1_frag_hsi_trig_params={"fragment_type_description": "WIB", 
-                           "fragment_type": "Unknown",
+                           "fragment_type": "ProtoWIB",
                            "hdf5_source_subsystem": "Detector_Readout",
                            "expected_fragment_count": number_of_data_producers,
                            "min_size_bytes": baseline_fragment_size_bytes, 
