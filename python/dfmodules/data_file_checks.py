@@ -123,7 +123,7 @@ def check_event_count(datafile, expected_value, tolerance):
 #
 # The parameters that are required by this routine are the following:
 # * fragment_type_description - descriptive text for the fragment type, e.g. "WIB" or "PDS" or "Raw TP"
-# * fragment_type - Type of the Fragment, e.g. "ProtoWIB" or "SW_Trigger_Primitive"
+# * fragment_type - Type of the Fragment, e.g. "ProtoWIB" or "Trigger_Primitive"
 # * hdf5_source_subsystem - the Subsystem of the Fragments to find,
 #                         e.g. "Detector_Readout" or "Trigger"
 # * expected_fragment_count - the expected number of fragments of this type
@@ -149,7 +149,7 @@ def check_fragment_count(datafile, params):
 #
 # The parameters that are required by this routine are the following:
 # * fragment_type_description - descriptive text for the fragment type, e.g. "WIB" or "PDS" or "Raw TP"
-# * fragment_type - Type of the Fragment, e.g. "ProtoWIB" or "SW_Trigger_Primitive"
+# * fragment_type - Type of the Fragment, e.g. "ProtoWIB" or "Trigger_Primitive"
 # * hdf5_source_subsystem - the Subsystem of the Fragments to find,
 #                         e.g. "Detector_Readout" or "Trigger"
 # * min_size_bytes - the minimum size of fragments of this type
