@@ -171,7 +171,7 @@ BOOST_FIXTURE_TEST_CASE(Commands, ConfigurationTestFixture)
 
   dfo->execute_command("conf", "INITIAL", conf_json);
   dfo->execute_command("start", "CONFIGURED", start_json);
-  dfo->execute_command("stop", "RUNNING", null_json);
+  dfo->execute_command("drain_dataflow", "RUNNING", null_json);
   dfo->execute_command("scrap", "CONFIGURED", null_json);
 
   auto info = get_dfo_info(dfo);
@@ -241,7 +241,7 @@ BOOST_FIXTURE_TEST_CASE(DataFlow, ConfigurationTestFixture)
   BOOST_REQUIRE_EQUAL(info.decisions_sent, 1);
   BOOST_REQUIRE(!busy_signal_recvd.load());
 
-  dfo->execute_command("stop", "RUNNING", null_json);
+  dfo->execute_command("drain_dataflow", "RUNNING", null_json);
   dfo->execute_command("scrap", "CONFIGURED", null_json);
 }
 
@@ -278,7 +278,7 @@ BOOST_FIXTURE_TEST_CASE(SendTrigDecFailed, ConfigurationTestFixture)
   send_token(1000);
   std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
-  dfo->execute_command("stop", "RUNNING", null_json);
+  dfo->execute_command("drain_dataflow", "RUNNING", null_json);
   dfo->execute_command("scrap", "CONFIGURED", null_json);
 }
 
