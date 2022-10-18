@@ -61,7 +61,7 @@ private:
   dunedaq::daqdataformats::run_number_t m_run_number;
 
   // Connections
-  iomanager::connection::ConnectionRef m_incoming_data_ref;
+  std::string m_incoming_data_id;
   using datareqsender_t = dunedaq::iomanager::SenderConcept<incoming_t>;
   std::map<daqdataformats::SourceID, std::shared_ptr<datareqsender_t>> m_data_request_outputs;
 

@@ -11,10 +11,10 @@
 
 #include "appfwk/DAQModuleHelper.hpp"
 #include "appfwk/app/Nljs.hpp"
-#include "iomanager/IOManager.hpp"
 #include "dfmodules/requestreceiver/Nljs.hpp"
 #include "dfmodules/requestreceiver/Structs.hpp"
 #include "dfmodules/requestreceiverinfo/InfoNljs.hpp"
+#include "iomanager/IOManager.hpp"
 #include "logging/Logging.hpp"
 
 #include <chrono>
@@ -64,13 +64,13 @@ RequestReceiver::init(const data_t& init_data)
   auto ini = init_data.get<appfwk::app::ModInit>();
 
   // Test for valid output data request queues
-  auto iom = iomanager::IOManager::get() ;
+  auto iom = iomanager::IOManager::get();
   for (const auto& ref : ini.conn_refs) {
-    if ( ref.dir == iomanager::connection::Direction::kOutput) {
-        iom ->get_sender<incoming_t>(ref) ; 
-    } else if (ref.dir == iomanager::connection::Direction::kInput) {
-	iom->get_receiver<incoming_t>(ref) ;
-	m_incoming_data_ref = ref;
+    if (ref.name.find("input") == std::string::npos) {
+      iom->get_sender<incoming_t>(ref.uid);
+    } else {
+      iom->get_receiver<incoming_t>(ref.uid);
+      m_incoming_data_id = ref.uid;
     }
   }
 
@@ -93,19 +93,19 @@ RequestReceiver::do_conf(const data_t& payload)
     if (type == daqdataformats::SourceID::Subsystem::kUnknown) {
       throw InvalidSystemType(ERS_HERE, entry.system);
     }
-    
+
     daqdataformats::SourceID key;
     key.subsystem = type;
     key.id = entry.source_id;
-    m_data_request_outputs[key] = iom->get_sender<incoming_t>( entry.connection_uid );
+    m_data_request_outputs[key] = iom->get_sender<incoming_t>(entry.connection_uid);
   }
-  
+
   m_queue_timeout = std::chrono::milliseconds(parsed_conf.general_queue_timeout);
-  
+
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
 }
- 
- void
+
+void
 RequestReceiver::do_start(const data_t& payload)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_start() method";
@@ -114,8 +114,8 @@ RequestReceiver::do_start(const data_t& payload)
   m_run_number = payload.value<dunedaq::daqdataformats::run_number_t>("run", 0);
 
   auto iom = iomanager::IOManager::get();
-  iom->add_callback<incoming_t>( m_incoming_data_ref,
-				 std::bind(&RequestReceiver::dispatch_request, this, std::placeholders::_1));
+  iom->add_callback<incoming_t>(m_incoming_data_id,
+                                std::bind(&RequestReceiver::dispatch_request, this, std::placeholders::_1));
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
 }
@@ -126,7 +126,7 @@ RequestReceiver::do_stop(const data_t& /*args*/)
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_stop() method";
 
   auto iom = iomanager::IOManager::get();
-  iom->remove_callback<incoming_t>( m_incoming_data_ref);
+  iom->remove_callback<incoming_t>(m_incoming_data_id);
 
   TLOG() << get_name() << " successfully stopped";
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_stop() method";
@@ -150,17 +150,16 @@ RequestReceiver::get_info(opmonlib::InfoCollector& ci, int /*level*/)
 }
 
 void
-RequestReceiver::dispatch_request(incoming_t & request)
+RequestReceiver::dispatch_request(incoming_t& request)
 {
   TLOG_DEBUG(10) << get_name() << "Received data request: " << request.trigger_number
                  << " Component: " << request.request_information;
-  
+
   auto component = request.request_information.component;
   auto it = m_data_request_outputs.find(component);
   if (it != m_data_request_outputs.end()) {
-    TLOG_DEBUG(10) << get_name() << "Dispatch request to queue "
-                   << it->second -> get_name();
-    it -> second -> send(std::move(request), m_queue_timeout);
+    TLOG_DEBUG(10) << get_name() << "Dispatch request to queue " << it->second->get_name();
+    it->second->send(std::move(request), m_queue_timeout);
   } else {
     ers::error(UnknownSourceID(ERS_HERE, component));
   }

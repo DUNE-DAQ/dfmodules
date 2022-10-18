@@ -54,8 +54,8 @@ void
 FragmentReceiver::init(const data_t& iniobj)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
-  m_input_connection = appfwk::connection_inst(iniobj, "input");
-  m_fragment_output = iomanager::IOManager::get()->get_sender<internal_data_t>( appfwk::connection_inst(iniobj, "output") );
+  m_input_connection = appfwk::connection_uid(iniobj, "input");
+  m_fragment_output = iomanager::IOManager::get()->get_sender<internal_data_t>( appfwk::connection_uid(iniobj, "output") );
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
 

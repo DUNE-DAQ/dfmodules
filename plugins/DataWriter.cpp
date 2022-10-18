@@ -14,6 +14,7 @@
 #include "appfwk/DAQModuleHelper.hpp"
 #include "daqdataformats/Fragment.hpp"
 #include "dfmessages/TriggerDecision.hpp"
+#include "dfmessages/TriggerRecord_serialization.hpp"
 #include "logging/Logging.hpp"
 #include "iomanager/IOManager.hpp"
 #include "rcif/cmd/Nljs.hpp"

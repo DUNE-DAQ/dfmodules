@@ -69,7 +69,7 @@ private:
   int m_write_retry_time_increase_factor;
 
   // Connections
-  iomanager::connection::ConnectionRef m_trigger_record_connection;
+  std::string m_trigger_record_connection;
   using tr_receiver_ct = iomanager::ReceiverConcept<std::unique_ptr<daqdataformats::TriggerRecord>>;
   std::shared_ptr<tr_receiver_ct> m_tr_receiver;
 

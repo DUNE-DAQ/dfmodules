@@ -90,10 +90,10 @@ TriggerRecordBuilder::init(const data_t& init_data)
 
   for (const auto& ref : ini.conn_refs) {
     if (ref.name.rfind("data_fragment_") == 0) {
-      m_fragment_inputs.push_back(iom->get_receiver<std::unique_ptr<daqdataformats::Fragment>>( ref ) );
+      m_fragment_inputs.push_back(iom->get_receiver<std::unique_ptr<daqdataformats::Fragment>>( ref.uid ) );
     }
     else if ( ref.name == "mon_connection" ) {
-      m_mon_receiver = iom->get_receiver<dfmessages::TRMonRequest>( ref );
+      m_mon_receiver = iom->get_receiver<dfmessages::TRMonRequest>( ref.uid );
     }
   }
       

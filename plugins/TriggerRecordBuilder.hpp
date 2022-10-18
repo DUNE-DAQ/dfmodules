@@ -23,7 +23,6 @@
 
 #include "appfwk/DAQModule.hpp"
 #include "utilities/WorkerThread.hpp"
-#include "iomanager/ConnectionId.hpp"
 #include "iomanager/Sender.hpp"
 #include "iomanager/Receiver.hpp"
 

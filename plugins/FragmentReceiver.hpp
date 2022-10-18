@@ -13,7 +13,6 @@
 
 #include "appfwk/DAQModule.hpp"
 #include "iomanager/Sender.hpp"
-#include "iomanager/ConnectionId.hpp"
 
 #include <map>
 #include <memory>
@@ -60,7 +59,7 @@ private:
   dunedaq::daqdataformats::run_number_t m_run_number;
 
   // Connections
-  iomanager::connection::ConnectionRef m_input_connection;
+  std::string m_input_connection;
   using fragmentsender_t = iomanager::SenderConcept<internal_data_t>;
   std::shared_ptr<fragmentsender_t> m_fragment_output;
 
