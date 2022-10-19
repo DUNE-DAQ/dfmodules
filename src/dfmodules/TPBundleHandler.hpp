@@ -46,13 +46,11 @@ public:
   TimeSliceAccumulator(daqdataformats::timestamp_t begin_time,
                        daqdataformats::timestamp_t end_time,
                        daqdataformats::timeslice_number_t slice_number,
-                       daqdataformats::run_number_t run_number,
-                       bool firmware_tpg_enabled)
+                       daqdataformats::run_number_t run_number)
     : m_begin_time(begin_time)
     , m_end_time(end_time)
     , m_slice_number(slice_number)
     , m_run_number(run_number)
-    , m_fw_tpg_enabled(firmware_tpg_enabled)
     , m_update_time(std::chrono::steady_clock::now())
   {}
 
@@ -66,7 +64,6 @@ public:
       m_end_time = other.m_end_time;
       m_slice_number = other.m_slice_number;
       m_run_number = other.m_run_number;
-      m_fw_tpg_enabled = other.m_fw_tpg_enabled;
       m_update_time = other.m_update_time;
       m_tpbundles_by_sourceid_and_start_time = other.m_tpbundles_by_sourceid_and_start_time;
     }
@@ -88,7 +85,6 @@ private:
   daqdataformats::timestamp_t m_end_time;
   daqdataformats::timeslice_number_t m_slice_number;
   daqdataformats::run_number_t m_run_number;
-  bool m_fw_tpg_enabled;
   std::chrono::steady_clock::time_point m_update_time;
   typedef std::map<daqdataformats::timestamp_t, trigger::TPSet> tpbundles_by_start_time_t;
   typedef std::map<daqdataformats::SourceID, tpbundles_by_start_time_t> bundles_by_sourceid_t;
@@ -101,12 +97,10 @@ class TPBundleHandler
 public:
   TPBundleHandler(daqdataformats::timestamp_t slice_interval,
                   daqdataformats::run_number_t run_number,
-                  std::chrono::steady_clock::duration cooling_off_time,
-                  bool firmware_tpg_enabled)
+                  std::chrono::steady_clock::duration cooling_off_time)
     : m_slice_interval(slice_interval)
     , m_run_number(run_number)
     , m_cooling_off_time(cooling_off_time)
-    , m_fw_tpg_enabled(firmware_tpg_enabled)
     , m_slice_index_offset(0)
   {}
 
@@ -123,7 +117,6 @@ private:
   daqdataformats::timestamp_t m_slice_interval;
   daqdataformats::run_number_t m_run_number;
   std::chrono::steady_clock::duration m_cooling_off_time;
-  bool m_fw_tpg_enabled;
   size_t m_slice_index_offset;
   std::map<daqdataformats::timestamp_t, TimeSliceAccumulator> m_timeslice_accumulators;
   mutable std::mutex m_accumulator_map_mutex;
