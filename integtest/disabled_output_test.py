@@ -61,6 +61,7 @@ confgen_name="daqconf_multiru_gen"
 hardware_map_contents = integtest_file_gen.generate_hwmap_file(number_of_data_producers)
 
 conf_dict = config_file_gen.get_default_config_dict()
+conf_dict["boot"]["use_connectivity_service"] = False
 conf_dict["readout"]["data_rate_slowdown_factor"] = data_rate_slowdown_factor
 conf_dict["readout"]["latency_buffer_size"] = 200000
 conf_dict["trigger"]["trigger_rate_hz"] = 1.0
