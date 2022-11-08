@@ -2,6 +2,7 @@ import pytest
 import os
 import re
 import copy
+import urllib.request
 
 import dfmodules.data_file_checks as data_file_checks
 import integrationtest.log_file_checks as log_file_checks
@@ -59,7 +60,11 @@ confgen_name="daqconf_multiru_gen"
 hardware_map_contents = integtest_file_gen.generate_hwmap_file(number_of_data_producers, number_of_readout_apps)
 
 conf_dict = config_file_gen.get_default_config_dict()
-conf_dict["boot"]["use_connectivity_service"] = False
+try:
+  urllib.request.urlopen('http://localhost:5000').status
+  conf_dict["boot"]["use_connectivity_service"] = True
+except:
+  conf_dict["boot"]["use_connectivity_service"] = False
 conf_dict["readout"]["data_rate_slowdown_factor"] = data_rate_slowdown_factor
 conf_dict["readout"]["latency_buffer_size"] = 200000
 conf_dict["trigger"]["trigger_rate_hz"] = 10
