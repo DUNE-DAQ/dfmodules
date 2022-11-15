@@ -34,8 +34,6 @@ daq_add_plugin( DataWriter            duneDAQModule LINK_LIBRARIES dfmodules iom
 daq_add_plugin( DataFlowOrchestrator  duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager )
 daq_add_plugin( TriggerRecordBuilder  duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager )
 daq_add_plugin( FakeDataProd          duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager)
-daq_add_plugin( RequestReceiver       duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager)
-daq_add_plugin( FragmentReceiver      duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager)
 daq_add_plugin( TriggerDecisionReceiver duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager)
 daq_add_plugin( TPStreamWriter        duneDAQModule LINK_LIBRARIES dfmodules hdf5libs::hdf5libs trigger::trigger serialization::serialization readoutlibs::readoutlibs Boost::iostreams )
 
