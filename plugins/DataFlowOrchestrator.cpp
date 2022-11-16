@@ -84,15 +84,10 @@ DataFlowOrchestrator::do_conf(const data_t& payload)
 
   auto parsed_conf = payload.get<datafloworchestrator::ConfParams>();
 
-  for (auto& app : parsed_conf.dataflow_applications) {
-    TLOG_DEBUG(TLVL_CONFIG) << "Creating dataflow availability struct for uid " << app.connection_uid
-                            << ", busy threshold " << app.thresholds.busy << ", free threshold " << app.thresholds.free;
-    m_dataflow_availability[app.connection_uid] =
-      TriggerRecordBuilderData(app.connection_uid, app.thresholds.busy, app.thresholds.free);
-  }
-
   m_queue_timeout = std::chrono::milliseconds(parsed_conf.general_queue_timeout);
   m_stop_timeout = std::chrono::microseconds(parsed_conf.stop_timeout * 1000);
+  m_busy_threshold = parsed_conf.thresholds.busy;
+  m_free_threshold = parsed_conf.thresholds.free;
 
   m_td_send_retries = parsed_conf.td_send_retries;
 
@@ -319,6 +314,17 @@ DataFlowOrchestrator::get_info(opmonlib::InfoCollector& ci, int level)
 void
 DataFlowOrchestrator::receive_trigger_complete_token(const dfmessages::TriggerDecisionToken& token)
 {
+  if (token.run_number == 0 && token.trigger_number == 0) {
+    if (m_dataflow_availability.count(token.decision_destination) == 0) {
+      TLOG_DEBUG(TLVL_CONFIG) << "Creating dataflow availability struct for uid " << token.decision_destination;
+      m_dataflow_availability[token.decision_destination] =
+        TriggerRecordBuilderData(token.decision_destination, m_busy_threshold, m_free_threshold);
+    } else {
+      TLOG() << "Ignoring initialization token from " << token.decision_destination << ", already configured";
+    }
+    return;
+  }
+
   TLOG() << get_name() << " Received TriggerDecisionToken for trigger_number " << token.trigger_number << " and run "
          << token.run_number << " (current run is " << m_run_number << ")";
   // add a check to see if the application data found

@@ -123,6 +123,8 @@ private:
   std::string m_token_connection;
   std::string m_td_connection;
   size_t m_td_send_retries;
+  size_t m_busy_threshold;
+  size_t m_free_threshold;
 
   // Coordination
   std::atomic<bool> m_running_status{ false };
