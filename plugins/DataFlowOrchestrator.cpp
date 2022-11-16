@@ -320,7 +320,9 @@ DataFlowOrchestrator::receive_trigger_complete_token(const dfmessages::TriggerDe
       m_dataflow_availability[token.decision_destination] =
         TriggerRecordBuilderData(token.decision_destination, m_busy_threshold, m_free_threshold);
     } else {
-      TLOG() << "Ignoring initialization token from " << token.decision_destination << ", already configured";
+      TLOG() << TriggerRecordBuilderAppUpdate(ERS_HERE, token.decision_destination, "Has reconnected");
+      auto app_it = m_dataflow_availability.find(token.decision_destination);
+      app_it->second.set_in_error(false);
     }
     return;
   }
