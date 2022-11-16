@@ -349,6 +349,9 @@ private:
       work_oss << "_";
     }
 
+    work_oss << m_config_params.filename_parameters.run_number_prefix;
+    work_oss << std::setw(m_config_params.filename_parameters.digits_for_run_number) << std::setfill('0') << run_number;
+    work_oss << "_";
     if (m_config_params.mode == "one-event-per-file") {
 
       work_oss << m_config_params.filename_parameters.trigger_number_prefix;
@@ -356,10 +359,6 @@ private:
                << record_number;
     } else if (m_config_params.mode == "all-per-file") {
 
-      work_oss << m_config_params.filename_parameters.run_number_prefix;
-      work_oss << std::setw(m_config_params.filename_parameters.digits_for_run_number) << std::setfill('0')
-               << run_number;
-      work_oss << "_";
       work_oss << m_config_params.filename_parameters.file_index_prefix;
       work_oss << std::setw(m_config_params.filename_parameters.digits_for_file_index) << std::setfill('0')
                << m_file_index;
