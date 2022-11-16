@@ -86,6 +86,17 @@ get_dfo_info(std::shared_ptr<appfwk::DAQModule> dfo)
   return info_obj;
 }
 void
+send_init_token(std::string connection_name = "test.trigdec_0")
+{
+  dfmessages::TriggerDecisionToken token;
+  token.run_number = 0;
+  token.trigger_number = 0;
+  token.decision_destination = connection_name;
+
+  TLOG() << "Sending Init TriggerDecisionToken to DFO";
+  get_iom_sender<dfmessages::TriggerDecisionToken>("test.token")->send(std::move(token), iomanager::Sender::s_block);
+}
+void
 send_token(dfmessages::trigger_number_t trigger_number,
            std::string connection_name = "test.trigdec_0",
            bool different_run = false)
@@ -155,9 +166,8 @@ BOOST_FIXTURE_TEST_CASE(Commands, ConfigurationTestFixture)
   auto dfo = appfwk::make_module("DataFlowOrchestrator", "test");
   dfo->init(json);
 
-  auto conf_json = "{\"dataflow_applications\": [ { \"thresholds\": { \"free\": 1, \"busy\": 2 }, "
-                   "\"connection_uid\": \"test.trigdec_0\" } ], "
-                   "\"general_queue_timeout\": 100, \"td_send_retries\": 5 }"_json;
+  auto conf_json = "{\"thresholds\": { \"free\": 1, \"busy\": 2 }, "
+                   "\"general_queue_timeout\": 100, \"td_send_retries\": 5}"_json;
   auto start_json = "{\"run\": 1}"_json;
   auto null_json = "{}"_json;
 
@@ -183,8 +193,7 @@ BOOST_FIXTURE_TEST_CASE(DataFlow, ConfigurationTestFixture)
   auto dfo = appfwk::make_module("DataFlowOrchestrator", "test");
   dfo->init(json);
 
-  auto conf_json = "{\"dataflow_applications\": [ { \"thresholds\": { \"free\": 1, \"busy\": 2 }, "
-                   "\"connection_uid\": \"test.trigdec_0\" } ], "
+  auto conf_json = "{\"thresholds\": { \"free\": 1, \"busy\": 2 }, "
                    "\"general_queue_timeout\": 100, \"td_send_retries\": 5}"_json;
   auto start_json = "{\"run\": 1}"_json;
   auto null_json = "{}"_json;
@@ -206,6 +215,7 @@ BOOST_FIXTURE_TEST_CASE(DataFlow, ConfigurationTestFixture)
   BOOST_REQUIRE_EQUAL(info.tokens_received, 0);
 
   dfo->execute_command("start", "CONFIGURED", start_json);
+  send_init_token();
 
   std::this_thread::sleep_for(std::chrono::milliseconds(150));
 
@@ -243,15 +253,16 @@ BOOST_FIXTURE_TEST_CASE(SendTrigDecFailed, ConfigurationTestFixture)
   auto dfo = appfwk::make_module("DataFlowOrchestrator", "test");
   dfo->init(json);
 
-  auto conf_json = "{\"dataflow_applications\": [ { \"thresholds\": { \"free\": 1, \"busy\": 2 }, "
-                   "\"connection_uid\": \"test.invalid_connection\" } ], "
-                   "\"general_queue_timeout\": 100, \"td_send_retries\": 5 }"_json;
+  auto conf_json = "{\"thresholds\": { \"free\": 1, \"busy\": 2 }, "
+                   "\"general_queue_timeout\": 100, \"td_send_retries\": 5}"_json;
   auto start_json = "{\"run\": 1}"_json;
   auto null_json = "{}"_json;
 
   dfo->execute_command("conf", "INITIAL", conf_json);
 
   dfo->execute_command("start", "CONFIGURED", start_json);
+
+  send_init_token("test.invalid_connection");
 
   std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
