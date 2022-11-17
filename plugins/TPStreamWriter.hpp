@@ -61,7 +61,6 @@ private:
   size_t m_accumulation_interval_ticks;
   daqdataformats::run_number_t m_run_number;
   uint32_t m_source_id; // NOLINT(build/unsigned)
-  bool m_fw_tpg_enabled;
 
   // Queue sources and sinks
   using incoming_t = trigger::TPSet;
