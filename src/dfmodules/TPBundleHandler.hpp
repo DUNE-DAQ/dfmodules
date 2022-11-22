@@ -34,6 +34,12 @@ ERS_DECLARE_ISSUE(dfmodules,
                     << ", TSAccumulator begin and end times:" << window_begin_time << ", " << window_end_time,
                   ((daqdataformats::timestamp_t)tpset_start_time)((daqdataformats::timestamp_t)tpset_end_time)(
                     (daqdataformats::timestamp_t)window_begin_time)((daqdataformats::timestamp_t)window_end_time))
+ERS_DECLARE_ISSUE(dfmodules,
+                  DuplicateTPWindow,
+                  "Cannot add TPSet with sourceid="
+                    << tpset_source_id << ", start_time=" << tpset_start_time
+                    << " to bundle, because another TPSet with these values already exists",
+                  ((size_t)tpset_source_id)((daqdataformats::timestamp_t)tpset_start_time))
 // Re-enable coverage checking LCOV_EXCL_STOP
 
 namespace dfmodules {
@@ -54,7 +60,8 @@ public:
     , m_run_number(run_number)
     , m_fw_tpg_enabled(firmware_tpg_enabled)
     , m_update_time(std::chrono::steady_clock::now())
-  {}
+  {
+  }
 
   TimeSliceAccumulator& operator=(const TimeSliceAccumulator& other)
   {
@@ -108,7 +115,8 @@ public:
     , m_cooling_off_time(cooling_off_time)
     , m_fw_tpg_enabled(firmware_tpg_enabled)
     , m_slice_index_offset(0)
-  {}
+  {
+  }
 
   TPBundleHandler(TPBundleHandler const&) = delete;
   TPBundleHandler(TPBundleHandler&&) = delete;
