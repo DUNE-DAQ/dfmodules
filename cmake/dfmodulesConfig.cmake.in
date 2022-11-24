@@ -20,6 +20,12 @@ find_dependency(serialization)
 find_dependency(readoutlibs)
 find_dependency(hdf5libs)
 find_dependency(Boost COMPONENTS iostreams)
+find_dependency(HighFive)
+find_dependency(daqdataformats)
+find_dependency(detchannelmaps)
+find_dependency(nlohmann_json)
+find_dependency(cetlib)
+find_dependency(daqconf)
 
 
 # Figure out whether or not this dependency is an installed package or
