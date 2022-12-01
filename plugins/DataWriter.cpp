@@ -35,6 +35,7 @@ enum
   TLVL_ENTER_EXIT_METHODS = 5,
   TLVL_CONFIG = 7,
   TLVL_WORK_STEPS = 10,
+  TLVL_RECEIVE_TR = 15,
   TLVL_SEQNO_MAP_CONTENTS = 13,
   TLVL_FRAGMENT_HEADER_DUMP = 17
 };
@@ -59,11 +60,10 @@ DataWriter::init(const data_t& init_data)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
   auto iom = iomanager::IOManager::get();
-  auto qi = appfwk::connection_index(init_data, { "trigger_record_input", "token_output" });
+  auto qi = appfwk::connection_index(init_data, { "trigger_record_input"});//, "token_output" });
   m_trigger_record_connection = qi["trigger_record_input"] ;
   // try to create the receiver to see test the connection anyway
   m_tr_receiver = iom -> get_receiver<std::unique_ptr<daqdataformats::TriggerRecord>>(m_trigger_record_connection);
-
   m_token_output = iom-> get_sender<dfmessages::TriggerDecisionToken>(qi["token_output"]);
   
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
@@ -317,6 +317,8 @@ DataWriter::do_work(std::atomic<bool>& running_flag) {
 	  try {
 		std::unique_ptr<daqdataformats::TriggerRecord> tr = m_tr_receiver-> receive(std::chrono::milliseconds(10));   
                 receive_trigger_record(tr);
+    TLOG_DEBUG(TLVL_RECEIVE_TR) << "Received a new TR";
+
 	  }
 	  catch(const iomanager::TimeoutExpired& excpt) {
 	  }

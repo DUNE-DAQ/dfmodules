@@ -49,8 +49,8 @@ void do_stop(const nlohmann::json& obj);
 dunedaq::utilities::WorkerThread thread_;
 void do_work(std::atomic<bool>&);
 
-std::chrono::milliseconds queueTimeout_;
-std::shared_ptr<iomanager::ReceiverConcept<std::unique_ptr<daqdataformats::TriggerRecord>>> m_receiver;
+//std::chrono::milliseconds queueTimeout_;
+//std::shared_ptr<iomanager::ReceiverConcept<std::unique_ptr<daqdataformats::TriggerRecord>>> m_receiver;
 
 // Statistic counters
 std::atomic<int64_t> receivedCount {0};

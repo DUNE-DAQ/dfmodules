@@ -49,7 +49,6 @@ daq_add_library( TriggerDecisionForwarder.cpp TriggerInhibitAgent.cpp TriggerRec
 
 daq_add_plugin( HDF5DataStore      duneDataStore LINK_LIBRARIES logging::logging daqdataformats::daqdataformats hdf5libs::hdf5libs appfwk::appfwk stdc++fs)
 
-daq_add_plugin( DataWriter            duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager )
 daq_add_plugin( DataFlowOrchestrator  duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager )
 daq_add_plugin( TriggerRecordBuilder  duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager )
 daq_add_plugin( FakeDataProd          duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager)
@@ -57,8 +56,8 @@ daq_add_plugin( RequestReceiver       duneDAQModule LINK_LIBRARIES dfmodules iom
 daq_add_plugin( FragmentReceiver      duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager)
 daq_add_plugin( TriggerDecisionReceiver duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager)
 daq_add_plugin( TPStreamWriter        duneDAQModule LINK_LIBRARIES dfmodules hdf5libs::hdf5libs trigger::trigger serialization::serialization readoutlibs::readoutlibs Boost::iostreams )
-daq_add_plugin( TrSender duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager) 
-daq_add_plugin( Receiver duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager) 
+daq_add_plugin( TrSender duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager hdf5libs::hdf5libs) 
+daq_add_plugin( DataWriter            duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager )
 
 ##############################################################################
 daq_add_unit_test( HDF5FileUtils_test       LINK_LIBRARIES dfmodules )

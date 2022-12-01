@@ -19,6 +19,9 @@
 #include "detdataformats/DetID.hpp"
 #include "CommonIssues.hpp"
 
+#include "dfmessages/TriggerDecision.hpp"
+
+
 #include "dfmodules/trsender/Nljs.hpp"
 #include "dfmodules/trsenderinfo/InfoNljs.hpp"
 
@@ -44,7 +47,9 @@ namespace dunedaq::dfmodules {
 TrSender::TrSender(const std::string& name)
   : dunedaq::appfwk::DAQModule(name)
   , thread_(std::bind(&TrSender::do_work, this, std::placeholders::_1))
+  , rcthread_(std::bind(&TrSender::do_receive, this, std::placeholders::_1))
   , m_sender()
+  , inputQueue_(nullptr)
   , queueTimeout_(100)
 {
   register_command("conf", &TrSender::do_conf, std::set<std::string>{ "INITIAL" });
@@ -58,14 +63,11 @@ void
 TrSender::init(const data_t& /* structured args */ init_data)
 {
 TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS)  << get_name() << ": Entering init() method";
-auto ci = appfwk::connection_index(init_data, { "trigger_record_output" });
- try {
-    m_sender = get_iom_sender<std::unique_ptr<daqdataformats::TriggerRecord>>(ci["trigger_record_output"]);
-  } catch (const ers::Issue& excpt) {
-    throw dunedaq::dfmodule::InvalidQueueFatalError(ERS_HERE, get_name(), "trigger_record_output", excpt);
-  }
+auto iom = iomanager::IOManager::get();
+auto ci = appfwk::connection_index(init_data, { "trigger_record_output", "token_input" });
+    m_sender = iom -> get_sender<std::unique_ptr<daqdataformats::TriggerRecord>>(ci["trigger_record_output"]);
+    inputQueue_ =  iom -> get_receiver<dfmessages::TriggerDecisionToken>(ci["token_input"]);
 TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
-
 }
 
 void
@@ -207,6 +209,7 @@ TrSender::do_work(std::atomic<bool>& running_flag)
     TLOG_DEBUG(TVLV_TRIGGER_RECORD) << get_name() << ": Start of sleep between sends";
     std::this_thread::sleep_for(std::chrono::milliseconds(cfg_.waitBetweenSends));
     TLOG_DEBUG(TVLV_TRIGGER_RECORD) << get_name() << ": End of do_work loop";
+
   
   }
   std::ostringstream oss_summ;
@@ -228,6 +231,24 @@ TrSender::get_info(opmonlib::InfoCollector& ci, int /* level */)
   ci.add(info);
 }
 
+
+void
+TrSender::do_receive(std::atomic<bool>& running_flag)
+{
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() method";
+    bool tokenWasSuccessfullyReceived = false;
+    while (!tokenWasSuccessfullyReceived && running_flag.load()) {
+      try {
+        dfmessages::TriggerDecisionToken token;
+        token = inputQueue_->receive(queueTimeout_);
+        tokenWasSuccessfullyReceived = true;
+std::ostringstream oss_progr;
+oss_progr << "The token has been received.";
+ers::info(ProgressUpdate(ERS_HERE, "TrSender", oss_progr.str()));
+      } catch (const dunedaq::iomanager::TimeoutExpired& excpt) {
+       continue;
+      }}
+}
 } // namespace dunedaq::dfmodules
 
 DEFINE_DUNE_DAQ_MODULE(dunedaq::dfmodules::TrSender)

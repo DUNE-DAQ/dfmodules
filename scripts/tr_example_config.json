@@ -10,13 +10,18 @@
   },
 
   "dfmodules": {
-    "run_number": 1234,
-    "trigger_count": 100,
-    "data_size": 10000,
-    "stype_to_use": "Detector_Readout",
-    "dtype_to_use": "HD_TPC",
-    "ftype_to_use": "WIB",
-    "element_count": 10,
-    "wait_ms": 5
+    "w_run_number": 13,
+    "w_trigger_count": 100,
+    "w_data_size": 10000,
+    "w_stype_to_use": "Detector_Readout",
+    "w_dtype_to_use": "HD_TPC",
+    "w_ftype_to_use": "WIB",
+    "w_element_count": 10,
+    "w_wait_ms": 5,
+    "w_data_storage_prescale": 1,
+    "w_min_write_retry_time_usec": 1000,
+    "w_max_write_retry_time_usec": 1000000,
+    "w_write_retry_time_increase_factor": 2,
+    "w_decision_connection": "Name"
 }
 }

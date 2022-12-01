@@ -8,6 +8,9 @@ The DAQModules in this repository are the following:
    * It also receives the data fragments from the Readout subsystem and builds them together into complete TriggerRecords (TRs).  
 * DataWriter
    * This module stores the TriggerRecords in a configurable format.  Initially, the storage format is HDF5 files on disk, and additional storage options may be added later.   
+* TrSender
+   * This module creates the TriggerRecord according to configuration and sends it to the Receiver module queue. 
+ 
 
 This repository also currently contains the definition of the DataStore interface and an initial implementation of that interface for HDF5 files on disk (HDF5DataStore).  
 

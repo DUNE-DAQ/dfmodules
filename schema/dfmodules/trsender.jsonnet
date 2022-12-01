@@ -14,7 +14,7 @@ local types = {
     string:   s.string(  "String",   		   doc="A string"),   
   
     conf: s.record("Conf", [
-                           s.field("runNumber", self.count, 1234,
+                           s.field("runNumber", self.count, 13,
                                            doc="Run number"),                                           
                            s.field("triggerCount", self.count, 1,
                                            doc="Number of the trigger record"),

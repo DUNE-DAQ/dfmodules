@@ -34,8 +34,8 @@ namespace dunedaq::dfmodules {
 Receiver::Receiver(const std::string& name)
   : dunedaq::appfwk::DAQModule(name)
 , thread_(std::bind(&Receiver::do_work, this, std::placeholders::_1))
-, m_receiver(nullptr)
-, queueTimeout_(100)
+//, m_receiver(nullptr)
+//, queueTimeout_(100)
 {
   register_command("start", &Receiver::do_start);
   register_command("stop", &Receiver::do_stop);
@@ -46,12 +46,12 @@ Receiver::init(const data_t& /* structured args */ iniobj)
 {
 TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
 auto ci = appfwk::connection_index(iniobj, { "trigger_record_input" });
- try {
+/* try {
     m_receiver = get_iom_receiver<std::unique_ptr<daqdataformats::TriggerRecord>>(ci["trigger_record_input"]);
   } catch (const ers::Issue& excpt) {
     throw dunedaq::dfmodule::InvalidQueueFatalError(ERS_HERE, get_name(), "trigger_record_input", excpt);
   }
-TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
+*/TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
 
 void
@@ -75,7 +75,7 @@ Receiver::do_stop(const nlohmann::json& /*args*/)
 void
 Receiver::do_work(std::atomic<bool>& running_flag)
 {
-  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() method";
+/*  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() method";
   int receivedCount = 0;
   std::unique_ptr<daqdataformats::TriggerRecord> element{ nullptr };
   while (running_flag.load()) {
@@ -103,7 +103,7 @@ TLOG_DEBUG(TLVL_QUEUE) << get_name() << ": Received trigger record pointer" << e
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_work() method";
 
-}
+*/}
 
 void
 Receiver::get_info(opmonlib::InfoCollector& ci, int /* level */)

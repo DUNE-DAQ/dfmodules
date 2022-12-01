@@ -13,7 +13,8 @@
 
 #include "appfwk/DAQModule.hpp"
 #include "iomanager/Sender.hpp"
-#include "iomanager/ConnectionId.hpp"
+#include "iomanager/Receiver.hpp" 
+//#include "iomanager/ConnectionId.hpp"
 #include "ers/Issue.hpp"
 #include "utilities/WorkerThread.hpp"
 #include "dfmodules/trsender/Structs.hpp"
@@ -22,6 +23,8 @@
 #include "daqdataformats/TimeSlice.hpp"
 #include "daqdataformats/TriggerRecord.hpp"
 #include "detdataformats/DetID.hpp"
+#include "dfmessages/TriggerDecisionToken.hpp"
+
 
 #include <atomic>
 #include <memory>
@@ -66,6 +69,9 @@ private:
 dunedaq::utilities::WorkerThread thread_;
 void do_work(std::atomic<bool>&);
 
+dunedaq::utilities::WorkerThread rcthread_;
+void do_receive(std::atomic<bool>&);
+
 
 //Configuration
 int runNumber;
@@ -81,6 +87,9 @@ int waitBetweenSends;
 
 std::chrono::milliseconds queueTimeout_;
 std::shared_ptr<iomanager::SenderConcept<std::unique_ptr<daqdataformats::TriggerRecord>>> m_sender;
+std::shared_ptr<iomanager::ReceiverConcept<dfmessages::TriggerDecisionToken>> inputQueue_;
+
+
 trsender::Conf cfg_;
 
 // Statistic counters
