@@ -69,6 +69,9 @@ TimeSliceAccumulator::add_tpset(trigger::TPSet&& tpset)
   }
 
   // store the TPSet in the map
+  if (m_tpbundles_by_sourceid_and_start_time[tpset.origin].count(tpset.start_time)) {
+    ers::warning(DuplicateTPWindow(ERS_HERE, tpset.origin.id, tpset.start_time));
+  }
   m_tpbundles_by_sourceid_and_start_time[tpset.origin].emplace(tpset.start_time, std::move(tpset));
   m_update_time = std::chrono::steady_clock::now();
 }

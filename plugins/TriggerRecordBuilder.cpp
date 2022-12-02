@@ -11,9 +11,9 @@
 
 #include "appfwk/DAQModuleHelper.hpp"
 #include "appfwk/app/Nljs.hpp"
+#include "dfmessages/TriggerRecord_serialization.hpp"
 #include "dfmodules/triggerrecordbuilder/Nljs.hpp"
 #include "dfmodules/triggerrecordbuilder/Structs.hpp"
-#include "dfmessages/TriggerRecord_serialization.hpp"
 #include "logging/Logging.hpp"
 
 #include "iomanager/IOManager.hpp"
@@ -72,8 +72,9 @@ TriggerRecordBuilder::init(const data_t& init_data)
   auto ci = appfwk::connection_index(init_data, { "trigger_decision_input", "trigger_record_output" });
 
   auto iom = iomanager::IOManager::get();
-  m_trigger_decision_input = iom->get_receiver<dfmessages::TriggerDecision>( ci["trigger_decision_input"] );
-  m_trigger_record_output  = iom->get_sender<std::unique_ptr<daqdataformats::TriggerRecord>>( ci["trigger_record_output"] );
+  m_trigger_decision_input = iom->get_receiver<dfmessages::TriggerDecision>(ci["trigger_decision_input"]);
+  m_trigger_record_output =
+    iom->get_sender<std::unique_ptr<daqdataformats::TriggerRecord>>(ci["trigger_record_output"]);
 
   //----------------------
   // Get dynamic queues
@@ -82,7 +83,6 @@ TriggerRecordBuilder::init(const data_t& init_data)
   // set names for the fragment connections
   auto ini = init_data.get<appfwk::app::ModInit>();
 
-
   // get the names for the fragment connections
   // there is an optional connection, which is the connection to DQM
   // Since it's optional, we need to loop over all the connections
@@ -90,13 +90,12 @@ TriggerRecordBuilder::init(const data_t& init_data)
 
   for (const auto& ref : ini.conn_refs) {
     if (ref.name.rfind("data_fragment_") == 0) {
-      m_fragment_inputs.push_back(iom->get_receiver<std::unique_ptr<daqdataformats::Fragment>>( ref ) );
-    }
-    else if ( ref.name == "mon_connection" ) {
-      m_mon_receiver = iom->get_receiver<dfmessages::TRMonRequest>( ref );
+      m_fragment_inputs.push_back(iom->get_receiver<std::unique_ptr<daqdataformats::Fragment>>(ref.uid));
+    } else if (ref.name == "mon_connection") {
+      m_mon_receiver = iom->get_receiver<dfmessages::TRMonRequest>(ref.uid);
     }
   }
-      
+
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
 
@@ -144,31 +143,9 @@ TriggerRecordBuilder::do_conf(const data_t& payload)
 
   triggerrecordbuilder::ConfParams parsed_conf = payload.get<triggerrecordbuilder::ConfParams>();
 
-  auto iom = iomanager::IOManager::get();
-
-  for (auto const& entry : parsed_conf.map) {
-
-    daqdataformats::SourceID::Subsystem type = daqdataformats::SourceID::string_to_subsystem(entry.system);
-
-    if (type == daqdataformats::SourceID::Subsystem::kUnknown) {
-      throw InvalidSystemType(ERS_HERE, entry.system);
-    }
-
-    daqdataformats::SourceID key;
-    key.subsystem = type;
-    key.id = entry.source_id;
-    m_map_sourceid_connections[key] = iom->get_sender<dfmessages::DataRequest> ( entry.connection_uid ) ;
-  }
-
   m_trigger_timeout = duration_type(parsed_conf.trigger_record_timeout_ms);
 
   m_loop_sleep = m_queue_timeout = std::chrono::milliseconds(parsed_conf.general_queue_timeout);
-
-  if (m_map_sourceid_connections.size() > 1) {
-    m_loop_sleep /= (2. + log2(m_map_sourceid_connections.size()));
-    if (m_loop_sleep.count() == 0)
-      m_loop_sleep = m_queue_timeout = std::chrono::milliseconds(parsed_conf.general_queue_timeout);
-  }
 
   TLOG() << get_name() << ": timeouts (ms): queue = " << m_queue_timeout.count() << ", loop = " << m_loop_sleep.count();
   m_max_time_window = parsed_conf.max_time_window;
@@ -202,7 +179,7 @@ TriggerRecordBuilder::do_start(const data_t& args)
   // Register the callback to receive monitoring requests
   if (m_mon_receiver) {
     m_mon_requests.clear();
-    m_mon_receiver->add_callback( std::bind(&TriggerRecordBuilder::tr_requested, this, std::placeholders::_1) );
+    m_mon_receiver->add_callback(std::bind(&TriggerRecordBuilder::tr_requested, this, std::placeholders::_1));
   }
 
   m_thread.start_working_thread(get_name());
@@ -226,14 +203,14 @@ TriggerRecordBuilder::do_stop(const data_t& /*args*/)
 }
 
 void
-TriggerRecordBuilder::tr_requested(const dfmessages::TRMonRequest & req) 
+TriggerRecordBuilder::tr_requested(const dfmessages::TRMonRequest& req)
 {
   ++m_trmon_request_counter;
 
   // Ignore requests that don't belong to the ongoing run
   if (req.run_number != *m_run_number)
     return;
-  
+
   // Add requests to pending requests
   // To be done: choose a concurrent container implementation.
   const std::lock_guard<std::mutex> lock(m_mon_mutex);
@@ -266,8 +243,7 @@ TriggerRecordBuilder::do_work(std::atomic<bool>& running_flag)
     bool book_updates = false;
 
     // read decision requests
-    book_updates = read_and_process_trigger_decision(iomanager::Receiver::s_no_block,
-						     running_flag);
+    book_updates = read_and_process_trigger_decision(iomanager::Receiver::s_no_block, running_flag);
 
     // read the fragments queues
     bool new_fragments = read_fragments();
@@ -372,42 +348,43 @@ TriggerRecordBuilder::read_fragments()
   //--------------------------------------------------
 
   for (unsigned int j = 0; j < m_fragment_inputs.size(); ++j) {
-    
+
     std::optional<std::unique_ptr<daqdataformats::Fragment>> temp_fragment;
-    
+
     try {
-      temp_fragment = m_fragment_inputs[j] -> try_receive( iomanager::Receiver::s_no_block );
-    } catch ( const ers::Issue & e)  {
+      temp_fragment = m_fragment_inputs[j]->try_receive(iomanager::Receiver::s_no_block);
+    } catch (const ers::Issue& e) {
       ers::error(e);
-      continue ;
+      continue;
     }
 
-    if ( ! temp_fragment ) continue ;
-    
+    if (!temp_fragment)
+      continue;
+
     new_fragments = true;
     TLOG_DEBUG(TLVL_FRAGMENT_RECEIVE) << get_name() << " Received fragment for trigger/sequence_number "
                                       << temp_fragment.value()->get_trigger_number() << "."
-                                      << temp_fragment.value()->get_sequence_number()
-                                      << " from " << temp_fragment.value()->get_element_id();
-    
+                                      << temp_fragment.value()->get_sequence_number() << " from "
+                                      << temp_fragment.value()->get_element_id();
+
     TriggerId temp_id(*temp_fragment.value());
     bool requested = false;
-    
+
     auto it = m_trigger_records.find(temp_id);
-    
+
     if (it != m_trigger_records.end()) {
-      
+
       // check if the fragment has a Source Id that was desired
       daqdataformats::TriggerRecordHeader& header = it->second.second->get_header_ref();
-      
+
       for (size_t i = 0; i < header.get_num_requested_components(); ++i) {
-	
-	const daqdataformats::ComponentRequest& request = header[i];
-	if (request.component == temp_fragment.value()->get_element_id()) {
-	  requested = true;
-	  break;
-	}
-	
+
+        const daqdataformats::ComponentRequest& request = header[i];
+        if (request.component == temp_fragment.value()->get_element_id()) {
+          requested = true;
+          break;
+        }
+
       } // request loop
 
     } // if there is a corresponding trigger ID entry in the boook
@@ -418,43 +395,43 @@ TriggerRecordBuilder::read_fragments()
       --m_pending_fragment_counter;
     } else {
       ers::error(UnexpectedFragment(
-				    ERS_HERE, temp_id, temp_fragment.value()->get_fragment_type_code(), temp_fragment.value()->get_element_id()));
+        ERS_HERE, temp_id, temp_fragment.value()->get_fragment_type_code(), temp_fragment.value()->get_element_id()));
       ++m_unexpected_fragments;
     }
-    
+
   } // queue loop
-  
+
   return new_fragments;
-  
 }
 
 bool
 TriggerRecordBuilder::read_and_process_trigger_decision(iomanager::Receiver::timeout_t timeout,
-							std::atomic<bool>& running)
+                                                        std::atomic<bool>& running)
 {
-  
+
   std::optional<dfmessages::TriggerDecision> temp_dec;
 
   try {
     // get the trigger decision
-    temp_dec = m_trigger_decision_input -> try_receive(timeout);
+    temp_dec = m_trigger_decision_input->try_receive(timeout);
 
-  } catch (const ers::Issue & ex) {
-    ers::error(ex) ;
+  } catch (const ers::Issue& ex) {
+    ers::error(ex);
   }
 
-  if ( ! temp_dec ) return false ;
-  
+  if (!temp_dec)
+    return false;
+
   if (temp_dec->run_number != *m_run_number) {
     ers::error(UnexpectedTriggerDecision(ERS_HERE, temp_dec->trigger_number, temp_dec->run_number, *m_run_number));
     ++m_unexpected_trigger_decisions;
     return false;
   }
-  
+
   ++m_received_trigger_decisions;
 
   bool book_updates = create_trigger_records_and_dispatch(*temp_dec, running) > 0;
-  
+
   return book_updates;
 }
 
@@ -608,36 +585,58 @@ TriggerRecordBuilder::create_trigger_records_and_dispatch(const dfmessages::Trig
 bool
 TriggerRecordBuilder::dispatch_data_requests(dfmessages::DataRequest dr,
                                              const daqdataformats::SourceID& sid,
-                                             std::atomic<bool>& running) const
+                                             std::atomic<bool>& running)
 
 {
 
   // find the queue for sourceid_req in the map
+  std::unique_lock<std::mutex> lk(m_map_sourceid_connections_mutex);
+  std::shared_ptr<data_req_sender_t> sender = nullptr;
   auto it_req = m_map_sourceid_connections.find(sid);
-  if (it_req == m_map_sourceid_connections.end()) {
+  if (it_req == m_map_sourceid_connections.end() || it_req->second == nullptr) {
+    try {
+      auto uid = "data_requests_for_" + sid.to_string();
+      sender = get_iom_sender<dfmessages::DataRequest>(uid);
+
+      m_map_sourceid_connections[sid] = sender;
+
+      m_loop_sleep = std::chrono::duration_cast<std::chrono::milliseconds>(
+        m_queue_timeout / (2. + log2(m_map_sourceid_connections.size())));
+      if (m_loop_sleep.count() == 0)
+        m_loop_sleep = m_queue_timeout;
+    } catch (ers::Issue const& iss) {
+      // if sourceid request is not valid. then trhow error and continue
+      ers::error(dunedaq::dfmodules::UnknownSourceID(ERS_HERE, sid, iss));
+      ++m_invalid_requests;
+      return false; // lk goes out of scope, is destroyed
+    }
+  } else {
+    // get the queue from map element
+    sender = it_req->second;
+  }
+  lk.unlock();
+
+  if (sender == nullptr) {
     // if sourceid request is not valid. then trhow error and continue
     ers::error(dunedaq::dfmodules::UnknownSourceID(ERS_HERE, sid));
     ++m_invalid_requests;
     return false;
   }
-  
-  // get the queue from map element
-  auto sender = it_req->second;
 
   bool wasSentSuccessfully = false;
   do {
     TLOG_DEBUG(TLVL_DISPATCH_DATAREQ) << get_name() << ": Pushing the DataRequest from trigger/sequence number "
                                       << dr.trigger_number << "." << dr.sequence_number
-                                << " onto connection :" << sender -> get_name();
+                                      << " onto connection :" << sender->get_name();
 
     // send data request into the corresponding connection
     try {
-      sender->send(std::move(dr), m_queue_timeout );
+      sender->send(std::move(dr), m_queue_timeout);
       wasSentSuccessfully = true;
       ++m_generated_data_requests;
     } catch (const ers::Issue& excpt) {
       std::ostringstream oss_warn;
-      oss_warn << "Send to connection \"" << sender -> get_name() << "\" failed";
+      oss_warn << "Send to connection \"" << sender->get_name() << "\" failed";
       ers::warning(iomanager::OperationFailed(ERS_HERE, oss_warn.str(), excpt));
     }
   } while (!wasSentSuccessfully && running.load());
@@ -659,46 +658,47 @@ TriggerRecordBuilder::send_trigger_record(const TriggerId& id, std::atomic<bool>
     while (it != m_mon_requests.end()) {
       // send TR to mon if correct trigger type
       if (it->trigger_type == temp_record->get_header_data().trigger_type) {
-	auto iom = iomanager::IOManager::get();
-	bool wasSentSuccessfully = false;
-	do {
-	  try {
-          // HACK to copy the trigger record so we can send it off to monitoring
-          auto trigger_record_bytes = serialization::serialize(temp_record, serialization::SerializationType::kMsgPack);
-          trigger_record_ptr_t record_copy = serialization::deserialize<trigger_record_ptr_t>(trigger_record_bytes);
-	    iom->get_sender<trigger_record_ptr_t>( it->data_destination )->send(std::move(record_copy), m_queue_timeout);
-	    ++m_trmon_sent_counter;
-	    wasSentSuccessfully = true;
-	  } catch (const ers::Issue& excpt) {
-	    std::ostringstream oss_warn;
-	    oss_warn << "Sending TR to connection \"" << it->data_destination << "\" failed";
-	    ers::warning(iomanager::OperationFailed(ERS_HERE, oss_warn.str(), excpt));
-	  }
-	} while ( running.load() && !wasSentSuccessfully ) ;
+        auto iom = iomanager::IOManager::get();
+        bool wasSentSuccessfully = false;
+        do {
+          try {
+            // HACK to copy the trigger record so we can send it off to monitoring
+            auto trigger_record_bytes =
+              serialization::serialize(temp_record, serialization::SerializationType::kMsgPack);
+            trigger_record_ptr_t record_copy = serialization::deserialize<trigger_record_ptr_t>(trigger_record_bytes);
+            iom->get_sender<trigger_record_ptr_t>(it->data_destination)->send(std::move(record_copy), m_queue_timeout);
+            ++m_trmon_sent_counter;
+            wasSentSuccessfully = true;
+          } catch (const ers::Issue& excpt) {
+            std::ostringstream oss_warn;
+            oss_warn << "Sending TR to connection \"" << it->data_destination << "\" failed";
+            ers::warning(iomanager::OperationFailed(ERS_HERE, oss_warn.str(), excpt));
+          }
+        } while (running.load() && !wasSentSuccessfully);
         it = m_mon_requests.erase(it);
       } else {
         ++it;
       }
     }
-  }  // if m_mon_receiver
-  
+  } // if m_mon_receiver
+
   bool wasSentSuccessfully = false;
   do {
     try {
-      m_trigger_record_output->send( std::move(temp_record), m_queue_timeout);
+      m_trigger_record_output->send(std::move(temp_record), m_queue_timeout);
       wasSentSuccessfully = true;
       ++m_generated_trigger_records;
     } catch (const ers::Issue& excpt) {
-      ers::warning( excpt );
+      ers::warning(excpt);
     }
-  } while ( running.load() && !wasSentSuccessfully ) ; // push while loop
-  
+  } while (running.load() && !wasSentSuccessfully); // push while loop
+
   if (!wasSentSuccessfully) {
     ++m_abandoned_trigger_records;
     m_lost_fragments += temp_record->get_fragments_ref().size();
     ers::error(dunedaq::dfmodules::AbandonedTriggerDecision(ERS_HERE, id));
   }
-  
+
   return wasSentSuccessfully;
 }
 
@@ -715,24 +715,24 @@ TriggerRecordBuilder::check_stale_requests(std::atomic<bool>& running)
   if (m_trigger_timeout.count() > 0) {
 
     std::vector<TriggerId> stale_triggers;
-    
+
     for (auto it = m_trigger_records.begin(); it != m_trigger_records.end(); ++it) {
 
       daqdataformats::TriggerRecord& tr = *it->second.second;
-      
+
       auto tr_time = clock_type::now() - it->second.first;
-      
+
       if (tr_time > m_trigger_timeout) {
-	
+
         ers::error(TimedOutTriggerDecision(ERS_HERE, it->first, tr.get_header_ref().get_trigger_timestamp()));
-	
+
         // mark trigger record for seding
         stale_triggers.push_back(it->first);
         ++m_timed_out_trigger_records;
-	
+
         book_updates = true;
       }
-      
+
     } // trigger record loop
 
     // create the trigger record and send it

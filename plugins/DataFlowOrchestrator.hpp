@@ -19,7 +19,6 @@
 #include "dfmessages/TriggerDecisionToken.hpp"
 #include "dfmessages/TriggerInhibit.hpp"
 
-#include "iomanager/ConnectionId.hpp"
 #include "iomanager/Sender.hpp"
 
 #include "appfwk/DAQModule.hpp"
@@ -121,9 +120,11 @@ private:
 
   // Connections
   std::shared_ptr<iomanager::SenderConcept<dfmessages::TriggerInhibit>> m_busy_sender;
-  iomanager::connection::ConnectionRef m_token_connection;
-  iomanager::connection::ConnectionRef m_td_connection;
+  std::string m_token_connection;
+  std::string m_td_connection;
   size_t m_td_send_retries;
+  size_t m_busy_threshold;
+  size_t m_free_threshold;
 
   // Coordination
   std::atomic<bool> m_running_status{ false };

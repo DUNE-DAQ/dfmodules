@@ -59,8 +59,8 @@ FakeDataProd::init(const data_t& init_data)
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
   auto qi = appfwk::connection_index(init_data, { "data_request_input_queue", "timesync_output" });
 
-  m_data_request_ref = qi["data_request_input_queue"];
-  m_timesync_ref = qi["timesync_output"];
+  m_data_request_id = qi["data_request_input_queue"];
+  m_timesync_id = qi["timesync_output"];
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
@@ -77,7 +77,6 @@ FakeDataProd::do_conf(const data_t& payload)
   m_frame_size = tmpConfig.frame_size;
   m_response_delay = tmpConfig.response_delay;
   m_fragment_type = daqdataformats::string_to_fragment_type(tmpConfig.fragment_type);
-  m_timesync_topic_name = tmpConfig.timesync_topic_name;
 
   TLOG_DEBUG(TLVL_CONFIG) << get_name() << ": configured for link number " << m_sourceid.id;
 
@@ -96,7 +95,7 @@ FakeDataProd::do_start(const data_t& payload)
 
   auto iom = iomanager::IOManager::get();
   iom->add_callback<dfmessages::DataRequest>(
-    m_data_request_ref, std::bind(&FakeDataProd::process_data_request, this, std::placeholders::_1));
+    m_data_request_id, std::bind(&FakeDataProd::process_data_request, this, std::placeholders::_1));
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
 }
 
@@ -107,7 +106,7 @@ FakeDataProd::do_stop(const data_t& /*args*/)
   m_timesync_thread.stop_working_thread();
 
   auto iom = iomanager::IOManager::get();
-  iom->remove_callback<dfmessages::DataRequest>(m_data_request_ref);
+  iom->remove_callback<dfmessages::DataRequest>(m_data_request_id);
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_stop() method";
 }
 
@@ -125,7 +124,7 @@ FakeDataProd::do_timesync(std::atomic<bool>& running_flag)
 {
 
   auto iom = iomanager::IOManager::get();
-  auto sender_ptr = iom->get_sender<dfmessages::TimeSync>(m_timesync_ref);
+  auto sender_ptr = iom->get_sender<dfmessages::TimeSync>(m_timesync_id);
 
   int sent_count = 0;
   uint64_t msg_seqno = 0; // NOLINT (build/unsigned)
@@ -142,10 +141,10 @@ FakeDataProd::do_timesync(std::atomic<bool>& running_flag)
                                 << " run=" << timesyncmsg.run_number << " seqno=" << timesyncmsg.sequence_number
                                 << " pid=" << timesyncmsg.source_pid;
     try {
-      sender_ptr->send(std::move(timesyncmsg), std::chrono::milliseconds(500), m_timesync_topic_name);
+      sender_ptr->send(std::move(timesyncmsg), std::chrono::milliseconds(500));
       ++sent_count;
     } catch (ers::Issue& excpt) {
-      ers::warning(TimeSyncTransmissionFailed(ERS_HERE, get_name(), m_timesync_ref.uid, excpt));
+      ers::warning(TimeSyncTransmissionFailed(ERS_HERE, get_name(), m_timesync_id, excpt));
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }

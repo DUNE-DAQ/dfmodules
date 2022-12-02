@@ -24,7 +24,7 @@ daq_codegen( *.jsonnet DEP_PKGS hdf5libs TEMPLATES Structs.hpp.j2 Nljs.hpp.j2 )
 daq_codegen( info/*.jsonnet DEP_PKGS opmonlib TEMPLATES opmonlib/InfoStructs.hpp.j2 opmonlib/InfoNljs.hpp.j2 )
 
 ##############################################################################
-daq_add_library( TriggerDecisionForwarder.cpp TriggerInhibitAgent.cpp TriggerRecordBuilderData.cpp TPBundleHandler.cpp
+daq_add_library( TriggerInhibitAgent.cpp TriggerRecordBuilderData.cpp TPBundleHandler.cpp
                  LINK_LIBRARIES 
                  opmonlib::opmonlib ers::ers HighFive appfwk::appfwk logging::logging stdc++fs dfmessages::dfmessages utilities::utilities trigger::trigger detdataformats::detdataformats)
 
@@ -34,9 +34,6 @@ daq_add_plugin( DataWriter            duneDAQModule LINK_LIBRARIES dfmodules iom
 daq_add_plugin( DataFlowOrchestrator  duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager )
 daq_add_plugin( TriggerRecordBuilder  duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager )
 daq_add_plugin( FakeDataProd          duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager)
-daq_add_plugin( RequestReceiver       duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager)
-daq_add_plugin( FragmentReceiver      duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager)
-daq_add_plugin( TriggerDecisionReceiver duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager)
 daq_add_plugin( TPStreamWriter        duneDAQModule LINK_LIBRARIES dfmodules hdf5libs::hdf5libs trigger::trigger serialization::serialization readoutlibs::readoutlibs Boost::iostreams )
 
 ##############################################################################

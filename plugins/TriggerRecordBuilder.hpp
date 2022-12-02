@@ -9,7 +9,6 @@
 #ifndef DFMODULES_PLUGINS_TRIGGERRECORDBUILDER_HPP_
 #define DFMODULES_PLUGINS_TRIGGERRECORDBUILDER_HPP_
 
-#include "dfmodules/TriggerDecisionForwarder.hpp"
 #include "dfmodules/triggerrecordbuilderinfo/InfoNljs.hpp"
 
 #include "daqdataformats/Fragment.hpp"
@@ -23,7 +22,6 @@
 
 #include "appfwk/DAQModule.hpp"
 #include "utilities/WorkerThread.hpp"
-#include "iomanager/ConnectionId.hpp"
 #include "iomanager/Sender.hpp"
 #include "iomanager/Receiver.hpp"
 
@@ -196,7 +194,7 @@ protected:
 
   bool dispatch_data_requests(dfmessages::DataRequest,
                               const daqdataformats::SourceID&,
-                              std::atomic<bool>& running) const;
+                              std::atomic<bool>& running);
 
   bool send_trigger_record(const TriggerId&, std::atomic<bool>& running);
   // this creates a trigger record and send it
@@ -230,6 +228,7 @@ private:
 
   // Output connections
   std::shared_ptr<trigger_record_sender_t> m_trigger_record_output;
+  mutable std::mutex m_map_sourceid_connections_mutex;
   std::map<daqdataformats::SourceID, std::shared_ptr<data_req_sender_t>> m_map_sourceid_connections; ///< Mappinng between SourceID and connections
 
   // bookeeping
