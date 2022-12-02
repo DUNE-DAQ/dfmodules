@@ -47,7 +47,7 @@ def get_sender_app(nickname, number_of_run = 13, number_of_trigger = 1, size_of_
                                directory_path = ".",
                                max_file_size_bytes = 4*1024*1024*1024,
                                disable_unique_filename_suffix = False,
-                               hardware_map_file="./HardwareMap.txt",
+                               hardware_map_file=f"/afs/cern.ch/user/e/eljelink/dunedaq-v3.2.0/sourcecode/dfmodules/scripts/HardwareMap.txt",
                                filename_parameters = hdf5ds.FileNameParams(
                                overall_prefix = "test",
                                digits_for_run_number = 6,

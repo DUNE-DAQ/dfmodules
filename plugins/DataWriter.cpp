@@ -30,6 +30,16 @@
  * @brief Name used by TRACE TLOG calls from this source file
  */
 //#define TRACE_NAME "DataWriter"                   // NOLINT This is the default
+#define TRACE_NAME "DataWriter" //NOLINT
+#define TLVL_ENTER_EXIT_METHODS 5
+#define TLVL_CONFIG 7
+#define TLVL_WORK_STEPS 10
+#define TLVL_RECEIVE_TR 15
+#define TLVL_WORK_STEPS 10
+#define TLVL_SEQNO_MAP_CONTENTS 13
+#define TLVL_FRAGMENT_HEADER_DUMP 17
+
+/*
 enum
 {
   TLVL_ENTER_EXIT_METHODS = 5,
@@ -39,6 +49,7 @@ enum
   TLVL_SEQNO_MAP_CONTENTS = 13,
   TLVL_FRAGMENT_HEADER_DUMP = 17
 };
+*/
 
 namespace dunedaq {
 namespace dfmodules {
@@ -232,7 +243,15 @@ DataWriter::receive_trigger_record(std::unique_ptr<daqdataformats::TriggerRecord
       do {
 	should_retry = false;
 	try {
+std::ostringstream oss_prog;
+oss_prog << "writing started";
+ers::warning(iomanager::OperationFailed(ERS_HERE, oss_prog.str()));
+TLOG_DEBUG(TLVL_WORK_STEPS) <<"Writing data.";
 	  m_data_writer->write(*trigger_record_ptr);
+std::ostringstream oss_progr;
+oss_progr << "writing stopped";
+ers::warning(iomanager::OperationFailed(ERS_HERE, oss_progr.str()));
+
 	  ++m_records_written;
 	  ++m_records_written_tot;
 	  m_bytes_output += trigger_record_ptr->get_total_size_bytes();
