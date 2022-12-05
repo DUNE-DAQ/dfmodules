@@ -9,6 +9,7 @@ local info = {
    counter  : s.number("int8", "i8", doc="An signed integer of 8 bytes"),
 
    info: s.record("Info", [
+       s.field("capacity", self.counter, 0, doc="High watermark used for evaluating business of a DF application"),
        s.field("outstanding_decisions", self.counter, 0, doc="Decisions currently in progress"),	 
        s.field("completed_trigger_records", self.counter, 0, doc="Number of completed TR"),
        s.field("min_completion_time", self.counter, 0, doc="Minimum time (us) for decision to complete"),

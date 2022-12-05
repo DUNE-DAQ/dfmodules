@@ -202,7 +202,9 @@ void
 TriggerRecordBuilderData::get_info(opmonlib::InfoCollector& ci, int /*level*/)
 {
   dfapplicationinfo::Info info;
-
+  // prediction rate metrics
+  info.capacity = m_busy_threshold.load();
+  
   // fill metrics for complete TDs
   info.completed_trigger_records = m_complete_counter.exchange(0);
   info.waiting_time = m_complete_microsecond.exchange(0);
