@@ -7,9 +7,10 @@ local s = moo.oschema.schema("dunedaq.dfmodules.dfapplicationinfo");
 
 local info = {
    counter  : s.number("int8", "i8", doc="An signed integer of 8 bytes"),
+   rate     : s.number("float8", "f8", doc="A signed float of 8 bytes"),
 
    info: s.record("Info", [
-       s.field("capacity", self.counter, 0, doc="High watermark used for evaluating business of a DF application"),
+       s.field("capacity_rate", self.rate, 0, doc="Estimated TR rate that the application can generate, in Hz"),
        s.field("outstanding_decisions", self.counter, 0, doc="Decisions currently in progress"),	 
        s.field("completed_trigger_records", self.counter, 0, doc="Number of completed TR"),
        s.field("min_completion_time", self.counter, 0, doc="Minimum time (us) for decision to complete"),

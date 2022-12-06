@@ -202,8 +202,6 @@ void
 TriggerRecordBuilderData::get_info(opmonlib::InfoCollector& ci, int /*level*/)
 {
   dfapplicationinfo::Info info;
-  // prediction rate metrics
-  info.capacity = m_busy_threshold.load();
   
   // fill metrics for complete TDs
   info.completed_trigger_records = m_complete_counter.exchange(0);
@@ -230,6 +228,13 @@ TriggerRecordBuilderData::get_info(opmonlib::InfoCollector& ci, int /*level*/)
       info.max_time_since_assignment = us_since_assignment.count();
   }
 
+  if ( info.completed_trigger_records > 0 ) {
+    m_last_average_time = 1e-6*info.waiting_time/info.completed_trigger_records ;
+  }
+  
+  // prediction rate metrics
+  info.capacity_rate = m_busy_threshold.load()/m_last_average_time;
+ 
   ci.add(info);
 }
 
