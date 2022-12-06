@@ -233,7 +233,7 @@ TriggerRecordBuilderData::get_info(opmonlib::InfoCollector& ci, int /*level*/)
   }
   
   // prediction rate metrics
-  info.capacity_rate = m_busy_threshold.load()/m_last_average_time;
+  info.capacity_rate = 0.5*(m_busy_threshold.load()+m_free_threshold.load())/m_last_average_time;
  
   ci.add(info);
 }
