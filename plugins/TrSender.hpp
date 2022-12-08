@@ -14,17 +14,14 @@
 #include "appfwk/DAQModule.hpp"
 #include "iomanager/Sender.hpp"
 #include "iomanager/Receiver.hpp" 
-//#include "iomanager/ConnectionId.hpp"
 #include "ers/Issue.hpp"
 #include "utilities/WorkerThread.hpp"
 #include "dfmodules/trsender/Structs.hpp"
-
 #include "daqdataformats/Fragment.hpp"
 #include "daqdataformats/TimeSlice.hpp"
 #include "daqdataformats/TriggerRecord.hpp"
 #include "detdataformats/DetID.hpp"
 #include "dfmessages/TriggerDecisionToken.hpp"
-
 
 #include <atomic>
 #include <memory>
@@ -58,44 +55,37 @@ public:
   ~TrSender() = default;
 
 private:
-//Commands
+  //Commands
   void do_conf(const nlohmann::json& obj);
   void do_start(const nlohmann::json& obj);
   void do_stop(const nlohmann::json& obj);
   void do_scrap(const nlohmann::json& obj);
 
+  //Threading
+  dunedaq::utilities::WorkerThread thread_;
+  void do_work(std::atomic<bool>&);
+  dunedaq::utilities::WorkerThread rcthread_;
+  void do_receive(std::atomic<bool>&);
 
-//Threading
-dunedaq::utilities::WorkerThread thread_;
-void do_work(std::atomic<bool>&);
+  //Configuration
+  daqdataformats::run_number_t runNumber;
+  int dataSize;
+  daqdataformats::SourceID::Subsystem stypeToUse;
+  detdataformats::DetID::Subdetector dtypeToUse;
+  daqdataformats::FragmentType ftypeToUse;
+  int elementCount;
+  int waitBetweenSends;
 
-dunedaq::utilities::WorkerThread rcthread_;
-void do_receive(std::atomic<bool>&);
+  std::chrono::milliseconds queueTimeout_;
+  std::shared_ptr<iomanager::SenderConcept<std::unique_ptr<daqdataformats::TriggerRecord>>> m_sender;
+  std::shared_ptr<iomanager::ReceiverConcept<dfmessages::TriggerDecisionToken>> inputQueue_;
+  trsender::Conf cfg_;
 
-
-//Configuration
-int runNumber;
-int triggerCount;
-int dataSize;
-daqdataformats::SourceID::Subsystem stypeToUse;
-detdataformats::DetID::Subdetector dtypeToUse;
-daqdataformats::FragmentType ftypeToUse;
-int elementCount;
-int waitBetweenSends;
-
-
-
-std::chrono::milliseconds queueTimeout_;
-std::shared_ptr<iomanager::SenderConcept<std::unique_ptr<daqdataformats::TriggerRecord>>> m_sender;
-std::shared_ptr<iomanager::ReceiverConcept<dfmessages::TriggerDecisionToken>> inputQueue_;
-
-
-trsender::Conf cfg_;
-
-// Statistic counters
-std::atomic<int64_t> receivedConfCount {0};
-std::atomic<int64_t> sentCount {0};
-std::atomic<int64_t> triggerRecordCount {0};
+  // Statistic counters
+  std::atomic<int64_t> sentCount = {0};
+  std::atomic<int64_t> triggerRecordCount = {0};
+  std::atomic<int64_t> receivedToken = {0};
+  std::atomic<int64_t> TrTokenRatio = {0};
 };
 
 } // namespace dfmodules

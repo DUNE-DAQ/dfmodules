@@ -13,9 +13,10 @@ local info = {
  //   string:   s.string(  "String",                 doc="A string"),   
 
     info: s.record("Info", [
-        s.field("configuration_file", self.uint8, 0, doc="Counting configuration files"),
         s.field("trigger_record", self.uint8, 0, doc="Counting sent trigger records"),
         s.field("tr_created", self.uint8, 0, doc="Counting created trigger records"),
+        s.field("receive_token", self.uint8, 0, doc="Counting received tokens"),
+        s.field("ratio", self.uint8, 0, doc="Counting received tokens"),
     ], doc="Trigger record sender information"),
 };
 

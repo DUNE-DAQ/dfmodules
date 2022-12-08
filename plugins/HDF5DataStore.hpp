@@ -425,6 +425,7 @@ private:
                                                           hw_map_svc,
                                                           ".writing",
                                                           open_flags));
+
       } catch (std::exception const& excpt) {
         throw FileOperationProblem(ERS_HERE, get_name(), unique_filename, excpt);
       } catch (...) { // NOLINT(runtime/exceptions)

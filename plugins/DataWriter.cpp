@@ -71,7 +71,7 @@ DataWriter::init(const data_t& init_data)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
   auto iom = iomanager::IOManager::get();
-  auto qi = appfwk::connection_index(init_data, { "trigger_record_input"});//, "token_output" });
+  auto qi = appfwk::connection_index(init_data, { "trigger_record_input", "token_output" });
   m_trigger_record_connection = qi["trigger_record_input"] ;
   // try to create the receiver to see test the connection anyway
   m_tr_receiver = iom -> get_receiver<std::unique_ptr<daqdataformats::TriggerRecord>>(m_trigger_record_connection);
@@ -164,6 +164,7 @@ DataWriter::do_start(const data_t& payload)
   m_records_written_tot = 0;
   m_bytes_output = 0;
   m_bytes_output_tot = 0;
+  m_tokens_sent = 0;
 
   m_running.store(true);
 
@@ -171,7 +172,7 @@ DataWriter::do_start(const data_t& payload)
   //iomanager::IOManager::get()->add_callback<std::unique_ptr<daqdataformats::TriggerRecord>>( m_trigger_record_connection,
   //											     bind( &DataWriter::receive_trigger_record, this, std::placeholders::_1) );
 
-  TLOG() << get_name() << " successfully started for run number " << m_run_number;
+  TLOG() << get_name() << ":  Successfully started for run number " << m_run_number;
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
 }
 
@@ -195,7 +196,7 @@ DataWriter::do_stop(const data_t& /*args*/)
     }
   }
 
-  TLOG() << get_name() << " successfully stopped for run number " << m_run_number;
+  TLOG() << get_name() << ": Successfully stopped for run number " << m_run_number;
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_stop() method";
 }
 
@@ -213,7 +214,7 @@ DataWriter::do_scrap(const data_t& /*payload*/)
 void
 DataWriter::receive_trigger_record(std::unique_ptr<daqdataformats::TriggerRecord> & trigger_record_ptr)
 {
-  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": receiving a new TR ptr";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Receiving a new TR ptr";
 
   ++m_records_received;
   ++m_records_received_tot;
@@ -243,17 +244,12 @@ DataWriter::receive_trigger_record(std::unique_ptr<daqdataformats::TriggerRecord
       do {
 	should_retry = false;
 	try {
-std::ostringstream oss_prog;
-oss_prog << "writing started";
-ers::warning(iomanager::OperationFailed(ERS_HERE, oss_prog.str()));
-TLOG_DEBUG(TLVL_WORK_STEPS) <<"Writing data.";
+TLOG() << get_name() << ": Writing started for trigger record number: " << m_records_received;
 	  m_data_writer->write(*trigger_record_ptr);
-std::ostringstream oss_progr;
-oss_progr << "writing stopped";
-ers::warning(iomanager::OperationFailed(ERS_HERE, oss_progr.str()));
-
+TLOG() << get_name() << ": Writing stopped for trigger record number: " << m_records_received;
 	  ++m_records_written;
 	  ++m_records_written_tot;
+TLOG() << get_name() << ": Number of written trigger records: " << m_records_written_tot;
 	  m_bytes_output += trigger_record_ptr->get_total_size_bytes();
 	  m_bytes_output_tot += trigger_record_ptr->get_total_size_bytes();
 	} catch (const RetryableDataStoreProblem& excpt) {
@@ -299,14 +295,14 @@ ers::warning(iomanager::OperationFailed(ERS_HERE, oss_progr.str()));
       // by putting this TLOG call in an "else" clause, we avoid resurrecting the "trigno"
       // entry in the map after erasing it above. In other words, if we move this TLOG outside
       // the "else" clause, the map will forever increase in size.
-      TLOG_DEBUG(TLVL_SEQNO_MAP_CONTENTS) << get_name() << ": the sequence number count for trigger number " << trigno
+      TLOG_DEBUG(TLVL_SEQNO_MAP_CONTENTS) << get_name() << ": The sequence number count for trigger number " << trigno
 					  << " is " << m_seqno_counts[trigno] << " (number of entries "
 					  << "in the seqno map is " << m_seqno_counts.size() << ").";
     }
   }
   if (send_trigger_complete_message) {
-    TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Pushing the TriggerDecisionToken for trigger number "
-				<< trigger_record_ptr->get_header_ref().get_trigger_number()
+    TLOG() << get_name() << ": Pushing the TriggerDecisionToken for trigger number "
+				<< trigger_record_ptr->get_header_ref().get_trigger_number()//tohle asi upravim na uplne jinou promennou ale nejdriv atomic
 				<< " onto the relevant output queue";
     dfmessages::TriggerDecisionToken token;
     token.run_number = m_run_number;
@@ -318,6 +314,8 @@ ers::warning(iomanager::OperationFailed(ERS_HERE, oss_progr.str()));
       try {
 	m_token_output -> send( std::move(token), m_queue_timeout );
 	wasSentSuccessfully = true;
+  ++m_tokens_sent;
+  TLOG() << get_name() << ": Token number: " << m_tokens_sent << " has been sent.";
       } catch (const ers::Issue& excpt) {
 	std::ostringstream oss_warn;
 	oss_warn << "Send with sender \"" << m_token_output -> get_name() << "\" failed";
@@ -327,7 +325,7 @@ ers::warning(iomanager::OperationFailed(ERS_HERE, oss_progr.str()));
 
   }
   
-  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": operations completed for TR";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Operations completed for TR";
 } // NOLINT(readability/fn_size)
 
 void
@@ -336,7 +334,7 @@ DataWriter::do_work(std::atomic<bool>& running_flag) {
 	  try {
 		std::unique_ptr<daqdataformats::TriggerRecord> tr = m_tr_receiver-> receive(std::chrono::milliseconds(10));   
                 receive_trigger_record(tr);
-    TLOG_DEBUG(TLVL_RECEIVE_TR) << "Received a new TR";
+    TLOG_DEBUG(TLVL_RECEIVE_TR) << get_name() << ": Received a new TR";
 
 	  }
 	  catch(const iomanager::TimeoutExpired& excpt) {

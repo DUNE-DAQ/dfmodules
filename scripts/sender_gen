@@ -60,8 +60,6 @@ def cli(config, json_dir):
     
     the_system.apps["sender-app"] = dfmodulesapp_gen.get_sender_app(
         nickname = "the-solo-app", 
-        number_of_run = dfmodules.w_run_number,
-        number_of_trigger = dfmodules.w_trigger_count,
         size_of_data = dfmodules.w_data_size,
         subsystem_type = dfmodules.w_stype_to_use,
         subdetector_type = dfmodules.w_dtype_to_use,
@@ -72,37 +70,23 @@ def cli(config, json_dir):
         c_min_write_retry_time_usec = dfmodules.w_min_write_retry_time_usec,
         c_max_write_retry_time_usec = dfmodules.w_max_write_retry_time_usec,
         c_write_retry_time_increase_factor = dfmodules.w_write_retry_time_increase_factor,
-        c_decision_connection = dfmodules.w_decision_connection
-#        hdf5ds.ConfParams(
-#                               name="data_store",
-#                               operational_environment = OPERATIONAL_ENVIRONMENT,
-#                               mode = DATA_STORE_MODE,
-#                               directory_path = OUTPUT_PATHS[i],
-#                               max_file_size_bytes = MAX_FILE_SIZE,
- #                              disable_unique_filename_suffix = False,
- #                              hardware_map_file=HARDWARE_MAP_FILE,
- #                              filename_parameters = hdf5ds.FileNameParams(
- #                                  overall_prefix = OPERATIONAL_ENVIRONMENT,
- #                                  digits_for_run_number = 6,
- #                                  file_index_prefix = "",
- #                                  digits_for_file_index = 4,
- #                                  writer_identifier = f"{APP_NAME}_datawriter_{i}"),
- #                              file_layout_parameters = h5fl.FileLayoutParams(
- #                                  record_name_prefix= "TriggerRecord",
- #                                  digits_for_record_number = 5,
- #                                 path_param_list = h5fl.PathParamList(
- #                                      [h5fl.PathParams(detector_group_type="Detector_Readout",
-#                                                        detector_group_name="TPC",
-#                                                        element_name_prefix="Link"),
-#                                        h5fl.PathParams(detector_group_type="Detector_Readout",
-#                                                        detector_group_name="PDS"),
-#                                        h5fl.PathParams(detector_group_type="Detector_Readout",
-#                                                        detector_group_name="NDLArTPC"),
-#                                        h5fl.PathParams(detector_group_type="Trigger",
-#                                                        detector_group_name="DataSelection",
-#                                                        digits_for_element_number=5),
-#                                        h5fl.PathParams(detector_group_type="HW_Signals_Interface",
-#                                                        detector_group_name="HSI")
+        c_decision_connection = dfmodules.w_decision_connection,
+        c_name = dfmodules.w_name,
+        c_operational_environment = dfmodules.w_operational_environment,
+        c_mode = dfmodules.w_mode,
+        c_directory_path = dfmodules.w_directory_path,
+        c_max_file_size_bytes = dfmodules.w_max_file_size_bytes,
+        c_disable_unique_filename_suffix = dfmodules.w_disable_unique_filename_suffix,
+        c_hardware_map_file = dfmodules.w_hardware_map_file,
+        c_overall_prefix = dfmodules.w_overall_prefix,
+        c_digits_for_run_number = dfmodules.w_digits_for_run_number,
+        c_file_index_prefix = dfmodules.w_file_index_prefix,
+        c_digits_for_file_index = dfmodules.w_digits_for_file_index,
+        c_writer_identifier = dfmodules.w_writer_identifier,
+        c_record_name_prefix = dfmodules.w_record_name_prefix,
+        c_digits_for_record_number = dfmodules.w_digits_for_record_number
+        
+        
     )
 
     ####################################################################                                  

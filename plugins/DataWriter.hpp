@@ -89,7 +89,8 @@ private:
   std::atomic<uint64_t> m_records_written = { 0 };      // NOLINT(build/unsigned)
   std::atomic<uint64_t> m_records_written_tot = { 0 };  // NOLINT(build/unsigned)
   std::atomic<uint64_t> m_bytes_output = { 0 };         // NOLINT(build/unsigned)
-  std::atomic<uint64_t> m_bytes_output_tot = { 0 };         // NOLINT(build/unsigned)
+  std::atomic<uint64_t> m_bytes_output_tot = { 0 };     // NOLINT(build/unsigned)
+  std::atomic<uint64_t> m_tokens_sent = { 0 };     // NOLINT(build/unsigned)
 
   // Other
   std::map<daqdataformats::trigger_number_t, size_t> m_seqno_counts;

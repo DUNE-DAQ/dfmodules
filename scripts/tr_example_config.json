@@ -1,6 +1,6 @@
 {
   "boot": {
-    "base_command_port": 4444,
+    "base_command_port": 4010,
     "disable_trace": false,
     "opmon_impl": "local",
     "ers_impl": "local",
@@ -10,8 +10,6 @@
   },
 
   "dfmodules": {
-    "w_run_number": 13,
-    "w_trigger_count": 100,
     "w_data_size": 10000,
     "w_stype_to_use": "Detector_Readout",
     "w_dtype_to_use": "HD_TPC",
@@ -22,6 +20,20 @@
     "w_min_write_retry_time_usec": 1000,
     "w_max_write_retry_time_usec": 1000000,
     "w_write_retry_time_increase_factor": 2,
-    "w_decision_connection": "Name"
+    "w_decision_connection": "Name",
+    "w_name": "data_store",
+    "w_operational_environment": "coldbox",
+    "w_mode": "all-per-file",
+    "w_directory_path": ".",
+    "w_max_file_size_bytes": 4294967296,
+    "w_disable_unique_filename_suffix": false, 
+    "w_hardware_map_file": "/afs/cern.ch/user/e/eljelink/dunedaq-v3.2.0/sourcecode/dfmodules/scripts/HardwareMap.txt",
+    "w_overall_prefix": "overall_prefix",
+    "w_digits_for_run_number": 3,
+    "w_file_index_prefix": "file_index_prefix",
+    "w_digits_for_file_index": 5,
+    "w_writer_identifier": "writerid",
+    "w_record_name_prefix": "TriggerRecord",
+    "w_digits_for_record_number": 4
 }
 }
