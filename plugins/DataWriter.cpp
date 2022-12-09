@@ -166,6 +166,8 @@ DataWriter::do_start(const data_t& payload)
   m_bytes_output_tot = 0;
   m_tokens_sent = 0;
 
+  writing_time_tot = 0;
+
   m_running.store(true);
 
   m_thread.start_working_thread(get_name());
@@ -244,14 +246,27 @@ DataWriter::receive_trigger_record(std::unique_ptr<daqdataformats::TriggerRecord
       do {
 	should_retry = false;
 	try {
-TLOG() << get_name() << ": Writing started for trigger record number: " << m_records_received;
+TLOG() << get_name() << ": Writing started for trigger record number: " << m_records_received_tot;
+double_t start_writing_timestamp = std::chrono::duration_cast<std::chrono::microseconds>(system_clock::now().time_since_epoch()).count();
 	  m_data_writer->write(*trigger_record_ptr);
-TLOG() << get_name() << ": Writing stopped for trigger record number: " << m_records_received;
+double_t stop_writing_timestamp = std::chrono::duration_cast<std::chrono::microseconds>(system_clock::now().time_since_epoch()).count();
+TLOG() << get_name() << ": Writing stopped for trigger record number: " << m_records_received_tot;
 	  ++m_records_written;
 	  ++m_records_written_tot;
 TLOG() << get_name() << ": Number of written trigger records: " << m_records_written_tot;
+    m_bytes_for_one_tr = 0;
+    m_bytes_for_one_tr += trigger_record_ptr->get_total_size_bytes();
 	  m_bytes_output += trigger_record_ptr->get_total_size_bytes();
 	  m_bytes_output_tot += trigger_record_ptr->get_total_size_bytes();
+
+double_t writing_time = stop_writing_timestamp - start_writing_timestamp;
+TLOG() << get_name() << ": Writing time is: " << writing_time << " microseconds";
+writing_time_tot += writing_time;
+
+double_t writing_rate = m_bytes_for_one_tr/writing_time;
+TLOG() << get_name() << ": Writing rate is: " << writing_rate << " MB/s";
+average_writing_rate =  m_bytes_output_tot/writing_time_tot;
+
 	} catch (const RetryableDataStoreProblem& excpt) {
 	  should_retry = true;
 	  ers::error(DataWritingProblem(ERS_HERE,
@@ -302,7 +317,7 @@ TLOG() << get_name() << ": Number of written trigger records: " << m_records_wri
   }
   if (send_trigger_complete_message) {
     TLOG() << get_name() << ": Pushing the TriggerDecisionToken for trigger number "
-				<< trigger_record_ptr->get_header_ref().get_trigger_number()//tohle asi upravim na uplne jinou promennou ale nejdriv atomic
+				<< trigger_record_ptr->get_header_ref().get_trigger_number()
 				<< " onto the relevant output queue";
     dfmessages::TriggerDecisionToken token;
     token.run_number = m_run_number;
@@ -335,7 +350,6 @@ DataWriter::do_work(std::atomic<bool>& running_flag) {
 		std::unique_ptr<daqdataformats::TriggerRecord> tr = m_tr_receiver-> receive(std::chrono::milliseconds(10));   
                 receive_trigger_record(tr);
     TLOG_DEBUG(TLVL_RECEIVE_TR) << get_name() << ": Received a new TR";
-
 	  }
 	  catch(const iomanager::TimeoutExpired& excpt) {
 	  }
@@ -343,6 +357,8 @@ DataWriter::do_work(std::atomic<bool>& running_flag) {
 		ers::warning(excpt);
 	  }
   }
+//TLOG() << get_name() << ": A hdf5 file of size: " << m_bytes_output_tot << " bytes has been created with the average writing rate: "
+//    	 << average_writing_rate << " The file contains " << m_records_written_tot;  
 }
 
 } // namespace dfmodules

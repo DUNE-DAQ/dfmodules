@@ -16,7 +16,7 @@ local info = {
         s.field("trigger_record", self.uint8, 0, doc="Counting sent trigger records"),
         s.field("tr_created", self.uint8, 0, doc="Counting created trigger records"),
         s.field("receive_token", self.uint8, 0, doc="Counting received tokens"),
-        s.field("ratio", self.uint8, 0, doc="Counting received tokens"),
+        s.field("difference", self.uint8, 0, doc="Difference between sent trigger records and received tokens"),
     ], doc="Trigger record sender information"),
 };
 

@@ -85,7 +85,7 @@ private:
   std::atomic<int64_t> sentCount = {0};
   std::atomic<int64_t> triggerRecordCount = {0};
   std::atomic<int64_t> receivedToken = {0};
-  std::atomic<int64_t> TrTokenRatio = {0};
+  std::atomic<int64_t> TrTokenDifference = {0};
 };
 
 } // namespace dfmodules

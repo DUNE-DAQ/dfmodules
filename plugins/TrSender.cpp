@@ -172,12 +172,12 @@ TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() metho
         tr->add_fragment(std::move(frag_ptr));
         } // end loop over elements
 
-        int TrTokenRatio = sentCount-receivedToken;
-        TLOG() << get_name() << ": Difference between sent trigger records and received tokens: " << TrTokenRatio;
+        int TrTokenDifference = sentCount-receivedToken;
+        TLOG() << get_name() << ": Difference between sent trigger records and received tokens: " << TrTokenDifference;
 
-        if (TrTokenRatio > 10) {
+        if (TrTokenDifference > 4) {
         TLOG() << get_name() << ": Start of sleep between sends to prevent overloading";
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
  	      }
 
       TLOG_DEBUG(TVLV_TRIGGER_RECORD) << get_name() << ": Pushing the trigger record onto queue. ";
@@ -202,8 +202,8 @@ TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() metho
       TLOG() << get_name() << ": End of do_work loop";
     }
   }
-  TLOG() << get_name() << ": Exiting the do_work() method, received configuration file and successfully sent "
-           << sentCount << " trigger records.";
+  TLOG() << get_name() << ": Exiting the do_work() method, received configuration file and successfully created " << triggerRecordCount
+         << " trigger records and sent "  << sentCount << " trigger records. " << receivedToken << " tokens were received from DataWriter module.";
 TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_work() method";
 }
 
@@ -233,7 +233,7 @@ TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering get_info() meth
   info.trigger_record = sentCount;
   info.tr_created = triggerRecordCount;
   info.receive_token = receivedToken;
-  info.ratio = TrTokenRatio;
+  info.difference = TrTokenDifference;
 
   ci.add(info);
 TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting get_info() method";
