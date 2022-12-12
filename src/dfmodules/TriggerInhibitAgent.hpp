@@ -12,12 +12,12 @@
 #ifndef DFMODULES_SRC_DFMODULES_TRIGGERINHIBITAGENT_HPP_
 #define DFMODULES_SRC_DFMODULES_TRIGGERINHIBITAGENT_HPP_
 
+#include "iomanager/Sender.hpp"
+#include "iomanager/Receiver.hpp"
+#include "utilities/NamedObject.hpp"
 #include "daqdataformats/Types.hpp"
 #include "dfmessages/TriggerDecision.hpp"
 #include "dfmessages/TriggerInhibit.hpp"
-#include "iomanager/Receiver.hpp"
-#include "iomanager/Sender.hpp"
-#include "utilities/NamedObject.hpp"
 #include "utilities/WorkerThread.hpp"
 
 #include <atomic>
@@ -43,8 +43,8 @@ public:
    * @brief TriggerInhibitAgent Constructor
    */
   explicit TriggerInhibitAgent(const std::string&,
-                               std::shared_ptr<trigdecreceiver_t>,
-                               std::shared_ptr<triginhsender_t>);
+			       std::shared_ptr<trigdecreceiver_t>,
+			       std::shared_ptr<triginhsender_t>);
 
   TriggerInhibitAgent(const TriggerInhibitAgent&) = delete; ///< TriggerInhibitAgent is not copy-constructible
   TriggerInhibitAgent& operator=(const TriggerInhibitAgent&) = delete; ///< TriggerInhibitAgent is not copy-assignable

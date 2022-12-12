@@ -66,7 +66,7 @@ ERS_DECLARE_ISSUE_BASE(dfmodules,
 /**
  * @brief Unknown SourceID
  */
-ERS_DECLARE_ISSUE(dfmodules,       ///< Namespace
+ERS_DECLARE_ISSUE(dfmodules,    ///< Namespace
                   UnknownSourceID, ///< Issue class name
                   "Unknown SourceID: " << source_id,
                   ((daqdataformats::SourceID)source_id) ///< Message parameters

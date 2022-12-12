@@ -33,8 +33,7 @@ TriggerRecordBuilderData::TriggerRecordBuilderData(std::string connection_name, 
   , m_is_busy(false)
   , m_in_error(false)
   , m_connection_name(connection_name)
-{
-}
+{}
 
 TriggerRecordBuilderData::TriggerRecordBuilderData(std::string connection_name,
                                                    size_t busy_threshold,
