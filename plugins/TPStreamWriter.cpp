@@ -13,9 +13,9 @@
 #include "dfmodules/tpstreamwriterinfo/InfoNljs.hpp"
 
 #include "appfwk/DAQModuleHelper.hpp"
-#include "iomanager/IOManager.hpp"
 #include "daqdataformats/Fragment.hpp"
 #include "daqdataformats/Types.hpp"
+#include "iomanager/IOManager.hpp"
 #include "logging/Logging.hpp"
 #include "rcif/cmd/Nljs.hpp"
 
@@ -52,7 +52,8 @@ void
 TPStreamWriter::init(const nlohmann::json& payload)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
-  m_tpset_source = iomanager::IOManager::get()->get_receiver<incoming_t>( appfwk::connection_uid(payload, "tpset_source"));
+  m_tpset_source =
+    iomanager::IOManager::get()->get_receiver<incoming_t>(appfwk::connection_uid(payload, "tpset_source"));
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
 
@@ -195,8 +196,8 @@ TPStreamWriter::do_work(std::atomic<bool>& running_flag)
         should_retry = false;
         try {
           m_data_writer->write(*timeslice_ptr);
-	  ++m_tpset_written;
-	  m_bytes_output += timeslice_ptr->get_total_size_bytes();
+          ++m_tpset_written;
+          m_bytes_output += timeslice_ptr->get_total_size_bytes();
         } catch (const RetryableDataStoreProblem& excpt) {
           should_retry = true;
           ers::error(DataWritingProblem(ERS_HERE,

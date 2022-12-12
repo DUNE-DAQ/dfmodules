@@ -42,8 +42,9 @@ struct ConfigurationTestFixture
     queues.emplace_back(dunedaq::iomanager::QueueConfig{
       { "trigger_decision_q", "TriggerDecision" }, dunedaq::iomanager::QueueType::kFollySPSCQueue, 1 });
     dunedaq::iomanager::Connections_t connections;
-    connections.emplace_back(dunedaq::iomanager::Connection{
-      { "test.trigdec_0", "TriggerDecision" }, "tcp://127.0.0.10:5050", dunedaq::iomanager::ConnectionType::kSendRecv });
+    connections.emplace_back(dunedaq::iomanager::Connection{ { "test.trigdec_0", "TriggerDecision" },
+                                                             "tcp://127.0.0.10:5050",
+                                                             dunedaq::iomanager::ConnectionType::kSendRecv });
     connections.emplace_back(dunedaq::iomanager::Connection{
       { "test.trigdec", "TriggerDecision" }, "inproc://trigdec", dunedaq::iomanager::ConnectionType::kSendRecv });
     connections.emplace_back(dunedaq::iomanager::Connection{

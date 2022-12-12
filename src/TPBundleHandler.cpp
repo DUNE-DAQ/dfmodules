@@ -134,10 +134,8 @@ TPBundleHandler::add_tpset(trigger::TPSet&& tpset)
     {
       auto lk = std::lock_guard<std::mutex>(m_accumulator_map_mutex);
       if (m_timeslice_accumulators.count(tsidx) == 0) {
-        TimeSliceAccumulator accum(tsidx * m_slice_interval,
-                                   (tsidx + 1) * m_slice_interval,
-                                   tsidx - m_slice_index_offset,
-                                   m_run_number);
+        TimeSliceAccumulator accum(
+          tsidx * m_slice_interval, (tsidx + 1) * m_slice_interval, tsidx - m_slice_index_offset, m_run_number);
         m_timeslice_accumulators[tsidx] = accum;
       }
     }

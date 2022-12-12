@@ -15,8 +15,8 @@
 #include "daqdataformats/Fragment.hpp"
 #include "dfmessages/TriggerDecision.hpp"
 #include "dfmessages/TriggerRecord_serialization.hpp"
-#include "logging/Logging.hpp"
 #include "iomanager/IOManager.hpp"
+#include "logging/Logging.hpp"
 #include "rcif/cmd/Nljs.hpp"
 
 #include <algorithm>
@@ -61,12 +61,12 @@ DataWriter::init(const data_t& init_data)
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
   auto iom = iomanager::IOManager::get();
   auto qi = appfwk::connection_index(init_data, { "trigger_record_input", "token_output" });
-  m_trigger_record_connection = qi["trigger_record_input"] ;
+  m_trigger_record_connection = qi["trigger_record_input"];
   // try to create the receiver to see test the connection anyway
-  m_tr_receiver = iom -> get_receiver<std::unique_ptr<daqdataformats::TriggerRecord>>(m_trigger_record_connection);
+  m_tr_receiver = iom->get_receiver<std::unique_ptr<daqdataformats::TriggerRecord>>(m_trigger_record_connection);
 
-  m_token_output = iom-> get_sender<dfmessages::TriggerDecisionToken>(qi["token_output"]);
-  
+  m_token_output = iom->get_sender<dfmessages::TriggerDecisionToken>(qi["token_output"]);
+
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
 
@@ -139,12 +139,11 @@ void
 DataWriter::do_start(const data_t& payload)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_start() method";
-  
+
   rcif::cmd::StartParams start_params = payload.get<rcif::cmd::StartParams>();
   m_data_storage_is_enabled = (!start_params.disable_data_storage);
   m_run_number = start_params.run;
 
- 
   // 04-Feb-2021, KAB: added this call to allow DataStore to prepare for the run.
   // I've put this call fairly early in this method because it could throw an
   // exception and abort the run start.  And, it seems sensible to avoid starting
@@ -157,7 +156,7 @@ DataWriter::do_start(const data_t& payload)
       // in case the "start" has been called before the "conf"
       ers::fatal(InvalidDataWriter(ERS_HERE, get_name()));
     }
-    
+
     try {
       m_data_writer->prepare_for_run(m_run_number);
     } catch (const ers::Issue& excpt) {
@@ -166,7 +165,7 @@ DataWriter::do_start(const data_t& payload)
   }
 
   m_seqno_counts.clear();
-  
+
   m_records_received = 0;
   m_records_received_tot = 0;
   m_records_written = 0;
@@ -177,8 +176,9 @@ DataWriter::do_start(const data_t& payload)
   m_running.store(true);
 
   m_thread.start_working_thread(get_name());
-  //iomanager::IOManager::get()->add_callback<std::unique_ptr<daqdataformats::TriggerRecord>>( m_trigger_record_connection,
-  //											     bind( &DataWriter::receive_trigger_record, this, std::placeholders::_1) );
+  // iomanager::IOManager::get()->add_callback<std::unique_ptr<daqdataformats::TriggerRecord>>(
+  // m_trigger_record_connection, 											     bind( &DataWriter::receive_trigger_record, this,
+  // std::placeholders::_1) );
 
   TLOG() << get_name() << " successfully started for run number " << m_run_number;
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
@@ -190,8 +190,9 @@ DataWriter::do_stop(const data_t& /*args*/)
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_stop() method";
 
   m_running.store(false);
-  m_thread.stop_working_thread(); 
-  //iomanager::IOManager::get()->remove_callback<std::unique_ptr<daqdataformats::TriggerRecord>>( m_trigger_record_connection );
+  m_thread.stop_working_thread();
+  // iomanager::IOManager::get()->remove_callback<std::unique_ptr<daqdataformats::TriggerRecord>>(
+  // m_trigger_record_connection );
 
   // 04-Feb-2021, KAB: added this call to allow DataStore to finish up with this run.
   // I've put this call fairly late in this method so that any draining of queues
@@ -220,21 +221,24 @@ DataWriter::do_scrap(const data_t& /*payload*/)
 }
 
 void
-DataWriter::receive_trigger_record(std::unique_ptr<daqdataformats::TriggerRecord> & trigger_record_ptr)
+DataWriter::receive_trigger_record(std::unique_ptr<daqdataformats::TriggerRecord>& trigger_record_ptr)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": receiving a new TR ptr";
 
   ++m_records_received;
   ++m_records_received_tot;
   TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Obtained the TriggerRecord for trigger number "
-			      << trigger_record_ptr->get_header_ref().get_trigger_number() << "."
-			      << trigger_record_ptr->get_header_ref().get_sequence_number()
-			      << ", run number " << trigger_record_ptr->get_header_ref().get_run_number()
-			      << " off the input connection";
+                              << trigger_record_ptr->get_header_ref().get_trigger_number() << "."
+                              << trigger_record_ptr->get_header_ref().get_sequence_number() << ", run number "
+                              << trigger_record_ptr->get_header_ref().get_run_number() << " off the input connection";
 
   if (trigger_record_ptr->get_header_ref().get_run_number() != m_run_number) {
-    ers::error(InvalidRunNumber(ERS_HERE, get_name(), "TriggerRecord", trigger_record_ptr->get_header_ref().get_run_number(),
-                                m_run_number, trigger_record_ptr->get_header_ref().get_trigger_number(),
+    ers::error(InvalidRunNumber(ERS_HERE,
+                                get_name(),
+                                "TriggerRecord",
+                                trigger_record_ptr->get_header_ref().get_run_number(),
+                                m_run_number,
+                                trigger_record_ptr->get_header_ref().get_trigger_number(),
                                 trigger_record_ptr->get_header_ref().get_sequence_number()));
     return;
   }
@@ -244,50 +248,51 @@ DataWriter::receive_trigger_record(std::unique_ptr<daqdataformats::TriggerRecord
   // instead of zero, since I think that it would be nice to always get the first event
   // written out.
   if (m_data_storage_prescale <= 1 || ((m_records_received_tot.load() % m_data_storage_prescale) == 1)) {
-    
+
     if (m_data_storage_is_enabled) {
 
       std::chrono::steady_clock::time_point start_time = std::chrono::steady_clock::now();
-      
+
       bool should_retry = true;
       size_t retry_wait_usec = m_min_write_retry_time_usec;
       do {
-	should_retry = false;
-	try {
-	  m_data_writer->write(*trigger_record_ptr);
-	  ++m_records_written;
-	  ++m_records_written_tot;
-	  m_bytes_output += trigger_record_ptr->get_total_size_bytes();
-	  m_bytes_output_tot += trigger_record_ptr->get_total_size_bytes();
-	} catch (const RetryableDataStoreProblem& excpt) {
-	  should_retry = true;
-	  ers::error(DataWritingProblem(ERS_HERE,
-					get_name(),
-					trigger_record_ptr->get_header_ref().get_trigger_number(),
-					trigger_record_ptr->get_header_ref().get_sequence_number(),
-					trigger_record_ptr->get_header_ref().get_run_number(),
-					excpt));
-	  if (retry_wait_usec > m_max_write_retry_time_usec) {
-	    retry_wait_usec = m_max_write_retry_time_usec;
-	  }
-	  usleep(retry_wait_usec);
-	  retry_wait_usec *= m_write_retry_time_increase_factor;
-	} catch (const std::exception& excpt) {
-	  ers::error(DataWritingProblem(ERS_HERE,
-					get_name(),
-					trigger_record_ptr->get_header_ref().get_trigger_number(),
-					trigger_record_ptr->get_header_ref().get_sequence_number(),
-					trigger_record_ptr->get_header_ref().get_run_number(),
-					excpt));
-	}
+        should_retry = false;
+        try {
+          m_data_writer->write(*trigger_record_ptr);
+          ++m_records_written;
+          ++m_records_written_tot;
+          m_bytes_output += trigger_record_ptr->get_total_size_bytes();
+          m_bytes_output_tot += trigger_record_ptr->get_total_size_bytes();
+        } catch (const RetryableDataStoreProblem& excpt) {
+          should_retry = true;
+          ers::error(DataWritingProblem(ERS_HERE,
+                                        get_name(),
+                                        trigger_record_ptr->get_header_ref().get_trigger_number(),
+                                        trigger_record_ptr->get_header_ref().get_sequence_number(),
+                                        trigger_record_ptr->get_header_ref().get_run_number(),
+                                        excpt));
+          if (retry_wait_usec > m_max_write_retry_time_usec) {
+            retry_wait_usec = m_max_write_retry_time_usec;
+          }
+          usleep(retry_wait_usec);
+          retry_wait_usec *= m_write_retry_time_increase_factor;
+        } catch (const std::exception& excpt) {
+          ers::error(DataWritingProblem(ERS_HERE,
+                                        get_name(),
+                                        trigger_record_ptr->get_header_ref().get_trigger_number(),
+                                        trigger_record_ptr->get_header_ref().get_sequence_number(),
+                                        trigger_record_ptr->get_header_ref().get_run_number(),
+                                        excpt));
+        }
       } while (should_retry && m_running.load());
 
       std::chrono::steady_clock::time_point end_time = std::chrono::steady_clock::now();
-      std::chrono::milliseconds writing_time = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+      std::chrono::milliseconds writing_time =
+        std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
       m_writing_ms += writing_time.count();
     } //  if m_data_storage_is_enabled
   }
-  
+
   bool send_trigger_complete_message = true;
   if (trigger_record_ptr->get_header_ref().get_max_sequence_number() > 0) {
     send_trigger_complete_message = false;
@@ -307,48 +312,46 @@ DataWriter::receive_trigger_record(std::unique_ptr<daqdataformats::TriggerRecord
       // entry in the map after erasing it above. In other words, if we move this TLOG outside
       // the "else" clause, the map will forever increase in size.
       TLOG_DEBUG(TLVL_SEQNO_MAP_CONTENTS) << get_name() << ": the sequence number count for trigger number " << trigno
-					  << " is " << m_seqno_counts[trigno] << " (number of entries "
-					  << "in the seqno map is " << m_seqno_counts.size() << ").";
+                                          << " is " << m_seqno_counts[trigno] << " (number of entries "
+                                          << "in the seqno map is " << m_seqno_counts.size() << ").";
     }
   }
   if (send_trigger_complete_message) {
     TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Pushing the TriggerDecisionToken for trigger number "
-				<< trigger_record_ptr->get_header_ref().get_trigger_number()
-				<< " onto the relevant output queue";
+                                << trigger_record_ptr->get_header_ref().get_trigger_number()
+                                << " onto the relevant output queue";
     dfmessages::TriggerDecisionToken token;
     token.run_number = m_run_number;
     token.trigger_number = trigger_record_ptr->get_header_ref().get_trigger_number();
     token.decision_destination = m_trigger_decision_connection;
 
     bool wasSentSuccessfully = false;
-    do { 
+    do {
       try {
-	m_token_output -> send( std::move(token), m_queue_timeout );
-	wasSentSuccessfully = true;
+        m_token_output->send(std::move(token), m_queue_timeout);
+        wasSentSuccessfully = true;
       } catch (const ers::Issue& excpt) {
-	std::ostringstream oss_warn;
-	oss_warn << "Send with sender \"" << m_token_output -> get_name() << "\" failed";
-	ers::warning(iomanager::OperationFailed(ERS_HERE, oss_warn.str(), excpt));
+        std::ostringstream oss_warn;
+        oss_warn << "Send with sender \"" << m_token_output->get_name() << "\" failed";
+        ers::warning(iomanager::OperationFailed(ERS_HERE, oss_warn.str(), excpt));
       }
     } while (!wasSentSuccessfully && m_running.load());
-
   }
-  
+
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": operations completed for TR";
 } // NOLINT(readability/fn_size)
 
 void
-DataWriter::do_work(std::atomic<bool>& running_flag) {
+DataWriter::do_work(std::atomic<bool>& running_flag)
+{
   while (running_flag.load()) {
-	  try {
-		std::unique_ptr<daqdataformats::TriggerRecord> tr = m_tr_receiver-> receive(std::chrono::milliseconds(10));   
-                receive_trigger_record(tr);
-	  }
-	  catch(const iomanager::TimeoutExpired& excpt) {
-	  }
-	  catch(const ers::Issue & excpt) {
-		ers::warning(excpt);
-	  }
+    try {
+      std::unique_ptr<daqdataformats::TriggerRecord> tr = m_tr_receiver->receive(std::chrono::milliseconds(10));
+      receive_trigger_record(tr);
+    } catch (const iomanager::TimeoutExpired& excpt) {
+    } catch (const ers::Issue& excpt) {
+      ers::warning(excpt);
+    }
   }
 }
 
