@@ -39,7 +39,8 @@ TriggerInhibitAgent::TriggerInhibitAgent(const std::string& parent_name,
   , m_trigger_inhibit_sender(our_output)
   , m_trigger_number_at_start_of_processing_chain(0)
   , m_trigger_number_at_end_of_processing_chain(0)
-{}
+{
+}
 
 void
 TriggerInhibitAgent::start_checking()

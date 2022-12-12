@@ -14,8 +14,8 @@
 #include "dfmodules/DataStore.hpp"
 
 #include "appfwk/DAQModule.hpp"
-#include "iomanager/Receiver.hpp"
 #include "daqdataformats/TimeSlice.hpp"
+#include "iomanager/Receiver.hpp"
 #include "trigger/TPSet.hpp"
 #include "utilities/WorkerThread.hpp"
 
@@ -71,10 +71,9 @@ private:
   std::unique_ptr<DataStore> m_data_writer;
 
   // Metrics
-  std::atomic<uint64_t> m_tpset_received = { 0 };         // NOLINT(build/unsigned)
-  std::atomic<uint64_t> m_tpset_written  = { 0 };         // NOLINT(build/unsigned)
-  std::atomic<uint64_t> m_bytes_output   = { 0 };         // NOLINT(build/unsigned)
-
+  std::atomic<uint64_t> m_tpset_received = { 0 }; // NOLINT(build/unsigned)
+  std::atomic<uint64_t> m_tpset_written = { 0 };  // NOLINT(build/unsigned)
+  std::atomic<uint64_t> m_bytes_output = { 0 };   // NOLINT(build/unsigned)
 };
 } // namespace dfmodules
 
