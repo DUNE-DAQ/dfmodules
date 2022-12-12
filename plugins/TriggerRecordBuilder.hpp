@@ -21,9 +21,9 @@
 #include "dfmessages/Types.hpp"
 
 #include "appfwk/DAQModule.hpp"
-#include "iomanager/Receiver.hpp"
-#include "iomanager/Sender.hpp"
 #include "utilities/WorkerThread.hpp"
+#include "iomanager/Sender.hpp"
+#include "iomanager/Receiver.hpp"
 
 #include <chrono>
 #include <list>
@@ -125,7 +125,7 @@ ERS_DECLARE_ISSUE(dfmodules,          ///< Namespace
                   "Unexpected Fragment for triggerID " << trigger_id << ", type " << fragment_type << ", " << source_id,
                   ((dfmodules::TriggerId)trigger_id)               ///< Message parameters
                   ((daqdataformats::fragment_type_t)fragment_type) ///< Message parameters
-                  ((daqdataformats::SourceID)source_id)            ///< Message parameters
+                  ((daqdataformats::SourceID)source_id)                  ///< Message parameters
 )
 
 /**
@@ -192,7 +192,9 @@ protected:
 
   unsigned int create_trigger_records_and_dispatch(const dfmessages::TriggerDecision&, std::atomic<bool>& running);
 
-  bool dispatch_data_requests(dfmessages::DataRequest, const daqdataformats::SourceID&, std::atomic<bool>& running);
+  bool dispatch_data_requests(dfmessages::DataRequest,
+                              const daqdataformats::SourceID&,
+                              std::atomic<bool>& running);
 
   bool send_trigger_record(const TriggerId&, std::atomic<bool>& running);
   // this creates a trigger record and send it
@@ -208,7 +210,7 @@ private:
   void do_stop(const data_t&);
 
   // Monitoring callback
-  void tr_requested(const dfmessages::TRMonRequest&);
+  void tr_requested(const dfmessages::TRMonRequest &);
 
   // Threading
   dunedaq::utilities::WorkerThread m_thread;
@@ -227,8 +229,7 @@ private:
   // Output connections
   std::shared_ptr<trigger_record_sender_t> m_trigger_record_output;
   mutable std::mutex m_map_sourceid_connections_mutex;
-  std::map<daqdataformats::SourceID, std::shared_ptr<data_req_sender_t>>
-    m_map_sourceid_connections; ///< Mappinng between SourceID and connections
+  std::map<daqdataformats::SourceID, std::shared_ptr<data_req_sender_t>> m_map_sourceid_connections; ///< Mappinng between SourceID and connections
 
   // bookeeping
   using clock_type = std::chrono::high_resolution_clock;

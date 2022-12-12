@@ -59,8 +59,7 @@ struct AssignedTriggerDecision
     : decision(dec)
     , assigned_time(std::chrono::steady_clock::now())
     , connection_name(conn_name)
-  {
-  }
+  {}
 };
 
 class TriggerRecordBuilderData
