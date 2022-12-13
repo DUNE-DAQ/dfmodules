@@ -360,7 +360,7 @@ DataWriter::do_work(std::atomic<bool>& running_flag) {
 	  }
   }
 TLOG() << get_name() << ": A hdf5 file of size: " << m_bytes_output_tot << " bytes has been created with the average writing rate: "
-    	 << average_writing_rate << " The file contains " << m_records_written_tot << " trigger records.";  
+    	 << average_writing_rate << " MB/s. The file contains " << m_records_written_tot << " trigger records.";  
 }
 
 } // namespace dfmodules
