@@ -37,7 +37,8 @@
 // for logging
 #define TRACE_NAME "TrSender" // NOLINT
 #define TLVL_ENTER_EXIT_METHODS 10
-#define TVLV_TRIGGER_RECORD 15
+#define TVLV_TRSENDER 15
+#define TVLV_CONFIGURATION 16
 
 namespace dunedaq::dfmodules {
 
@@ -109,7 +110,7 @@ TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() metho
   ftypeToUse = string_to_fragment_type(cfg_.ftypeToUse);
   elementCount = cfg_.elementCount;
 
-  TLOG() << get_name() << "\nNumber of fragments: " << elementCount << "\nSubsystem: " << stypeToUse << "\nSubdetector: " 
+  TLOG_DEBUG(TVLV_CONFIGURATION) << get_name() << "\nNumber of fragments: " << elementCount << "\nSubsystem: " << stypeToUse << "\nSubdetector: " 
          << dtypeToUse << "\nFragment type: " << cfg_.ftypeToUse << "\nData size: " << dataSize;
 
 TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
@@ -141,7 +142,7 @@ TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() metho
 
         TriggerRecordHeader trh(&trh_data);
         std::unique_ptr<daqdataformats::TriggerRecord> tr = std::make_unique<daqdataformats::TriggerRecord>( trh );
-        TLOG() << get_name() << ": The trigger record number " << triggerRecordCount << " created.";
+        TLOG_DEBUG(TVLV_TRSENDER) << get_name() << ": The trigger record number " << triggerRecordCount << " created.";
 
   
         // loop over elements=fragments
@@ -167,19 +168,19 @@ TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() metho
         } // end loop over elements
 
         int TrTokenDifference = sentCount-receivedToken;
-        TLOG() << get_name() << ": Difference between sent trigger records and received tokens: " << TrTokenDifference;
+        TLOG_DEBUG(TVLV_TRSENDER) << get_name() << ": Difference between sent trigger records and received tokens: " << TrTokenDifference;
 
         if (TrTokenDifference > 4) {
-        TLOG() << get_name() << ": Start of sleep between sends to prevent overloading";
+        TLOG_DEBUG(TVLV_TRSENDER) << get_name() << ": Start of sleep between sends to prevent overloading";
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
  	      }
 
-      TLOG_DEBUG(TVLV_TRIGGER_RECORD) << get_name() << ": Pushing the trigger record onto queue. ";
+      TLOG_DEBUG(TVLV_TRSENDER) << get_name() << ": Pushing the trigger record onto queue. ";
       try{
         m_sender->send(std::move(tr), queueTimeout_);
         ++sentCount;
         successfullyWasSent = true;
-        TLOG() << get_name() << ": The trigger record number " << triggerRecordCount << " sent.";
+        TLOG_DEBUG(TVLV_TRSENDER) << get_name() << ": The trigger record number " << triggerRecordCount << " sent.";
         ++triggerRecordCount;
       } catch (const dunedaq::iomanager::TimeoutExpired& excpt) {
         std::ostringstream oss_warn;
@@ -191,7 +192,7 @@ TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() metho
         std::chrono::duration_cast<std::chrono::milliseconds>(queueTimeout_).count()));
       }
     
-      TLOG() << get_name() << ": End of do_work loop";
+      TLOG_DEBUG(TVLV_TRSENDER) << get_name() << ": End of do_work loop";
     }
   }
   TLOG() << get_name() << ": Exiting the do_work() method, received configuration file and successfully created " << triggerRecordCount
@@ -209,7 +210,7 @@ TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_receive() me
       dfmessages::TriggerDecisionToken token;
       token = inputQueue_->receive(queueTimeout_);
       ++receivedToken;
-      TLOG() << ": The token number: " << receivedToken<< " has been received.";
+      TLOG_DEBUG(TVLV_TRSENDER) << ": The token number: " << receivedToken<< " has been received.";
     } catch (const dunedaq::iomanager::TimeoutExpired& excpt) {
       continue;
     }
