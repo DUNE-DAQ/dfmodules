@@ -24,7 +24,7 @@ from daqconf.core.daqmodule import DAQModule
 #from daqconf.core.conf_utils import Endpoint, Direction
 
 def get_sender_app(nickname, number_of_trigger = 1, size_of_data = 1000, subsystem_type = "Recorded_data",
-        subdetector_type = "HD_TPC", fragment_type = "WIB", number_of_elements = 10, n_wait_ms=100, host = "localhost", c_data_storage_prescale = 1,
+        subdetector_type = "HD_TPC", fragment_type = "WIB", number_of_elements = 10, host = "localhost", c_data_storage_prescale = 1,
         c_min_write_retry_time_usec = 1000, c_max_write_retry_time_usec = 1000000, c_write_retry_time_increase_factor = 2, c_decision_connection = "name",
         c_name="data_store", c_operational_environment = "coldbox", c_mode = "all-per-file", c_directory_path = ".", c_max_file_size_bytes = 4*1024*1024*1024,
         c_disable_unique_filename_suffix = False,  c_hardware_map_file=f"/afs/cern.ch/user/e/eljelink/dunedaq-v3.2.0/sourcecode/dfmodules/scripts/HardwareMap.txt",
@@ -39,7 +39,7 @@ def get_sender_app(nickname, number_of_trigger = 1, size_of_data = 1000, subsyst
 
     modules = []
     modules += [DAQModule(name="ts", plugin="TrSender", conf=trsender.Conf(dataSize = size_of_data, stypeToUse=subsystem_type, 
-    dtypeToUse = subdetector_type, ftypeToUse=fragment_type, elementCount = number_of_elements, waitBetweenSends = n_wait_ms))]
+    dtypeToUse = subdetector_type, ftypeToUse=fragment_type, elementCount = number_of_elements))]
     modules += [DAQModule(name="dw", plugin="DataWriter", conf=datawriter.ConfParams(data_storage_prescale = c_data_storage_prescale, 
     min_write_retry_time_usec = c_min_write_retry_time_usec, max_write_retry_time_usec = c_max_write_retry_time_usec,
     write_retry_time_increase_factor = c_write_retry_time_increase_factor, decision_connection = c_decision_connection,

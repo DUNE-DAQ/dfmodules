@@ -16,9 +16,7 @@ local types = {
                            s.field("ftypeToUse", self.string, "WIB",
                                            doc="Fragment type"),
                            s.field("elementCount", self.count, 10,
-                                           doc="Number of fragments in trigger record"),
-                           s.field("waitBetweenSends", self.count, 100,
-                                           doc="Number of milliseconds to wait between sends")
+                                           doc="Number of fragments in trigger record")
                            ],doc="TrSender configuration"),
 
 };

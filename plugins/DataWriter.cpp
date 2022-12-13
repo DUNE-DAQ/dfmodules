@@ -30,7 +30,7 @@
  * @brief Name used by TRACE TLOG calls from this source file
  */
 //#define TRACE_NAME "DataWriter"                   // NOLINT This is the default
-#define TRACE_NAME "DataWriter" //NOLINT
+/*#define TRACE_NAME "DataWriter" //NOLINT
 #define TLVL_ENTER_EXIT_METHODS 5
 #define TLVL_CONFIG 7
 #define TLVL_WORK_STEPS 10
@@ -38,8 +38,7 @@
 #define TLVL_WORK_STEPS 10
 #define TLVL_SEQNO_MAP_CONTENTS 13
 #define TLVL_FRAGMENT_HEADER_DUMP 17
-
-/*
+*/
 enum
 {
   TLVL_ENTER_EXIT_METHODS = 5,
@@ -49,7 +48,7 @@ enum
   TLVL_SEQNO_MAP_CONTENTS = 13,
   TLVL_FRAGMENT_HEADER_DUMP = 17
 };
-*/
+
 
 namespace dunedaq {
 namespace dfmodules {
@@ -167,6 +166,7 @@ DataWriter::do_start(const data_t& payload)
   m_tokens_sent = 0;
 
   writing_time_tot = 0;
+  writing_rate_tot =0;
 
   m_running.store(true);
 
@@ -246,26 +246,28 @@ DataWriter::receive_trigger_record(std::unique_ptr<daqdataformats::TriggerRecord
       do {
 	should_retry = false;
 	try {
-TLOG() << get_name() << ": Writing started for trigger record number: " << m_records_received_tot;
+TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Writing started for trigger record number: " << m_records_received_tot;
 double_t start_writing_timestamp = std::chrono::duration_cast<std::chrono::microseconds>(system_clock::now().time_since_epoch()).count();
 	  m_data_writer->write(*trigger_record_ptr);
 double_t stop_writing_timestamp = std::chrono::duration_cast<std::chrono::microseconds>(system_clock::now().time_since_epoch()).count();
-TLOG() << get_name() << ": Writing stopped for trigger record number: " << m_records_received_tot;
+TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Writing stopped for trigger record number: " << m_records_received_tot;
 	  ++m_records_written;
 	  ++m_records_written_tot;
-TLOG() << get_name() << ": Number of written trigger records: " << m_records_written_tot;
+TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Number of written trigger records: " << m_records_written_tot;
     m_bytes_for_one_tr = 0;
     m_bytes_for_one_tr += trigger_record_ptr->get_total_size_bytes();
 	  m_bytes_output += trigger_record_ptr->get_total_size_bytes();
 	  m_bytes_output_tot += trigger_record_ptr->get_total_size_bytes();
 
 double_t writing_time = stop_writing_timestamp - start_writing_timestamp;
-TLOG() << get_name() << ": Writing time is: " << writing_time << " microseconds";
+TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Writing time is: " << writing_time << " microseconds";
+TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Size of trigger record is: " << m_bytes_for_one_tr << " bytes";
 writing_time_tot += writing_time;
 
 double_t writing_rate = m_bytes_for_one_tr/writing_time;
-TLOG() << get_name() << ": Writing rate is: " << writing_rate << " MB/s";
-average_writing_rate =  m_bytes_output_tot/writing_time_tot;
+writing_rate_tot += writing_rate;
+TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Writing rate is: " << writing_rate << " MB/s";
+average_writing_rate =  writing_rate_tot/m_records_written_tot;
 
 	} catch (const RetryableDataStoreProblem& excpt) {
 	  should_retry = true;
@@ -316,7 +318,7 @@ average_writing_rate =  m_bytes_output_tot/writing_time_tot;
     }
   }
   if (send_trigger_complete_message) {
-    TLOG() << get_name() << ": Pushing the TriggerDecisionToken for trigger number "
+    TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Pushing the TriggerDecisionToken for trigger number "
 				<< trigger_record_ptr->get_header_ref().get_trigger_number()
 				<< " onto the relevant output queue";
     dfmessages::TriggerDecisionToken token;
@@ -330,7 +332,7 @@ average_writing_rate =  m_bytes_output_tot/writing_time_tot;
 	m_token_output -> send( std::move(token), m_queue_timeout );
 	wasSentSuccessfully = true;
   ++m_tokens_sent;
-  TLOG() << get_name() << ": Token number: " << m_tokens_sent << " has been sent.";
+  TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Token number: " << m_tokens_sent << " has been sent.";
       } catch (const ers::Issue& excpt) {
 	std::ostringstream oss_warn;
 	oss_warn << "Send with sender \"" << m_token_output -> get_name() << "\" failed";
@@ -357,8 +359,8 @@ DataWriter::do_work(std::atomic<bool>& running_flag) {
 		ers::warning(excpt);
 	  }
   }
-//TLOG() << get_name() << ": A hdf5 file of size: " << m_bytes_output_tot << " bytes has been created with the average writing rate: "
-//    	 << average_writing_rate << " The file contains " << m_records_written_tot;  
+TLOG() << get_name() << ": A hdf5 file of size: " << m_bytes_output_tot << " bytes has been created with the average writing rate: "
+    	 << average_writing_rate << " The file contains " << m_records_written_tot << " trigger records.";  
 }
 
 } // namespace dfmodules

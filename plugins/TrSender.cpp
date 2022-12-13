@@ -108,7 +108,6 @@ TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() metho
   dtypeToUse = DetID::string_to_subdetector(cfg_.dtypeToUse);
   ftypeToUse = string_to_fragment_type(cfg_.ftypeToUse);
   elementCount = cfg_.elementCount;
-  waitBetweenSends = cfg_.waitBetweenSends;
 
   TLOG() << get_name() << "\nNumber of fragments: " << elementCount << "\nSubsystem: " << stypeToUse << "\nSubdetector: " 
          << dtypeToUse << "\nFragment type: " << cfg_.ftypeToUse << "\nData size: " << dataSize;
@@ -125,11 +124,6 @@ TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() metho
   while (running_flag.load()){
     bool successfullyWasSent = false;
       while (!successfullyWasSent && running_flag.load()) {
-        dataSize = cfg_.dataSize;//please note that fragment size is data size + size of header
-        stypeToUse = SourceID::string_to_subsystem(cfg_.stypeToUse);
-        dtypeToUse = DetID::string_to_subdetector(cfg_.dtypeToUse);
-        ftypeToUse = string_to_fragment_type(cfg_.ftypeToUse);
-        elementCount = cfg_.elementCount;
         uint64_t ts = std::chrono::duration_cast<std::chrono::milliseconds>( // NOLINT(build/unsigned)
                       system_clock::now().time_since_epoch()).count();
         int fragment_size = dataSize + sizeof(FragmentHeader);
@@ -197,8 +191,6 @@ TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() metho
         std::chrono::duration_cast<std::chrono::milliseconds>(queueTimeout_).count()));
       }
     
-      TLOG() << get_name() << ": Start of sleep between sends";
-      std::this_thread::sleep_for(std::chrono::milliseconds(cfg_.waitBetweenSends));
       TLOG() << get_name() << ": End of do_work loop";
     }
   }

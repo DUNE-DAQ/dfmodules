@@ -95,6 +95,7 @@ private:
 
   double_t writing_time_tot;
   double_t average_writing_rate;
+  double_t writing_rate_tot;
 
   // Other
   std::map<daqdataformats::trigger_number_t, size_t> m_seqno_counts;
