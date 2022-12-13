@@ -15,5 +15,6 @@ After creating configuration, we are able to run it with nanorc:
 nanorc [name of the configuration folder] [partition name]
 
 and standard commands for nanorc. 
+
 -------------------------------------------------------------------------------------------------------
 In log file, the complete info about the whole process is visible, including the rate od writing and number of received tokens etc..
