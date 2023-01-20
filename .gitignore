@@ -4,5 +4,6 @@ Nljs.hpp
 Structs.hpp
 
 # integtest temporary files
-integtest/frames.bin
+frames.bin
+wib2-frames.bin
 integtest/__pycache__

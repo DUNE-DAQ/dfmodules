@@ -8,6 +8,7 @@ local s = moo.oschema.schema("dunedaq.dfmodules.triggerrecordbuilderinfo");
 local info = {
    uint8  : s.number("uint8", "u8", doc="An unsigned of 8 bytes"),
    ratio  : s.number("ratio", "f8", doc="A float number of 8 bytes"),
+   str    : s.string("str"),
 
    info: s.record("Info", [
        // status metrics

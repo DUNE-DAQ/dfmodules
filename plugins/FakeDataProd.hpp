@@ -13,7 +13,6 @@
 #include "dfmessages/DataRequest.hpp"
 
 #include "appfwk/DAQModule.hpp"
-#include "iomanager/ConnectionId.hpp"
 #include "utilities/WorkerThread.hpp"
 
 #include <memory>
@@ -87,8 +86,8 @@ private:
   std::string m_timesync_topic_name;
   uint32_t m_pid_of_current_process; // NOLINT (build/unsigned)
 
-  iomanager::connection::ConnectionRef m_data_request_ref;
-  iomanager::connection::ConnectionRef m_timesync_ref;
+  std::string m_data_request_id;
+  std::string m_timesync_id;
 
   std::atomic<uint64_t> m_received_requests{ 0 }; // NOLINT (build/unsigned)
   std::atomic<uint64_t> m_sent_fragments{ 0 };    // NOLINT (build/unsigned)

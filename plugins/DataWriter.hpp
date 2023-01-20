@@ -69,7 +69,7 @@ private:
   int m_write_retry_time_increase_factor;
 
   // Connections
-  iomanager::connection::ConnectionRef m_trigger_record_connection;
+  std::string m_trigger_record_connection;
   using tr_receiver_ct = iomanager::ReceiverConcept<std::unique_ptr<daqdataformats::TriggerRecord>>;
   std::shared_ptr<tr_receiver_ct> m_tr_receiver;
 
@@ -89,8 +89,10 @@ private:
   std::atomic<uint64_t> m_records_written = { 0 };      // NOLINT(build/unsigned)
   std::atomic<uint64_t> m_records_written_tot = { 0 };  // NOLINT(build/unsigned)
   std::atomic<uint64_t> m_bytes_output = { 0 };         // NOLINT(build/unsigned)
-  std::atomic<uint64_t> m_bytes_output_tot = { 0 };         // NOLINT(build/unsigned)
+  std::atomic<uint64_t> m_bytes_output_tot = { 0 };     // NOLINT(build/unsigned)
+  std::atomic<uint64_t> m_writing_ms = { 0 };           // NOLINT(build/unsigned)
 
+  
   // Other
   std::map<daqdataformats::trigger_number_t, size_t> m_seqno_counts;
 
