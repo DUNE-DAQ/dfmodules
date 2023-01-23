@@ -51,7 +51,7 @@ struct ConfigurationTestFixture
     connections.emplace_back(dunedaq::iomanager::Connection{
       { "test.token", "TriggerDecisionToken" }, "inproc://token", dunedaq::iomanager::ConnectionType::kSendRecv });
 
-    dunedaq::get_iomanager()->configure(queues, connections, false); // Not using ConfigClient
+    dunedaq::get_iomanager()->configure(queues, connections, false, 0ms); // Not using ConfigClient
   }
   ~ConfigurationTestFixture() { dunedaq::get_iomanager()->reset(); }
 
