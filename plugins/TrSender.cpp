@@ -22,6 +22,7 @@
 #include "dfmessages/TriggerDecision.hpp"
 #include "dfmodules/trsender/Nljs.hpp"
 #include "dfmodules/trsenderinfo/InfoNljs.hpp"
+#include "detchannelmaps/HardwareMapService.hpp"
 
 #include <fstream>
 #include <iostream>
@@ -105,16 +106,21 @@ TrSender::do_conf(const nlohmann::json& obj)
 TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
   auto cfg_ = obj.get<trsender::Conf>();
   dataSize = cfg_.dataSize;
-  stypeToUse = SourceID::string_to_subsystem(cfg_.stypeToUse);
-  dtypeToUse = DetID::string_to_subdetector(cfg_.dtypeToUse);
-  ftypeToUse = string_to_fragment_type(cfg_.ftypeToUse);
-  elementCount = cfg_.elementCount;
+  m_hardware_map_file = cfg_.hardware_map_file;
+  tokenCount = cfg_.m_token_count;
 
-  TLOG_DEBUG(TVLV_CONFIGURATION) << get_name() << "\nNumber of fragments: " << elementCount << "\nSubsystem: " << stypeToUse << "\nSubdetector: " 
-         << dtypeToUse << "\nFragment type: " << cfg_.ftypeToUse << "\nData size: " << dataSize;
+  std::shared_ptr<detchannelmaps::HardwareMapService> hw_map_svc(
+  new detchannelmaps::HardwareMapService(m_hardware_map_file));
+   
+  std::vector<detchannelmaps::HardwareMapService::HWInfo> parsed_hw_info = hw_map_svc->get_all_hw_info();
+ 
+  elementCount = parsed_hw_info.size();
+
+
 
 TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
 }
+
 
 void
 TrSender::do_work(std::atomic<bool>& running_flag)
@@ -122,9 +128,8 @@ TrSender::do_work(std::atomic<bool>& running_flag)
 TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() method";
   size_t sentCount = 0;
   int triggerRecordCount = 1;
-  while (running_flag.load()){
-    bool successfullyWasSent = false;
-      while (!successfullyWasSent && running_flag.load()) {
+  while (running_flag.load()) {
+    while (running_flag.load() && (sentCount-receivedToken < tokenCount)) {
         uint64_t ts = std::chrono::duration_cast<std::chrono::milliseconds>( // NOLINT(build/unsigned)
                       system_clock::now().time_since_epoch()).count();
         int fragment_size = dataSize + sizeof(FragmentHeader);
@@ -148,6 +153,13 @@ TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() metho
         // loop over elements=fragments
         for (int ele_num = 0; ele_num < elementCount; ++ele_num) {
 
+  std::shared_ptr<detchannelmaps::HardwareMapService> hw_map_svc( //I am doing it again
+  new detchannelmaps::HardwareMapService(m_hardware_map_file));
+   
+  std::vector<detchannelmaps::HardwareMapService::HWInfo> parsed_hw_info = hw_map_svc->get_all_hw_info();
+        dtypeToUse = parsed_hw_info[ele_num].det_id;
+        ftypeToUse = parsed_hw_info[ele_num].det_id;
+
         // create our fragment
         FragmentHeader fh;
         fh.trigger_number = triggerRecordCount;
@@ -157,8 +169,15 @@ TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() metho
         fh.run_number = runNumber;
         fh.fragment_type = static_cast<fragment_type_t>(ftypeToUse);
         fh.sequence_number = 0;
-        fh.detector_id = static_cast<uint16_t>(dtypeToUse);
-        fh.element_id = SourceID(stypeToUse, ele_num);
+        fh.detector_id = dtypeToUse;
+        fh.element_id = SourceID(static_cast<daqdataformats::SourceID::Subsystem>(stypeToUse), ele_num);
+        
+  TLOG_DEBUG(TVLV_TRSENDER) << get_name() << "\nNumber of fragment: " << ele_num << "\nSubsystem: " << static_cast<daqdataformats::SourceID::Subsystem>(stypeToUse)
+         << "\nSubdetector: " << static_cast<detdataformats::DetID::Subdetector>(dtypeToUse) << "\nFragment type: " << fragment_type_to_string(static_cast<FragmentType>(ftypeToUse))
+         << "\nData size: " << dataSize << " B";
+
+
+
 
         auto frag_ptr = std::make_unique<Fragment>(dummy_data.data(), dummy_data.size());
         frag_ptr->set_header_fields(fh);
@@ -170,16 +189,13 @@ TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() metho
         int TrTokenDifference = sentCount-receivedToken;
         TLOG_DEBUG(TVLV_TRSENDER) << get_name() << ": Difference between sent trigger records and received tokens: " << TrTokenDifference;
 
-        if (TrTokenDifference > 4) {
-        TLOG_DEBUG(TVLV_TRSENDER) << get_name() << ": Start of sleep between sends to prevent overloading";
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
- 	      }
+
+
 
       TLOG_DEBUG(TVLV_TRSENDER) << get_name() << ": Pushing the trigger record onto queue. ";
       try{
         m_sender->send(std::move(tr), queueTimeout_);
         ++sentCount;
-        successfullyWasSent = true;
         TLOG_DEBUG(TVLV_TRSENDER) << get_name() << ": The trigger record number " << triggerRecordCount << " sent.";
         ++triggerRecordCount;
       } catch (const dunedaq::iomanager::TimeoutExpired& excpt) {
@@ -193,8 +209,12 @@ TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() metho
       }
     
       TLOG_DEBUG(TVLV_TRSENDER) << get_name() << ": End of do_work loop";
+    
     }
-  }
+        TLOG_DEBUG(TVLV_TRSENDER) << get_name() << ": Start of sleep between sends to prevent overloading";
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+  }      
+
   TLOG() << get_name() << ": Exiting the do_work() method, received configuration file and successfully created " << triggerRecordCount
          << " trigger records and sent "  << sentCount << " trigger records. " << receivedToken << " tokens were received from DataWriter module.";
 TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_work() method";

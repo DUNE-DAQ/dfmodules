@@ -30,15 +30,7 @@
  * @brief Name used by TRACE TLOG calls from this source file
  */
 //#define TRACE_NAME "DataWriter"                   // NOLINT This is the default
-/*#define TRACE_NAME "DataWriter" //NOLINT
-#define TLVL_ENTER_EXIT_METHODS 5
-#define TLVL_CONFIG 7
-#define TLVL_WORK_STEPS 10
-#define TLVL_RECEIVE_TR 15
-#define TLVL_WORK_STEPS 10
-#define TLVL_SEQNO_MAP_CONTENTS 13
-#define TLVL_FRAGMENT_HEADER_DUMP 17
-*/
+
 enum
 {
   TLVL_ENTER_EXIT_METHODS = 5,
@@ -71,9 +63,7 @@ DataWriter::init(const data_t& init_data)
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
   auto iom = iomanager::IOManager::get();
   auto qi = appfwk::connection_index(init_data, { "trigger_record_input", "token_output" });
-  m_trigger_record_connection = qi["trigger_record_input"] ;
-  // try to create the receiver to see test the connection anyway
-  m_tr_receiver = iom -> get_receiver<std::unique_ptr<daqdataformats::TriggerRecord>>(m_trigger_record_connection);
+  m_tr_receiver = iom -> get_receiver<std::unique_ptr<daqdataformats::TriggerRecord>>(qi["trigger_record_input"]);
   m_token_output = iom-> get_sender<dfmessages::TriggerDecisionToken>(qi["token_output"]);
   
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
@@ -93,6 +83,7 @@ DataWriter::get_info(opmonlib::InfoCollector& ci, int /*level*/)
 
   ci.add(dwi);
 }
+
 void
 DataWriter::do_conf(const data_t& payload)
 {
@@ -246,16 +237,20 @@ DataWriter::receive_trigger_record(std::unique_ptr<daqdataformats::TriggerRecord
       do {
 	should_retry = false;
 	try {
+
 TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Writing started for trigger record number: " << m_records_received_tot;
+
 double_t start_writing_timestamp = std::chrono::duration_cast<std::chrono::microseconds>(system_clock::now().time_since_epoch()).count();
 	  m_data_writer->write(*trigger_record_ptr);
 double_t stop_writing_timestamp = std::chrono::duration_cast<std::chrono::microseconds>(system_clock::now().time_since_epoch()).count();
+
 TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Writing stopped for trigger record number: " << m_records_received_tot;
 	  ++m_records_written;
 	  ++m_records_written_tot;
+
 TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Number of written trigger records: " << m_records_written_tot;
-    m_bytes_for_one_tr = 0;
-    m_bytes_for_one_tr += trigger_record_ptr->get_total_size_bytes();
+    m_bytes_for_one_tr = 0; //wtf??
+    m_bytes_for_one_tr += trigger_record_ptr->get_total_size_bytes(); //wtf??
 	  m_bytes_output += trigger_record_ptr->get_total_size_bytes();
 	  m_bytes_output_tot += trigger_record_ptr->get_total_size_bytes();
 

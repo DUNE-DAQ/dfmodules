@@ -20,13 +20,13 @@
 namespace dunedaq {
 
 // Disable coverage collection LCOV_EXCL_START
-ERS_DECLARE_ISSUE_BASE(dfmodules,
+/*ERS_DECLARE_ISSUE_BASE(dfmodules,
                        ProgressUpdate,
                        appfwk::GeneralDAQModuleIssue,
                        message,
                        ((std::string)name),
                        ((std::string)message))
-
+*/
 ERS_DECLARE_ISSUE_BASE(dfmodule,
                        InvalidQueueFatalError,
                        appfwk::GeneralDAQModuleIssue,

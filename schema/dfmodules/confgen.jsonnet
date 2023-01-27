@@ -21,10 +21,7 @@ local cs = {
 
   dfmodules: s.record("dfmodules", [
     s.field("w_data_size",                        self.int8,            default=1000,                doc="Size of the data - fragment size without the size of its header"),
-    s.field("w_stype_to_use",                     self.string,          default="Detector_Readout",  doc="Subsystem type"),
-    s.field("w_dtype_to_use",                     self.string,          default="HD_TPC",            doc="Subdetector type"),
-    s.field("w_ftype_to_use",                     self.string,          default="WIB",               doc="Fragment type"),
-    s.field("w_element_count",                    self.int8,            default=10,                  doc="Number of fragments in trigger record"),
+    s.field("w_token_count",                      self.int8,            default=4,                  doc="Number of fragments in trigger record"),
     s.field("w_data_storage_prescale",            self.count,           default=1,                   doc="Prescale value for writing TriggerRecords to storage"),
 	s.field("w_min_write_retry_time_usec",        self.count,           default=1000,                doc="The minimum time between retries of data writes, in microseconds"),
     s.field("w_max_write_retry_time_usec",        self.count,           default=1000000,             doc="The maximum time between retries of data writes, in microseconds"),

@@ -1,6 +1,6 @@
 {
   "boot": {
-    "base_command_port": 4020,
+    "base_command_port": 4010,
     "disable_trace": false,
     "opmon_impl": "local",
     "ers_impl": "local",
@@ -11,10 +11,7 @@
 
   "dfmodules": {
     "w_data_size": 10000,
-    "w_stype_to_use": "Detector_Readout",
-    "w_dtype_to_use": "HD_TPC",
-    "w_ftype_to_use": "WIB",
-    "w_element_count": 5,
+    "w_token_count": 5,
     "w_data_storage_prescale": 1,
     "w_min_write_retry_time_usec": 1000,
     "w_max_write_retry_time_usec": 1000000,
@@ -26,7 +23,7 @@
     "w_directory_path": ".",
     "w_max_file_size_bytes": 4294967296,
     "w_disable_unique_filename_suffix": false, 
-    "w_hardware_map_file": "/afs/cern.ch/user/e/eljelink/dunedaq-v3.2.0/sourcecode/dfmodules/scripts/HardwareMap.txt",
+    "w_hardware_map_file": "/afs/cern.ch/user/e/eljelink/dunedaq-v3.2.0/sourcecode/dfmodules/scripts/HardwareMap2.txt",
     "w_overall_prefix": "lemon",
     "w_digits_for_run_number": 3,
     "w_file_index_prefix": "file_index_prefix",

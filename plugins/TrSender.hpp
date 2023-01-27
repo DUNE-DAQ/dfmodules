@@ -17,21 +17,20 @@
 #include "ers/Issue.hpp"
 #include "utilities/WorkerThread.hpp"
 #include "dfmodules/trsender/Structs.hpp"
-#include "daqdataformats/Fragment.hpp"
-#include "daqdataformats/TimeSlice.hpp"
 #include "daqdataformats/TriggerRecord.hpp"
+#include "daqdataformats/SourceID.hpp"
 #include "detdataformats/DetID.hpp"
 #include "dfmessages/TriggerDecisionToken.hpp"
 
-#include <atomic>
-#include <memory>
-#include <vector>
-#include <limits>
-#include <thread>
-#include <string>
-#include <fstream>
-#include <iostream>
-#include <utility>
+//#include <atomic>
+//#include <memory>
+//#include <vector>
+//#include <limits>
+//#include <thread>
+//#include <string>
+//#include <fstream>
+//#include <iostream>
+//#include <utility>
 
 using namespace dunedaq::daqdataformats;
 using namespace dunedaq::detdataformats;
@@ -70,11 +69,15 @@ private:
   //Configuration
   daqdataformats::run_number_t runNumber;
   int dataSize;
-  daqdataformats::SourceID::Subsystem stypeToUse;
-  detdataformats::DetID::Subdetector dtypeToUse;
-  daqdataformats::FragmentType ftypeToUse;
+  std::string m_hardware_map_file;
+  int tokenCount;
+  uint16_t dtypeToUse;
+  //daqdataformats::SourceID::Subsystem stypeToUse; 
+  uint16_t stypeToUse = 1; //default
+  //detdataformats::DetID::Subdetector dtypeToUse;
+  //daqdataformats::FragmentType ftypeToUse;
+  uint16_t ftypeToUse;
   int elementCount;
-  int waitBetweenSends;
 
   std::chrono::milliseconds queueTimeout_;
   std::shared_ptr<iomanager::SenderConcept<std::unique_ptr<daqdataformats::TriggerRecord>>> m_sender;

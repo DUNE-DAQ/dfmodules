@@ -37,7 +37,7 @@ def generate_boot(producer_spec: dict,
                 "DUNEDAQ_SHARE_PATH": "getenv",
                 "LD_LIBRARY_PATH": "getenv",
                 "PATH": "getenv",
-                "DUNEDAQ_ERS_DEBUG_LEVEL": "15",
+                "DUNEDAQ_ERS_DEBUG_LEVEL": "1",
                 "TRACE_FILE": "getenv:/tmp/trace_buffer_${HOSTNAME}_${USER}"
             },
             "cmd": [

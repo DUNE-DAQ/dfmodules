@@ -12,7 +12,6 @@ find_dependency(appfwk)
 find_dependency(dfmessages)
 find_dependency(logging)
 find_dependency(ers)
-find_dependency(dfmessages)
 find_dependency(opmonlib)
 find_dependency(triggeralgs)
 find_dependency(trigger)
@@ -20,12 +19,12 @@ find_dependency(serialization)
 find_dependency(readoutlibs)
 find_dependency(hdf5libs)
 find_dependency(Boost COMPONENTS iostreams)
-find_dependency(HighFive)
-find_dependency(daqdataformats)
-find_dependency(detchannelmaps)
-find_dependency(nlohmann_json)
-find_dependency(cetlib)
-find_dependency(daqconf)
+
+#find_dependency(daqdataformats) nevim jestli je to nutne
+#find_dependency(detchannelmaps)
+#find_dependency(nlohmann_json)
+#find_dependency(cetlib)
+#find_dependency(daqconf)
 
 
 # Figure out whether or not this dependency is an installed package or

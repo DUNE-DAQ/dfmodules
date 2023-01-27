@@ -61,10 +61,7 @@ def cli(config, json_dir):
     the_system.apps["sender-app"] = dfmodulesapp_gen.get_sender_app(
         nickname = "the-solo-app", 
         size_of_data = dfmodules.w_data_size,
-        subsystem_type = dfmodules.w_stype_to_use,
-        subdetector_type = dfmodules.w_dtype_to_use,
-        fragment_type = dfmodules.w_ftype_to_use,
-        number_of_elements = dfmodules.w_element_count,
+        tokenCount = dfmodules.w_token_count,
         c_data_storage_prescale = dfmodules.w_data_storage_prescale,
         c_min_write_retry_time_usec = dfmodules.w_min_write_retry_time_usec,
         c_max_write_retry_time_usec = dfmodules.w_max_write_retry_time_usec,
