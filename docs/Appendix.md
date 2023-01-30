@@ -9,7 +9,7 @@ In order to run this process you should create a configuration with command:
 
 sender_gen -c [json file path] [name of the configuration folder]
 
-An example json configuration file is placed in scripts folder. It contains besides other things Hardwaremap. The hardware map afterwards defines number of fragments, type of subdetector and type of fragments. Another important parameter for TrSendermodule is data size which set the size of fragments. The function of w_token_count is to prevent overloading. 
+An example json configuration file is placed in scripts folder. It contains besides other things Hardwaremap. The hardware map afterwards defines number of fragments, type of subdetector and type of fragments. Another important parameter for TrSender module is data size which set the size of fragments. The function of w_token_count is to prevent overloading. 
 After creating configuration, we are able to run it with nanorc: 
 
 nanorc [name of the configuration folder] [partition name]
