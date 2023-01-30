@@ -69,10 +69,9 @@ TriggerRecordBuilder::init(const data_t& init_data)
   // Get single queues
   //---------------------------------
 
-  auto ci = appfwk::connection_index(init_data, { "trigger_decision_input", "trigger_record_output" });
+  auto ci = appfwk::connection_index(init_data, { "trigger_record_output" });
 
   auto iom = iomanager::IOManager::get();
-  m_trigger_decision_input = iom->get_receiver<dfmessages::TriggerDecision>(ci["trigger_decision_input"]);
   m_trigger_record_output =
     iom->get_sender<std::unique_ptr<daqdataformats::TriggerRecord>>(ci["trigger_record_output"]);
 
@@ -154,6 +153,10 @@ TriggerRecordBuilder::do_conf(const data_t& payload)
 
   m_this_trb_source_id.subsystem = daqdataformats::SourceID::Subsystem::kTRBuilder;
   m_this_trb_source_id.id = parsed_conf.source_id;
+
+  std::ostringstream conn_uid_oss;
+  conn_uid_oss << "trigger_decision_" << m_this_trb_source_id.id;
+  m_trigger_decision_input = get_iom_receiver<dfmessages::TriggerDecision>(conn_uid_oss.str());
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
 }
