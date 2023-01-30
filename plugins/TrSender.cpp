@@ -108,16 +108,6 @@ TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() metho
   dataSize = cfg_.dataSize;
   m_hardware_map_file = cfg_.hardware_map_file;
   tokenCount = cfg_.m_token_count;
-
-  std::shared_ptr<detchannelmaps::HardwareMapService> hw_map_svc(
-  new detchannelmaps::HardwareMapService(m_hardware_map_file));
-   
-  std::vector<detchannelmaps::HardwareMapService::HWInfo> parsed_hw_info = hw_map_svc->get_all_hw_info();
- 
-  elementCount = parsed_hw_info.size();
-
-
-
 TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
 }
 
@@ -135,6 +125,12 @@ TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() metho
         int fragment_size = dataSize + sizeof(FragmentHeader);
         std::vector<char> dummy_data(fragment_size);
 
+  std::shared_ptr<detchannelmaps::HardwareMapService> hw_map_svc(
+  new detchannelmaps::HardwareMapService(m_hardware_map_file));
+   
+  std::vector<detchannelmaps::HardwareMapService::HWInfo> parsed_hw_info = hw_map_svc->get_all_hw_info();
+  elementCount = parsed_hw_info.size();
+
         // create TriggerRecordHeader
         TriggerRecordHeaderData trh_data;
         trh_data.trigger_number = triggerRecordCount;
@@ -149,17 +145,15 @@ TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() metho
         std::unique_ptr<daqdataformats::TriggerRecord> tr = std::make_unique<daqdataformats::TriggerRecord>( trh );
         TLOG_DEBUG(TVLV_TRSENDER) << get_name() << ": The trigger record number " << triggerRecordCount << " created.";
 
-  
+
         // loop over elements=fragments
         for (int ele_num = 0; ele_num < elementCount; ++ele_num) {
 
-  std::shared_ptr<detchannelmaps::HardwareMapService> hw_map_svc( //I am doing it again
-  new detchannelmaps::HardwareMapService(m_hardware_map_file));
-   
-  std::vector<detchannelmaps::HardwareMapService::HWInfo> parsed_hw_info = hw_map_svc->get_all_hw_info();
         dtypeToUse = parsed_hw_info[ele_num].det_id;
         ftypeToUse = parsed_hw_info[ele_num].det_id;
+        std::string dro_host = parsed_hw_info[ele_num].dro_host;
 
+        
         // create our fragment
         FragmentHeader fh;
         fh.trigger_number = triggerRecordCount;
@@ -173,11 +167,8 @@ TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() metho
         fh.element_id = SourceID(static_cast<daqdataformats::SourceID::Subsystem>(stypeToUse), ele_num);
         
   TLOG_DEBUG(TVLV_TRSENDER) << get_name() << "\nNumber of fragment: " << ele_num << "\nSubsystem: " << static_cast<daqdataformats::SourceID::Subsystem>(stypeToUse)
-         << "\nSubdetector: " << static_cast<detdataformats::DetID::Subdetector>(dtypeToUse) << "\nFragment type: " << fragment_type_to_string(static_cast<FragmentType>(ftypeToUse))
+         << "\nSubdetector: " << static_cast<detdataformats::DetID::Subdetector>(dtypeToUse) << "\nFragment type: " << ftypeToUse
          << "\nData size: " << dataSize << " B";
-
-
-
 
         auto frag_ptr = std::make_unique<Fragment>(dummy_data.data(), dummy_data.size());
         frag_ptr->set_header_fields(fh);

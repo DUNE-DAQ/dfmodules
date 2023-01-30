@@ -1,0 +1,56 @@
+{
+    "connections": [
+        {
+            "data_type": "",
+            "service_type": "kQueue",
+            "topics": [],
+            "uid": "trigger_record",
+            "uri": "queue://FollySPSC:10"
+        },
+        {
+            "data_type": "",
+            "service_type": "kQueue",
+            "topics": [],
+            "uid": "token",
+            "uri": "queue://FollySPSC:10"
+        }
+    ],
+    "modules": [
+        {
+            "data": {
+                "conn_refs": [
+                    {
+                        "dir": "kOutput",
+                        "name": "trigger_record_output",
+                        "uid": "trigger_record"
+                    },
+                    {
+                        "dir": "kInput",
+                        "name": "token_input",
+                        "uid": "token"
+                    }
+                ]
+            },
+            "inst": "ts",
+            "plugin": "TrSender"
+        },
+        {
+            "data": {
+                "conn_refs": [
+                    {
+                        "dir": "kInput",
+                        "name": "trigger_record_input",
+                        "uid": "trigger_record"
+                    },
+                    {
+                        "dir": "kOutput",
+                        "name": "token_output",
+                        "uid": "token"
+                    }
+                ]
+            },
+            "inst": "dw",
+            "plugin": "DataWriter"
+        }
+    ]
+}

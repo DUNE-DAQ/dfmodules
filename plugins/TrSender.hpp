@@ -22,16 +22,6 @@
 #include "detdataformats/DetID.hpp"
 #include "dfmessages/TriggerDecisionToken.hpp"
 
-//#include <atomic>
-//#include <memory>
-//#include <vector>
-//#include <limits>
-//#include <thread>
-//#include <string>
-//#include <fstream>
-//#include <iostream>
-//#include <utility>
-
 using namespace dunedaq::daqdataformats;
 using namespace dunedaq::detdataformats;
 
@@ -72,12 +62,13 @@ private:
   std::string m_hardware_map_file;
   int tokenCount;
   uint16_t dtypeToUse;
-  //daqdataformats::SourceID::Subsystem stypeToUse; 
   uint16_t stypeToUse = 1; //default
-  //detdataformats::DetID::Subdetector dtypeToUse;
-  //daqdataformats::FragmentType ftypeToUse;
   uint16_t ftypeToUse;
   int elementCount;
+  //daqdataformats::SourceID::Subsystem stypeToUse; 
+  //detdataformats::DetID::Subdetector dtypeToUse;
+  //daqdataformats::FragmentType ftypeToUse;
+
 
   std::chrono::milliseconds queueTimeout_;
   std::shared_ptr<iomanager::SenderConcept<std::unique_ptr<daqdataformats::TriggerRecord>>> m_sender;

@@ -249,8 +249,8 @@ TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Writing stopped for trigger reco
 	  ++m_records_written_tot;
 
 TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Number of written trigger records: " << m_records_written_tot;
-    m_bytes_for_one_tr = 0; //wtf??
-    m_bytes_for_one_tr += trigger_record_ptr->get_total_size_bytes(); //wtf??
+    m_bytes_for_one_tr = 0; 
+    m_bytes_for_one_tr += trigger_record_ptr->get_total_size_bytes(); 
 	  m_bytes_output += trigger_record_ptr->get_total_size_bytes();
 	  m_bytes_output_tot += trigger_record_ptr->get_total_size_bytes();
 

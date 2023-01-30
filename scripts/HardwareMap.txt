@@ -1,5 +1,5 @@
 # SourceID DetLink DetSlot DetCrate DetID DRO_Host DRO_Card DRO_SLR DRO_Link 
 0 0 0 1 3 np04-srv-028 0 0 0
 1 1 0 1 4 np04-srv-028 0 0 1
-1 1 0 1 1 np04-srv-028 0 0 1
-1 1 0 1 2 np04-srv-028 0 0 1
+2 1 0 1 1 np04-srv-028 0 0 1
+3 1 0 1 2 np04-srv-028 0 0 1

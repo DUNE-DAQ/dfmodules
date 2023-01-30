@@ -1,0 +1,83 @@
+{
+    "modules": [
+        {
+            "data": {
+                "dataSize": 10000,
+                "hardware_map_file": "/afs/cern.ch/user/e/eljelink/dunedaq-v3.2.0/sourcecode/dfmodules/scripts/HardwareMap2.txt",
+                "m_token_count": 5
+            },
+            "match": "ts"
+        },
+        {
+            "data": {
+                "data_storage_prescale": 1,
+                "data_store_parameters": {
+                    "directory_path": ".",
+                    "disable_unique_filename_suffix": false,
+                    "file_layout_parameters": {
+                        "digits_for_record_number": 4,
+                        "digits_for_sequence_number": 4,
+                        "path_param_list": [
+                            {
+                                "detector_group_name": "TPC",
+                                "detector_group_type": "Detector_Readout",
+                                "digits_for_element_number": 5,
+                                "element_name_prefix": "Link"
+                            },
+                            {
+                                "detector_group_name": "PDS",
+                                "detector_group_type": "Detector_Readout",
+                                "digits_for_element_number": 5,
+                                "element_name_prefix": "Element"
+                            },
+                            {
+                                "detector_group_name": "NDLArTPC",
+                                "detector_group_type": "Detector_Readout",
+                                "digits_for_element_number": 5,
+                                "element_name_prefix": "Element"
+                            },
+                            {
+                                "detector_group_name": "DataSelection",
+                                "detector_group_type": "Trigger",
+                                "digits_for_element_number": 5,
+                                "element_name_prefix": "Element"
+                            },
+                            {
+                                "detector_group_name": "HSI",
+                                "detector_group_type": "HW_Signals_Interface",
+                                "digits_for_element_number": 5,
+                                "element_name_prefix": "Element"
+                            }
+                        ],
+                        "raw_data_group_name": "RawData",
+                        "record_header_dataset_name": "TriggerRecordHeader",
+                        "record_name_prefix": "TriggerRecord",
+                        "view_group_name": "Views"
+                    },
+                    "filename_parameters": {
+                        "digits_for_file_index": 5,
+                        "digits_for_run_number": 3,
+                        "digits_for_trigger_number": 6,
+                        "file_index_prefix": "file_index_prefix",
+                        "overall_prefix": "lemon",
+                        "run_number_prefix": "run",
+                        "trigger_number_prefix": "",
+                        "writer_identifier": "writerid"
+                    },
+                    "free_space_safety_factor_for_write": 5.0,
+                    "hardware_map_file": "/afs/cern.ch/user/e/eljelink/dunedaq-v3.2.0/sourcecode/dfmodules/scripts/HardwareMap2.txt",
+                    "max_file_size_bytes": 4294967296,
+                    "mode": "all-per-file",
+                    "name": "data_store",
+                    "operational_environment": "coldbox",
+                    "type": "HDF5DataStore"
+                },
+                "decision_connection": "Name",
+                "max_write_retry_time_usec": 1000000,
+                "min_write_retry_time_usec": 1000,
+                "write_retry_time_increase_factor": 2
+            },
+            "match": "dw"
+        }
+    ]
+}

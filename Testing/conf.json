@@ -1,0 +1,5 @@
+{
+    "apps": {
+        "sender-app": "data/sender-app_conf"
+    }
+}

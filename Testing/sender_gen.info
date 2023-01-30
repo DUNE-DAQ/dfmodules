@@ -1,0 +1,6 @@
+{
+    "build_info": {},
+    "command_line": "/afs/cern.ch/user/e/eljelink/dunedaq-v3.2.0/install/dfmodules/bin/sender_gen -c /afs/cern.ch/user/e/eljelink/dunedaq-v3.2.0/sourcecode/dfmodules/scripts/tr_example_config.json Testing",
+    "config_file": "/afs/cern.ch/user/e/eljelink/dunedaq-v3.2.0/sourcecode/dfmodules/scripts/tr_example_config.json",
+    "daqconf_exe_dir": "/afs/cern.ch/user/e/eljelink/dunedaq-v3.2.0/install/dfmodules/bin"
+}
