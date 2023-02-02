@@ -6,7 +6,7 @@ Here is a command for fetching a file that has WIB data in it (to be used in gen
 cp -v `assets-list -c 9f14e12a0ebdaf207e9e740044b2433c | awk '{print $NF}'` .
 ```
 
-Here is a sample command for invoking a test (remove or keep the options in brackets, as you prefer):
+Here is a sample command for invoking a test (feel free remove or keep the options in brackets, as you prefer):
 
 ```
 pytest -s minimal_system_quick_test.py [--frame-file $PWD/frames.bin] [--nanorc-option partition-number 3] [--nanorc-option timeout 300]
