@@ -1,8 +1,10 @@
 # 21-Jul-2022, KAB: notes on some initial integrationtests...
 
-Here is a command for fetching a file that has WIB data in it (to be used in generating emulated data).  Please note that this command assumes that the "DAQ assettools" (`daq-assettools` repo) are available in your software area.  If you are using a relatively recent release or nightly build, this will be the case.
+Here is a command for fetching a file that has WIB data in it (to be used in generating emulated data).  [Please note that this command assumes that the "DAQ assettools" (`daq-assettools` repo) are available in your software area.  If you are using a relatively recent release or nightly build, this will be the case.]
 
-* `cp -v `assets-list -c 9f14e12a0ebdaf207e9e740044b2433c | awk '{print $NF}'` .`
+```
+cp -v `assets-list -c 9f14e12a0ebdaf207e9e740044b2433c | awk '{print $NF}'` .
+```
 
 Here is a sample command for invoking a test:
 
