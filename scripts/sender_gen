@@ -1,0 +1,113 @@
+#!/usr/bin/env python3
+
+import click
+import json
+import os
+from rich.console import Console
+
+from daqconf.core.conf_utils import make_app_command_data
+from daqconf.core.config_file import generate_cli_from_schema
+from daqconf.core.metadata import write_metadata_file
+from daqconf.core.system import System
+
+console = Console()
+
+# Set moo schema search path
+from dunedaq.env import get_moo_model_path
+import moo.io
+moo.io.default_load_path = get_moo_model_path()
+
+CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
+@click.command(context_settings=CONTEXT_SETTINGS)
+@generate_cli_from_schema('dfmodules/confgen.jsonnet', 'sender_gen')
+@click.argument('json_dir', type=click.Path())
+def cli(config, json_dir):
+
+    if os.path.exists(json_dir):
+        raise RuntimeError(f"Directory {json_dir} already exists")
+
+    config_data = config[0]
+    config_file = config[1]
+
+    #console.log(f"\nTotal configuration for this app before any overrides: {config_data.pod()}")
+
+    # Get our config objects
+    # Loading this one another time... (first time in config_file.generate_cli_from_schema)    
+
+    moo.otypes.load_types('dfmodules/confgen.jsonnet')
+    import dunedaq.dfmodules.confgen as confgen
+    moo.otypes.load_types('daqconf/confgen.jsonnet')
+    import dunedaq.daqconf.confgen as daqconfgen
+
+    console.log(f"\nIndividual configuration records before any command line overrides: ")    
+
+    # Copy-of-a-hack, see daqconf's daqconf_multiru_gen file (commit e26a21d54fc5)
+    boot = daqconfgen.boot(**config_data.boot)
+    console.log(f"boot configuration object: {boot.pod()}")
+
+    dfmodules = confgen.dfmodules(**config_data.dfmodules)
+    console.log(f"dfmodules configuration object: {dfmodules.pod()}")
+
+    console.log(f"\nIndividual configuration records after any command line overrides: ")
+    console.log(f"boot configuration object: {boot.pod()}")
+    console.log(f"dfmodules configuration object: {dfmodules.pod()}")	
+
+    console.log("Loading dfmodulesapp config generator")
+    from dfmodules import dfmodulesapp_gen
+
+    the_system = System()
+
+    
+    the_system.apps["sender-app"] = dfmodulesapp_gen.get_sender_app(
+        nickname = "the-solo-app", 
+        size_of_data = dfmodules.w_data_size,
+        tokenCount = dfmodules.w_token_count,
+        c_data_storage_prescale = dfmodules.w_data_storage_prescale,
+        c_min_write_retry_time_usec = dfmodules.w_min_write_retry_time_usec,
+        c_max_write_retry_time_usec = dfmodules.w_max_write_retry_time_usec,
+        c_write_retry_time_increase_factor = dfmodules.w_write_retry_time_increase_factor,
+        c_decision_connection = dfmodules.w_decision_connection,
+        c_name = dfmodules.w_name,
+        c_operational_environment = dfmodules.w_operational_environment,
+        c_mode = dfmodules.w_mode,
+        c_directory_path = dfmodules.w_directory_path,
+        c_max_file_size_bytes = dfmodules.w_max_file_size_bytes,
+        c_disable_unique_filename_suffix = dfmodules.w_disable_unique_filename_suffix,
+        c_hardware_map_file = dfmodules.w_hardware_map_file,
+        c_overall_prefix = dfmodules.w_overall_prefix,
+        c_digits_for_run_number = dfmodules.w_digits_for_run_number,
+        c_file_index_prefix = dfmodules.w_file_index_prefix,
+        c_digits_for_file_index = dfmodules.w_digits_for_file_index,
+        c_writer_identifier = dfmodules.w_writer_identifier,
+        c_record_name_prefix = dfmodules.w_record_name_prefix,
+        c_digits_for_record_number = dfmodules.w_digits_for_record_number
+        
+        
+    )
+
+    ####################################################################                                  
+    # Application command data generation                                                                 
+    ####################################################################                                  
+
+    # Arrange per-app command data into the format used by util.write_json_files()    
+
+    app_command_datas = {
+        name : make_app_command_data(the_system, app, name)
+        for name, app in the_system.apps.items()
+    }
+
+    # Make boot.json config                                                                               
+    from daqconf.core.conf_utils import make_system_command_datas, write_json_files
+    system_command_datas = make_system_command_datas(boot, the_system, verbose = False)
+
+    write_json_files(app_command_datas, system_command_datas, json_dir, verbose=True)
+
+    console.log(f"sender app config generated in {json_dir}")
+
+    write_metadata_file(json_dir, "sender_gen", config_file)
+
+if __name__ == "__main__":
+    try:
+        cli(show_default=True, standalone_mode=True)
+    except Exception:
+        console.print_exception()

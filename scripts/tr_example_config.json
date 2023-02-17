@@ -1,0 +1,35 @@
+{
+    "boot": {
+      "base_command_port": 4010,
+      "disable_trace": false,
+      "opmon_impl": "local",
+      "ers_impl": "local",
+      "pocket_url": "127.0.0.1",
+      "image": "",
+      "use_k8s": false
+    },
+  
+    "dfmodules": {
+      "w_data_size": 10000,
+      "w_token_count": 10,
+      "w_data_storage_prescale": 1,
+      "w_min_write_retry_time_usec": 1000,
+      "w_max_write_retry_time_usec": 1000000,
+      "w_write_retry_time_increase_factor": 2,
+      "w_decision_connection": "Name",
+      "w_name": "data_store",
+      "w_operational_environment": "coldbox",
+      "w_mode": "all-per-file",
+      "w_directory_path": ".",
+      "w_max_file_size_bytes": 4294967296,
+      "w_disable_unique_filename_suffix": false, 
+      "w_hardware_map_file": "/nfs/home/eljelink/dunedaq-v3.2.2/sourcecode/dfmodules/scripts/HardwareMap.txt",
+      "w_overall_prefix": "writer",
+      "w_digits_for_run_number": 3,
+      "w_file_index_prefix": "file_index_prefix",
+      "w_digits_for_file_index": 5,
+      "w_writer_identifier": "writerid",
+      "w_record_name_prefix": "TriggerRecord",
+      "w_digits_for_record_number": 4
+  }
+  }

@@ -91,7 +91,12 @@ private:
   std::atomic<uint64_t> m_bytes_output = { 0 };         // NOLINT(build/unsigned)
   std::atomic<uint64_t> m_bytes_output_tot = { 0 };     // NOLINT(build/unsigned)
   std::atomic<uint64_t> m_writing_ms = { 0 };           // NOLINT(build/unsigned)
+  std::atomic<uint64_t> m_tokens_sent = { 0 };     // NOLINT(build/unsigned)
+  std::atomic<uint64_t> m_bytes_for_one_tr = { 0 };         // NOLINT(build/unsigned)
 
+  double_t writing_time_tot;
+  double_t average_writing_rate;
+  double_t writing_rate_tot;
   
   // Other
   std::map<daqdataformats::trigger_number_t, size_t> m_seqno_counts;

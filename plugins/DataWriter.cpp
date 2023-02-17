@@ -35,6 +35,7 @@ enum
 {
   TLVL_ENTER_EXIT_METHODS = 5,
   TLVL_CONFIG = 7,
+  TLVL_RECEIVE_TR = 15,
   TLVL_WORK_STEPS = 10,
   TLVL_SEQNO_MAP_CONTENTS = 13,
   TLVL_FRAGMENT_HEADER_DUMP = 17
@@ -61,12 +62,9 @@ DataWriter::init(const data_t& init_data)
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
   auto iom = iomanager::IOManager::get();
   auto qi = appfwk::connection_index(init_data, { "trigger_record_input", "token_output" });
-  m_trigger_record_connection = qi["trigger_record_input"] ;
-  // try to create the receiver to see test the connection anyway
-  m_tr_receiver = iom -> get_receiver<std::unique_ptr<daqdataformats::TriggerRecord>>(m_trigger_record_connection);
-
+  m_tr_receiver = iom -> get_receiver<std::unique_ptr<daqdataformats::TriggerRecord>>(qi["trigger_record_input"]);
   m_token_output = iom-> get_sender<dfmessages::TriggerDecisionToken>(qi["token_output"]);
-  
+
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
 
@@ -173,6 +171,7 @@ DataWriter::do_start(const data_t& payload)
   m_records_written_tot = 0;
   m_bytes_output = 0;
   m_bytes_output_tot = 0;
+  m_tokens_sent = 0;
 
   m_running.store(true);
 
@@ -254,11 +253,32 @@ DataWriter::receive_trigger_record(std::unique_ptr<daqdataformats::TriggerRecord
       do {
 	should_retry = false;
 	try {
+    TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Writing started for trigger record number: " << m_records_received_tot;
+
+double_t start_writing_timestamp = std::chrono::duration_cast<std::chrono::microseconds>(system_clock::now().time_since_epoch()).count();
 	  m_data_writer->write(*trigger_record_ptr);
+double_t stop_writing_timestamp = std::chrono::duration_cast<std::chrono::microseconds>(system_clock::now().time_since_epoch()).count();
+
+TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Writing stopped for trigger record number: " << m_records_received_tot;
+
 	  ++m_records_written;
 	  ++m_records_written_tot;
-	  m_bytes_output += trigger_record_ptr->get_total_size_bytes();
+	
+  TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Number of written trigger records: " << m_records_written_tot;
+
+    m_bytes_output += trigger_record_ptr->get_total_size_bytes();
 	  m_bytes_output_tot += trigger_record_ptr->get_total_size_bytes();
+
+double_t writing_time = stop_writing_timestamp - start_writing_timestamp;
+TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Writing time is: " << writing_time << " microseconds";
+TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Size of trigger record is: " << m_bytes_for_one_tr << " bytes";
+writing_time_tot += writing_time;
+
+double_t writing_rate = m_bytes_for_one_tr/writing_time;
+writing_rate_tot += writing_rate;
+TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Writing rate is: " << writing_rate << " MB/s";
+average_writing_rate =  writing_rate_tot/m_records_written_tot;
+
 	} catch (const RetryableDataStoreProblem& excpt) {
 	  should_retry = true;
 	  ers::error(DataWritingProblem(ERS_HERE,
@@ -325,6 +345,8 @@ DataWriter::receive_trigger_record(std::unique_ptr<daqdataformats::TriggerRecord
       try {
 	m_token_output -> send( std::move(token), m_queue_timeout );
 	wasSentSuccessfully = true;
+  ++m_tokens_sent;
+  TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Token number: " << m_tokens_sent << " has been sent.";
       } catch (const ers::Issue& excpt) {
 	std::ostringstream oss_warn;
 	oss_warn << "Send with sender \"" << m_token_output -> get_name() << "\" failed";
@@ -343,6 +365,7 @@ DataWriter::do_work(std::atomic<bool>& running_flag) {
 	  try {
 		std::unique_ptr<daqdataformats::TriggerRecord> tr = m_tr_receiver-> receive(std::chrono::milliseconds(10));   
                 receive_trigger_record(tr);
+    TLOG_DEBUG(TLVL_RECEIVE_TR) << get_name() << ": Received a new TR";
 	  }
 	  catch(const iomanager::TimeoutExpired& excpt) {
 	  }
@@ -350,6 +373,10 @@ DataWriter::do_work(std::atomic<bool>& running_flag) {
 		ers::warning(excpt);
 	  }
   }
+
+TLOG() << get_name() << ": A hdf5 file of size: " << m_bytes_output_tot << " bytes has been created with the average writing rate: "
+    	 << average_writing_rate << " MB/s. The file contains " << m_records_written_tot << " trigger records.";  
+
 }
 
 } // namespace dfmodules
