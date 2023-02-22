@@ -4,6 +4,8 @@ local s = moo.oschema.schema(ns);
 
 local s_filelayout = import "hdf5libs/hdf5filelayout.jsonnet";
 local filelayout = moo.oschema.hier(s_filelayout).dunedaq.hdf5libs.hdf5filelayout;
+local s_hwmapsvc = import "detchannelmaps/hardwaremapservice.jsonnet";
+local hwmapsvc = moo.oschema.hier(s_hwmapsvc).dunedaq.detchannelmaps.hardwaremapservice;
 
 local types = {
     size : s.number("Size", "u8", doc="A count of very many things"),
@@ -56,10 +58,9 @@ local types = {
 		doc="Parameters that are used for the file layout of the HDF5 files"),
         s.field("free_space_safety_factor_for_write", self.factor, 5.0,
                 doc="The safety factor that should be used when determining if there is sufficient free disk space during write operations"),
-        s.field("hardware_map", self.ds_string, "",
-                doc="The MsgPack serialized hardware map"),
+        s.field("hardware_map", hwmapsvc.HardwareMap, doc="The hardware map"),
     ], doc="HDF5DataStore configuration"),
 
 };
 
-s_filelayout + moo.oschema.sort_select(types, ns)
+s_filelayout + s_hwmapsvc + moo.oschema.sort_select(types, ns)

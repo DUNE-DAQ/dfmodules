@@ -137,15 +137,15 @@ create_trigger_record(int trig_num, int fragment_size, int element_count)
   return tr;
 }
 
-std::string
+dunedaq::detchannelmaps::HardwareMap
 make_hardware_map(std::string file_path, int app_count, int link_count, int det_id = 3)
 {
-  dunedaq::detchannelmaps::HardwareMapService::HardwareMap output;
+  dunedaq::detchannelmaps::HardwareMap output;
   int sid = 0;
 
   for (int app = 0; app < app_count; ++app) {
     for (int link = 0; link < link_count; ++link) {
-      dunedaq::detchannelmaps::HardwareMapService::HWInfo info;
+      dunedaq::detchannelmaps::HWInfo info;
       info.dro_source_id = sid;
       info.det_link = sid % 2;
       info.det_slot = sid / 2;
@@ -155,15 +155,12 @@ make_hardware_map(std::string file_path, int app_count, int link_count, int det_
       info.dro_card = app;
       info.dro_slr = link / 5;
       info.dro_link = link % 5;
-      info.is_valid = true;
-      info.geo_id = dunedaq::detchannelmaps::HardwareMapService::get_geo_id(sid % 2, sid / 2, app, det_id);
+      info.from_file = true;
       output.link_infos.push_back(info);
       ++sid;
     }
   }
-  dunedaq::detchannelmaps::HardwareMapService service(output);
-
-  return service.get_serialized_hardware_map();
+  return output;
 }
 
 BOOST_AUTO_TEST_SUITE(HDF5Write_test)

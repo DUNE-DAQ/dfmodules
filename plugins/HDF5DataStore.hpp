@@ -121,7 +121,7 @@ public:
 
     m_config_params = conf.get<hdf5datastore::ConfParams>();
     m_file_layout_params = m_config_params.file_layout_parameters;
-    m_hardware_map = detchannelmaps::HardwareMapService::deserialize_hardware_map(m_config_params.hardware_map);
+    m_hardware_map = m_config_params.hardware_map;
 
     m_operation_mode = m_config_params.mode;
     m_path = m_config_params.directory_path;
@@ -315,7 +315,7 @@ private:
   std::string m_basic_name_of_open_file;
   unsigned m_open_flags_of_open_file;
   daqdataformats::run_number_t m_run_number;
-  detchannelmaps::HardwareMapService::HardwareMap m_hardware_map;
+  detchannelmaps::HardwareMap m_hardware_map;
 
   // Total number of generated files
   size_t m_file_index;
