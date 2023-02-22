@@ -1,12 +1,16 @@
 # 21-Jul-2022, KAB: notes on some initial integrationtests...
 
-Here is a command for fetching a file that has WIB data in it (to be used in generating emulated data):
+Here is a command for fetching a file that has WIB data in it (to be used in generating emulated data).  [Please note that this command assumes that the "DAQ assettools" (`daq-assettools` repo) are available in your software area.  If you are using a relatively recent release or nightly build, this will be the case.]
 
-* `curl -o frames.bin https://cernbox.cern.ch/index.php/s/0XzhExSIMQJUsp0/download`
+```
+cp -v `assets-list -c 9f14e12a0ebdaf207e9e740044b2433c | awk '{print $NF}'` .
+```
 
-Here is a sample command for invoking a test:
+Here is a sample command for invoking a test (feel free to keep or drop the options in brackets, as you prefer):
 
-* `pytest -s minimal_system_quick_test.py [--frame-file $PWD/frames.bin] [--nanorc-option partition-number 3] [--nanorc-option timeout 300]`
+```
+pytest -s minimal_system_quick_test.py [--frame-file $PWD/frames.bin] [--nanorc-option partition-number 3] [--nanorc-option timeout 300]
+```
 
 For reference, here are the ideas behind the existing tests:
 * minimal_system_quick_test.py - verify that a small emulator system works fine and data gets written in a short run
