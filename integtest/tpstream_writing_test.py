@@ -77,6 +77,7 @@ except:
   conf_dict["boot"]["use_connectivity_service"] = False
 conf_dict["readout"]["data_rate_slowdown_factor"] = data_rate_slowdown_factor
 conf_dict["readout"]["latency_buffer_size"] = 200000
+conf_dict["readout"]["default_data_file"] = "asset://label/ProtoWIB"
 conf_dict["trigger"]["trigger_rate_hz"] = pulser_trigger_rate
 conf_dict["trigger"]["enable_tpset_writing"] = True
 conf_dict["trigger"]["tpset_output_path"] = output_dir
