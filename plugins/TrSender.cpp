@@ -17,12 +17,13 @@
 #include "logging/Logging.hpp"
 #include "ers/Issue.hpp"
 #include "detdataformats/DetID.hpp"
-#include "CommonIssues.hpp"
 #include "rcif/cmd/Nljs.hpp"
 #include "dfmessages/TriggerDecision.hpp"
 #include "dfmodules/trsender/Nljs.hpp"
 #include "dfmodules/trsenderinfo/InfoNljs.hpp"
 #include "detchannelmaps/HardwareMapService.hpp"
+#include "dfmessages/TriggerRecord_serialization.hpp"
+#include "dfmodules/CommonIssues.hpp"
 
 #include <fstream>
 #include <iostream>
@@ -47,7 +48,7 @@ TrSender::TrSender(const std::string& name)
   : dunedaq::appfwk::DAQModule(name)
   , thread_(std::bind(&TrSender::do_work, this, std::placeholders::_1))
   , rcthread_(std::bind(&TrSender::do_receive, this, std::placeholders::_1))
-  , m_sender()
+  , m_sender(nullptr)
   , inputQueue_(nullptr)
   , queueTimeout_(100)
 {
@@ -58,13 +59,22 @@ TrSender::TrSender(const std::string& name)
 }
 
 void
-TrSender::init(const data_t& /* structured args */ init_data)
+TrSender::init(const nlohmann::json& /* structured args */ init_data)
 {
 TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS)  << get_name() << ": Entering init() method";
+//queues initialization
   auto iom = iomanager::IOManager::get();
   auto ci = appfwk::connection_index(init_data, { "trigger_record_output", "token_input" });
-  m_sender = iom -> get_sender<std::unique_ptr<daqdataformats::TriggerRecord>>(ci["trigger_record_output"]);
-  inputQueue_ =  iom -> get_receiver<dfmessages::TriggerDecisionToken>(ci["token_input"]);
+  try {
+    inputQueue_ = get_iom_receiver<dfmessages::TriggerDecisionToken>(ci["token_input"]);
+  } catch (const ers::Issue& excpt) {
+    throw InvalidQueueFatalError(ERS_HERE, get_name(), "token_input", excpt);
+  }
+  try {
+    m_sender = get_iom_sender<std::unique_ptr<daqdataformats::TriggerRecord>>(ci["trigger_record_output"]);
+  } catch (const ers::Issue& excpt) {
+    throw InvalidQueueFatalError(ERS_HERE, get_name(), "trigger_record_output", excpt);
+  }
 TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
 
@@ -72,11 +82,12 @@ void
 TrSender::do_start(const nlohmann::json& obj)
 {
 TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_start() method";
+//in order to run multiple subsequent runs with nanorc, we have to determine runNumber parameter in do_start function
   rcif::cmd::StartParams start_params = obj.get<rcif::cmd::StartParams>();
   runNumber = start_params.run;
   thread_.start_working_thread();
   rcthread_.start_working_thread();
-  TLOG() << get_name() << ": TrSender successfully started fo run number " << runNumber;
+  TLOG() << get_name() << ": TrSender successfully started for run number " << runNumber;
 TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
   }
 
@@ -86,7 +97,7 @@ TrSender::do_stop(const nlohmann::json& /*args*/)
 TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_stop() method";
   thread_.stop_working_thread();
   rcthread_.stop_working_thread();
-  TLOG() << get_name() << ": TrSender successfully stopped fo run number " << runNumber;
+  TLOG() << get_name() << ": TrSender successfully stopped for run number " << runNumber;
 TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_stop() method";
 }
 
@@ -119,7 +130,7 @@ TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() metho
   size_t sentCount = 0;
   int triggerRecordCount = 1;
   while (running_flag.load()) {
-    while (running_flag.load() && (sentCount-receivedToken < tokenCount)) {
+    while (running_flag.load() && (sentCount-receivedToken < tokenCount)) { //tokenCount condition to prevent overloading
         uint64_t ts = std::chrono::duration_cast<std::chrono::milliseconds>( // NOLINT(build/unsigned)
                       system_clock::now().time_since_epoch()).count();
         int fragment_size = dataSize + sizeof(FragmentHeader);
@@ -129,7 +140,7 @@ TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() metho
   new detchannelmaps::HardwareMapService(m_hardware_map_file));
    
   std::vector<detchannelmaps::HardwareMapService::HWInfo> parsed_hw_info = hw_map_svc->get_all_hw_info();
-  elementCount = parsed_hw_info.size();
+  elementCount = parsed_hw_info.size(); //defining the number of fragments in one trigger record (= number of the lines in hardwaremap)
 
         // create TriggerRecordHeader
         TriggerRecordHeaderData trh_data;
@@ -149,10 +160,9 @@ TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() metho
         // loop over elements=fragments
         for (int ele_num = 0; ele_num < elementCount; ++ele_num) {
 
-        dtypeToUse = parsed_hw_info[ele_num].det_id;
-        ftypeToUse = parsed_hw_info[ele_num].det_id;
-        std::string dro_host = parsed_hw_info[ele_num].dro_host;
-
+        dtypeToUse = parsed_hw_info[ele_num].det_id; //setting the subdetector type according to the hardwaremap
+        if (dtypeToUse = 2) {ftypeToUse = 3;} //sebdetector type PDS leads to fragment type DAPHNE 
+        if (dtypeToUse = 3) {ftypeToUse = 2;} //sebdetector type TPC leads to fragment type WIB 
         
         // create our fragment
         FragmentHeader fh;
@@ -179,9 +189,6 @@ TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() metho
 
         int TrTokenDifference = sentCount-receivedToken;
         TLOG_DEBUG(TVLV_TRSENDER) << get_name() << ": Difference between sent trigger records and received tokens: " << TrTokenDifference;
-
-
-
 
       TLOG_DEBUG(TVLV_TRSENDER) << get_name() << ": Pushing the trigger record onto queue. ";
       try{

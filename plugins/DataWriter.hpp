@@ -59,7 +59,6 @@ private:
   std::atomic<bool> m_running = false;
 
   // Configuration
-  // size_t m_sleep_msec_while_running;
   std::chrono::milliseconds m_queue_timeout;
   bool m_data_storage_is_enabled;
   int m_data_storage_prescale;
@@ -76,6 +75,7 @@ private:
   using token_sender_t = iomanager::SenderConcept<dfmessages::TriggerDecisionToken>;
   std::shared_ptr<token_sender_t> m_token_output;
   std::string m_trigger_decision_connection;
+
 
   // Worker(s)
   dunedaq::utilities::WorkerThread m_thread;

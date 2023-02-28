@@ -1,0 +1,26 @@
+DOCUMENTATION APPENDIX FOR THE ELJELINK_DUNEDAQ-V3.2.2 BRANCH
+
+A new DAQ module TrSender and other files (schema files, dfmodulesapp_gen.py, sender_gen.py, example configuration file, hardwaremap files), needed for sender-app configuration, were added to the dfmodules package.
+
+The TrSender module creates trigger records according to the specified configuration and sends them to the DataWriter module. Subsequently, Datawriter writes them to a hdf5 file. The hdf5 file parameters are also specified by the configuration.
+
+In order to run this process you should create a configuration with command:
+
+sender_gen -c [json file path] [name of the configuration folder]
+
+Or you can type the help and follow written instructions: 
+
+sender_gen -h 
+
+An example json configuration file is placed in scripts folder. It contains besides other things Hardwaremap. The hardware map afterwards defines number of fragments, type of subdetector and type of fragments. Another important parameter for TrSender module is data size which set the size of fragments. The function of w_token_count parameter is to prevent overloading. After creating configuration, we are able to run it with nanorc:
+
+nanorc [name of the configuration folder] [partition name]
+
+then use standard commands for nanorc (boot, conf, start_run...).
+
+In log file, the complete info about the whole process is visible (depending on the verbosity level), including the rate of writing and number of received tokens etc.. 
+
+
+NOTES:
+In the Datawriter.cpp file a part of the code (lines 133-143) was commented for testing purposes. 
+The queues connection is defined in dfmodulesapp_gen.py file. 

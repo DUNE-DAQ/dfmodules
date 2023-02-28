@@ -18,19 +18,17 @@ import dunedaq.dfmodules.datawriter as datawriter
 import dunedaq.dfmodules.hdf5datastore as hdf5ds
 import dunedaq.hdf5libs.hdf5filelayout as h5fl
 
-
 from daqconf.core.app import App, ModuleGraph
 from daqconf.core.daqmodule import DAQModule
-#from daqconf.core.conf_utils import Endpoint, Direction
+from daqconf.core.conf_utils import Endpoint, Direction
 
-def get_sender_app(nickname, number_of_trigger = 1, size_of_data = 1000, tokenCount = 4, host = "localhost", 
+def get_sender_app(nickname, size_of_data = 1000, tokenCount = 4, host = "localhost", 
         c_data_storage_prescale = 1, c_min_write_retry_time_usec = 1000, c_max_write_retry_time_usec = 1000000, c_write_retry_time_increase_factor = 2, 
         c_decision_connection = "name", c_name="data_store", c_operational_environment = "coldbox", c_mode = "all-per-file", c_directory_path = ".", 
-        c_max_file_size_bytes = 4*1024*1024*1024, c_disable_unique_filename_suffix = False,  c_hardware_map_file=f"/afs/cern.ch/user/e/eljelink/dunedaq-v3.2.0/sourcecode/dfmodules/scripts/HardwareMap.txt",
+        c_max_file_size_bytes = 4*1024*1024*1024, c_disable_unique_filename_suffix = False,  c_hardware_map_file="/afs/cern.ch/user/e/eljelink/dunedaq-v3.2.2/sourcecode/dfmodules/scripts/HardwareMap.txt",
         c_overall_prefix = "test", c_digits_for_run_number = 6, c_file_index_prefix = "test", c_digits_for_file_index = 4, c_writer_identifier = "", 
         c_record_name_prefix= "TriggerRecord", c_digits_for_record_number = 5,
         ):
-
 
     """
     Here the configuration for an entire daq_application instance using DAQModules from dfmodules is generated.
@@ -75,9 +73,8 @@ def get_sender_app(nickname, number_of_trigger = 1, size_of_data = 1000, tokenCo
     
     
     mgraph = ModuleGraph(modules)
-    mgraph.connect_modules("ts.trigger_record_output", "dw.trigger_record_input", "trigger_record", 10)
-    mgraph.connect_modules("dw.token_output", "ts.token_input", "token", 10)
-
+    mgraph.connect_modules("ts.trigger_record_output", "dw.trigger_record_input",  "TR", "trigger_record", size_hint=1000)
+    mgraph.connect_modules("ts.token_input", "dw.token_output", "TR", "token", size_hint=1000)
     sender_app = App(modulegraph = mgraph, host = host, name = nickname)
 
     return sender_app

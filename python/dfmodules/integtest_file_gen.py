@@ -16,3 +16,4 @@ def generate_hwmap_file(n_links, n_apps = 1, det_id = 3):
             conf+=f"{sid} {sid % 2} {sid // 2} {crate} {det_id} localhost {card} {slr} {link_num}\n"
             sid += 1
     return conf
+    

@@ -9,7 +9,7 @@ local types = {
     conf: s.record("Conf", [
                            s.field("dataSize", self.count, 1000,
                                            doc="Size of the data - fragment size without the size of its header"),
-                           s.field("hardware_map_file", self.string, "/afs/cern.ch/user/e/eljelink/dunedaq-v3.2.0/sourcecode/dfmodules/scripts/HardwareMap.txt",
+                           s.field("hardware_map_file", self.string, "./HardwareMap.txt",
                                            doc="The full path to the Hardware Map file that is being used in the current DAQ session"),
                            s.field("m_token_count", self.count, 10,
                                            doc="Difference between sent trigger records and received tokens in trigger record"),

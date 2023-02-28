@@ -14,13 +14,18 @@
 #include "appfwk/DAQModule.hpp"
 #include "iomanager/Sender.hpp"
 #include "iomanager/Receiver.hpp" 
-#include "ers/Issue.hpp"
 #include "utilities/WorkerThread.hpp"
 #include "dfmodules/trsender/Structs.hpp"
 #include "daqdataformats/TriggerRecord.hpp"
 #include "daqdataformats/SourceID.hpp"
 #include "detdataformats/DetID.hpp"
 #include "dfmessages/TriggerDecisionToken.hpp"
+
+#include <chrono>
+#include <map>
+#include <memory>
+#include <string>
+#include <vector>
 
 using namespace dunedaq::daqdataformats;
 using namespace dunedaq::detdataformats;
@@ -51,28 +56,28 @@ private:
   void do_scrap(const nlohmann::json& obj);
 
   //Threading
-  dunedaq::utilities::WorkerThread thread_;
+  dunedaq::utilities::WorkerThread thread_;//thread for creating and sending trigger records
   void do_work(std::atomic<bool>&);
-  dunedaq::utilities::WorkerThread rcthread_;
+  dunedaq::utilities::WorkerThread rcthread_;//thread for receiving tokens
   void do_receive(std::atomic<bool>&);
 
   //Configuration
   daqdataformats::run_number_t runNumber;
-  int dataSize;
-  std::string m_hardware_map_file;
-  int tokenCount;
-  uint16_t dtypeToUse;
-  uint16_t stypeToUse = 1; //default
-  uint16_t ftypeToUse;
-  int elementCount;
-  //daqdataformats::SourceID::Subsystem stypeToUse; 
-  //detdataformats::DetID::Subdetector dtypeToUse;
-  //daqdataformats::FragmentType ftypeToUse;
+  int dataSize; //parameter which indicates the size of one fragment without the fragment header
+  std::string m_hardware_map_file; //parameter containing the path to the hardwaremap used for creating trigger record
+  int tokenCount; //parameter used to prevent overloading
+  uint16_t dtypeToUse; //subdetector type
+  uint16_t stypeToUse = 1; //subsystem type, 1 is default
+  uint16_t ftypeToUse; //fragment type
+  int elementCount; //number of fragments in trigger record
 
-
+  //Connections
   std::chrono::milliseconds queueTimeout_;
-  std::shared_ptr<iomanager::SenderConcept<std::unique_ptr<daqdataformats::TriggerRecord>>> m_sender;
-  std::shared_ptr<iomanager::ReceiverConcept<dfmessages::TriggerDecisionToken>> inputQueue_;
+  using tr_sender = iomanager::SenderConcept<std::unique_ptr<daqdataformats::TriggerRecord>>;
+  std::shared_ptr<tr_sender> m_sender;
+  using token_receiver = iomanager::ReceiverConcept<dfmessages::TriggerDecisionToken>;
+  std::shared_ptr<token_receiver> inputQueue_;
+
   trsender::Conf cfg_;
 
   // Statistic counters

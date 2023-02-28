@@ -3,8 +3,13 @@
 import click
 import json
 import os
-from rich.console import Console
+import sys
+import math
+import glob
+import rich.traceback
 
+from rich.console import Console
+from os.path import exists, join
 from daqconf.core.conf_utils import make_app_command_data
 from daqconf.core.config_file import generate_cli_from_schema
 from daqconf.core.metadata import write_metadata_file

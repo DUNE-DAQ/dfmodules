@@ -18,7 +18,6 @@ find_dependency(trigger)
 find_dependency(serialization)
 find_dependency(readoutlibs)
 find_dependency(hdf5libs)
-find_dependency(daqconf)
 find_dependency(Boost COMPONENTS iostreams)
 
 

@@ -10,6 +10,8 @@
 #include "dfmodules/CommonIssues.hpp"
 #include "dfmodules/datawriter/Nljs.hpp"
 #include "dfmodules/datawriterinfo/InfoNljs.hpp"
+#include "dfmodules/CommonIssues.hpp"
+
 
 #include "appfwk/DAQModuleHelper.hpp"
 #include "daqdataformats/Fragment.hpp"
@@ -47,6 +49,8 @@ namespace dfmodules {
 DataWriter::DataWriter(const std::string& name)
   : dunedaq::appfwk::DAQModule(name)
   , m_queue_timeout(100)
+  , m_tr_receiver(nullptr)
+  , m_token_output(nullptr)
   , m_data_storage_is_enabled(true)
   , m_thread(std::bind(&DataWriter::do_work, this, std::placeholders::_1))
 {
@@ -60,11 +64,18 @@ void
 DataWriter::init(const data_t& init_data)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
-  auto iom = iomanager::IOManager::get();
+  auto iom = dunedaq::get_iomanager();
   auto qi = appfwk::connection_index(init_data, { "trigger_record_input", "token_output" });
-  m_tr_receiver = iom -> get_receiver<std::unique_ptr<daqdataformats::TriggerRecord>>(qi["trigger_record_input"]);
-  m_token_output = iom-> get_sender<dfmessages::TriggerDecisionToken>(qi["token_output"]);
-
+  try {
+    m_tr_receiver = get_iom_receiver<std::unique_ptr<daqdataformats::TriggerRecord>>(qi["trigger_record_input"]);
+  } catch (const ers::Issue& excpt) {
+    throw InvalidQueueFatalError(ERS_HERE, get_name(), "input", excpt);
+  }
+  try {
+    m_token_output = get_iom_sender<dfmessages::TriggerDecisionToken>(qi["token_output"]);
+  } catch (const ers::Issue& excpt) {
+    throw InvalidQueueFatalError(ERS_HERE, get_name(), "output", excpt);
+  }
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
 
@@ -119,7 +130,7 @@ DataWriter::do_conf(const data_t& payload)
   token.decision_destination = m_trigger_decision_connection;
 
   int wasSentSuccessfully = 5;
-  do {
+/*  do {
     try {
       m_token_output->send(std::move(token), m_queue_timeout);
       wasSentSuccessfully = 0;
@@ -130,7 +141,7 @@ DataWriter::do_conf(const data_t& payload)
       wasSentSuccessfully--;
     }
   } while (wasSentSuccessfully);
-  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
+*/  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
 }
 
 void
@@ -255,11 +266,11 @@ DataWriter::receive_trigger_record(std::unique_ptr<daqdataformats::TriggerRecord
 	try {
     TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Writing started for trigger record number: " << m_records_received_tot;
 
-double_t start_writing_timestamp = std::chrono::duration_cast<std::chrono::microseconds>(system_clock::now().time_since_epoch()).count();
+    double_t start_writing_timestamp = std::chrono::duration_cast<std::chrono::microseconds>(system_clock::now().time_since_epoch()).count();
 	  m_data_writer->write(*trigger_record_ptr);
-double_t stop_writing_timestamp = std::chrono::duration_cast<std::chrono::microseconds>(system_clock::now().time_since_epoch()).count();
+    double_t stop_writing_timestamp = std::chrono::duration_cast<std::chrono::microseconds>(system_clock::now().time_since_epoch()).count();
 
-TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Writing stopped for trigger record number: " << m_records_received_tot;
+    TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Writing stopped for trigger record number: " << m_records_received_tot;
 
 	  ++m_records_written;
 	  ++m_records_written_tot;
@@ -363,7 +374,7 @@ void
 DataWriter::do_work(std::atomic<bool>& running_flag) {
   while (running_flag.load()) {
 	  try {
-		std::unique_ptr<daqdataformats::TriggerRecord> tr = m_tr_receiver-> receive(std::chrono::milliseconds(10));   
+		std::unique_ptr<daqdataformats::TriggerRecord> tr = m_tr_receiver-> receive(std::chrono::milliseconds(100));   
                 receive_trigger_record(tr);
     TLOG_DEBUG(TLVL_RECEIVE_TR) << get_name() << ": Received a new TR";
 	  }

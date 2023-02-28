@@ -27,20 +27,20 @@ find_package(serialization REQUIRED) ## MR This can probably be removed? Unless 
 find_package(readoutlibs REQUIRED)
 find_package(Boost COMPONENTS iostreams unit_test_framework REQUIRED)
 
-daq_codegen( datafloworchestrator.jsonnet DEP_PKGS hdf5libs TEMPLATES Structs.hpp.j2 Nljs.hpp.j2 )
-daq_codegen( datawriter.jsonnet DEP_PKGS hdf5libs TEMPLATES Structs.hpp.j2 Nljs.hpp.j2 )
-daq_codegen( fakedataprod.jsonnet DEP_PKGS hdf5libs TEMPLATES Structs.hpp.j2 Nljs.hpp.j2 )
-daq_codegen( hdf5datastore.jsonnet DEP_PKGS hdf5libs TEMPLATES Structs.hpp.j2 Nljs.hpp.j2 )
-daq_codegen( tpstreamwriter.jsonnet DEP_PKGS hdf5libs TEMPLATES Structs.hpp.j2 Nljs.hpp.j2 )
-daq_codegen( triggerrecordbuilder.jsonnet DEP_PKGS hdf5libs TEMPLATES Structs.hpp.j2 Nljs.hpp.j2 )
-daq_codegen( info/*.jsonnet DEP_PKGS opmonlib TEMPLATES opmonlib/InfoStructs.hpp.j2 opmonlib/InfoNljs.hpp.j2 )
-daq_codegen( confgen.jsonnet DEP_PKGS daqconf TEMPLATES Structs.hpp.j2)
-daq_codegen( trsender.jsonnet TEMPLATES Structs.hpp.j2 Nljs.hpp.j2)
+daq_codegen( datafloworchestrator.jsonnet DEP_PKGS hdf5libs iomanager TEMPLATES Structs.hpp.j2 Nljs.hpp.j2 )
+daq_codegen( datawriter.jsonnet DEP_PKGS hdf5libs iomanager TEMPLATES Structs.hpp.j2 Nljs.hpp.j2 )
+daq_codegen( fakedataprod.jsonnet DEP_PKGS hdf5libs iomanager TEMPLATES Structs.hpp.j2 Nljs.hpp.j2 )
+daq_codegen( hdf5datastore.jsonnet DEP_PKGS hdf5libs iomanager TEMPLATES Structs.hpp.j2 Nljs.hpp.j2 )
+daq_codegen( tpstreamwriter.jsonnet DEP_PKGS hdf5libs iomanager TEMPLATES Structs.hpp.j2 Nljs.hpp.j2 )
+daq_codegen( triggerrecordbuilder.jsonnet DEP_PKGS hdf5libs iomanager TEMPLATES Structs.hpp.j2 Nljs.hpp.j2 )
+daq_codegen( info/*.jsonnet DEP_PKGS opmonlib iomanager TEMPLATES opmonlib/InfoStructs.hpp.j2 opmonlib/InfoNljs.hpp.j2 )
+daq_codegen( confgen.jsonnet DEP_PKGS daqconf iomanager TEMPLATES Structs.hpp.j2)
+daq_codegen( trsender.jsonnet DEP_PKGS iomanager TEMPLATES Structs.hpp.j2 Nljs.hpp.j2)
 
 ##############################################################################
 daq_add_library( TriggerInhibitAgent.cpp TriggerRecordBuilderData.cpp TPBundleHandler.cpp
                  LINK_LIBRARIES 
-                 opmonlib::opmonlib ers::ers HighFive hdf5libs::hdf5libs appfwk::appfwk logging::logging stdc++fs dfmessages::dfmessages daqdataformats::daqdataformats utilities::utilities trigger::trigger detdataformats::detdataformats detchannelmaps::detchannelmaps logging::logging nlohmann_json::nlohmann_json ${CETLIB} ${CETLIB_EXCEPT})
+                 opmonlib::opmonlib ers::ers HighFive hdf5libs::hdf5libs appfwk::appfwk logging::logging stdc++fs dfmessages::dfmessages daqdataformats::daqdataformats utilities::utilities trigger::trigger detdataformats::detdataformats detchannelmaps::detchannelmaps iomanager::iomanager logging::logging nlohmann_json::nlohmann_json ${CETLIB} ${CETLIB_EXCEPT})
 
 
 
