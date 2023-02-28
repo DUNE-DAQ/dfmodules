@@ -52,7 +52,7 @@ try:
 except:
   conf_dict["boot"]["use_connectivity_service"] = False
 conf_dict["readout"]["data_rate_slowdown_factor"] = data_rate_slowdown_factor
-conf_dict["readout"]["default_data_file"] = "asset://?label=ProtoWIB"
+conf_dict["readout"]["default_data_file"] = "asset://?label=ProtoWIB&subsystem=readout"
 
 confgen_arguments={"MinimalSystem": conf_dict}
 # The commands to run in nanorc, as a list
