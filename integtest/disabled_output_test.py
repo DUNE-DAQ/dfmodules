@@ -69,7 +69,7 @@ except:
   conf_dict["boot"]["use_connectivity_service"] = False
 conf_dict["readout"]["data_rate_slowdown_factor"] = data_rate_slowdown_factor
 conf_dict["readout"]["latency_buffer_size"] = 200000
-conf_dict["readout"]["default_data_file"] = "asset://label/ProtoWIB"
+conf_dict["readout"]["default_data_file"] = "asset://?label=ProtoWIB"
 conf_dict["trigger"]["trigger_rate_hz"] = 1.0
 
 swtpg_conf = copy.deepcopy(conf_dict)
