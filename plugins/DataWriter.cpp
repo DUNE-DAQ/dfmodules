@@ -14,6 +14,7 @@
 #include "appfwk/DAQModuleHelper.hpp"
 #include "daqdataformats/Fragment.hpp"
 #include "dfmessages/TriggerDecision.hpp"
+#include "dfmessages/TriggerRecord_serialization.hpp"
 #include "logging/Logging.hpp"
 #include "iomanager/IOManager.hpp"
 #include "rcif/cmd/Nljs.hpp"
@@ -113,6 +114,24 @@ DataWriter::do_conf(const data_t& payload)
     throw InvalidDataWriter(ERS_HERE, get_name());
   }
 
+  TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Sending initial TriggerDecisionToken to DFO to announce my presence";
+  dfmessages::TriggerDecisionToken token;
+  token.run_number = 0;
+  token.trigger_number = 0;
+  token.decision_destination = m_trigger_decision_connection;
+
+  int wasSentSuccessfully = 5;
+  do {
+    try {
+      m_token_output->send(std::move(token), m_queue_timeout);
+      wasSentSuccessfully = 0;
+    } catch (const ers::Issue& excpt) {
+      std::ostringstream oss_warn;
+      oss_warn << "Send with sender \"" << m_token_output->get_name() << "\" failed";
+      ers::warning(iomanager::OperationFailed(ERS_HERE, oss_warn.str(), excpt));
+      wasSentSuccessfully--;
+    }
+  } while (wasSentSuccessfully);
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
 }
 

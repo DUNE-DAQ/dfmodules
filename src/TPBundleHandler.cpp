@@ -137,8 +137,7 @@ TPBundleHandler::add_tpset(trigger::TPSet&& tpset)
         TimeSliceAccumulator accum(tsidx * m_slice_interval,
                                    (tsidx + 1) * m_slice_interval,
                                    tsidx - m_slice_index_offset,
-                                   m_run_number,
-                                   m_fw_tpg_enabled);
+                                   m_run_number);
         m_timeslice_accumulators[tsidx] = accum;
       }
     }
@@ -153,8 +152,7 @@ TPBundleHandler::add_tpset(trigger::TPSet&& tpset)
       TimeSliceAccumulator accum(tsidx_from_begin_time * m_slice_interval,
                                  (tsidx_from_begin_time + 1) * m_slice_interval,
                                  tsidx_from_begin_time - m_slice_index_offset,
-                                 m_run_number,
-                                 m_fw_tpg_enabled);
+                                 m_run_number);
       m_timeslice_accumulators[tsidx_from_begin_time] = accum;
     }
   }

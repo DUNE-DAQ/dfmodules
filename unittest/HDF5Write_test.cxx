@@ -63,7 +63,7 @@ dunedaq::hdf5libs::hdf5filelayout::FileLayoutParams
 create_file_layout_params()
 {
   dunedaq::hdf5libs::hdf5filelayout::PathParams params1;
-  params1.detector_group_type = "TPC";
+  params1.detector_group_type = "Detector_Readout";
   params1.detector_group_name = "TPC";
   params1.element_name_prefix = "Link";
   params1.digits_for_element_number = 10;
@@ -72,16 +72,18 @@ create_file_layout_params()
   param_list.push_back(params1);
 
   dunedaq::hdf5libs::hdf5filelayout::FileLayoutParams layout_params;
+  layout_params.digits_for_record_number = 5;
   layout_params.path_param_list = param_list;
 
   return layout_params;
 }
 
 dunedaq::daqdataformats::TriggerRecord
-create_trigger_record(int trig_num, int fragment_size, int region_count, int element_count)
+create_trigger_record(int trig_num, int fragment_size, int element_count)
 {
   const int run_number = 53;
-  const dunedaq::daqdataformats::SourceID::Subsystem stype_to_use = dunedaq::daqdataformats::SourceID::Subsystem::kDetectorReadout;
+  const dunedaq::daqdataformats::SourceID::Subsystem stype_to_use =
+    dunedaq::daqdataformats::SourceID::Subsystem::kDetectorReadout;
 
   // setup our dummy_data
   std::vector<char> dummy_vector(fragment_size);
@@ -96,41 +98,63 @@ create_trigger_record(int trig_num, int fragment_size, int region_count, int ele
   dunedaq::daqdataformats::TriggerRecordHeaderData trh_data;
   trh_data.trigger_number = trig_num;
   trh_data.trigger_timestamp = ts;
-  trh_data.num_requested_components = region_count * element_count;
+  trh_data.num_requested_components = element_count;
   trh_data.run_number = run_number;
   trh_data.sequence_number = 0;
   trh_data.max_sequence_number = 1;
+  trh_data.element_id = dunedaq::daqdataformats::SourceID(dunedaq::daqdataformats::SourceID::Subsystem::kTRBuilder, 0);
 
   dunedaq::daqdataformats::TriggerRecordHeader trh(&trh_data);
 
   // create out TriggerRecord
   dunedaq::daqdataformats::TriggerRecord tr(trh);
 
-  // loop over regions and elements
-  for (int reg_num = 0; reg_num < region_count; ++reg_num) {
-    for (int ele_num = 0; ele_num < element_count; ++ele_num) {
+  // loop over elements
+  for (int ele_num = 0; ele_num < element_count; ++ele_num) {
 
-      // create our fragment
-      dunedaq::daqdataformats::FragmentHeader fh;
-      fh.trigger_number = trig_num;
-      fh.trigger_timestamp = ts;
-      fh.window_begin = ts - 10;
-      fh.window_end = ts;
-      fh.run_number = run_number;
-      fh.fragment_type = static_cast<dunedaq::daqdataformats::fragment_type_t>(dunedaq::daqdataformats::FragmentType::kWIB);
-      fh.detector_id = static_cast<uint16_t>(dunedaq::detdataformats::DetID::Subdetector::kHD_TPC);
-      fh.element_id = dunedaq::daqdataformats::SourceID(stype_to_use, ele_num);
-      std::unique_ptr<dunedaq::daqdataformats::Fragment> frag_ptr(
-        new dunedaq::daqdataformats::Fragment(dummy_data, fragment_size));
-      frag_ptr->set_header_fields(fh);
+    // create our fragment
+    dunedaq::daqdataformats::FragmentHeader fh;
+    fh.trigger_number = trig_num;
+    fh.trigger_timestamp = ts;
+    fh.window_begin = ts - 10;
+    fh.window_end = ts;
+    fh.run_number = run_number;
+    fh.sequence_number = 0;
+    fh.fragment_type =
+      static_cast<dunedaq::daqdataformats::fragment_type_t>(dunedaq::daqdataformats::FragmentType::kWIB);
+    fh.detector_id = static_cast<uint16_t>(dunedaq::detdataformats::DetID::Subdetector::kHD_TPC);
+    fh.element_id = dunedaq::daqdataformats::SourceID(stype_to_use, ele_num);
+    std::unique_ptr<dunedaq::daqdataformats::Fragment> frag_ptr(
+      new dunedaq::daqdataformats::Fragment(dummy_data, fragment_size));
+    frag_ptr->set_header_fields(fh);
 
-      // add fragment to TriggerRecord
-      tr.add_fragment(std::move(frag_ptr));
+    // add fragment to TriggerRecord
+    tr.add_fragment(std::move(frag_ptr));
 
-    } // end loop over elements
-  }   // end loop over regions
+  } // end loop over elements
 
   return tr;
+}
+
+std::string
+make_hardware_map(std::string file_path, int app_count, int link_count, int det_id = 3)
+{
+  static int cycle = 0;
+  std::string file_name = "HardwareMap_" + std::to_string(getpid()) + "_" + std::to_string(++cycle) + ".txt";
+
+  std::ofstream of(file_path + "//" + file_name);
+
+  int sid = 0;
+
+  for (int app = 0; app < app_count; ++app) {
+    for (int link = 0; link < link_count; ++link) {
+      of << sid << " " << sid % 2 << " " << sid / 2 << " " << app << " " << det_id << " localhost " << app << link / 5
+         << link % 5 << std::endl;
+      ++sid;
+    }
+  }
+
+  return file_path + "//" + file_name;
 }
 
 BOOST_AUTO_TEST_SUITE(HDF5Write_test)
@@ -145,8 +169,11 @@ BOOST_AUTO_TEST_CASE(WriteEventFiles)
   const int link_count = 1;
   const int fragment_size = 10 + sizeof(dunedaq::daqdataformats::FragmentHeader);
 
+  // Make a hardware map
+  auto hardware_map_file = make_hardware_map(file_path, apa_count, link_count);
+
   // delete any pre-existing files so that we start with a clean slate
-  std::string delete_pattern = file_prefix + ".*.hdf5";
+  std::string delete_pattern = file_prefix + ".*\\.hdf5";
   delete_files_matching_pattern(file_path, delete_pattern);
 
   // create the DataStore
@@ -155,7 +182,9 @@ BOOST_AUTO_TEST_CASE(WriteEventFiles)
   config_params.directory_path = file_path;
   config_params.mode = "one-event-per-file";
   config_params.filename_parameters.overall_prefix = file_prefix;
+  config_params.filename_parameters.writer_identifier = "HDF5Write_test";
   config_params.file_layout_parameters = create_file_layout_params();
+  config_params.hardware_map_file = hardware_map_file;
 
   hdf5datastore::data_t hdf5ds_json;
   hdf5datastore::to_json(hdf5ds_json, config_params);
@@ -165,17 +194,18 @@ BOOST_AUTO_TEST_CASE(WriteEventFiles)
 
   // write several events, each with several fragments
   for (int trigger_number = 1; trigger_number <= trigger_count; ++trigger_number)
-    data_store_ptr->write(create_trigger_record(trigger_number, fragment_size, apa_count, link_count));
+    data_store_ptr->write(create_trigger_record(trigger_number, fragment_size, link_count * apa_count));
 
   data_store_ptr.reset(); // explicit destruction
 
   // check that the expected number of files was created
-  std::string search_pattern = file_prefix + ".*.hdf5";
+  std::string search_pattern = file_prefix + ".*\\.hdf5";
   std::vector<std::string> file_list = get_files_matching_pattern(file_path, search_pattern);
   BOOST_REQUIRE_EQUAL(file_list.size(), trigger_count);
 
   // clean up the files that were created
   file_list = delete_files_matching_pattern(file_path, delete_pattern);
+  delete_files_matching_pattern(file_path, "HardwareMap.*\\.txt");
   BOOST_REQUIRE_EQUAL(file_list.size(), trigger_count);
 }
 
@@ -189,8 +219,11 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
   const int link_count = 1;
   const int fragment_size = 10 + sizeof(dunedaq::daqdataformats::FragmentHeader);
 
+  // Make a hardware map
+  auto hardware_map_file = make_hardware_map(file_path, apa_count, link_count);
+
   // delete any pre-existing files so that we start with a clean slate
-  std::string delete_pattern = file_prefix + ".*.hdf5";
+  std::string delete_pattern = file_prefix + ".*\\.hdf5";
   delete_files_matching_pattern(file_path, delete_pattern);
 
   // create the DataStore
@@ -200,7 +233,9 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
   config_params.mode = "all-per-file";
   config_params.max_file_size_bytes = 100000000; // much larger than what we expect, so no second file;
   config_params.filename_parameters.overall_prefix = file_prefix;
+  config_params.filename_parameters.writer_identifier = "HDF5Write_test";
   config_params.file_layout_parameters = create_file_layout_params();
+  config_params.hardware_map_file = hardware_map_file;
 
   hdf5datastore::data_t hdf5ds_json;
   hdf5datastore::to_json(hdf5ds_json, config_params);
@@ -210,17 +245,18 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
 
   // write several events, each with several fragments
   for (int trigger_number = 1; trigger_number <= trigger_count; ++trigger_number)
-    data_store_ptr->write(create_trigger_record(trigger_number, fragment_size, apa_count, link_count));
+    data_store_ptr->write(create_trigger_record(trigger_number, fragment_size, apa_count * link_count));
 
   data_store_ptr.reset(); // explicit destruction
 
   // check that the expected number of files was created
-  std::string search_pattern = file_prefix + ".*.hdf5";
+  std::string search_pattern = file_prefix + ".*\\.hdf5";
   std::vector<std::string> file_list = get_files_matching_pattern(file_path, search_pattern);
   BOOST_REQUIRE_EQUAL(file_list.size(), 1);
 
   // clean up the files that were created
   file_list = delete_files_matching_pattern(file_path, delete_pattern);
+  delete_files_matching_pattern(file_path, "HardwareMap.*\\.txt");
   BOOST_REQUIRE_EQUAL(file_list.size(), 1);
 }
 
@@ -234,8 +270,11 @@ BOOST_AUTO_TEST_CASE(CheckWritingSuffix)
   const int link_count = 1;
   const int fragment_size = 10 + sizeof(dunedaq::daqdataformats::FragmentHeader);
 
+  // Make a hardware map
+  auto hardware_map_file = make_hardware_map(file_path, apa_count, link_count);
+
   // delete any pre-existing files so that we start with a clean slate
-  std::string delete_pattern = file_prefix + ".*.hdf5";
+  std::string delete_pattern = file_prefix + ".*\\.hdf5";
   delete_files_matching_pattern(file_path, delete_pattern);
 
   // create the DataStore
@@ -245,7 +284,9 @@ BOOST_AUTO_TEST_CASE(CheckWritingSuffix)
   config_params.mode = "all-per-file";
   config_params.max_file_size_bytes = 100000000; // much larger than what we expect, so no second file;
   config_params.filename_parameters.overall_prefix = file_prefix;
+  config_params.filename_parameters.writer_identifier = "HDF5Write_test";
   config_params.file_layout_parameters = create_file_layout_params();
+  config_params.hardware_map_file = hardware_map_file;
 
   hdf5datastore::data_t hdf5ds_json;
   hdf5datastore::to_json(hdf5ds_json, config_params);
@@ -255,10 +296,10 @@ BOOST_AUTO_TEST_CASE(CheckWritingSuffix)
 
   // write several events, each with several fragments
   for (int trigger_number = 1; trigger_number <= trigger_count; ++trigger_number) {
-    data_store_ptr->write(create_trigger_record(trigger_number, fragment_size, apa_count, link_count));
+    data_store_ptr->write(create_trigger_record(trigger_number, fragment_size, apa_count * link_count));
 
     // check that the .writing file is there
-    std::string search_pattern = file_prefix + ".*.writing";
+    std::string search_pattern = file_prefix + ".*\\.writing";
     std::vector<std::string> file_list = get_files_matching_pattern(file_path, search_pattern);
     BOOST_REQUIRE_EQUAL(file_list.size(), 1);
   }
@@ -266,12 +307,13 @@ BOOST_AUTO_TEST_CASE(CheckWritingSuffix)
   data_store_ptr.reset(); // explicit destruction
 
   // check that the expected number of files was created
-  std::string search_pattern = file_prefix + ".*.writing";
+  std::string search_pattern = file_prefix + ".*\\.writing";
   std::vector<std::string> file_list = get_files_matching_pattern(file_path, search_pattern);
   BOOST_REQUIRE_EQUAL(file_list.size(), 0);
 
   // clean up the files that were created
   file_list = delete_files_matching_pattern(file_path, delete_pattern);
+  delete_files_matching_pattern(file_path, "HardwareMap.*\\.txt");
   BOOST_REQUIRE_EQUAL(file_list.size(), 1);
 }
 
@@ -285,11 +327,14 @@ BOOST_AUTO_TEST_CASE(FileSizeLimitResultsInMultipleFiles)
   const int link_count = 10;
   const int fragment_size = 10000;
 
+  // Make a hardware map
+  auto hardware_map_file = make_hardware_map(file_path, apa_count, link_count);
+
   // 5 APAs times 10 links times 10000 bytes per fragment gives 500,000 bytes per TR
   // So, 15 TRs would give 7,500,000 bytes total.
 
   // delete any pre-existing files so that we start with a clean slate
-  std::string delete_pattern = file_prefix + ".*.hdf5";
+  std::string delete_pattern = file_prefix + ".*\\.hdf5";
   delete_files_matching_pattern(file_path, delete_pattern);
 
   // create the DataStore
@@ -299,7 +344,9 @@ BOOST_AUTO_TEST_CASE(FileSizeLimitResultsInMultipleFiles)
   config_params.mode = "all-per-file";
   config_params.max_file_size_bytes = 3000000; // goal is 6 events per file
   config_params.filename_parameters.overall_prefix = file_prefix;
+  config_params.filename_parameters.writer_identifier = "HDF5Write_test";
   config_params.file_layout_parameters = create_file_layout_params();
+  config_params.hardware_map_file = hardware_map_file;
 
   hdf5datastore::data_t hdf5ds_json;
   hdf5datastore::to_json(hdf5ds_json, config_params);
@@ -309,18 +356,19 @@ BOOST_AUTO_TEST_CASE(FileSizeLimitResultsInMultipleFiles)
 
   // write several events, each with several fragments
   for (int trigger_number = 1; trigger_number <= trigger_count; ++trigger_number)
-    data_store_ptr->write(create_trigger_record(trigger_number, fragment_size, apa_count, link_count));
+    data_store_ptr->write(create_trigger_record(trigger_number, fragment_size, apa_count * link_count));
 
   data_store_ptr.reset(); // explicit destruction
 
   // check that the expected number of files was created
-  std::string search_pattern = file_prefix + ".*.hdf5";
+  std::string search_pattern = file_prefix + ".*\\.hdf5";
   std::vector<std::string> file_list = get_files_matching_pattern(file_path, search_pattern);
   // 7,500,000 bytes stored in files of size 3,000,000 should result in three files.
   BOOST_REQUIRE_EQUAL(file_list.size(), 3);
 
   // clean up the files that were created
   file_list = delete_files_matching_pattern(file_path, delete_pattern);
+  delete_files_matching_pattern(file_path, "HardwareMap.*\\.txt");
   BOOST_REQUIRE_EQUAL(file_list.size(), 3);
 }
 
@@ -334,10 +382,13 @@ BOOST_AUTO_TEST_CASE(SmallFileSizeLimitDataBlockListWrite)
   const int link_count = 1;
   const int fragment_size = 100000;
 
+  // Make a hardware map
+  auto hardware_map_file = make_hardware_map(file_path, apa_count, link_count);
+
   // 5 APAs times 100000 bytes per fragment gives 500,000 bytes per TR
 
   // delete any pre-existing files so that we start with a clean slate
-  std::string delete_pattern = file_prefix + ".*.hdf5";
+  std::string delete_pattern = file_prefix + ".*\\.hdf5";
   delete_files_matching_pattern(file_path, delete_pattern);
 
   // create the DataStore
@@ -347,7 +398,9 @@ BOOST_AUTO_TEST_CASE(SmallFileSizeLimitDataBlockListWrite)
   config_params.mode = "all-per-file";
   config_params.max_file_size_bytes = 150000; // ~1.5 Fragment, ~0.3 TR
   config_params.filename_parameters.overall_prefix = file_prefix;
+  config_params.filename_parameters.writer_identifier = "HDF5Write_test";
   config_params.file_layout_parameters = create_file_layout_params();
+  config_params.hardware_map_file = hardware_map_file;
 
   hdf5datastore::data_t hdf5ds_json;
   hdf5datastore::to_json(hdf5ds_json, config_params);
@@ -357,18 +410,19 @@ BOOST_AUTO_TEST_CASE(SmallFileSizeLimitDataBlockListWrite)
 
   // write several events, each with several fragments
   for (int trigger_number = 1; trigger_number <= trigger_count; ++trigger_number)
-    data_store_ptr->write(create_trigger_record(trigger_number, fragment_size, apa_count, link_count));
+    data_store_ptr->write(create_trigger_record(trigger_number, fragment_size, apa_count * link_count));
 
   data_store_ptr.reset(); // explicit destruction
 
   // check that the expected number of files was created
-  std::string search_pattern = file_prefix + ".*.hdf5";
+  std::string search_pattern = file_prefix + ".*\\.hdf5";
   std::vector<std::string> file_list = get_files_matching_pattern(file_path, search_pattern);
   // each TriggerRecord should be stored in its own file
   BOOST_REQUIRE_EQUAL(file_list.size(), 5);
 
   // clean up the files that were created
   file_list = delete_files_matching_pattern(file_path, delete_pattern);
+  delete_files_matching_pattern(file_path, "HardwareMap.*\\.txt");
   BOOST_REQUIRE_EQUAL(file_list.size(), 5);
 }
 

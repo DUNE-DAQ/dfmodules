@@ -52,7 +52,7 @@ void
 TPStreamWriter::init(const nlohmann::json& payload)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
-  m_tpset_source = iomanager::IOManager::get()->get_receiver<incoming_t>( appfwk::connection_inst(payload, "tpset_source"));
+  m_tpset_source = iomanager::IOManager::get()->get_receiver<incoming_t>( appfwk::connection_uid(payload, "tpset_source"));
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
 
@@ -75,7 +75,6 @@ TPStreamWriter::do_conf(const data_t& payload)
   tpstreamwriter::ConfParams conf_params = payload.get<tpstreamwriter::ConfParams>();
   m_accumulation_interval_ticks = conf_params.tp_accumulation_interval_ticks;
   m_source_id = conf_params.source_id;
-  m_fw_tpg_enabled = conf_params.firmware_tpg_enabled;
 
   // create the DataStore instance here
   try {
@@ -156,7 +155,7 @@ TPStreamWriter::do_work(std::atomic<bool>& running_flag)
   daqdataformats::timestamp_t first_timestamp = 0;
   daqdataformats::timestamp_t last_timestamp = 0;
 
-  TPBundleHandler tp_bundle_handler(m_accumulation_interval_ticks, m_run_number, std::chrono::seconds(1), m_fw_tpg_enabled);
+  TPBundleHandler tp_bundle_handler(m_accumulation_interval_ticks, m_run_number, std::chrono::seconds(1));
 
   while (running_flag.load()) {
     trigger::TPSet tpset;
