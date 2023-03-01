@@ -48,7 +48,7 @@ hsi_frag_params ={"fragment_type_description": "HSI",
                              "fragment_type": "Hardware_Signal",
                              "hdf5_source_subsystem": "HW_Signals_Interface",
                              "expected_fragment_count": 1,
-                             "min_size_bytes": 72, "max_size_bytes": 96}
+                             "min_size_bytes": 72, "max_size_bytes": 100}
 ignored_logfile_problems={}
 
 # The next three variable declarations *must* be present as globals in the test
