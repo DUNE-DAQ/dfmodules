@@ -10,6 +10,9 @@ import integrationtest.config_file_gen as config_file_gen
 number_of_data_producers=2
 data_rate_slowdown_factor=10
 run_duration=20  # seconds
+readout_window_time_before=1000
+readout_window_time_after=1001
+clock_speed_hz=50000000
 
 # Default values for validation parameters
 expected_number_of_data_files=1
@@ -20,7 +23,7 @@ wib1_frag_hsi_trig_params={"fragment_type_description": "WIB",
                            "fragment_type": "ProtoWIB",
                            "hdf5_source_subsystem": "Detector_Readout",
                            "expected_fragment_count": number_of_data_producers,
-                           "min_size_bytes": 37192, "max_size_bytes": 37192}
+                           "min_size_bytes": 37656, "max_size_bytes": 37656}
 triggercandidate_frag_params={"fragment_type_description": "Trigger Candidate",
                               "fragment_type": "Trigger_Candidate",
                               "hdf5_source_subsystem": "Trigger",
@@ -30,7 +33,7 @@ hsi_frag_params ={"fragment_type_description": "HSI",
                              "fragment_type": "Hardware_Signal",
                              "hdf5_source_subsystem": "HW_Signals_Interface",
                              "expected_fragment_count": 1,
-                             "min_size_bytes": 72, "max_size_bytes": 96}
+                             "min_size_bytes": 72, "max_size_bytes": 100}
 ignored_logfile_problems={}
 
 # The next three variable declarations *must* be present as globals in the test
@@ -53,6 +56,9 @@ except:
   conf_dict["boot"]["use_connectivity_service"] = False
 conf_dict["readout"]["data_rate_slowdown_factor"] = data_rate_slowdown_factor
 conf_dict["readout"]["default_data_file"] = "asset://?label=ProtoWIB&subsystem=readout"
+conf_dict["readout"]["clock_speed_hz"] = clock_speed_hz
+conf_dict["trigger"]["trigger_window_before_ticks"] = readout_window_time_before
+conf_dict["trigger"]["trigger_window_after_ticks"] = readout_window_time_after
 
 confgen_arguments={"MinimalSystem": conf_dict}
 # The commands to run in nanorc, as a list
