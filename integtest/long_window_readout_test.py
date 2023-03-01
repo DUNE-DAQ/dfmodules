@@ -80,7 +80,7 @@ except:
 conf_dict["readout"]["data_rate_slowdown_factor"] = data_rate_slowdown_factor
 conf_dict["readout"]["clock_speed_hz"] = clock_speed_hz
 conf_dict["readout"]["latency_buffer_size"] = latency_buffer_size
-conf_dict["readout"]["default_data_file"] = "asset://label/ProtoWIB"
+conf_dict["readout"]["default_data_file"] = "asset://?label=ProtoWIB&subsystem=readout"
 conf_dict["trigger"]["trigger_rate_hz"] = trigger_rate
 conf_dict["trigger"]["trigger_window_before_ticks"] = readout_window_time_before
 conf_dict["trigger"]["trigger_window_after_ticks"] = readout_window_time_after
