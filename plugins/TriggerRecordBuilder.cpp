@@ -69,31 +69,16 @@ TriggerRecordBuilder::init(const data_t& init_data)
   // Get single queues
   //---------------------------------
 
-  auto ci = appfwk::connection_index(init_data, { "trigger_decision_input", "trigger_record_output" });
+  auto ci = appfwk::connection_index(init_data, { "trigger_decision_input", "trigger_record_output", "data_fragment_all" });
 
   auto iom = iomanager::IOManager::get();
   m_trigger_decision_input = iom->get_receiver<dfmessages::TriggerDecision>(ci["trigger_decision_input"]);
   m_trigger_record_output =
     iom->get_sender<std::unique_ptr<daqdataformats::TriggerRecord>>(ci["trigger_record_output"]);
 
-  //----------------------
-  // Get dynamic queues
-  //----------------------
-
-  // set names for the fragment connections
-  auto ini = init_data.get<appfwk::app::ModInit>();
-
-  // get the names for the fragment connections
-  // there is an optional connection, which is the connection to DQM
-  // Since it's optional, we need to loop over all the connections
-  // to check if it's there and act accordingly
-
-  for (const auto& ref : ini.conn_refs) {
-    if (ref.name.rfind("data_fragment_") == 0) {
-      m_fragment_inputs.push_back(iom->get_receiver<std::unique_ptr<daqdataformats::Fragment>>(ref.uid));
-    } else if (ref.name == "mon_connection") {
-      m_mon_receiver = iom->get_receiver<dfmessages::TRMonRequest>(ref.uid);
-    }
+  m_fragment_inputs.push_back(iom->get_receiver<std::unique_ptr<daqdataformats::Fragment>>(ci["data_fragment_all"]));
+  if (ci.count("mon_connection") > 0) {
+    m_mon_receiver = iom->get_receiver<dfmessages::TRMonRequest>(ci["mon_connection"]);
   }
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
