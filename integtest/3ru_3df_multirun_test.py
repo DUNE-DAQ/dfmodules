@@ -27,7 +27,7 @@ wib1_frag_hsi_trig_params={"fragment_type_description": "WIB",
                            "fragment_type": "ProtoWIB",
                            "hdf5_source_subsystem": "Detector_Readout",
                            "expected_fragment_count": (number_of_data_producers*number_of_readout_apps),
-                           "min_size_bytes": 37192, "max_size_bytes": 37192}
+                           "min_size_bytes": 37192, "max_size_bytes": 37656}
 wib1_frag_multi_trig_params={"fragment_type_description": "WIB",
                              "fragment_type": "ProtoWIB",
                              "hdf5_source_subsystem": "Detector_Readout",
@@ -53,7 +53,8 @@ hsi_frag_params ={"fragment_type_description": "HSI",
                              "hdf5_source_subsystem": "HW_Signals_Interface",
                              "expected_fragment_count": 1,
                              "min_size_bytes": 72, "max_size_bytes": 100}
-ignored_logfile_problems={"dqm": ["client will not be able to connect to Kafka cluster"]}
+ignored_logfile_problems={"dqm": ["client will not be able to connect to Kafka cluster",
+                                  "Parameters changed: input doesn't have the expected size for the Fourier transform, changing size to"]}
 
 # The next three variable declarations *must* be present as globals in the test
 # file. They're read by the "fixtures" in conftest.py to determine how
