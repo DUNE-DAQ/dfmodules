@@ -76,7 +76,7 @@ TriggerRecordBuilder::init(const data_t& init_data)
   m_trigger_record_output =
     iom->get_sender<std::unique_ptr<daqdataformats::TriggerRecord>>(ci["trigger_record_output"]);
 
-  m_fragment_inputs.push_back(iom->get_receiver<std::unique_ptr<daqdataformats::Fragment>>(ci["data_fragment_all"]));
+  m_fragment_input = iom->get_receiver<std::unique_ptr<daqdataformats::Fragment>>(ci["data_fragment_all"]);
   if (ci.count("mon_connection") > 0) {
     m_mon_receiver = iom->get_receiver<dfmessages::TRMonRequest>(ci["mon_connection"]);
   }
@@ -325,68 +325,56 @@ TriggerRecordBuilder::do_work(std::atomic<bool>& running_flag)
 bool
 TriggerRecordBuilder::read_fragments()
 {
+  std::optional<std::unique_ptr<daqdataformats::Fragment>> temp_fragment;
 
-  bool new_fragments = false;
+  try {
+    temp_fragment = m_fragment_input->try_receive(iomanager::Receiver::s_no_block);
+  } catch (const ers::Issue& e) {
+    ers::error(e);
+    return false;
+  }
 
-  //-------------------------------------------------
-  // Try to get Fragments from every queue
-  //--------------------------------------------------
+  if (!temp_fragment)
+    return false;
 
-  for (unsigned int j = 0; j < m_fragment_inputs.size(); ++j) {
+  TLOG_DEBUG(TLVL_FRAGMENT_RECEIVE) << get_name() << " Received fragment for trigger/sequence_number "
+                                    << temp_fragment.value()->get_trigger_number() << "."
+                                    << temp_fragment.value()->get_sequence_number() << " from "
+                                    << temp_fragment.value()->get_element_id();
 
-    std::optional<std::unique_ptr<daqdataformats::Fragment>> temp_fragment;
+  TriggerId temp_id(*temp_fragment.value());
+  bool requested = false;
 
-    try {
-      temp_fragment = m_fragment_inputs[j]->try_receive(iomanager::Receiver::s_no_block);
-    } catch (const ers::Issue& e) {
-      ers::error(e);
-      continue;
-    }
+  auto it = m_trigger_records.find(temp_id);
 
-    if (!temp_fragment)
-      continue;
+  if (it != m_trigger_records.end()) {
 
-    new_fragments = true;
-    TLOG_DEBUG(TLVL_FRAGMENT_RECEIVE) << get_name() << " Received fragment for trigger/sequence_number "
-                                      << temp_fragment.value()->get_trigger_number() << "."
-                                      << temp_fragment.value()->get_sequence_number() << " from "
-                                      << temp_fragment.value()->get_element_id();
+    // check if the fragment has a Source Id that was desired
+    daqdataformats::TriggerRecordHeader& header = it->second.second->get_header_ref();
 
-    TriggerId temp_id(*temp_fragment.value());
-    bool requested = false;
+    for (size_t i = 0; i < header.get_num_requested_components(); ++i) {
 
-    auto it = m_trigger_records.find(temp_id);
+      const daqdataformats::ComponentRequest& request = header[i];
+      if (request.component == temp_fragment.value()->get_element_id()) {
+        requested = true;
+        break;
+      }
 
-    if (it != m_trigger_records.end()) {
+    } // request loop
 
-      // check if the fragment has a Source Id that was desired
-      daqdataformats::TriggerRecordHeader& header = it->second.second->get_header_ref();
+  } // if there is a corresponding trigger ID entry in the boook
 
-      for (size_t i = 0; i < header.get_num_requested_components(); ++i) {
+  if (requested) {
+    it->second.second->add_fragment(std::move(*temp_fragment));
+    ++m_fragment_counter;
+    --m_pending_fragment_counter;
+  } else {
+    ers::error(UnexpectedFragment(
+      ERS_HERE, temp_id, temp_fragment.value()->get_fragment_type_code(), temp_fragment.value()->get_element_id()));
+    ++m_unexpected_fragments;
+  }
 
-        const daqdataformats::ComponentRequest& request = header[i];
-        if (request.component == temp_fragment.value()->get_element_id()) {
-          requested = true;
-          break;
-        }
-
-      } // request loop
-
-    } // if there is a corresponding trigger ID entry in the boook
-
-    if (requested) {
-      it->second.second->add_fragment(std::move(*temp_fragment));
-      ++m_fragment_counter;
-      --m_pending_fragment_counter;
-    } else {
-      ers::error(UnexpectedFragment(
-        ERS_HERE, temp_id, temp_fragment.value()->get_fragment_type_code(), temp_fragment.value()->get_element_id()));
-      ++m_unexpected_fragments;
-    }
-
-  } // queue loop
-
-  return new_fragments;
+  return true;
 }
 
 bool
