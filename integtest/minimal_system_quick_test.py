@@ -55,6 +55,7 @@ try:
 except:
   conf_dict["boot"]["use_connectivity_service"] = False
 conf_dict["readout"]["data_rate_slowdown_factor"] = data_rate_slowdown_factor
+conf_dict["readout"]["default_data_file"] = "asset://?label=ProtoWIB&subsystem=readout"
 conf_dict["readout"]["clock_speed_hz"] = clock_speed_hz
 conf_dict["trigger"]["trigger_window_before_ticks"] = readout_window_time_before
 conf_dict["trigger"]["trigger_window_after_ticks"] = readout_window_time_after
