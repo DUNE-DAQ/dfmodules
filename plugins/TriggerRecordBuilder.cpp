@@ -81,6 +81,10 @@ TriggerRecordBuilder::init(const data_t& init_data)
     m_mon_receiver = iom->get_receiver<dfmessages::TRMonRequest>(ci["mon_connection"]);
   }
 
+  // save the data fragment receiver global connection name for later, when it gets
+  // copied into the DataRequests so that data producers know where to send their fragments
+  m_reply_connection = ci["data_fragment_all"];
+
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
 
@@ -134,8 +138,6 @@ TriggerRecordBuilder::do_conf(const data_t& payload)
 
   TLOG() << get_name() << ": timeouts (ms): queue = " << m_queue_timeout.count() << ", loop = " << m_loop_sleep.count();
   m_max_time_window = parsed_conf.max_time_window;
-
-  m_reply_connection = parsed_conf.reply_connection_name;
 
   m_this_trb_source_id.subsystem = daqdataformats::SourceID::Subsystem::kTRBuilder;
   m_this_trb_source_id.id = parsed_conf.source_id;
