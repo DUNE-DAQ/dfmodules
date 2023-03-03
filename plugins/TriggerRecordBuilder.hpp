@@ -176,7 +176,6 @@ protected:
   using trigger_decision_receiver_t = iomanager::ReceiverConcept<dfmessages::TriggerDecision>;
   using data_req_sender_t = iomanager::SenderConcept<dfmessages::DataRequest>;
   using fragment_receiver_t = iomanager::ReceiverConcept<std::unique_ptr<daqdataformats::Fragment>>;
-  using fragment_receivers_t = std::vector<std::shared_ptr<fragment_receiver_t>>;
 
   using trigger_record_ptr_t = std::unique_ptr<daqdataformats::TriggerRecord>;
   using trigger_record_sender_t = iomanager::SenderConcept<trigger_record_ptr_t>;
@@ -224,7 +223,7 @@ private:
 
   // Input Connections
   std::shared_ptr<trigger_decision_receiver_t> m_trigger_decision_input;
-  fragment_receivers_t m_fragment_inputs;
+  std::shared_ptr<fragment_receiver_t> m_fragment_input;
 
   // Output connections
   std::shared_ptr<trigger_record_sender_t> m_trigger_record_output;
