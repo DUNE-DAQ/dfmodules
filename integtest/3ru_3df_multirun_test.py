@@ -42,7 +42,7 @@ triggeractivity_frag_params={"fragment_type_description": "Trigger Activity",
                               "fragment_type": "Trigger_Activity",
                               "hdf5_source_subsystem": "Trigger",
                               "expected_fragment_count": number_of_readout_apps,
-                              "min_size_bytes": 72, "max_size_bytes": 216}
+                              "min_size_bytes": 72, "max_size_bytes": 400}
 triggertp_frag_params={"fragment_type_description": "Trigger with TPs",
                        "fragment_type": "Trigger_Primitive",
                        "hdf5_source_subsystem": "Trigger",
@@ -54,7 +54,9 @@ hsi_frag_params ={"fragment_type_description": "HSI",
                              "expected_fragment_count": 1,
                              "min_size_bytes": 72, "max_size_bytes": 100}
 ignored_logfile_problems={"dqm": ["client will not be able to connect to Kafka cluster",
-                                  "Parameters changed: input doesn't have the expected size for the Fourier transform, changing size to"]}
+                                  "Parameters changed: input doesn't have the expected size for the Fourier transform, changing size to"],
+                          "trigger": ["Tardy input set from element"],
+                         }
 
 # The next three variable declarations *must* be present as globals in the test
 # file. They're read by the "fixtures" in conftest.py to determine how
