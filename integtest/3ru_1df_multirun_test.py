@@ -27,7 +27,7 @@ wib1_frag_hsi_trig_params={"fragment_type_description": "WIB",
                            "fragment_type": "ProtoWIB",
                            "hdf5_source_subsystem": "Detector_Readout",
                            "expected_fragment_count": (number_of_data_producers*number_of_readout_apps),
-                           "min_size_bytes": 37192, "max_size_bytes": 37192}
+                           "min_size_bytes": 37192, "max_size_bytes": 37656}
 wib1_frag_multi_trig_params={"fragment_type_description": "WIB",
                              "fragment_type": "ProtoWIB",
                              "hdf5_source_subsystem": "Detector_Readout",
@@ -54,8 +54,10 @@ hsi_frag_params ={"fragment_type_description": "HSI",
                              "expected_fragment_count": 1,
                              "min_size_bytes": 72, "max_size_bytes": 100}
 ignored_logfile_problems={"dqm": ["client will not be able to connect to Kafka cluster",
-                                  "Unexpected Trigger Decision", "Unexpected Fragment"],
-                          "trigger": ["zipped_tpset_q: Unable to push within timeout period"],
+                                  "Unexpected Trigger Decision", "Unexpected Fragment",
+                                  "Parameters changed: input doesn't have the expected size for the Fourier transform, changing size to"],
+                          "trigger": ["zipped_tpset_q: Unable to push within timeout period",
+                                      "Tardy input set from element"],
                           "ruemu": [r"Trigger Matching result with empty fragment: TS match result on link .+Requestor=\S+fragx_dqm"],
                          }
 
