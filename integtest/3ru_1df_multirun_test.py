@@ -56,8 +56,7 @@ hsi_frag_params ={"fragment_type_description": "HSI",
 ignored_logfile_problems={"dqm": ["client will not be able to connect to Kafka cluster",
                                   "Unexpected Trigger Decision", "Unexpected Fragment",
                                   "Parameters changed: input doesn't have the expected size for the Fourier transform, changing size to"],
-                          "trigger": ["zipped_tpset_q: Unable to push within timeout period",
-                                      "Tardy input set from element"],
+                          "trigger": ["zipped_tpset_q: Unable to push within timeout period"],
                           "ruemu": [r"Trigger Matching result with empty fragment: TS match result on link .+Requestor=\S+fragx_dqm"],
                          }
 
