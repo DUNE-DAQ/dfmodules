@@ -53,8 +53,7 @@ hsi_frag_params ={"fragment_type_description": "HSI",
                              "hdf5_source_subsystem": "HW_Signals_Interface",
                              "expected_fragment_count": 1,
                              "min_size_bytes": 72, "max_size_bytes": 100}
-ignored_logfile_problems={"dqm": ["client will not be able to connect to Kafka cluster",
-                                  "Parameters changed: input doesn't have the expected size for the Fourier transform, changing size to"]}
+ignored_logfile_problems={"dqm": ["client will not be able to connect to Kafka cluster"]}
 
 # The next three variable declarations *must* be present as globals in the test
 # file. They're read by the "fixtures" in conftest.py to determine how
