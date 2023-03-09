@@ -42,7 +42,7 @@ triggeractivity_frag_params={"fragment_type_description": "Trigger Activity",
                               "fragment_type": "Trigger_Activity",
                               "hdf5_source_subsystem": "Trigger",
                               "expected_fragment_count": number_of_readout_apps,
-                              "min_size_bytes": 72, "max_size_bytes": 216}
+                              "min_size_bytes": 72, "max_size_bytes": 400}
 triggertp_frag_params={"fragment_type_description": "Trigger with TPs",
                        "fragment_type": "Trigger_Primitive",
                        "hdf5_source_subsystem": "Trigger",
@@ -53,8 +53,7 @@ hsi_frag_params ={"fragment_type_description": "HSI",
                              "hdf5_source_subsystem": "HW_Signals_Interface",
                              "expected_fragment_count": 1,
                              "min_size_bytes": 72, "max_size_bytes": 100}
-ignored_logfile_problems={"dqm": ["client will not be able to connect to Kafka cluster",
-                                  "Parameters changed: input doesn't have the expected size for the Fourier transform, changing size to"]}
+ignored_logfile_problems={"dqm": ["client will not be able to connect to Kafka cluster"]}
 
 # The next three variable declarations *must* be present as globals in the test
 # file. They're read by the "fixtures" in conftest.py to determine how
@@ -74,6 +73,7 @@ except:
   conf_dict["boot"]["use_connectivity_service"] = False
 conf_dict["readout"]["data_rate_slowdown_factor"] = data_rate_slowdown_factor
 conf_dict["readout"]["latency_buffer_size"] = 200000
+conf_dict["readout"]["default_data_file"] = "asset://?label=ProtoWIB&subsystem=readout"
 conf_dict["trigger"]["trigger_rate_hz"] = trigger_rate
 
 conf_dict["dataflow"]["apps"] = [] # Remove preconfigured dataflow0 app

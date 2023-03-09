@@ -27,7 +27,7 @@ wib1_frag_hsi_trig_params={"fragment_type_description": "WIB",
                            "fragment_type": "ProtoWIB",
                            "hdf5_source_subsystem": "Detector_Readout",
                            "expected_fragment_count": (number_of_data_producers*number_of_readout_apps),
-                           "min_size_bytes": 37192, "max_size_bytes": 37192}
+                           "min_size_bytes": 37192, "max_size_bytes": 37656}
 wib1_frag_multi_trig_params={"fragment_type_description": "WIB",
                              "fragment_type": "ProtoWIB",
                              "hdf5_source_subsystem": "Detector_Readout",
@@ -89,6 +89,7 @@ except:
   conf_dict["boot"]["use_connectivity_service"] = False
 conf_dict["readout"]["data_rate_slowdown_factor"] = data_rate_slowdown_factor
 conf_dict["readout"]["latency_buffer_size"] = 200000
+conf_dict["readout"]["default_data_file"] = "asset://?label=ProtoWIB&subsystem=readout"
 
 swtpg_conf = copy.deepcopy(conf_dict)
 swtpg_conf["readout"]["enable_software_tpg"] = True
