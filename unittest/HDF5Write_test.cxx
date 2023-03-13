@@ -138,7 +138,7 @@ create_trigger_record(int trig_num, int fragment_size, int element_count)
 }
 
 dunedaq::detchannelmaps::HardwareMap
-make_hardware_map(std::string file_path, int app_count, int link_count, int det_id = 3)
+make_hardware_map(int app_count, int link_count, int det_id = 3)
 {
   dunedaq::detchannelmaps::HardwareMap output;
   int sid = 0;
@@ -176,7 +176,7 @@ BOOST_AUTO_TEST_CASE(WriteEventFiles)
   const int fragment_size = 10 + sizeof(dunedaq::daqdataformats::FragmentHeader);
 
   // Make a hardware map
-  auto hardware_map = make_hardware_map(file_path, apa_count, link_count);
+  auto hardware_map = make_hardware_map(apa_count, link_count);
 
   // delete any pre-existing files so that we start with a clean slate
   std::string delete_pattern = file_prefix + ".*\\.hdf5";
@@ -226,7 +226,7 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
   const int fragment_size = 10 + sizeof(dunedaq::daqdataformats::FragmentHeader);
 
   // Make a hardware map
-  auto hardware_map = make_hardware_map(file_path, apa_count, link_count);
+  auto hardware_map = make_hardware_map(apa_count, link_count);
 
   // delete any pre-existing files so that we start with a clean slate
   std::string delete_pattern = file_prefix + ".*\\.hdf5";
@@ -277,7 +277,7 @@ BOOST_AUTO_TEST_CASE(CheckWritingSuffix)
   const int fragment_size = 10 + sizeof(dunedaq::daqdataformats::FragmentHeader);
 
   // Make a hardware map
-  auto hardware_map = make_hardware_map(file_path, apa_count, link_count);
+  auto hardware_map = make_hardware_map(apa_count, link_count);
 
   // delete any pre-existing files so that we start with a clean slate
   std::string delete_pattern = file_prefix + ".*\\.hdf5";
@@ -334,7 +334,7 @@ BOOST_AUTO_TEST_CASE(FileSizeLimitResultsInMultipleFiles)
   const int fragment_size = 10000;
 
   // Make a hardware map
-  auto hardware_map = make_hardware_map(file_path, apa_count, link_count);
+  auto hardware_map = make_hardware_map(apa_count, link_count);
 
   // 5 APAs times 10 links times 10000 bytes per fragment gives 500,000 bytes per TR
   // So, 15 TRs would give 7,500,000 bytes total.
@@ -389,7 +389,7 @@ BOOST_AUTO_TEST_CASE(SmallFileSizeLimitDataBlockListWrite)
   const int fragment_size = 100000;
 
   // Make a hardware map
-  auto hardware_map = make_hardware_map(file_path, apa_count, link_count);
+  auto hardware_map = make_hardware_map(apa_count, link_count);
 
   // 5 APAs times 100000 bytes per fragment gives 500,000 bytes per TR
 
