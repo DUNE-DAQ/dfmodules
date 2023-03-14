@@ -12,6 +12,7 @@ find_package(dfmessages REQUIRED)
 find_package(opmonlib REQUIRED)
 find_package(iomanager REQUIRED)
 find_package(detdataformats REQUIRED)
+find_package(detchannelmaps REQUIRED)
 
 # JCF, Dec-1-2021: removed timinglibs
 find_package(triggeralgs REQUIRED)
