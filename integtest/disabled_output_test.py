@@ -13,6 +13,9 @@ import dfmodules.integtest_file_gen as integtest_file_gen
 number_of_data_producers=2
 run_duration=20  # seconds
 data_rate_slowdown_factor=10
+readout_window_time_before=1000
+readout_window_time_after=1001
+clock_speed_hz=50000000
 
 # Default values for validation parameters
 expected_number_of_data_files=2
@@ -23,7 +26,7 @@ wib1_frag_hsi_trig_params={"fragment_type_description": "WIB",
                            "fragment_type": "ProtoWIB",
                            "hdf5_source_subsystem": "Detector_Readout",
                            "expected_fragment_count": number_of_data_producers,
-                           "min_size_bytes": 37192, "max_size_bytes": 37192}
+                           "min_size_bytes": 37656, "max_size_bytes": 37656}
 wib1_frag_multi_trig_params={"fragment_type_description": "WIB",
                              "fragment_type": "ProtoWIB",
                              "hdf5_source_subsystem": "Detector_Readout",
@@ -70,7 +73,10 @@ except:
 conf_dict["readout"]["data_rate_slowdown_factor"] = data_rate_slowdown_factor
 conf_dict["readout"]["latency_buffer_size"] = 200000
 conf_dict["readout"]["default_data_file"] = "asset://?label=ProtoWIB&subsystem=readout"
+conf_dict["readout"]["clock_speed_hz"] = clock_speed_hz
 conf_dict["trigger"]["trigger_rate_hz"] = 1.0
+conf_dict["trigger"]["trigger_window_before_ticks"] = readout_window_time_before
+conf_dict["trigger"]["trigger_window_after_ticks"] = readout_window_time_after
 
 swtpg_conf = copy.deepcopy(conf_dict)
 swtpg_conf["readout"]["enable_software_tpg"] = True
