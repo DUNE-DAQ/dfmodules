@@ -11,7 +11,7 @@ import dfmodules.integtest_file_gen as integtest_file_gen
 
 # Values that help determine the running conditions
 run_duration=20  # seconds
-baseline_fragment_size_bytes=37192
+baseline_fragment_size_bytes=37656
 data_rate_slowdown_factor=10
 number_of_data_producers = 2
 
@@ -53,11 +53,11 @@ conf_dict["readout"]["data_rate_slowdown_factor"] = data_rate_slowdown_factor
 conf_dict["readout"]["use_fake_data_producers"] = True
 conf_dict["readout"]["default_data_file"] = "asset://?label=ProtoWIB&subsystem=readout"
 conf_dict["trigger"]["trigger_window_before_ticks"] = 1000
-conf_dict["trigger"]["trigger_window_after_ticks"] = 1000
+conf_dict["trigger"]["trigger_window_after_ticks"] = 1001
 
 doublewindow_conf = copy.deepcopy(conf_dict)
 doublewindow_conf["trigger"]["trigger_window_before_ticks"] = 2000
-doublewindow_conf["trigger"]["trigger_window_after_ticks"] = 2000
+doublewindow_conf["trigger"]["trigger_window_after_ticks"] = 2001
 
 confgen_arguments={"Baseline_Window_Size": conf_dict,
                    "Double_Window_Size": doublewindow_conf,
