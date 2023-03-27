@@ -11,7 +11,7 @@ import dfmodules.integtest_file_gen as integtest_file_gen
 
 # Values that help determine the running conditions
 run_duration=20  # seconds
-baseline_fragment_size_bytes=37656
+baseline_fragment_size_bytes=72+(464*81) # 81 frames of 464 bytes each with 72-byte header
 data_rate_slowdown_factor=10
 number_of_data_producers = 2
 
@@ -99,8 +99,8 @@ def test_data_files(run_nanorc):
     local_event_count_tolerance=expected_event_count_tolerance
     frag_params=wib1_frag_hsi_trig_params
     if run_nanorc.confgen_config["trigger"]["trigger_window_before_ticks"] == 2000:
-        frag_params["min_size_bytes"]=74312  #baseline_fragment_size_bytes*2
-        frag_params["max_size_bytes"]=74312  #baseline_fragment_size_bytes*2
+        frag_params["min_size_bytes"]=72+(464*161) # 161 frames of 464 bytes each with 72-byte header
+        frag_params["max_size_bytes"]=72+(464*161)
     fragment_check_list=[frag_params, hsi_frag_params]
 
     # Run some tests on the output data file
