@@ -36,7 +36,7 @@ wib1_frag_hsi_trig_params={"fragment_type_description": "WIB",
                            "fragment_type": "ProtoWIB",
                            "hdf5_source_subsystem": "Detector_Readout",
                            "expected_fragment_count": (number_of_data_producers*number_of_readout_apps),
-                           "min_size_bytes": 3712072, "max_size_bytes": 3712072}
+                           "min_size_bytes": 3712072, "max_size_bytes": 3712536}
 triggercandidate_frag_params={"fragment_type_description": "Trigger Candidate",
                               "fragment_type": "Trigger_Candidate",
                               "hdf5_source_subsystem": "Trigger",
