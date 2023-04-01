@@ -75,7 +75,7 @@ conf_dict["dataflow"]["apps"][0]["max_file_size"] = 1074000000
 
 swtpg_conf = copy.deepcopy(conf_dict)
 swtpg_conf["readout"]["enable_software_tpg"] = True
-swtpg_conf["dataflow"]["apps"][0]["token_count"] = max(10, 3*number_of_data_producers*number_of_readout_apps)
+swtpg_conf["dataflow"]["token_count"] = max(10, 3*number_of_data_producers*number_of_readout_apps)
 
 confgen_arguments={"WIB1_System": conf_dict,
                    "Software_TPG_System": swtpg_conf,
