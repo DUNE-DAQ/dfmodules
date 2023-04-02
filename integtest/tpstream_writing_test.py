@@ -83,7 +83,7 @@ conf_dict["trigger"]["enable_tpset_writing"] = True
 conf_dict["trigger"]["tpset_output_path"] = output_dir
 conf_dict["readout"]["enable_software_tpg"] = True
 
-conf_dict["dataflow"]["token_count"] = 3*number_of_readout_apps
+conf_dict["dataflow"]["token_count"] = int(math.ceil(max(10, 3*number_of_data_producers*number_of_readout_apps)/number_of_dataflow_apps))
 conf_dict["dataflow"]["apps"] = [] # Remove preconfigured dataflow0 app
 for df_app in range(number_of_dataflow_apps):
     dfapp_conf = {}
