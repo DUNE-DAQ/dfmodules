@@ -85,6 +85,7 @@ conf_dict["trigger"]["trigger_rate_hz"] = trigger_rate
 conf_dict["trigger"]["trigger_window_before_ticks"] = readout_window_time_before
 conf_dict["trigger"]["trigger_window_after_ticks"] = readout_window_time_after
 
+conf_dict["dataflow"]["token_count"] = token_count
 conf_dict["dataflow"]["apps"] = [] # Remove preconfigured dataflow0 app
 for df_app in range(number_of_dataflow_apps):
     dfapp_conf = {}
