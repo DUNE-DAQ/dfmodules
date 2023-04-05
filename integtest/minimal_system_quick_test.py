@@ -34,7 +34,7 @@ hsi_frag_params ={"fragment_type_description": "HSI",
                              "hdf5_source_subsystem": "HW_Signals_Interface",
                              "expected_fragment_count": 1,
                              "min_size_bytes": 72, "max_size_bytes": 100}
-ignored_logfile_problems={}
+ignored_logfile_problems={"connectionservice": ["Searching for connections matching uid_regex<errored_frames_q> and data_type Unknown"]}
 
 # The next three variable declarations *must* be present as globals in the test
 # file. They're read by the "fixtures" in conftest.py to determine how
@@ -49,11 +49,9 @@ hardware_map_contents = integtest_file_gen.generate_hwmap_file( number_of_data_p
 
 conf_dict = config_file_gen.get_default_config_dict()
 conf_dict["boot"]["op_env"] = "integtest"
-try:
-  urllib.request.urlopen('http://localhost:5000').status
-  conf_dict["boot"]["use_connectivity_service"] = True
-except:
-  conf_dict["boot"]["use_connectivity_service"] = False
+conf_dict["boot"]["use_connectivity_service"] = True
+conf_dict["boot"]["start_connectivity_service"] = True
+conf_dict["boot"]["connectivity_service_port"] = 12345   # just to try something other than the default...
 conf_dict["readout"]["data_rate_slowdown_factor"] = data_rate_slowdown_factor
 conf_dict["readout"]["default_data_file"] = "asset://?label=ProtoWIB&subsystem=readout"
 conf_dict["readout"]["clock_speed_hz"] = clock_speed_hz
