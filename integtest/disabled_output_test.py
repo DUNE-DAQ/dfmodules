@@ -87,10 +87,10 @@ confgen_arguments={"WIB1_System": conf_dict,
 
 # The commands to run in nanorc, as a list
 nanorc_command_list="integtest-partition boot conf".split()
-nanorc_command_list+="start_run --disable-data-storage 101 wait ".split() + [str(run_duration)] + "stop_run --wait 2 wait 2".split()
-nanorc_command_list+="start_run                        102 wait ".split() + [str(run_duration)] + "stop_run --wait 2 wait 2".split()
-nanorc_command_list+="start_run --disable-data-storage 103 wait ".split() + [str(run_duration)] + "disable_triggers wait 2 stop_run wait 2".split()
-nanorc_command_list+="start_run                        104 wait ".split() + [str(run_duration)] + "disable_triggers wait 2 stop_run wait 2".split()
+nanorc_command_list+="start_run --disable-data-storage 101 wait ".split() + [str(run_duration)] + "stop_run wait 4".split()
+nanorc_command_list+="start_run                        102 wait ".split() + [str(run_duration)] + "stop_run wait 4".split()
+nanorc_command_list+="start_run --disable-data-storage 103 wait ".split() + [str(run_duration)] + "disable_triggers wait 2 stop_run wait 4".split()
+nanorc_command_list+="start_run                        104 wait ".split() + [str(run_duration)] + "disable_triggers wait 2 stop_run wait 4".split()
 nanorc_command_list+="scrap terminate".split()
 
 # The tests themselves
