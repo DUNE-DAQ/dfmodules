@@ -77,8 +77,17 @@ swtpg_conf = copy.deepcopy(conf_dict)
 swtpg_conf["readout"]["enable_software_tpg"] = True
 swtpg_conf["dataflow"]["token_count"] = max(10, 3*number_of_data_producers*number_of_readout_apps)
 
-confgen_arguments={"WIB1_System": conf_dict,
-                   "Software_TPG_System": swtpg_conf,
+multiout_conf = copy.deepcopy(conf_dict)
+multiout_conf["dataflow"]["apps"][0]["output_paths"] = [".", "."]
+
+multiout_tpg_conf = copy.deepcopy(multiout_conf)
+multiout_tpg_conf["readout"]["enable_software_tpg"] = True
+multiout_tpg_conf["dataflow"]["token_count"] = max(10, 3*number_of_data_producers*number_of_readout_apps)
+
+confgen_arguments={"WIB1_System (Rollover files)": conf_dict,
+                   "Software_TPG_System (Rollover files)": swtpg_conf,
+                   "WIB1_System (Multiple outputs)": multiout_conf,
+                   "Software_TPG_System (Multiple outputs)": multiout_tpg_conf
                   }
 
 # The commands to run in nanorc, as a list
