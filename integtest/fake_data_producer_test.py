@@ -49,6 +49,7 @@ try:
   conf_dict["boot"]["use_connectivity_service"] = True
 except:
   conf_dict["boot"]["use_connectivity_service"] = False
+conf_dict["readout"]["clock_speed_hz"] = 50000000
 conf_dict["readout"]["data_rate_slowdown_factor"] = data_rate_slowdown_factor
 conf_dict["readout"]["use_fake_data_producers"] = True
 conf_dict["readout"]["default_data_file"] = "asset://?label=ProtoWIB&subsystem=readout"
