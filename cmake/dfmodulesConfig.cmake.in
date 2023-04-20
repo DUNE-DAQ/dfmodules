@@ -20,6 +20,7 @@ find_dependency(serialization)
 find_dependency(readoutlibs)
 find_dependency(hdf5libs)
 find_dependency(detchannelmaps)
+find_dependency(trgchannelmaps)
 find_dependency(Boost COMPONENTS iostreams)
 
 
