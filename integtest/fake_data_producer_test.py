@@ -3,6 +3,7 @@ import os
 import re
 import copy
 import urllib.request
+import math
 
 import dfmodules.data_file_checks as data_file_checks
 import integrationtest.log_file_checks as log_file_checks
@@ -12,7 +13,7 @@ import dfmodules.integtest_file_gen as integtest_file_gen
 # Values that help determine the running conditions
 run_duration=20  # seconds
 # baseline_fragment_size_bytes=72+(464*81) # 81 frames of 464 bytes each with 72-byte header # ProtoWIB
-baseline_fragment_size_bytes=(368*81) # 81 frames of 368 bytes each # WIBEth
+baseline_fragment_size_bytes=72+(472*math.ceil(2001/32)) # 63 frames of 472 bytes each with 72-byte header # WIBEth/DuneWIB
 data_rate_slowdown_factor=10
 number_of_data_producers = 2
 
@@ -119,8 +120,8 @@ def test_data_files(run_nanorc):
     if run_nanorc.confgen_config["trigger"]["trigger_window_before_ticks"] == 2000:
         #frag_params["min_size_bytes"]=72+(464*161) # 161 frames of 464 bytes each with 72-byte header # ProtoWIB
         #frag_params["max_size_bytes"]=72+(464*161)
-        frag_params["min_size_bytes"]=(368*161) # 161 frames of 368 bytes each # WIBEth
-        frag_params["max_size_bytes"]=(368*161)
+        frag_params["min_size_bytes"]=72*(472*math.ceil(2001/32)) # 126 frames of 472 bytes each with 72-byte header # WIBEth/DuneWIB
+        frag_params["max_size_bytes"]=72*(472*math.ceil(2001/32))
     fragment_check_list=[frag_params, hsi_frag_params]
 
     # Run some tests on the output data file
