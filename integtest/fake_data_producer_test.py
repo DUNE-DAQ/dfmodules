@@ -12,8 +12,9 @@ import dfmodules.integtest_file_gen as integtest_file_gen
 
 # Values that help determine the running conditions
 run_duration=20  # seconds
-# baseline_fragment_size_bytes=72+(464*81) # 81 frames of 464 bytes each with 72-byte header # ProtoWIB
-baseline_fragment_size_bytes=72+(472*math.ceil(2001/32)) # 63 frames of 472 bytes each with 72-byte header # WIBEth/DuneWIB
+# baseline_fragment_size_bytes=72+(464*81) # 81 frames of 464 bytes each with 72-byte Fragment header # ProtoWIB
+#baseline_fragment_size_bytes=72+(472*math.ceil(2001/32)) # 63 frames of 472 bytes each with 72-byte Fragment header # DuneWIB
+baseline_fragment_size_bytes=72+(7200*math.ceil(2001/2048)) # 1 frame of 7200 bytes with 72-byte Fragment header # WIBEth
 data_rate_slowdown_factor=10
 number_of_data_producers = 2
 
@@ -63,9 +64,6 @@ except:
   conf_dict["boot"]["use_connectivity_service"] = False
 conf_dict["readout"]["data_rate_slowdown_factor"] = data_rate_slowdown_factor
 conf_dict["readout"]["use_fake_data_producers"] = True
-#conf_dict["readout"]["default_data_file"] = "asset://?label=ProtoWIB&subsystem=readout" # ProtoWIB
-#conf_dict["readout"]["default_data_file"] = "asset://?label=DuneWIB&subsystem=readout" # DuneWIB
-conf_dict["readout"]["default_data_file"] = "asset://?checksum=e96fd6efd3f98a9a3bfaba32975b476e" # WIBEth
 #conf_dict["readout"]["clock_speed_hz"] = 50000000 # ProtoWIB
 conf_dict["readout"]["clock_speed_hz"] = 62500000 # DuneWIB/WIBEth
 conf_dict["readout"]["eth_mode"] = True # WIBEth
@@ -118,10 +116,12 @@ def test_data_files(run_nanorc):
     #frag_params=wib2_frag_params # DuneWIB
     frag_params=wibeth_frag_params
     if run_nanorc.confgen_config["trigger"]["trigger_window_before_ticks"] == 2000:
-        #frag_params["min_size_bytes"]=72+(464*161) # 161 frames of 464 bytes each with 72-byte header # ProtoWIB
+        #frag_params["min_size_bytes"]=72+(464*161) # 161 frames of 464 bytes each with 72-byte Fragment header # ProtoWIB
         #frag_params["max_size_bytes"]=72+(464*161)
-        frag_params["min_size_bytes"]=72*(472*math.ceil(2001/32)) # 126 frames of 472 bytes each with 72-byte header # WIBEth/DuneWIB
-        frag_params["max_size_bytes"]=72*(472*math.ceil(2001/32))
+        #frag_params["min_size_bytes"]=72+(472*math.ceil(4001/32)) # 126 frames of 472 bytes each with 72-byte Fragment header # DuneWIB
+        #frag_params["max_size_bytes"]=72+(472*math.ceil(4001/32))
+        frag_params["min_size_bytes"]=72+(7200*math.ceil(4001/2048)) # 2 frames of 7200 bytes each with 72-byte Fragment header # WIBEth
+        frag_params["max_size_bytes"]=72+(7200*math.ceil(4001/2048))
     fragment_check_list=[frag_params, hsi_frag_params]
 
     # Run some tests on the output data file
