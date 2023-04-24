@@ -33,6 +33,16 @@ wib1_frag_multi_trig_params={"fragment_type_description": "WIB",
                              "hdf5_source_subsystem": "Detector_Readout",
                              "expected_fragment_count": (number_of_data_producers*number_of_readout_apps),
                              "min_size_bytes": 72, "max_size_bytes": 54000}
+wib2_frag_params={"fragment_type_description": "WIB2",
+                  "fragment_type": "WIB",
+                  "hdf5_source_subsystem": "Detector_Readout",
+                  "expected_fragment_count": number_of_data_producers,
+                  "min_size_bytes": 29808, "max_size_bytes": 30280}
+wibeth_frag_params={"fragment_type_description": "WIBEth",
+                  "fragment_type": "WIBEth",
+                  "hdf5_source_subsystem": "Detector_Readout",
+                  "expected_fragment_count": number_of_data_producers,
+                  "min_size_bytes": 7272, "max_size_bytes": 14472}
 triggercandidate_frag_params={"fragment_type_description": "Trigger Candidate",
                               "fragment_type": "Trigger_Candidate",
                               "hdf5_source_subsystem": "Trigger",
@@ -89,7 +99,12 @@ except:
   conf_dict["boot"]["use_connectivity_service"] = False
 conf_dict["readout"]["data_rate_slowdown_factor"] = data_rate_slowdown_factor
 conf_dict["readout"]["latency_buffer_size"] = 200000
-conf_dict["readout"]["default_data_file"] = "asset://?label=ProtoWIB&subsystem=readout"
+#conf_dict["readout"]["default_data_file"] = "asset://?label=ProtoWIB&subsystem=readout" # ProtoWIB
+#conf_dict["readout"]["default_data_file"] = "asset://?label=DuneWIB&subsystem=readout" # DuneWIB
+conf_dict["readout"]["default_data_file"] = "asset://?checksum=e96fd6efd3f98a9a3bfaba32975b476e" # WIBEth
+#conf_dict["readout"]["clock_speed_hz"] = 50000000 # ProtoWIB
+conf_dict["readout"]["clock_speed_hz"] = 62500000 # DuneWIB/WIBEth
+conf_dict["readout"]["eth_mode"] = True # WIBEth
 
 swtpg_conf = copy.deepcopy(conf_dict)
 swtpg_conf["readout"]["enable_software_tpg"] = True

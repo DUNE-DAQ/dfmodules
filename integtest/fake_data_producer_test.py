@@ -11,7 +11,8 @@ import dfmodules.integtest_file_gen as integtest_file_gen
 
 # Values that help determine the running conditions
 run_duration=20  # seconds
-baseline_fragment_size_bytes=72+(464*81) # 81 frames of 464 bytes each with 72-byte header
+# baseline_fragment_size_bytes=72+(464*81) # 81 frames of 464 bytes each with 72-byte header # ProtoWIB
+baseline_fragment_size_bytes=(368*81) # 81 frames of 368 bytes each # WIBEth
 data_rate_slowdown_factor=10
 number_of_data_producers = 2
 
@@ -26,6 +27,16 @@ wib1_frag_hsi_trig_params={"fragment_type_description": "WIB",
                            "expected_fragment_count": number_of_data_producers,
                            "min_size_bytes": baseline_fragment_size_bytes, 
                            "max_size_bytes": baseline_fragment_size_bytes}
+wib2_frag_params={"fragment_type_description": "WIB2",
+                  "fragment_type": "WIB",
+                  "hdf5_source_subsystem": "Detector_Readout",
+                  "expected_fragment_count": number_of_data_producers,
+                  "min_size_bytes": baseline_fragment_size_bytes, "max_size_bytes": baseline_fragment_size_bytes}
+wibeth_frag_params={"fragment_type_description": "WIBEth",
+                  "fragment_type": "WIBEth",
+                  "hdf5_source_subsystem": "Detector_Readout",
+                  "expected_fragment_count": number_of_data_producers,
+                  "min_size_bytes": baseline_fragment_size_bytes, "max_size_bytes": baseline_fragment_size_bytes}
 hsi_frag_params ={"fragment_type_description": "HSI",
                              "fragment_type": "Hardware_Signal",
                              "hdf5_source_subsystem": "HW_Signals_Interface",
@@ -51,7 +62,12 @@ except:
   conf_dict["boot"]["use_connectivity_service"] = False
 conf_dict["readout"]["data_rate_slowdown_factor"] = data_rate_slowdown_factor
 conf_dict["readout"]["use_fake_data_producers"] = True
-conf_dict["readout"]["default_data_file"] = "asset://?label=ProtoWIB&subsystem=readout"
+#conf_dict["readout"]["default_data_file"] = "asset://?label=ProtoWIB&subsystem=readout" # ProtoWIB
+#conf_dict["readout"]["default_data_file"] = "asset://?label=DuneWIB&subsystem=readout" # DuneWIB
+conf_dict["readout"]["default_data_file"] = "asset://?checksum=e96fd6efd3f98a9a3bfaba32975b476e" # WIBEth
+#conf_dict["readout"]["clock_speed_hz"] = 50000000 # ProtoWIB
+conf_dict["readout"]["clock_speed_hz"] = 62500000 # DuneWIB/WIBEth
+conf_dict["readout"]["eth_mode"] = True # WIBEth
 conf_dict["trigger"]["trigger_window_before_ticks"] = 1000
 conf_dict["trigger"]["trigger_window_after_ticks"] = 1001
 
@@ -97,10 +113,14 @@ def test_log_files(run_nanorc):
 def test_data_files(run_nanorc):
     local_expected_event_count=expected_event_count
     local_event_count_tolerance=expected_event_count_tolerance
-    frag_params=wib1_frag_hsi_trig_params
+    #frag_params=wib1_frag_hsi_trig_params # ProtoWIB
+    #frag_params=wib2_frag_params # DuneWIB
+    frag_params=wibeth_frag_params
     if run_nanorc.confgen_config["trigger"]["trigger_window_before_ticks"] == 2000:
-        frag_params["min_size_bytes"]=72+(464*161) # 161 frames of 464 bytes each with 72-byte header
-        frag_params["max_size_bytes"]=72+(464*161)
+        #frag_params["min_size_bytes"]=72+(464*161) # 161 frames of 464 bytes each with 72-byte header # ProtoWIB
+        #frag_params["max_size_bytes"]=72+(464*161)
+        frag_params["min_size_bytes"]=(368*161) # 161 frames of 368 bytes each # WIBEth
+        frag_params["max_size_bytes"]=(368*161)
     fragment_check_list=[frag_params, hsi_frag_params]
 
     # Run some tests on the output data file
