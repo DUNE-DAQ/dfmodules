@@ -10,7 +10,7 @@ local types = {
     sourceid_number : s.number("sourceid_number", "u4", doc="Source identifier"),
 
     conf: s.record("ConfParams", [
-        s.field("tp_accumulation_interval_ticks", self.size, 50000000,
+        s.field("tp_accumulation_interval_ticks", self.size, 62500000,
                 doc="Size of the TP accumulation window, measured in clock ticks"),
         s.field("data_store_parameters", self.dsparams,
                 doc="Parameters that configure the DataStore associated with this TPStreamWriter"),
