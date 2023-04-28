@@ -15,6 +15,7 @@
 #include "detchannelmaps/HardwareMapService.hpp"
 #include "hdf5libs/hdf5filelayout/Nljs.hpp"
 #include "hdf5libs/hdf5filelayout/Structs.hpp"
+#include "hdf5libs/hdf5rawdatafile/Structs.hpp"
 
 #define BOOST_TEST_MODULE HDF5Write_test // NOLINT
 
@@ -163,6 +164,45 @@ make_hardware_map(int app_count, int link_count, int det_id = 3)
   return output;
 }
 
+
+dunedaq::hdf5libs::hdf5rawdatafile::SrcGeoIDMap
+make_srcgeoid_map(int app_count, int link_count, int det_id = 3)
+{
+  dunedaq::hdf5libs::hdf5rawdatafile::SrcGeoIDMap map;
+
+  int sid = 0;
+  for (int app = 0; app < app_count; ++app) {
+    for (int link = 0; link < link_count; ++link) {
+      map.emplace_back() = {sid, dunedaq::hdf5libs::hdf5rawdatafile::GeoID({det_id, app, sid / 2, sid % 2})};
+      ++sid;
+    }
+  }
+
+  return map;
+
+
+  // dunedaq::detchannelmaps::HardwareMap output;
+  // int sid = 0;
+
+  // for (int app = 0; app < app_count; ++app) {
+  //   for (int link = 0; link < link_count; ++link) {
+  //     dunedaq::detchannelmaps::HWInfo info;
+  //     info.dro_source_id = sid;
+  //     info.det_link = sid % 2;
+  //     info.det_slot = sid / 2;
+  //     info.det_crate = app;
+  //     info.det_id = det_id;
+  //     info.dro_host = "localhost";
+  //     info.dro_card = app;
+  //     info.dro_slr = link / 5;
+  //     info.dro_link = link % 5;
+  //     info.from_file = true;
+  //     output.link_infos.push_back(info);
+  //     ++sid;
+  //   }
+  // }
+  // return output;
+}
 BOOST_AUTO_TEST_SUITE(HDF5Write_test)
 
 BOOST_AUTO_TEST_CASE(WriteEventFiles)
@@ -176,7 +216,8 @@ BOOST_AUTO_TEST_CASE(WriteEventFiles)
   const int fragment_size = 10 + sizeof(dunedaq::daqdataformats::FragmentHeader);
 
   // Make a hardware map
-  auto hardware_map = make_hardware_map(apa_count, link_count);
+  // auto hardware_map = make_hardware_map(apa_count, link_count);
+  auto hardware_map = make_srcgeoid_map(apa_count, link_count);
 
   // delete any pre-existing files so that we start with a clean slate
   std::string delete_pattern = file_prefix + ".*\\.hdf5";
@@ -226,7 +267,8 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
   const int fragment_size = 10 + sizeof(dunedaq::daqdataformats::FragmentHeader);
 
   // Make a hardware map
-  auto hardware_map = make_hardware_map(apa_count, link_count);
+  // auto hardware_map = make_hardware_map(apa_count, link_count);
+  auto hardware_map = make_srcgeoid_map(apa_count, link_count);
 
   // delete any pre-existing files so that we start with a clean slate
   std::string delete_pattern = file_prefix + ".*\\.hdf5";
@@ -277,7 +319,8 @@ BOOST_AUTO_TEST_CASE(CheckWritingSuffix)
   const int fragment_size = 10 + sizeof(dunedaq::daqdataformats::FragmentHeader);
 
   // Make a hardware map
-  auto hardware_map = make_hardware_map(apa_count, link_count);
+  // auto hardware_map = make_hardware_map(apa_count, link_count);
+  auto hardware_map = make_srcgeoid_map(apa_count, link_count);
 
   // delete any pre-existing files so that we start with a clean slate
   std::string delete_pattern = file_prefix + ".*\\.hdf5";
@@ -334,7 +377,8 @@ BOOST_AUTO_TEST_CASE(FileSizeLimitResultsInMultipleFiles)
   const int fragment_size = 10000;
 
   // Make a hardware map
-  auto hardware_map = make_hardware_map(apa_count, link_count);
+  // auto hardware_map = make_hardware_map(apa_count, link_count);
+  auto hardware_map = make_srcgeoid_map(apa_count, link_count);
 
   // 5 APAs times 10 links times 10000 bytes per fragment gives 500,000 bytes per TR
   // So, 15 TRs would give 7,500,000 bytes total.
@@ -389,7 +433,8 @@ BOOST_AUTO_TEST_CASE(SmallFileSizeLimitDataBlockListWrite)
   const int fragment_size = 100000;
 
   // Make a hardware map
-  auto hardware_map = make_hardware_map(apa_count, link_count);
+  // auto hardware_map = make_hardware_map(apa_count, link_count);
+  auto hardware_map = make_srcgeoid_map(apa_count, link_count);
 
   // 5 APAs times 100000 bytes per fragment gives 500,000 bytes per TR
 
