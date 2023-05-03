@@ -60,7 +60,7 @@ from pprint import pprint
 # Time to wait on pop()
 QUEUE_POP_WAIT_MS=100;
 # local clock speed Hz
-CLOCK_SPEED_HZ = 50000000;
+CLOCK_SPEED_HZ = 62500000;
 
 
 def generate_df(
