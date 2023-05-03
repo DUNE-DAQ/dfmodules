@@ -153,7 +153,9 @@ def test_data_files(run_nanorc):
     local_expected_event_count=expected_event_count
     local_event_count_tolerance=expected_event_count_tolerance
     fragment_check_list=[triggercandidate_frag_params, hsi_frag_params]
-    fragment_check_list.append(wib1_frag_hsi_trig_params)
+    #fragment_check_list.append(wib1_frag_hsi_trig_params) # ProtoWIB
+    #fragment_check_list.append(wib2_frag_params) # DuneWIB
+    fragment_check_list.append(wibeth_frag_params) # WIBEth
 
     # Run some tests on the output data file
     assert len(run_nanorc.data_files)==expected_number_of_data_files

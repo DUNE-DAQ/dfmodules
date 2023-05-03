@@ -33,11 +33,16 @@ wib2_frag_multi_trig_params={"fragment_type_description": "WIB",
                              "hdf5_source_subsystem": "Detector_Readout",
                              "expected_fragment_count": (number_of_data_producers*number_of_readout_apps),
                              "min_size_bytes": 72, "max_size_bytes": 54000}
-wibeth_frag_params={"fragment_type_description": "WIBEth",
+wibeth_frag_hsi_trig_params={"fragment_type_description": "WIBEth",
                   "fragment_type": "WIBEth",
                   "hdf5_source_subsystem": "Detector_Readout",
                   "expected_fragment_count": (number_of_data_producers*number_of_readout_apps),
                   "min_size_bytes": 7272, "max_size_bytes": 14472}
+wibeth_frag_multi_trig_params={"fragment_type_description": "WIBEth",
+                  "fragment_type": "WIBEth",
+                  "hdf5_source_subsystem": "Detector_Readout",
+                  "expected_fragment_count": (number_of_data_producers*number_of_readout_apps),
+                  "min_size_bytes": 72, "max_size_bytes": 14472}
 triggercandidate_frag_params={"fragment_type_description": "Trigger Candidate",
                               "fragment_type": "Trigger_Candidate",
                               "hdf5_source_subsystem": "Trigger",
@@ -136,14 +141,16 @@ def test_data_files(run_nanorc):
     if "enable_software_tpg" in run_nanorc.confgen_config["readout"].keys() and run_nanorc.confgen_config["readout"]["enable_software_tpg"]:
         local_expected_event_count+=(265*number_of_data_producers*number_of_readout_apps*run_duration/(100*number_of_dataflow_apps))
         local_event_count_tolerance+=(10*number_of_data_producers*number_of_readout_apps*run_duration/(100*number_of_dataflow_apps))
-        fragment_check_list.append(wib2_frag_multi_trig_params)
+        #fragment_check_list.append(wib2_frag_multi_trig_params) # DuneWIB
+        fragment_check_list.append(wibeth_frag_multi_trig_params) # WIBEth
         fragment_check_list.append(triggertp_frag_params)
         fragment_check_list.append(triggeractivity_frag_params)
     else:
         low_number_of_files-=number_of_dataflow_apps
         if low_number_of_files < 1:
             low_number_of_files=1
-        fragment_check_list.append(wib2_frag_hsi_trig_params)
+        #fragment_check_list.append(wib2_frag_hsi_trig_params) # DuneWIB
+        fragment_check_list.append(wibeth_frag_hsi_trig_params) # WIBEth
 
     # Run some tests on the output data file
     assert len(run_nanorc.data_files)==high_number_of_files or len(run_nanorc.data_files)==low_number_of_files

@@ -31,16 +31,26 @@ wib1_frag_multi_trig_params={"fragment_type_description": "WIB",
                              "hdf5_source_subsystem": "Detector_Readout",
                              "expected_fragment_count": number_of_data_producers,
                              "min_size_bytes": 72, "max_size_bytes": 54000}
-wib2_frag_params={"fragment_type_description": "WIB2",
-                  "fragment_type": "WIB",
-                  "hdf5_source_subsystem": "Detector_Readout",
-                  "expected_fragment_count": number_of_data_producers,
-                  "min_size_bytes": 29808, "max_size_bytes": 30280}
-wibeth_frag_params={"fragment_type_description": "WIBEth",
+wib2_frag_hsi_trig_params={"fragment_type_description": "WIB", 
+                           "fragment_type": "WIB",
+                           "hdf5_source_subsystem": "Detector_Readout",
+                           "expected_fragment_count": (number_of_data_producers),
+                           "min_size_bytes": 29808, "max_size_bytes": 30280}
+wib2_frag_multi_trig_params={"fragment_type_description": "WIB",
+                             "fragment_type": "WIB",
+                             "hdf5_source_subsystem": "Detector_Readout",
+                             "expected_fragment_count": (number_of_data_producers),
+                             "min_size_bytes": 72, "max_size_bytes": 54000}
+wibeth_frag_hsi_trig_params={"fragment_type_description": "WIBEth",
                   "fragment_type": "WIBEth",
                   "hdf5_source_subsystem": "Detector_Readout",
-                  "expected_fragment_count": number_of_data_producers,
+                  "expected_fragment_count": (number_of_data_producers),
                   "min_size_bytes": 7272, "max_size_bytes": 14472}
+wibeth_frag_multi_trig_params={"fragment_type_description": "WIBEth",
+                  "fragment_type": "WIBEth",
+                  "hdf5_source_subsystem": "Detector_Readout",
+                  "expected_fragment_count": (number_of_data_producers),
+                  "min_size_bytes": 72, "max_size_bytes": 14472}
 triggercandidate_frag_params={"fragment_type_description": "Trigger Candidate",
                               "fragment_type": "Trigger_Candidate",
                               "hdf5_source_subsystem": "Trigger",
@@ -132,11 +142,15 @@ def test_data_files(run_nanorc):
     if "enable_software_tpg" in run_nanorc.confgen_config["readout"].keys() and run_nanorc.confgen_config["readout"]["enable_software_tpg"]:
         local_expected_event_count+=(270*number_of_data_producers*run_duration/100)
         local_event_count_tolerance+=(10*number_of_data_producers*run_duration/100)
-        fragment_check_list.append(wib1_frag_multi_trig_params)
+        #fragment_check_list.append(wib1_frag_multi_trig_params) # ProtoWIB
+        #fragment_check_list.append(wib2_frag_multi_trig_params) # DuneWIB
+        fragment_check_list.append(wibeth_frag_multi_trig_params) # WIBEth
         fragment_check_list.append(triggertp_frag_params)
         fragment_check_list.append(triggeractivity_frag_params)
     else:
-        fragment_check_list.append(wib1_frag_hsi_trig_params)
+        #fragment_check_list.append(wib1_frag_hsi_trig_params) # ProtoWIB
+        #fragment_check_list.append(wib2_frag_hsi_trig_params) # DuneWIB
+        fragment_check_list.append(wibeth_frag_hsi_trig_params) # WIBEth
 
     # Run some tests on the output data file
     assert len(run_nanorc.data_files)==expected_number_of_data_files
