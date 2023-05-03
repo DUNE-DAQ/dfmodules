@@ -105,7 +105,7 @@ swtpg_conf = copy.deepcopy(conf_dict)
 swtpg_conf["readout"]["enable_software_tpg"] = True
 
 confgen_arguments={"WIB1_System": conf_dict,
-                   "Software_TPG_System": swtpg_conf,
+#                   "Software_TPG_System": swtpg_conf,
                   }
 
 # The commands to run in nanorc, as a list
