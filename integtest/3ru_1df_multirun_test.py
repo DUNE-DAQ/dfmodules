@@ -124,7 +124,7 @@ dqm_conf = copy.deepcopy(conf_dict)
 dqm_conf["dqm"]["enable_dqm"] = True
 
 confgen_arguments={"WIB1_System": conf_dict,
-                   "Software_TPG_System": swtpg_conf,
+#                   "Software_TPG_System": swtpg_conf,
                    "DQM_System": dqm_conf,
                   }
 
