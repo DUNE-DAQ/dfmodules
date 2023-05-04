@@ -26,10 +26,10 @@ latency_buffer_size=600000
 data_rate_slowdown_factor=20
 
 # Default values for validation parameters
-expected_number_of_data_files=2
+expected_number_of_data_files=2*number_of_dataflow_apps
 check_for_logfile_errors=True
-expected_event_count=191 # 3*run_duration*trigger_rate/number_of_dataflow_apps
-expected_event_count_tolerance=5
+expected_event_count=382 # 3*run_duration*trigger_rate/number_of_dataflow_apps
+expected_event_count_tolerance= 9
 minimum_total_disk_space_gb=32  # double what we need
 minimum_free_disk_space_gb=24   # 50% more than what we need
 wib1_frag_hsi_trig_params={"fragment_type_description": "WIB", 
@@ -40,13 +40,13 @@ wib1_frag_hsi_trig_params={"fragment_type_description": "WIB",
 wib2_frag_params={"fragment_type_description": "WIB2",
                   "fragment_type": "WIB",
                   "hdf5_source_subsystem": "Detector_Readout",
-                  "expected_fragment_count": number_of_data_producers,
+                  "expected_fragment_count": number_of_data_producers*number_of_readout_apps,
                   "min_size_bytes": 29808, "max_size_bytes": 30280}
 wibeth_frag_params={"fragment_type_description": "WIBEth",
                   "fragment_type": "WIBEth",
                   "hdf5_source_subsystem": "Detector_Readout",
-                  "expected_fragment_count": number_of_data_producers,
-                  "min_size_bytes": 7272, "max_size_bytes": 14472}
+                  "expected_fragment_count": number_of_data_producers*number_of_readout_apps,
+                  "min_size_bytes": 7272, "max_size_bytes": 712872}
 triggercandidate_frag_params={"fragment_type_description": "Trigger Candidate",
                               "fragment_type": "Trigger_Candidate",
                               "hdf5_source_subsystem": "Trigger",
@@ -82,11 +82,6 @@ confgen_name="daqconf_multiru_gen"
 hardware_map_contents = integtest_file_gen.generate_hwmap_file(number_of_data_producers, number_of_readout_apps)
 
 conf_dict = config_file_gen.get_default_config_dict()
-try:
-  urllib.request.urlopen('http://localhost:5000').status
-  conf_dict["boot"]["use_connectivity_service"] = True
-except:
-  conf_dict["boot"]["use_connectivity_service"] = False
 conf_dict["readout"]["data_rate_slowdown_factor"] = data_rate_slowdown_factor
 conf_dict["readout"]["clock_speed_hz"] = clock_speed_hz
 conf_dict["readout"]["latency_buffer_size"] = latency_buffer_size

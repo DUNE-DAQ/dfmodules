@@ -58,9 +58,6 @@ hardware_map_contents = integtest_file_gen.generate_hwmap_file( number_of_data_p
 
 conf_dict = config_file_gen.get_default_config_dict()
 conf_dict["boot"]["op_env"] = "integtest"
-conf_dict["boot"]["use_connectivity_service"] = True
-conf_dict["boot"]["start_connectivity_service"] = True
-conf_dict["boot"]["connectivity_service_port"] = 12345   # just to try something other than the default...
 conf_dict["readout"]["data_rate_slowdown_factor"] = data_rate_slowdown_factor
 #conf_dict["readout"]["default_data_file"] = "asset://?label=ProtoWIB&subsystem=readout" # ProtoWIB
 #conf_dict["readout"]["default_data_file"] = "asset://?label=DuneWIB&subsystem=readout" # DuneWIB
