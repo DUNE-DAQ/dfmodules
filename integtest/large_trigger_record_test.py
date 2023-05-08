@@ -10,7 +10,7 @@ import dfmodules.integtest_file_gen as integtest_file_gen
 
 # Values that help determine the running conditions
 number_of_data_producers=10
-run_duration=23  # seconds
+run_duration=40  # seconds
 number_of_readout_apps=3
 number_of_dataflow_apps=1
 trigger_rate=0.2 # Hz
@@ -24,14 +24,41 @@ expected_number_of_data_files=4
 check_for_logfile_errors=True
 expected_event_count=4
 expected_event_count_tolerance=1
-wib1_frag_hsi_trig_params={"fragment_type_description": "WIB",
-                           "hdf5_detector_group": "TPC", "hdf5_region_prefix": "APA",
+wib2_frag_hsi_trig_params={"fragment_type_description": "WIB", 
+                           "fragment_type": "WIB",
+                           "hdf5_source_subsystem": "Detector_Readout",
                            "expected_fragment_count": (number_of_data_producers*number_of_readout_apps),
-                           "min_size_bytes": 3712080, "max_size_bytes": 3712080}
+                           "min_size_bytes": 29808, "max_size_bytes": 30280}
+wib2_frag_multi_trig_params={"fragment_type_description": "WIB",
+                             "fragment_type": "WIB",
+                             "hdf5_source_subsystem": "Detector_Readout",
+                             "expected_fragment_count": (number_of_data_producers*number_of_readout_apps),
+                             "min_size_bytes": 72, "max_size_bytes": 54000}
+wibeth_frag_hsi_trig_params={"fragment_type_description": "WIBEth",
+                  "fragment_type": "WIBEth",
+                  "hdf5_source_subsystem": "Detector_Readout",
+                  "expected_fragment_count": (number_of_data_producers*number_of_readout_apps),
+                  "min_size_bytes": 35157672, "max_size_bytes": 35157672}
+wibeth_frag_multi_trig_params={"fragment_type_description": "WIBEth",
+                  "fragment_type": "WIBEth",
+                  "hdf5_source_subsystem": "Detector_Readout",
+                  "expected_fragment_count": (number_of_data_producers*number_of_readout_apps),
+                  "min_size_bytes": 72, "max_size_bytes": 14472}
 triggercandidate_frag_params={"fragment_type_description": "Trigger Candidate",
-                              "hdf5_detector_group": "Trigger", "hdf5_region_prefix": "Region",
+                              "fragment_type": "Trigger_Candidate",
+                              "hdf5_source_subsystem": "Trigger",
                               "expected_fragment_count": 1,
-                              "min_size_bytes": 72, "max_size_bytes": 216}
+                              "min_size_bytes": 72, "max_size_bytes": 280}
+triggeractivity_frag_params={"fragment_type_description": "Trigger Activity",
+                              "fragment_type": "Trigger_Activity",
+                              "hdf5_source_subsystem": "Trigger",
+                              "expected_fragment_count": number_of_readout_apps,
+                              "min_size_bytes": 72, "max_size_bytes": 400}
+triggertp_frag_params={"fragment_type_description": "Trigger with TPs",
+                       "fragment_type": "Trigger_Primitive",
+                       "hdf5_source_subsystem": "Trigger",
+                       "expected_fragment_count": ((number_of_data_producers*number_of_readout_apps)),
+                       "min_size_bytes": 72, "max_size_bytes": 16000}
 hsi_frag_params ={"fragment_type_description": "HSI",
                              "fragment_type": "Hardware_Signal",
                              "hdf5_source_subsystem": "HW_Signals_Interface",
@@ -52,7 +79,11 @@ hardware_map_contents = integtest_file_gen.generate_hwmap_file(number_of_data_pr
 conf_dict = config_file_gen.get_default_config_dict()
 conf_dict["readout"]["data_rate_slowdown_factor"] = data_rate_slowdown_factor
 conf_dict["readout"]["use_fake_data_producers"] = True
-conf_dict["readout"]["clock_speed_hz"] = 50000000
+#conf_dict["readout"]["default_data_file"] = "asset://?label=DuneWIB&subsystem=readout" # DuneWIB
+conf_dict["readout"]["default_data_file"] = "asset://?checksum=e96fd6efd3f98a9a3bfaba32975b476e" # WIBEth
+#conf_dict["readout"]["clock_speed_hz"] = 50000000 # ProtoWIB
+conf_dict["readout"]["clock_speed_hz"] = 62500000 # DuneWIB/WIBEth
+conf_dict["readout"]["eth_mode"] = True # WIBEth
 conf_dict["trigger"]["trigger_rate_hz"] = trigger_rate
 conf_dict["trigger"]["trigger_window_before_ticks"] = readout_window_time_before
 conf_dict["trigger"]["trigger_window_after_ticks"] = readout_window_time_after
@@ -95,7 +126,9 @@ def test_data_files(run_nanorc):
     local_expected_event_count=expected_event_count
     local_event_count_tolerance=expected_event_count_tolerance
     fragment_check_list=[triggercandidate_frag_params, hsi_frag_params]
-    fragment_check_list.append(wib1_frag_hsi_trig_params)
+    #fragment_check_list.append(wib1_frag_hsi_trig_params)        
+    #fragment_check_list.append(wib2_frag_hsi_trig_params) # DuneWIB
+    fragment_check_list.append(wibeth_frag_hsi_trig_params) # WIBEth
 
     # Run some tests on the output data file
     assert len(run_nanorc.data_files)==expected_number_of_data_files
