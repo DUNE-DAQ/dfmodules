@@ -20,13 +20,14 @@ import dfmodules.integtest_file_gen as integtest_file_gen
 # 08-May-2023, ELF:
 # Tested script by creating a tmpfs ramdisk (as root):
 # mkdir /mnt/tmp
-# mount -t tmpfs -o size=4g tmpfs /mnt/tmp
+# mount -t tmpfs -o size=5g tmpfs /mnt/tmp
 # chmod 777 /mnt/tmp
 
 # check how much free space there is on the configured output disk
 output_path=f"/mnt/tmp"
 disk_space=shutil.disk_usage(output_path)
-gb_space=disk_space.total / (1024*1024*1024)
+gb_space=disk_space.free / (1024*1024*1024)
+gb_limit=6.0
 hostname=os.uname().nodename
 print(f"{gb_space} GB free in {output_path}")
 
@@ -40,13 +41,13 @@ number_of_dataflow_apps=1
 trigger_rate=0.2 # Hz
 data_rate_slowdown_factor = 10
 token_count=1
-readout_window_time_before=4000000
-readout_window_time_after=500000
+readout_window_time_before=9000000
+readout_window_time_after=1000000
 
 # Default values for validation parameters
-expected_number_of_data_files=2
+expected_number_of_data_files=1
 check_for_logfile_errors=True
-expected_event_count=4
+expected_event_count=int(gb_space - 5)
 expected_event_count_tolerance=1
 wib2_frag_hsi_trig_params={"fragment_type_description": "WIB", 
                            "fragment_type": "WIB",
@@ -121,7 +122,7 @@ for df_app in range(number_of_dataflow_apps):
 confgen_arguments={"Base_System": conf_dict,
                   }
 # The commands to run in nanorc, as a list
-if gb_space < 5:
+if gb_space < gb_limit:
   nanorc_command_list="integtest-partition boot conf".split()
   nanorc_command_list+="start_run 101 wait ".split() + [str(run_duration)] + "stop_run --wait 2 wait 2".split()
   nanorc_command_list+="start 102 wait 3 enable_triggers wait ".split() + [str(run_duration)] + "stop_run wait 2".split()
@@ -144,14 +145,14 @@ def test_nanorc_success(run_nanorc):
     assert run_nanorc.completed_process.returncode==0
 
 def test_log_files(run_nanorc):
-    if check_for_logfile_errors and gb_space < 5:
+    if check_for_logfile_errors and gb_space < gb_limit:
         # Check that there are no warnings or errors in the log files
         assert log_file_checks.logs_are_error_free(run_nanorc.log_files, True, True, ignored_logfile_problems)
 
 def test_data_files(run_nanorc):
-    if gb_space >= 5:
+    if gb_space >= gb_limit:
         print(f"This computer ({hostname}) has too much available space in {output_path}.")
-        print(f"    (There is {gb_space} GB of space in {output_path}, limit is 5 GB)")
+        print(f"    (There is {gb_space} GB of space in {output_path}, limit is {gb_limit} GB)")
         return
 
     local_expected_event_count=expected_event_count
