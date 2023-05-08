@@ -17,36 +17,67 @@ import dfmodules.integtest_file_gen as integtest_file_gen
 # * the crash of the DF App in the second run
 # * the need for the HDF5DataStore to stop retrying writes at stop (drain-dataflow?) time
 
+# 08-May-2023, ELF:
+# Tested script by creating a tmpfs ramdisk (as root):
+# mkdir /mnt/tmp
+# mount -t tmpfs -o size=4g tmpfs /mnt/tmp
+# chmod 777 /mnt/tmp
+
 # check how much free space there is on the configured output disk
-output_path="."
-#disk_space=shutil.disk_usage(output_path)
-#print(disk_space.total / (1024*1024*1024))
-#print(tmpdir)
+output_path=f"/mnt/tmp"
+disk_space=shutil.disk_usage(output_path)
+gb_space=disk_space.total / (1024*1024*1024)
+hostname=os.uname().nodename
+print(f"{gb_space} GB free in {output_path}")
+
+
 
 # Values that help determine the running conditions
 number_of_data_producers=10
-run_duration=23  # seconds
+run_duration=20  # seconds
 number_of_readout_apps=3
 number_of_dataflow_apps=1
 trigger_rate=0.2 # Hz
 data_rate_slowdown_factor = 10
 token_count=1
-readout_window_time_before=9000000
-readout_window_time_after=1000000
+readout_window_time_before=4000000
+readout_window_time_after=500000
 
 # Default values for validation parameters
-expected_number_of_data_files=3
+expected_number_of_data_files=2
 check_for_logfile_errors=True
 expected_event_count=4
 expected_event_count_tolerance=1
-wib1_frag_hsi_trig_params={"fragment_type_description": "WIB",
-                           "hdf5_detector_group": "TPC", "hdf5_region_prefix": "APA",
+wib2_frag_hsi_trig_params={"fragment_type_description": "WIB", 
+                           "fragment_type": "WIB",
+                           "hdf5_source_subsystem": "Detector_Readout",
                            "expected_fragment_count": (number_of_data_producers*number_of_readout_apps),
-                           "min_size_bytes": 3712080, "max_size_bytes": 3712080}
+                           "min_size_bytes": 29808, "max_size_bytes": 30280}
+wib2_frag_multi_trig_params={"fragment_type_description": "WIB",
+                             "fragment_type": "WIB",
+                             "hdf5_source_subsystem": "Detector_Readout",
+                             "expected_fragment_count": (number_of_data_producers*number_of_readout_apps),
+                             "min_size_bytes": 72, "max_size_bytes": 54000}
+wibeth_frag_hsi_trig_params={"fragment_type_description": "WIBEth",
+                  "fragment_type": "WIBEth",
+                  "hdf5_source_subsystem": "Detector_Readout",
+                  "expected_fragment_count": (number_of_data_producers*number_of_readout_apps),
+                  "min_size_bytes": 35157672, "max_size_bytes": 35157672}
 triggercandidate_frag_params={"fragment_type_description": "Trigger Candidate",
-                              "hdf5_detector_group": "Trigger", "hdf5_region_prefix": "Region",
+                              "fragment_type": "Trigger_Candidate",
+                              "hdf5_source_subsystem": "Trigger",
                               "expected_fragment_count": 1,
-                              "min_size_bytes": 72, "max_size_bytes": 216}
+                              "min_size_bytes": 72, "max_size_bytes": 280}
+triggeractivity_frag_params={"fragment_type_description": "Trigger Activity",
+                              "fragment_type": "Trigger_Activity",
+                              "hdf5_source_subsystem": "Trigger",
+                              "expected_fragment_count": number_of_readout_apps,
+                              "min_size_bytes": 72, "max_size_bytes": 400}
+triggertp_frag_params={"fragment_type_description": "Trigger with TPs",
+                       "fragment_type": "Trigger_Primitive",
+                       "hdf5_source_subsystem": "Trigger",
+                       "expected_fragment_count": ((number_of_data_producers*number_of_readout_apps)),
+                       "min_size_bytes": 72, "max_size_bytes": 16000}
 hsi_frag_params ={"fragment_type_description": "HSI",
                              "fragment_type": "Hardware_Signal",
                              "hdf5_source_subsystem": "HW_Signals_Interface",
@@ -70,7 +101,11 @@ hardware_map_contents = integtest_file_gen.generate_hwmap_file(number_of_data_pr
 conf_dict = config_file_gen.get_default_config_dict()
 conf_dict["readout"]["data_rate_slowdown_factor"] = data_rate_slowdown_factor
 conf_dict["readout"]["use_fake_data_producers"] = True
-conf_dict["readout"]["clock_speed_hz"] = 50000000
+#conf_dict["readout"]["default_data_file"] = "asset://?label=DuneWIB&subsystem=readout" # DuneWIB
+conf_dict["readout"]["default_data_file"] = "asset://?checksum=e96fd6efd3f98a9a3bfaba32975b476e" # WIBEth
+#conf_dict["readout"]["clock_speed_hz"] = 50000000 # ProtoWIB
+conf_dict["readout"]["clock_speed_hz"] = 62500000 # DuneWIB/WIBEth
+conf_dict["readout"]["eth_mode"] = True # WIBEth
 conf_dict["trigger"]["trigger_rate_hz"] = trigger_rate
 conf_dict["trigger"]["trigger_window_before_ticks"] = readout_window_time_before
 conf_dict["trigger"]["trigger_window_after_ticks"] = readout_window_time_after
@@ -80,16 +115,19 @@ conf_dict["dataflow"]["apps"] = [] # Remove preconfigured dataflow0 app
 for df_app in range(number_of_dataflow_apps):
     dfapp_conf = {}
     dfapp_conf["app_name"] = f"dataflow{df_app}"
-    dfapp_conf["output_path"] = output_path
+    dfapp_conf["output_paths"] = [output_path]
     conf_dict["dataflow"]["apps"].append(dfapp_conf)
 
 confgen_arguments={"Base_System": conf_dict,
                   }
 # The commands to run in nanorc, as a list
-nanorc_command_list="integtest-partition boot conf".split()
-nanorc_command_list+="start_run 101 wait ".split() + [str(run_duration)] + "stop_run --wait 2 wait 2".split()
-nanorc_command_list+="start 102 wait 3 enable_triggers wait ".split() + [str(run_duration)] + "stop_run wait 2".split()
-nanorc_command_list+="scrap terminate".split()
+if gb_space < 5:
+  nanorc_command_list="integtest-partition boot conf".split()
+  nanorc_command_list+="start_run 101 wait ".split() + [str(run_duration)] + "stop_run --wait 2 wait 2".split()
+  nanorc_command_list+="start 102 wait 3 enable_triggers wait ".split() + [str(run_duration)] + "stop_run wait 2".split()
+  nanorc_command_list+="scrap terminate".split()
+else:
+  nanorc_command_list=["integtest-partition", "boot", "terminate"]
 
 # The tests themselves
 
@@ -106,15 +144,22 @@ def test_nanorc_success(run_nanorc):
     assert run_nanorc.completed_process.returncode==0
 
 def test_log_files(run_nanorc):
-    if check_for_logfile_errors:
+    if check_for_logfile_errors and gb_space < 5:
         # Check that there are no warnings or errors in the log files
         assert log_file_checks.logs_are_error_free(run_nanorc.log_files, True, True, ignored_logfile_problems)
 
 def test_data_files(run_nanorc):
+    if gb_space >= 5:
+        print(f"This computer ({hostname}) has too much available space in {output_path}.")
+        print(f"    (There is {gb_space} GB of space in {output_path}, limit is 5 GB)")
+        return
+
     local_expected_event_count=expected_event_count
     local_event_count_tolerance=expected_event_count_tolerance
     fragment_check_list=[triggercandidate_frag_params, hsi_frag_params]
-    fragment_check_list.append(wib1_frag_hsi_trig_params)
+    #fragment_check_list.append(wib1_frag_hsi_trig_params)
+    #fragment_check_list.append(wib2_frag_hsi_trig_params) # DuneWIB
+    fragment_check_list.append(wibeth_frag_hsi_trig_params) # WIBEth
 
     # Run some tests on the output data file
     assert len(run_nanorc.data_files)==expected_number_of_data_files
