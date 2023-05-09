@@ -90,6 +90,11 @@ ignored_logfile_problems={"dataflow": ["A problem was encountered when writing T
 "trigger": [r"Trigger is inhibited in run \d+"],
 "dfo": [r"TriggerDecision \d+ didn't complete within timeout in run \d+"]
                          }
+required_logfile_problems={"dataflow": ["A problem was encountered when writing TriggerRecord number",
+                                       "A problem was encountered when writing a trigger record to file",
+                                       r"There are \d+ bytes free, and the required minimum is \d+ bytes based on a safety factor of 5 times the trigger record size"],
+"trigger": [r"Trigger is inhibited in run \d+"],
+"dfo": [r"TriggerDecision \d+ didn't complete within timeout in run \d+"]}
 
 # The next three variable declarations *must* be present as globals in the test
 # file. They're read by the "fixtures" in conftest.py to determine how
@@ -150,7 +155,7 @@ def test_nanorc_success(run_nanorc):
 def test_log_files(run_nanorc):
     if check_for_logfile_errors and gb_space < gb_limit:
         # Check that there are no warnings or errors in the log files
-        assert log_file_checks.logs_are_error_free(run_nanorc.log_files, True, True, ignored_logfile_problems)
+        assert log_file_checks.logs_are_error_free(run_nanorc.log_files, True, True, ignored_logfile_problems, required_logfile_problems)
 
 def test_data_files(run_nanorc):
     if gb_space >= gb_limit:
