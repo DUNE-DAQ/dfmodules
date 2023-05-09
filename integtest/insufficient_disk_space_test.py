@@ -87,6 +87,8 @@ hsi_frag_params ={"fragment_type_description": "HSI",
 ignored_logfile_problems={"dataflow": ["A problem was encountered when writing TriggerRecord number",
                                        "A problem was encountered when writing a trigger record to file",
                                        r"There are \d+ bytes free, and the required minimum is \d+ bytes based on a safety factor of 5 times the trigger record size"],
+"trigger": [r"Trigger is inhibited in run \d+"],
+"dfo": [r"TriggerDecision \d+ didn't complete within timeout in run \d+"]
                          }
 
 # The next three variable declarations *must* be present as globals in the test
@@ -126,6 +128,7 @@ if gb_space < gb_limit:
   nanorc_command_list="integtest-partition boot conf".split()
   nanorc_command_list+="start_run 101 wait ".split() + [str(run_duration)] + "stop_run --wait 2 wait 2".split()
   nanorc_command_list+="start 102 wait 3 enable_triggers wait ".split() + [str(run_duration)] + "stop_run wait 2".split()
+  nanorc_command_list+="start 103 wait 3 enable_triggers wait ".split() + [str(run_duration)] + "stop_run wait 2".split()
   nanorc_command_list+="scrap terminate".split()
 else:
   nanorc_command_list=["integtest-partition", "boot", "terminate"]
