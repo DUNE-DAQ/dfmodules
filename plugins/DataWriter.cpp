@@ -288,7 +288,7 @@ DataWriter::receive_trigger_record(std::unique_ptr<daqdataformats::TriggerRecord
     } //  if m_data_storage_is_enabled
   }
   
-  bool send_trigger_complete_message = true;
+  bool send_trigger_complete_message = m_running.load();
   if (trigger_record_ptr->get_header_ref().get_max_sequence_number() > 0) {
     send_trigger_complete_message = false;
     daqdataformats::trigger_number_t trigno = trigger_record_ptr->get_header_ref().get_trigger_number();
