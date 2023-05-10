@@ -99,7 +99,7 @@ conf_dict["trigger"]["trigger_window_after_ticks"] = readout_window_time_after
 swtpg_conf = copy.deepcopy(conf_dict)
 swtpg_conf["readout"]["enable_software_tpg"] = True
 
-confgen_arguments={"WIB1_System": conf_dict,
+confgen_arguments={"WIBEth_System": conf_dict,
 #                   "Software_TPG_System": swtpg_conf,
                   }
 

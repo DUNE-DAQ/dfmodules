@@ -98,7 +98,7 @@ swtpg_conf = copy.deepcopy(conf_dict)
 swtpg_conf["readout"]["enable_software_tpg"] = True
 swtpg_conf["dataflow"]["token_count"] = max(10, 3*number_of_data_producers*number_of_readout_apps)
 
-confgen_arguments={"WIB1_System": conf_dict,
+confgen_arguments={"WIBEth_System": conf_dict,
 #                   "Software_TPG_System": swtpg_conf,
                   }
 

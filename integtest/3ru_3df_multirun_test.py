@@ -100,7 +100,7 @@ swtpg_conf["dataflow"]["token_count"] = int(math.ceil(max(10, 3*number_of_data_p
 dqm_conf = copy.deepcopy(conf_dict)
 dqm_conf["dqm"]["enable_dqm"] = True
 
-confgen_arguments={"WIB2_System": conf_dict,
+confgen_arguments={"WIBEth_System": conf_dict,
 #                   "Software_TPG_System": swtpg_conf,
                    "DQM_System": dqm_conf,
                   }
