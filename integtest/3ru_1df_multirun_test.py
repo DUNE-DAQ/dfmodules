@@ -137,6 +137,9 @@ else:
 # The tests themselves
 
 def test_nanorc_success(run_nanorc):
+    if not sufficient_resources_on_this_computer:
+        pytest.skip(f"This computer ({hostname}) does not have enough resources to run this test.")
+
     current_test=os.environ.get('PYTEST_CURRENT_TEST')
     match_obj = re.search(r".*\[(.+)\].*", current_test)
     if match_obj:
@@ -149,7 +152,10 @@ def test_nanorc_success(run_nanorc):
     assert run_nanorc.completed_process.returncode==0
 
 def test_log_files(run_nanorc):
-    if check_for_logfile_errors and sufficient_resources_on_this_computer:
+    if not sufficient_resources_on_this_computer:
+        pytest.skip(f"This computer ({hostname}) does not have enough resources to run this test.")
+
+    if check_for_logfile_errors:
         # Check that there are no warnings or errors in the log files
         assert log_file_checks.logs_are_error_free(run_nanorc.log_files, True, True, ignored_logfile_problems)
 
@@ -158,7 +164,7 @@ def test_data_files(run_nanorc):
         print(f"This computer ({hostname}) does not have enough resources to run this test.")
         print(f"    (CPU count is {cpu_count}, free and total memory are {free_mem} GB and {total_mem} GB.)")
         print(f"    (Minimum CPU count is {minimum_cpu_count} and minimum free memory is {minimum_free_memory_gb} GB.)")
-        return
+        pytest.skip(f"This computer ({hostname}) does not have enough resources to run this test.")
 
     local_expected_event_count=expected_event_count
     local_event_count_tolerance=expected_event_count_tolerance

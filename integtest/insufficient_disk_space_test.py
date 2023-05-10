@@ -22,6 +22,7 @@ import dfmodules.integtest_file_gen as integtest_file_gen
 # mkdir /mnt/tmp
 # mount -t tmpfs -o size=5g tmpfs /mnt/tmp
 # chmod 777 /mnt/tmp
+# After testing, umount -lf /mnt/tmp to release memory
 
 # check how much free space there is on the configured output disk
 output_path=f"/mnt/tmp"
@@ -141,6 +142,9 @@ else:
 # The tests themselves
 
 def test_nanorc_success(run_nanorc):
+    if gb_space >= gb_limit:
+        pytest.skip(f"This computer ({hostname}) has too much available space in {output_path}.\n    (There is {gb_space} GB of space in {output_path}, limit is {gb_limit} GB)")
+
     current_test=os.environ.get('PYTEST_CURRENT_TEST')
     match_obj = re.search(r".*\[(.+)\].*", current_test)
     if match_obj:
@@ -153,15 +157,17 @@ def test_nanorc_success(run_nanorc):
     assert run_nanorc.completed_process.returncode==0
 
 def test_log_files(run_nanorc):
-    if check_for_logfile_errors and gb_space < gb_limit:
+    if gb_space >= gb_limit:
+        pytest.skip(f"This computer ({hostname}) has too much available space in {output_path}.\n    (There is {gb_space} GB of space in {output_path}, limit is {gb_limit} GB)")
+
+    if check_for_logfile_errors:
         # Check that there are no warnings or errors in the log files
         assert log_file_checks.logs_are_error_free(run_nanorc.log_files, True, True, ignored_logfile_problems, required_logfile_problems)
 
 def test_data_files(run_nanorc):
     if gb_space >= gb_limit:
-        print(f"This computer ({hostname}) has too much available space in {output_path}.")
-        print(f"    (There is {gb_space} GB of space in {output_path}, limit is {gb_limit} GB)")
-        return
+        print(f"This computer ({hostname}) has too much available space in {output_path}.\n    (There is {gb_space} GB of space in {output_path}, limit is {gb_limit} GB)")
+        pytest.skip(f"This computer ({hostname}) has too much available space in {output_path}.\n    (There is {gb_space} GB of space in {output_path}, limit is {gb_limit} GB)")
 
     local_expected_event_count=expected_event_count
     local_event_count_tolerance=expected_event_count_tolerance
@@ -183,6 +189,9 @@ def test_data_files(run_nanorc):
             assert data_file_checks.check_fragment_sizes(data_file, fragment_check_list[jdx])
 
 def test_cleanup(run_nanorc):
+    if gb_space >= gb_limit:
+        pytest.skip(f"This computer ({hostname}) has too much available space in {output_path}.\n    (There is {gb_space} GB of space in {output_path}, limit is {gb_limit} GB)")
+
     print("============================================")
     print("Listing the hdf5 files before deleting them:")
     print("============================================")

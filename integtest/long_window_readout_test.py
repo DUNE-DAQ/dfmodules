@@ -122,6 +122,9 @@ else:
 # The tests themselves
 
 def test_nanorc_success(run_nanorc):
+    if not sufficient_disk_space:
+        pytest.skip(f"The raw data output path ({actual_output_path}) does not have enough space to run this test.")
+
     current_test=os.environ.get('PYTEST_CURRENT_TEST')
     match_obj = re.search(r".*\[(.+)\].*", current_test)
     if match_obj:
@@ -134,12 +137,16 @@ def test_nanorc_success(run_nanorc):
     assert run_nanorc.completed_process.returncode==0
 
 def test_log_files(run_nanorc):
+    if not sufficient_disk_space:
+        pytest.skip(f"The raw data output path ({actual_output_path}) does not have enough space to run this test.")
+
     if check_for_logfile_errors:
         # Check that there are no warnings or errors in the log files
         assert log_file_checks.logs_are_error_free(run_nanorc.log_files, True, True, ignored_logfile_problems)
 
 def test_data_files(run_nanorc):
     if not sufficient_disk_space:
+        pytest.skip(f"The raw data output path ({actual_output_path}) does not have enough space to run this test.")
         print(f"The raw data output path ({actual_output_path}) does not have enough space to run this test.")
         print(f"    (Free and total space are {free_disk_space_gb} GB and {total_disk_space_gb} GB.)")
         print(f"    (Minimums are {minimum_free_disk_space_gb} GB and {minimum_total_disk_space_gb} GB.)")
@@ -166,7 +173,7 @@ def test_data_files(run_nanorc):
 
 def test_cleanup(run_nanorc):
     if not sufficient_disk_space:
-        return
+        pytest.skip(f"The raw data output path ({actual_output_path}) does not have enough space to run this test.")
 
     print("============================================")
     print("Listing the hdf5 files before deleting them:")
