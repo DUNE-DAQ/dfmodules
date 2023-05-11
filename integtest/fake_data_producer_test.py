@@ -57,7 +57,6 @@ confgen_name="daqconf_multiru_gen"
 hardware_map_contents = integtest_file_gen.generate_hwmap_file(number_of_data_producers)
 
 conf_dict = config_file_gen.get_default_config_dict()
-conf_dict["readout"]["clock_speed_hz"] = 50000000
 conf_dict["readout"]["data_rate_slowdown_factor"] = data_rate_slowdown_factor
 conf_dict["readout"]["use_fake_data_producers"] = True
 #conf_dict["readout"]["clock_speed_hz"] = 50000000 # ProtoWIB
