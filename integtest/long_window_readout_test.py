@@ -21,7 +21,6 @@ token_count=1
 readout_window_time_before=37200000  # 0.764 second is the intention for b+a
 readout_window_time_after=1000000
 trigger_record_max_window=200000     # intention is 4 msec
-clock_speed_hz=50000000
 latency_buffer_size=600000
 data_rate_slowdown_factor=20
 
@@ -83,7 +82,6 @@ hardware_map_contents = integtest_file_gen.generate_hwmap_file(number_of_data_pr
 
 conf_dict = config_file_gen.get_default_config_dict()
 conf_dict["readout"]["data_rate_slowdown_factor"] = data_rate_slowdown_factor
-conf_dict["readout"]["clock_speed_hz"] = clock_speed_hz
 conf_dict["readout"]["latency_buffer_size"] = latency_buffer_size
 #conf_dict["readout"]["default_data_file"] = "asset://?label=ProtoWIB&subsystem=readout" # ProtoWIB
 #conf_dict["readout"]["default_data_file"] = "asset://?label=DuneWIB&subsystem=readout" # DuneWIB
@@ -146,11 +144,10 @@ def test_log_files(run_nanorc):
 
 def test_data_files(run_nanorc):
     if not sufficient_disk_space:
-        pytest.skip(f"The raw data output path ({actual_output_path}) does not have enough space to run this test.")
         print(f"The raw data output path ({actual_output_path}) does not have enough space to run this test.")
         print(f"    (Free and total space are {free_disk_space_gb} GB and {total_disk_space_gb} GB.)")
         print(f"    (Minimums are {minimum_free_disk_space_gb} GB and {minimum_total_disk_space_gb} GB.)")
-        return
+        pytest.skip(f"The raw data output path ({actual_output_path}) does not have enough space to run this test.")
 
     local_expected_event_count=expected_event_count
     local_event_count_tolerance=expected_event_count_tolerance
