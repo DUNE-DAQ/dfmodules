@@ -12,7 +12,6 @@
 #include "dfmodules/hdf5datastore/Structs.hpp"
 
 #include "detdataformats/DetID.hpp"
-// #include "detchannelmaps/HardwareMapService.hpp"
 #include "hdf5libs/hdf5filelayout/Nljs.hpp"
 #include "hdf5libs/hdf5filelayout/Structs.hpp"
 #include "hdf5libs/hdf5rawdatafile/Structs.hpp"
@@ -138,33 +137,6 @@ create_trigger_record(int trig_num, int fragment_size, int element_count)
   return tr;
 }
 
-dunedaq::detchannelmaps::HardwareMap
-make_hardware_map(int app_count, int link_count, int det_id = 3)
-{
-  dunedaq::detchannelmaps::HardwareMap output;
-  int sid = 0;
-
-  for (int app = 0; app < app_count; ++app) {
-    for (int link = 0; link < link_count; ++link) {
-      dunedaq::detchannelmaps::HWInfo info;
-      info.dro_source_id = sid;
-      info.det_link = sid % 2;
-      info.det_slot = sid / 2;
-      info.det_crate = app;
-      info.det_id = det_id;
-      info.dro_host = "localhost";
-      info.dro_card = app;
-      info.dro_slr = link / 5;
-      info.dro_link = link % 5;
-      info.from_file = true;
-      output.link_infos.push_back(info);
-      ++sid;
-    }
-  }
-  return output;
-}
-
-
 dunedaq::hdf5libs::hdf5rawdatafile::SrcIDGeoIDMap
 make_srcgeoid_map(int app_count, int link_count, int det_id = 3)
 {
@@ -179,29 +151,6 @@ make_srcgeoid_map(int app_count, int link_count, int det_id = 3)
   }
 
   return map;
-
-
-  // dunedaq::detchannelmaps::HardwareMap output;
-  // int sid = 0;
-
-  // for (int app = 0; app < app_count; ++app) {
-  //   for (int link = 0; link < link_count; ++link) {
-  //     dunedaq::detchannelmaps::HWInfo info;
-  //     info.dro_source_id = sid;
-  //     info.det_link = sid % 2;
-  //     info.det_slot = sid / 2;
-  //     info.det_crate = app;
-  //     info.det_id = det_id;
-  //     info.dro_host = "localhost";
-  //     info.dro_card = app;
-  //     info.dro_slr = link / 5;
-  //     info.dro_link = link % 5;
-  //     info.from_file = true;
-  //     output.link_infos.push_back(info);
-  //     ++sid;
-  //   }
-  // }
-  // return output;
 }
 BOOST_AUTO_TEST_SUITE(HDF5Write_test)
 
