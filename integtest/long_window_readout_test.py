@@ -12,22 +12,22 @@ import dfmodules.integtest_file_gen as integtest_file_gen
 
 # Values that help determine the running conditions
 output_path_parameter="."
-number_of_data_producers=2
+number_of_data_producers=4
 run_duration=40  # seconds
 number_of_readout_apps=3
 number_of_dataflow_apps=1
 trigger_rate=0.05 # Hz
 token_count=1
-readout_window_time_before=37200000  # 0.764 second is the intention for b+a
+readout_window_time_before=100000000  # 1.616 second is the intention for b+a
 readout_window_time_after=1000000
-trigger_record_max_window=200000     # intention is 4 msec
+trigger_record_max_window=500000     # intention is 8 msec
 latency_buffer_size=600000
-data_rate_slowdown_factor=20
+data_rate_slowdown_factor=1
 
 # Default values for validation parameters
-expected_number_of_data_files=2*number_of_dataflow_apps
+expected_number_of_data_files=4*number_of_dataflow_apps
 check_for_logfile_errors=True
-expected_event_count=382 # 3*run_duration*trigger_rate/number_of_dataflow_apps
+expected_event_count=202
 expected_event_count_tolerance= 9
 minimum_total_disk_space_gb=32  # double what we need
 minimum_free_disk_space_gb=24   # 50% more than what we need
@@ -45,7 +45,7 @@ wibeth_frag_params={"fragment_type_description": "WIBEth",
                   "fragment_type": "WIBEth",
                   "hdf5_source_subsystem": "Detector_Readout",
                   "expected_fragment_count": number_of_data_producers*number_of_readout_apps,
-                  "min_size_bytes": 7272, "max_size_bytes": 712872}
+                  "min_size_bytes": 1764072, "max_size_bytes": 1771272}
 triggercandidate_frag_params={"fragment_type_description": "Trigger Candidate",
                               "fragment_type": "Trigger_Candidate",
                               "hdf5_source_subsystem": "Trigger",
@@ -89,6 +89,7 @@ conf_dict["readout"]["default_data_file"] = "asset://?checksum=e96fd6efd3f98a9a3
 #conf_dict["readout"]["clock_speed_hz"] = 50000000 # ProtoWIB
 conf_dict["readout"]["clock_speed_hz"] = 62500000 # DuneWIB/WIBEth
 conf_dict["readout"]["eth_mode"] = True # WIBEth
+conf_dict["readout"]["emulated_data_times_start_with_now"] = True
 conf_dict["trigger"]["trigger_rate_hz"] = trigger_rate
 conf_dict["trigger"]["trigger_window_before_ticks"] = readout_window_time_before
 conf_dict["trigger"]["trigger_window_after_ticks"] = readout_window_time_after
@@ -103,6 +104,7 @@ for df_app in range(number_of_dataflow_apps):
 trsplit_conf = copy.deepcopy(conf_dict)
 for df_app in range(number_of_dataflow_apps):
     trsplit_conf["dataflow"]["apps"][df_app]["max_trigger_record_window"] = trigger_record_max_window
+    trsplit_conf["dataflow"]["apps"][df_app]["max_file_size"] = 4*1024*1024*1024
 
 confgen_arguments={#"No_TR_Splitting": conf_dict,
                    "With_TR_Splitting": trsplit_conf,
