@@ -99,12 +99,12 @@ conf_dict["dataflow"]["apps"] = [] # Remove preconfigured dataflow0 app
 for df_app in range(number_of_dataflow_apps):
     dfapp_conf = {}
     dfapp_conf["app_name"] = f"dataflow{df_app}"
+    dfapp_conf["max_file_size"] = 4*1024*1024*1024
     conf_dict["dataflow"]["apps"].append(dfapp_conf)
 
 trsplit_conf = copy.deepcopy(conf_dict)
 for df_app in range(number_of_dataflow_apps):
     trsplit_conf["dataflow"]["apps"][df_app]["max_trigger_record_window"] = trigger_record_max_window
-    trsplit_conf["dataflow"]["apps"][df_app]["max_file_size"] = 4*1024*1024*1024
 
 confgen_arguments={#"No_TR_Splitting": conf_dict,
                    "With_TR_Splitting": trsplit_conf,
