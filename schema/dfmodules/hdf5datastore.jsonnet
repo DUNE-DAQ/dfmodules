@@ -60,8 +60,7 @@ local types = {
 		doc="Parameters that are used for the file layout of the HDF5 files"),
         s.field("free_space_safety_factor_for_write", self.factor, 5.0,
                 doc="The safety factor that should be used when determining if there is sufficient free disk space during write operations"),
-        // s.field("hardware_map", hwmapsvc.HardwareMap, doc="The hardware map"),
-        s.field("hardware_map", hdf5rdf.SrcIDGeoIDMap, doc="The Source-Geo Id map"),
+        s.field("srcid_geoid_map", hdf5rdf.SrcIDGeoIDMap, doc="The Source-Geo Id map"),
         
     ], doc="HDF5DataStore configuration"),
 

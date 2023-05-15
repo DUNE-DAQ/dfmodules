@@ -122,7 +122,7 @@ public:
 
     m_config_params = conf.get<hdf5datastore::ConfParams>();
     m_file_layout_params = m_config_params.file_layout_parameters;
-    m_hardware_map = m_config_params.hardware_map;
+    m_hardware_map = m_config_params.srcid_geoid_map;
 
     m_operation_mode = m_config_params.mode;
     m_path = m_config_params.directory_path;
