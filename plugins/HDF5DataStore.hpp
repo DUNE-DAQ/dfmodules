@@ -317,7 +317,7 @@ private:
   unsigned m_open_flags_of_open_file;
   daqdataformats::run_number_t m_run_number;
   // detchannelmaps::HardwareMap m_hardware_map;
-  hdf5libs::hdf5rawdatafile::SrcGeoIDMap m_hardware_map;
+  hdf5libs::hdf5rawdatafile::SrcIDGeoIDMap m_hardware_map;
 
   // Total number of generated files
   size_t m_file_index;

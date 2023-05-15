@@ -165,10 +165,10 @@ make_hardware_map(int app_count, int link_count, int det_id = 3)
 }
 
 
-dunedaq::hdf5libs::hdf5rawdatafile::SrcGeoIDMap
+dunedaq::hdf5libs::hdf5rawdatafile::SrcIDGeoIDMap
 make_srcgeoid_map(int app_count, int link_count, int det_id = 3)
 {
-  dunedaq::hdf5libs::hdf5rawdatafile::SrcGeoIDMap map;
+  dunedaq::hdf5libs::hdf5rawdatafile::SrcIDGeoIDMap map;
 
   int sid = 0;
   for (int app = 0; app < app_count; ++app) {
