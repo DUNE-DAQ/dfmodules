@@ -12,24 +12,23 @@ import dfmodules.integtest_file_gen as integtest_file_gen
 
 # Values that help determine the running conditions
 output_path_parameter="."
-number_of_data_producers=2
+number_of_data_producers=4
 run_duration=40  # seconds
 number_of_readout_apps=3
 number_of_dataflow_apps=1
 trigger_rate=0.05 # Hz
 token_count=1
-readout_window_time_before=37200000  # 0.764 second is the intention for b+a
+readout_window_time_before=100000000  # 1.616 second is the intention for b+a
 readout_window_time_after=1000000
-trigger_record_max_window=200000     # intention is 4 msec
-clock_speed_hz=50000000
+trigger_record_max_window=500000     # intention is 8 msec
 latency_buffer_size=600000
-data_rate_slowdown_factor=20
+data_rate_slowdown_factor=1
 
 # Default values for validation parameters
-expected_number_of_data_files=4
+expected_number_of_data_files=4*number_of_dataflow_apps
 check_for_logfile_errors=True
-expected_event_count=191 # 3*run_duration*trigger_rate/number_of_dataflow_apps
-expected_event_count_tolerance=5
+expected_event_count=202
+expected_event_count_tolerance= 9
 minimum_total_disk_space_gb=32  # double what we need
 minimum_free_disk_space_gb=24   # 50% more than what we need
 wib1_frag_hsi_trig_params={"fragment_type_description": "WIB", 
@@ -37,6 +36,16 @@ wib1_frag_hsi_trig_params={"fragment_type_description": "WIB",
                            "hdf5_source_subsystem": "Detector_Readout",
                            "expected_fragment_count": (number_of_data_producers*number_of_readout_apps),
                            "min_size_bytes": 3712072, "max_size_bytes": 3712536}
+wib2_frag_params={"fragment_type_description": "WIB2",
+                  "fragment_type": "WIB",
+                  "hdf5_source_subsystem": "Detector_Readout",
+                  "expected_fragment_count": number_of_data_producers*number_of_readout_apps,
+                  "min_size_bytes": 29808, "max_size_bytes": 30280}
+wibeth_frag_params={"fragment_type_description": "WIBEth",
+                  "fragment_type": "WIBEth",
+                  "hdf5_source_subsystem": "Detector_Readout",
+                  "expected_fragment_count": number_of_data_producers*number_of_readout_apps,
+                  "min_size_bytes": 1764072, "max_size_bytes": 1771272}
 triggercandidate_frag_params={"fragment_type_description": "Trigger Candidate",
                               "fragment_type": "Trigger_Candidate",
                               "hdf5_source_subsystem": "Trigger",
@@ -72,15 +81,15 @@ confgen_name="daqconf_multiru_gen"
 hardware_map_contents = integtest_file_gen.generate_hwmap_file(number_of_data_producers, number_of_readout_apps)
 
 conf_dict = config_file_gen.get_default_config_dict()
-try:
-  urllib.request.urlopen('http://localhost:5000').status
-  conf_dict["boot"]["use_connectivity_service"] = True
-except:
-  conf_dict["boot"]["use_connectivity_service"] = False
 conf_dict["readout"]["data_rate_slowdown_factor"] = data_rate_slowdown_factor
-conf_dict["readout"]["clock_speed_hz"] = clock_speed_hz
 conf_dict["readout"]["latency_buffer_size"] = latency_buffer_size
-conf_dict["readout"]["default_data_file"] = "asset://?label=ProtoWIB&subsystem=readout"
+#conf_dict["readout"]["default_data_file"] = "asset://?label=ProtoWIB&subsystem=readout" # ProtoWIB
+#conf_dict["readout"]["default_data_file"] = "asset://?label=DuneWIB&subsystem=readout" # DuneWIB
+conf_dict["readout"]["default_data_file"] = "asset://?checksum=e96fd6efd3f98a9a3bfaba32975b476e" # WIBEth
+#conf_dict["readout"]["clock_speed_hz"] = 50000000 # ProtoWIB
+conf_dict["readout"]["clock_speed_hz"] = 62500000 # DuneWIB/WIBEth
+conf_dict["readout"]["eth_mode"] = True # WIBEth
+conf_dict["readout"]["emulated_data_times_start_with_now"] = True
 conf_dict["trigger"]["trigger_rate_hz"] = trigger_rate
 conf_dict["trigger"]["trigger_window_before_ticks"] = readout_window_time_before
 conf_dict["trigger"]["trigger_window_after_ticks"] = readout_window_time_after
@@ -90,6 +99,7 @@ conf_dict["dataflow"]["apps"] = [] # Remove preconfigured dataflow0 app
 for df_app in range(number_of_dataflow_apps):
     dfapp_conf = {}
     dfapp_conf["app_name"] = f"dataflow{df_app}"
+    dfapp_conf["max_file_size"] = 4*1024*1024*1024
     conf_dict["dataflow"]["apps"].append(dfapp_conf)
 
 trsplit_conf = copy.deepcopy(conf_dict)
@@ -112,6 +122,9 @@ else:
 # The tests themselves
 
 def test_nanorc_success(run_nanorc):
+    if not sufficient_disk_space:
+        pytest.skip(f"The raw data output path ({actual_output_path}) does not have enough space to run this test.")
+
     current_test=os.environ.get('PYTEST_CURRENT_TEST')
     match_obj = re.search(r".*\[(.+)\].*", current_test)
     if match_obj:
@@ -124,6 +137,9 @@ def test_nanorc_success(run_nanorc):
     assert run_nanorc.completed_process.returncode==0
 
 def test_log_files(run_nanorc):
+    if not sufficient_disk_space:
+        pytest.skip(f"The raw data output path ({actual_output_path}) does not have enough space to run this test.")
+
     if check_for_logfile_errors:
         # Check that there are no warnings or errors in the log files
         assert log_file_checks.logs_are_error_free(run_nanorc.log_files, True, True, ignored_logfile_problems)
@@ -133,12 +149,14 @@ def test_data_files(run_nanorc):
         print(f"The raw data output path ({actual_output_path}) does not have enough space to run this test.")
         print(f"    (Free and total space are {free_disk_space_gb} GB and {total_disk_space_gb} GB.)")
         print(f"    (Minimums are {minimum_free_disk_space_gb} GB and {minimum_total_disk_space_gb} GB.)")
-        return
+        pytest.skip(f"The raw data output path ({actual_output_path}) does not have enough space to run this test.")
 
     local_expected_event_count=expected_event_count
     local_event_count_tolerance=expected_event_count_tolerance
     fragment_check_list=[triggercandidate_frag_params, hsi_frag_params]
-    fragment_check_list.append(wib1_frag_hsi_trig_params)
+    #fragment_check_list.append(wib1_frag_hsi_trig_params) # ProtoWIB
+    #fragment_check_list.append(wib2_frag_params) # DuneWIB
+    fragment_check_list.append(wibeth_frag_params) # WIBEth
 
     # Run some tests on the output data file
     assert len(run_nanorc.data_files)==expected_number_of_data_files
@@ -154,7 +172,7 @@ def test_data_files(run_nanorc):
 
 def test_cleanup(run_nanorc):
     if not sufficient_disk_space:
-        return
+        pytest.skip(f"The raw data output path ({actual_output_path}) does not have enough space to run this test.")
 
     print("============================================")
     print("Listing the hdf5 files before deleting them:")

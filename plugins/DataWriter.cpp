@@ -288,9 +288,8 @@ DataWriter::receive_trigger_record(std::unique_ptr<daqdataformats::TriggerRecord
     } //  if m_data_storage_is_enabled
   }
   
-  bool send_trigger_complete_message = true;
+  bool send_trigger_complete_message = m_running.load();
   if (trigger_record_ptr->get_header_ref().get_max_sequence_number() > 0) {
-    send_trigger_complete_message = false;
     daqdataformats::trigger_number_t trigno = trigger_record_ptr->get_header_ref().get_trigger_number();
     if (m_seqno_counts.count(trigno) > 0) {
       ++m_seqno_counts[trigno];
@@ -300,15 +299,13 @@ DataWriter::receive_trigger_record(std::unique_ptr<daqdataformats::TriggerRecord
     // in the following comparison GT (>) is used since the counts are one-based and the
     // max sequence number is zero-based.
     if (m_seqno_counts[trigno] > trigger_record_ptr->get_header_ref().get_max_sequence_number()) {
-      send_trigger_complete_message = true;
       m_seqno_counts.erase(trigno);
     } else {
-      // by putting this TLOG call in an "else" clause, we avoid resurrecting the "trigno"
-      // entry in the map after erasing it above. In other words, if we move this TLOG outside
-      // the "else" clause, the map will forever increase in size.
+      // Using const .count and .at to avoid reintroducing element to map
       TLOG_DEBUG(TLVL_SEQNO_MAP_CONTENTS) << get_name() << ": the sequence number count for trigger number " << trigno
-					  << " is " << m_seqno_counts[trigno] << " (number of entries "
+					  << " is " << (m_seqno_counts.count(trigno) ? m_seqno_counts.at(trigno) : 0) << " (number of entries "
 					  << "in the seqno map is " << m_seqno_counts.size() << ").";
+      send_trigger_complete_message = false;
     }
   }
   if (send_trigger_complete_message) {

@@ -173,7 +173,7 @@ public:
                                   current_free_space,
                                   (m_free_space_safety_factor_for_write * tr_size),
                                   msg_oss.str());
-      std::string msg = "writing a trigger record to file " + m_file_handle->get_file_name();
+      std::string msg = "writing a trigger record to file" + (m_file_handle ? " " + m_file_handle->get_file_name() : "");
       throw RetryableDataStoreProblem(ERS_HERE, get_name(), msg, issue);
     }
 
