@@ -24,8 +24,8 @@ readout_window_time_after=1000000
 trigger_record_max_window=500000     # intention is 8 msec
 latency_buffer_size=600000
 data_rate_slowdown_factor=1
-minimum_cpu_count=12
-minimum_free_memory_gb=24
+minimum_cpu_count=24
+minimum_free_memory_gb=52
 
 # Default values for validation parameters
 expected_number_of_data_files=4*number_of_dataflow_apps
@@ -112,6 +112,7 @@ for df_app in range(number_of_dataflow_apps):
     dfapp_conf = {}
     dfapp_conf["app_name"] = f"dataflow{df_app}"
     dfapp_conf["max_file_size"] = 4*1024*1024*1024
+    dfapp_conf["output_paths"] = [ output_path_parameter ]
     conf_dict["dataflow"]["apps"].append(dfapp_conf)
 
 trsplit_conf = copy.deepcopy(conf_dict)
