@@ -89,7 +89,7 @@ TimeSliceAccumulator::get_timeslice()
     std::vector<std::pair<void*, size_t>> list_of_pieces;
     for (auto& [start_time, tpset] : bundle_map) {
       list_of_pieces.push_back(std::make_pair<void*, size_t>(
-        &tpset.objects[0], tpset.objects.size() * sizeof(detdataformats::trigger::TriggerPrimitive)));
+        &tpset.objects[0], tpset.objects.size() * sizeof(trgdataformats::TriggerPrimitive)));
     }
     std::unique_ptr<daqdataformats::Fragment> frag(new daqdataformats::Fragment(list_of_pieces));
 
@@ -104,7 +104,7 @@ TimeSliceAccumulator::get_timeslice()
     size_t frag_payload_size = frag->get_size() - sizeof(dunedaq::daqdataformats::FragmentHeader);
     TLOG_DEBUG(21) << "In get_timeslice, Source ID is " << sourceid << ", number of pieces is " << list_of_pieces.size()
                    << ", size of Fragment payload is " << frag_payload_size << ", size of TP is "
-                   << sizeof(detdataformats::trigger::TriggerPrimitive);
+                   << sizeof(trgdataformats::TriggerPrimitive);
 
     list_of_fragments.push_back(std::move(frag));
   }

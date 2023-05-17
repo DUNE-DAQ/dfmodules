@@ -6,4 +6,4 @@ Structs.hpp
 # integtest temporary files
 frames.bin
 wib2-frames.bin
-integtest/__pycache__
+__pycache__

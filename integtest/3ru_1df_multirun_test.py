@@ -33,6 +33,26 @@ wib1_frag_multi_trig_params={"fragment_type_description": "WIB",
                              "hdf5_source_subsystem": "Detector_Readout",
                              "expected_fragment_count": (number_of_data_producers*number_of_readout_apps),
                              "min_size_bytes": 72, "max_size_bytes": 54000}
+wib2_frag_hsi_trig_params={"fragment_type_description": "WIB", 
+                           "fragment_type": "WIB",
+                           "hdf5_source_subsystem": "Detector_Readout",
+                           "expected_fragment_count": (number_of_data_producers*number_of_readout_apps),
+                           "min_size_bytes": 29808, "max_size_bytes": 30280}
+wib2_frag_multi_trig_params={"fragment_type_description": "WIB",
+                             "fragment_type": "WIB",
+                             "hdf5_source_subsystem": "Detector_Readout",
+                             "expected_fragment_count": (number_of_data_producers*number_of_readout_apps),
+                             "min_size_bytes": 72, "max_size_bytes": 54000}
+wibeth_frag_hsi_trig_params={"fragment_type_description": "WIBEth",
+                  "fragment_type": "WIBEth",
+                  "hdf5_source_subsystem": "Detector_Readout",
+                  "expected_fragment_count": (number_of_data_producers*number_of_readout_apps),
+                  "min_size_bytes": 7272, "max_size_bytes": 14472}
+wibeth_frag_multi_trig_params={"fragment_type_description": "WIBEth",
+                  "fragment_type": "WIBEth",
+                  "hdf5_source_subsystem": "Detector_Readout",
+                  "expected_fragment_count": (number_of_data_producers*number_of_readout_apps),
+                  "min_size_bytes": 72, "max_size_bytes": 14472}
 triggercandidate_frag_params={"fragment_type_description": "Trigger Candidate",
                               "fragment_type": "Trigger_Candidate",
                               "hdf5_source_subsystem": "Trigger",
@@ -82,14 +102,14 @@ confgen_name="daqconf_multiru_gen"
 hardware_map_contents = integtest_file_gen.generate_hwmap_file(number_of_data_producers, number_of_readout_apps)
 
 conf_dict = config_file_gen.get_default_config_dict()
-try:
-  urllib.request.urlopen('http://localhost:5000').status
-  conf_dict["boot"]["use_connectivity_service"] = True
-except:
-  conf_dict["boot"]["use_connectivity_service"] = False
 conf_dict["readout"]["data_rate_slowdown_factor"] = data_rate_slowdown_factor
 conf_dict["readout"]["latency_buffer_size"] = 200000
-conf_dict["readout"]["default_data_file"] = "asset://?label=ProtoWIB&subsystem=readout"
+#conf_dict["readout"]["default_data_file"] = "asset://?label=ProtoWIB&subsystem=readout" # ProtoWIB
+#conf_dict["readout"]["default_data_file"] = "asset://?label=DuneWIB&subsystem=readout" # DuneWIB
+conf_dict["readout"]["default_data_file"] = "asset://?checksum=e96fd6efd3f98a9a3bfaba32975b476e" # WIBEth
+#conf_dict["readout"]["clock_speed_hz"] = 50000000 # ProtoWIB
+conf_dict["readout"]["clock_speed_hz"] = 62500000 # DuneWIB/WIBEth
+conf_dict["readout"]["eth_mode"] = True # WIBEth
 
 swtpg_conf = copy.deepcopy(conf_dict)
 swtpg_conf["readout"]["enable_software_tpg"] = True
@@ -98,8 +118,8 @@ swtpg_conf["dataflow"]["token_count"] = max(10, 3*number_of_data_producers*numbe
 dqm_conf = copy.deepcopy(conf_dict)
 dqm_conf["dqm"]["enable_dqm"] = True
 
-confgen_arguments={"WIB1_System": conf_dict,
-                   "Software_TPG_System": swtpg_conf,
+confgen_arguments={"WIBEth_System": conf_dict,
+#                   "Software_TPG_System": swtpg_conf,
                    "DQM_System": dqm_conf,
                   }
 
@@ -116,6 +136,9 @@ else:
 # The tests themselves
 
 def test_nanorc_success(run_nanorc):
+    if not sufficient_resources_on_this_computer:
+        pytest.skip(f"This computer ({hostname}) does not have enough resources to run this test.")
+
     current_test=os.environ.get('PYTEST_CURRENT_TEST')
     match_obj = re.search(r".*\[(.+)\].*", current_test)
     if match_obj:
@@ -128,7 +151,10 @@ def test_nanorc_success(run_nanorc):
     assert run_nanorc.completed_process.returncode==0
 
 def test_log_files(run_nanorc):
-    if check_for_logfile_errors and sufficient_resources_on_this_computer:
+    if not sufficient_resources_on_this_computer:
+        pytest.skip(f"This computer ({hostname}) does not have enough resources to run this test.")
+
+    if check_for_logfile_errors:
         # Check that there are no warnings or errors in the log files
         assert log_file_checks.logs_are_error_free(run_nanorc.log_files, True, True, ignored_logfile_problems)
 
@@ -137,7 +163,7 @@ def test_data_files(run_nanorc):
         print(f"This computer ({hostname}) does not have enough resources to run this test.")
         print(f"    (CPU count is {cpu_count}, free and total memory are {free_mem} GB and {total_mem} GB.)")
         print(f"    (Minimum CPU count is {minimum_cpu_count} and minimum free memory is {minimum_free_memory_gb} GB.)")
-        return
+        pytest.skip(f"This computer ({hostname}) does not have enough resources to run this test.")
 
     local_expected_event_count=expected_event_count
     local_event_count_tolerance=expected_event_count_tolerance
@@ -145,11 +171,15 @@ def test_data_files(run_nanorc):
     if "enable_software_tpg" in run_nanorc.confgen_config["readout"].keys() and run_nanorc.confgen_config["readout"]["enable_software_tpg"]:
         local_expected_event_count+=(270*number_of_data_producers*number_of_readout_apps*run_duration/100)
         local_event_count_tolerance+=(10*number_of_data_producers*number_of_readout_apps*run_duration/100)
-        fragment_check_list.append(wib1_frag_multi_trig_params)
+        #fragment_check_list.append(wib1_frag_multi_trig_params) # ProtoWIB
+        #fragment_check_list.append(wib2_frag_multi_trig_params) # DuneWIB
+        fragment_check_list.append(wibeth_frag_multi_trig_params) # WIBEth
         fragment_check_list.append(triggertp_frag_params)
         fragment_check_list.append(triggeractivity_frag_params)
     else:
-        fragment_check_list.append(wib1_frag_hsi_trig_params)
+        #fragment_check_list.append(wib1_frag_hsi_trig_params) # ProtoWIB
+        #fragment_check_list.append(wib2_frag_hsi_trig_params) # DuneWIB
+        fragment_check_list.append(wibeth_frag_hsi_trig_params) # WIBEth
 
     # Run some tests on the output data file
     assert len(run_nanorc.data_files)==expected_number_of_data_files
