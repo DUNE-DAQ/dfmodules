@@ -100,6 +100,7 @@ swtpg_conf["dataflow"]["token_count"] = max(10, 3*number_of_data_producers*numbe
 
 multiout_conf = copy.deepcopy(conf_dict)
 multiout_conf["dataflow"]["apps"][0]["output_paths"] = [".", "."]
+multiout_conf["dataflow"]["apps"][0]["max_file_size"] = 4*1024*1024*1024
 
 multiout_tpg_conf = copy.deepcopy(multiout_conf)
 multiout_tpg_conf["readout"]["enable_software_tpg"] = True
@@ -160,9 +161,6 @@ def test_data_files(run_nanorc):
             assert data_file_checks.check_fragment_sizes(data_file, fragment_check_list[jdx])
 
 def test_cleanup(run_nanorc):
-    print("============================================")
-    print("Listing the hdf5 files before deleting them:")
-    print("============================================")
     pathlist_string=""
     filelist_string=""
     for data_file in run_nanorc.data_files:
@@ -170,13 +168,18 @@ def test_cleanup(run_nanorc):
         if str(data_file.parent) not in pathlist_string:
             pathlist_string += " " + str(data_file.parent)
 
-    os.system(f"df -h {pathlist_string}")
-    print("--------------------")
-    os.system(f"ls -alF {filelist_string}");
+    if pathlist_string and filelist_string:
+        print("============================================")
+        print("Listing the hdf5 files before deleting them:")
+        print("============================================")
 
-    for data_file in run_nanorc.data_files:
-        data_file.unlink()
+        os.system(f"df -h {pathlist_string}")
+        print("--------------------")
+        os.system(f"ls -alF {filelist_string}");
 
-    print("--------------------")
-    os.system(f"df -h {pathlist_string}")
-    print("============================================")
+        for data_file in run_nanorc.data_files:
+            data_file.unlink()
+
+        print("--------------------")
+        os.system(f"df -h {pathlist_string}")
+        print("============================================")
