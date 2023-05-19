@@ -3,6 +3,7 @@ import os
 import re
 import copy
 import shutil
+import psutil
 import urllib.request
 
 import dfmodules.data_file_checks as data_file_checks
@@ -23,6 +24,8 @@ readout_window_time_after=1000000
 trigger_record_max_window=500000     # intention is 8 msec
 latency_buffer_size=600000
 data_rate_slowdown_factor=1
+minimum_cpu_count=24
+minimum_free_memory_gb=52
 
 # Default values for validation parameters
 expected_number_of_data_files=4*number_of_dataflow_apps
@@ -69,6 +72,15 @@ free_disk_space_gb=(disk_space.free/(1024*1024*1024))
 print(f"DEBUG: Space on disk for output path {actual_output_path}: total = {total_disk_space_gb} GB and free = {free_disk_space_gb} GB.")
 if total_disk_space_gb < minimum_total_disk_space_gb or free_disk_space_gb < minimum_free_disk_space_gb:
     sufficient_disk_space=False
+sufficient_resources_on_this_computer=True
+cpu_count=os.cpu_count()
+hostname=os.uname().nodename
+mem_obj=psutil.virtual_memory()
+free_mem=round((mem_obj.available/(1024*1024*1024)), 2)
+total_mem=round((mem_obj.total/(1024*1024*1024)), 2)
+print(f"DEBUG: CPU count is {cpu_count}, free and total memory are {free_mem} GB and {total_mem} GB.")
+if cpu_count < minimum_cpu_count or free_mem < minimum_free_memory_gb:
+    sufficient_resources_on_this_computer=False
 
 # The next three variable declarations *must* be present as globals in the test
 # file. They're read by the "fixtures" in conftest.py to determine how
@@ -100,6 +112,7 @@ for df_app in range(number_of_dataflow_apps):
     dfapp_conf = {}
     dfapp_conf["app_name"] = f"dataflow{df_app}"
     dfapp_conf["max_file_size"] = 4*1024*1024*1024
+    dfapp_conf["output_paths"] = [ output_path_parameter ]
     conf_dict["dataflow"]["apps"].append(dfapp_conf)
 
 trsplit_conf = copy.deepcopy(conf_dict)
@@ -111,7 +124,7 @@ confgen_arguments={#"No_TR_Splitting": conf_dict,
                   }
 
 # The commands to run in nanorc, as a list
-if sufficient_disk_space:
+if sufficient_disk_space and sufficient_resources_on_this_computer:
     nanorc_command_list="integtest-partition boot conf".split()
     nanorc_command_list+="start_run --wait 15 101 wait ".split() + [str(run_duration)] + "stop_run --wait 2 wait 2".split()
     nanorc_command_list+="start 102 wait 15 enable_triggers wait ".split() + [str(run_duration)] + "stop_run wait 2".split()
@@ -122,6 +135,8 @@ else:
 # The tests themselves
 
 def test_nanorc_success(run_nanorc):
+    if not sufficient_resources_on_this_computer:
+        pytest.skip(f"This computer ({hostname}) does not have enough resources to run this test.")
     if not sufficient_disk_space:
         pytest.skip(f"The raw data output path ({actual_output_path}) does not have enough space to run this test.")
 
@@ -137,6 +152,8 @@ def test_nanorc_success(run_nanorc):
     assert run_nanorc.completed_process.returncode==0
 
 def test_log_files(run_nanorc):
+    if not sufficient_resources_on_this_computer:
+        pytest.skip(f"This computer ({hostname}) does not have enough resources to run this test.")
     if not sufficient_disk_space:
         pytest.skip(f"The raw data output path ({actual_output_path}) does not have enough space to run this test.")
 
@@ -145,6 +162,12 @@ def test_log_files(run_nanorc):
         assert log_file_checks.logs_are_error_free(run_nanorc.log_files, True, True, ignored_logfile_problems)
 
 def test_data_files(run_nanorc):
+    if not sufficient_resources_on_this_computer:
+        print(f"This computer ({hostname}) does not have enough resources to run this test.")
+        print(f"    (CPU count is {cpu_count}, free and total memory are {free_mem} GB and {total_mem} GB.)")
+        print(f"    (Minimum CPU count is {minimum_cpu_count} and minimum free memory is {minimum_free_memory_gb} GB.)")
+        pytest.skip(f"This computer ({hostname}) does not have enough resources to run this test.")
+
     if not sufficient_disk_space:
         print(f"The raw data output path ({actual_output_path}) does not have enough space to run this test.")
         print(f"    (Free and total space are {free_disk_space_gb} GB and {total_disk_space_gb} GB.)")
