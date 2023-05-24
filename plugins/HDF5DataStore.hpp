@@ -316,7 +316,6 @@ private:
   std::string m_basic_name_of_open_file;
   unsigned m_open_flags_of_open_file;
   daqdataformats::run_number_t m_run_number;
-  // detchannelmaps::HardwareMap m_hardware_map;
   hdf5libs::hdf5rawdatafile::SrcIDGeoIDMap m_hardware_map;
 
   // Total number of generated files
@@ -417,16 +416,6 @@ private:
       m_basic_name_of_open_file = file_name;
       m_open_flags_of_open_file = open_flags;
       try {
-        // std::shared_ptr<detchannelmaps::HardwareMapService> hw_map_svc(
-        //   new detchannelmaps::HardwareMapService(m_hardware_map));
-        // m_file_handle.reset(new hdf5libs::HDF5RawDataFile(unique_filename,
-        //                                                   m_run_number,
-        //                                                   m_file_index,
-        //                                                   m_config_params.filename_parameters.writer_identifier,
-        //                                                   m_file_layout_params,
-        //                                                   hw_map_svc,
-        //                                                   ".writing",
-        //                                                   open_flags));
         m_file_handle.reset(new hdf5libs::HDF5RawDataFile(unique_filename,
                                                           m_run_number,
                                                           m_file_index,
