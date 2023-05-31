@@ -18,11 +18,24 @@ def generate_hwmap_file(n_links, n_apps = 1, det_id = 3):
             sid += 1
     return conf
 
-def generate_dromap_file():
+def generate_dromap_file(n_streams, n_apps = 1, det_id = 3, app_type = "eth"):
     #json_file=tmp_path_factory.getbasetemp() / "temp_dromap.json"
     #json_file="/tmp/temp_dromap.json"
-    json_file="temp_dromap.json"
-    os.system(f"dromap_editor add-eth --src-id 0 --geo-stream-id 0 --geo-det-id 3 add-eth --src-id 1 --geo-stream-id 1 --geo-det-id 3 save {json_file} >> /dev/null")
+    json_file = "temp_dromap.json"
+
+    dromap_editor_cmd = "dromap_editor"
+    source_id = 0
+    for app in range(n_apps):
+        for stream in range(n_streams):
+            dromap_editor_cmd += " add-eth"
+            dromap_editor_cmd += f" --src-id {source_id}"
+            dromap_editor_cmd += f" --geo-stream-id {stream}"
+            dromap_editor_cmd += f" --geo-det-id {det_id}"
+            source_id += 1
+    dromap_editor_cmd += f" save {json_file} >> /dev/null"
+
+    os.system(dromap_editor_cmd)
+    #os.system(f"dromap_editor add-eth --src-id 0 --geo-stream-id 0 --geo-det-id 3 add-eth --src-id 1 --geo-stream-id 1 --geo-det-id 3 save {json_file} >> /dev/null")
     #os.system("pwd")
     map_text=""
     for line in open(json_file).readlines():
