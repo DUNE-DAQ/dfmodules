@@ -29,8 +29,12 @@ def generate_dromap_file(n_streams, n_apps = 1, det_id = 3, app_type = "eth"):
         for stream in range(n_streams):
             dromap_editor_cmd += " add-eth"
             dromap_editor_cmd += f" --src-id {source_id}"
+            dromap_editor_cmd += f" --geo-crate-id {app}"
             dromap_editor_cmd += f" --geo-stream-id {stream}"
             dromap_editor_cmd += f" --geo-det-id {det_id}"
+            dromap_editor_cmd += f" --eth-rx-mac 00:00:00:00:00:0{app}"
+            dromap_editor_cmd += f" --eth-rx-ip 0.0.0.{app}"
+            dromap_editor_cmd += f" --eth-rx-iface {app}"
             source_id += 1
     dromap_editor_cmd += f" save {json_file} >> /dev/null"
 
