@@ -145,7 +145,8 @@ make_srcgeoid_map(int app_count, int link_count, int det_id = 3)
   int sid = 0;
   for (int app = 0; app < app_count; ++app) {
     for (int link = 0; link < link_count; ++link) {
-      map.emplace_back() = {sid, dunedaq::hdf5libs::hdf5rawdatafile::GeoID({det_id, app, sid / 2, sid % 2})};
+      map.emplace_back() = {static_cast<dunedaq::hdf5libs::hdf5rawdatafile::Size>(sid),
+                            dunedaq::hdf5libs::hdf5rawdatafile::GeoID({det_id, app, sid / 2, sid % 2})};
       ++sid;
     }
   }
