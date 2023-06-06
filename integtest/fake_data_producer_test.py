@@ -54,7 +54,7 @@ ignored_logfile_problems={}
 confgen_name="daqconf_multiru_gen"
 # The arguments to pass to the config generator, excluding the json
 # output directory (the test framework handles that)
-dro_map_contents = integtest_file_gen.generate_dromap_file(number_of_data_producers)
+dro_map_contents = integtest_file_gen.generate_dromap_contents(number_of_data_producers)
 
 conf_dict = config_file_gen.get_default_config_dict()
 conf_dict["readout"]["data_rate_slowdown_factor"] = data_rate_slowdown_factor
