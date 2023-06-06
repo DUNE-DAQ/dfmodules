@@ -1,4 +1,5 @@
-import os
+import daqconf.detreadoutmap as dromap
+import json
 
 def generate_hwmap_file(n_links, n_apps = 1, det_id = 3):
     conf="# DRO_SourceID DetLink DetSlot DetCrate DetID DRO_Host DRO_Card DRO_SLR DRO_Link\n"
@@ -18,30 +19,13 @@ def generate_hwmap_file(n_links, n_apps = 1, det_id = 3):
             sid += 1
     return conf
 
-def generate_dromap_file(n_streams, n_apps = 1, det_id = 3, app_type = "eth"):
-    #json_file=tmp_path_factory.getbasetemp() / "temp_dromap.json"
-    #json_file="/tmp/temp_dromap.json"
-    json_file = "temp_dromap.json"
-
-    dromap_editor_cmd = "dromap_editor"
+def generate_dromap_contents(n_streams, n_apps = 1, det_id = 3, app_type = "eth"):
+    the_map = dromap.DetReadoutMapService()
     source_id = 0
     for app in range(n_apps):
         for stream in range(n_streams):
-            dromap_editor_cmd += " add-eth"
-            dromap_editor_cmd += f" --src-id {source_id}"
-            dromap_editor_cmd += f" --geo-crate-id {app}"
-            dromap_editor_cmd += f" --geo-stream-id {stream}"
-            dromap_editor_cmd += f" --geo-det-id {det_id}"
-            dromap_editor_cmd += f" --eth-rx-mac 00:00:00:00:00:0{app}"
-            dromap_editor_cmd += f" --eth-rx-ip 0.0.0.{app}"
-            dromap_editor_cmd += f" --eth-rx-iface {app}"
+            geo_id = dromap.GeoID(det_id, app, 0, stream)
+            the_map.add_srcid(source_id, geo_id, app_type,
+                              rx_iface=app, rx_mac=f"00:00:00:00:00:0{app}", rx_ip=f"0.0.0.{app}")
             source_id += 1
-    dromap_editor_cmd += f" save {json_file} >> /dev/null"
-
-    os.system(dromap_editor_cmd)
-    #os.system(f"dromap_editor add-eth --src-id 0 --geo-stream-id 0 --geo-det-id 3 add-eth --src-id 1 --geo-stream-id 1 --geo-det-id 3 save {json_file} >> /dev/null")
-    #os.system("pwd")
-    map_text=""
-    for line in open(json_file).readlines():
-        map_text+=line
-    return map_text
+    return json.dumps(the_map.as_json(), indent=4)
