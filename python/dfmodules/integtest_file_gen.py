@@ -25,7 +25,12 @@ def generate_dromap_contents(n_streams, n_apps = 1, det_id = 3, app_type = "eth"
     for app in range(n_apps):
         for stream in range(n_streams):
             geo_id = dromap.GeoID(det_id, app, 0, stream)
-            the_map.add_srcid(source_id, geo_id, app_type,
-                              rx_iface=app, rx_mac=f"00:00:00:00:00:0{app}", rx_ip=f"0.0.0.{app}")
+            if app_type == 'flx':
+                # untested!
+                the_map.add_srcid(source_id, geo_id, app_type,
+                                  card=app, slr=(stream // 5), link=(stream % 5))
+            else:
+                the_map.add_srcid(source_id, geo_id, app_type,
+                                  rx_iface=app, rx_mac=f"00:00:00:00:00:0{app}", rx_ip=f"0.0.0.{app}")
             source_id += 1
     return json.dumps(the_map.as_json(), indent=4)
