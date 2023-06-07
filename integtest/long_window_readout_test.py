@@ -195,9 +195,6 @@ def test_cleanup(run_nanorc):
     if not sufficient_disk_space:
         pytest.skip(f"The raw data output path ({actual_output_path}) does not have enough space to run this test.")
 
-    print("============================================")
-    print("Listing the hdf5 files before deleting them:")
-    print("============================================")
     pathlist_string=""
     filelist_string=""
     for data_file in run_nanorc.data_files:
@@ -205,13 +202,18 @@ def test_cleanup(run_nanorc):
         if str(data_file.parent) not in pathlist_string:
             pathlist_string += " " + str(data_file.parent)
 
-    os.system(f"df -h {pathlist_string}")
-    print("--------------------")
-    os.system(f"ls -alF {filelist_string}");
+    if pathlist_string and filelist_string:
+        print("============================================")
+        print("Listing the hdf5 files before deleting them:")
+        print("============================================")
 
-    for data_file in run_nanorc.data_files:
-        data_file.unlink()
+        os.system(f"df -h {pathlist_string}")
+        print("--------------------")
+        os.system(f"ls -alF {filelist_string}");
 
-    print("--------------------")
-    os.system(f"df -h {pathlist_string}")
-    print("============================================")
+        for data_file in run_nanorc.data_files:
+            data_file.unlink()
+
+        print("--------------------")
+        os.system(f"df -h {pathlist_string}")
+        print("============================================")
