@@ -19,7 +19,7 @@ def generate_hwmap_file(n_links, n_apps = 1, det_id = 3):
             sid += 1
     return conf
 
-def generate_dromap_contents(n_streams, n_apps = 1, det_id = 3, app_type = "eth"):
+def generate_dromap_contents(n_streams, n_apps = 1, det_id = 3, app_type = "eth", eth_protocol = "udp"):
     the_map = dromap.DetReadoutMapService()
     source_id = 0
     for app in range(n_apps):
@@ -30,7 +30,7 @@ def generate_dromap_contents(n_streams, n_apps = 1, det_id = 3, app_type = "eth"
                 the_map.add_srcid(source_id, geo_id, app_type,
                                   card=app, slr=(stream // 5), link=(stream % 5))
             else:
-                the_map.add_srcid(source_id, geo_id, app_type,
+                the_map.add_srcid(source_id, geo_id, app_type, protocol=eth_protocol,
                                   rx_iface=app, rx_mac=f"00:00:00:00:00:0{app}", rx_ip=f"0.0.0.{app}")
             source_id += 1
     return json.dumps(the_map.as_json(), indent=4)
