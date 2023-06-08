@@ -9,6 +9,7 @@ import os
 import re
 import urllib.request
 import copy
+import shutil
 
 import dfmodules.data_file_checks as data_file_checks
 import integrationtest.log_file_checks as log_file_checks
@@ -16,6 +17,7 @@ import integrationtest.config_file_gen as config_file_gen
 import dfmodules.integtest_file_gen as integtest_file_gen
 
 # Values that help determine the running conditions
+output_path_parameter="."
 number_of_data_producers=10
 run_duration=32  # seconds
 number_of_readout_apps=3
@@ -25,8 +27,8 @@ token_count=1
 readout_window_time_before=10000000
 readout_window_time_after=1000000
 data_rate_slowdown_factor=1
-minimum_total_disk_space_gb=32  # double what we need
-minimum_free_disk_space_gb=24   # 50% more than what we need
+minimum_total_disk_space_gb=33  # 50% more than what we need
+minimum_free_disk_space_gb=28   # 25% more than what we need
 
 # Default values for validation parameters
 expected_number_of_data_files=4
@@ -92,6 +94,7 @@ for df_app in range(number_of_dataflow_apps):
     dfapp_conf = {}
     dfapp_conf["app_name"] = f"dataflow{df_app}"
     dfapp_conf["max_file_size"] = 2*1024*1024*1024
+    dfapp_conf["output_paths"] = [ output_path_parameter ]
     conf_dict["dataflow"]["apps"].append(dfapp_conf)
 
 oversize_conf = copy.deepcopy(conf_dict)
@@ -101,7 +104,7 @@ confgen_arguments={"TRSize_55PercentOfMaxFileSize": conf_dict,
                    "TRSize_125PercentOfMaxFileSize": oversize_conf,
                   }
 # The commands to run in nanorc, as a list
-if sufficient_disk_space and sufficient_resources_on_this_computer:
+if sufficient_disk_space:
     nanorc_command_list="integtest-partition boot conf".split()
     nanorc_command_list+="start_run --wait 10 101 wait ".split() + [str(run_duration)] + "stop_run --wait 2 wait 2".split()
     nanorc_command_list+="start 102 wait 10 enable_triggers wait ".split() + [str(run_duration)] + "stop_run wait 2".split()
