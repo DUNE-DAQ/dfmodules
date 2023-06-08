@@ -26,14 +26,14 @@ latency_buffer_size=600000
 data_rate_slowdown_factor=1
 minimum_cpu_count=24
 minimum_free_memory_gb=52
+minimum_total_disk_space_gb=32  # double what we need
+minimum_free_disk_space_gb=24   # 50% more than what we need
 
 # Default values for validation parameters
 expected_number_of_data_files=4*number_of_dataflow_apps
 check_for_logfile_errors=True
 expected_event_count=202
 expected_event_count_tolerance= 9
-minimum_total_disk_space_gb=32  # double what we need
-minimum_free_disk_space_gb=24   # 50% more than what we need
 wib1_frag_hsi_trig_params={"fragment_type_description": "WIB", 
                            "fragment_type": "ProtoWIB",
                            "hdf5_source_subsystem": "Detector_Readout",

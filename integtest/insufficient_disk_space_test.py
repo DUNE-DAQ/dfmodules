@@ -30,9 +30,7 @@ disk_space=shutil.disk_usage(output_path)
 gb_space=disk_space.free / (1024*1024*1024)
 gb_limit=6.0
 hostname=os.uname().nodename
-print(f"{gb_space} GB free in {output_path}")
-
-
+print(f"DEBUG: {gb_space} GB free in {output_path}")
 
 # Values that help determine the running conditions
 number_of_data_producers=10
@@ -105,16 +103,15 @@ required_logfile_problems={"dataflow": ["A problem was encountered when writing 
 confgen_name="daqconf_multiru_gen"
 # The arguments to pass to the config generator, excluding the json
 # output directory (the test framework handles that)
-hardware_map_contents = integtest_file_gen.generate_hwmap_file(number_of_data_producers, number_of_readout_apps)
+dro_map_contents = integtest_file_gen.generate_dromap_contents(number_of_data_producers, number_of_readout_apps)
 
 conf_dict = config_file_gen.get_default_config_dict()
 conf_dict["readout"]["data_rate_slowdown_factor"] = data_rate_slowdown_factor
 conf_dict["readout"]["use_fake_data_producers"] = True
 #conf_dict["readout"]["default_data_file"] = "asset://?label=DuneWIB&subsystem=readout" # DuneWIB
 conf_dict["readout"]["default_data_file"] = "asset://?checksum=e96fd6efd3f98a9a3bfaba32975b476e" # WIBEth
-#conf_dict["readout"]["clock_speed_hz"] = 50000000 # ProtoWIB
 conf_dict["readout"]["clock_speed_hz"] = 62500000 # DuneWIB/WIBEth
-conf_dict["readout"]["eth_mode"] = True # WIBEth
+conf_dict["readout"]["use_fake_cards"] = True
 conf_dict["trigger"]["trigger_rate_hz"] = trigger_rate
 conf_dict["trigger"]["trigger_window_before_ticks"] = readout_window_time_before
 conf_dict["trigger"]["trigger_window_after_ticks"] = readout_window_time_after
@@ -192,9 +189,6 @@ def test_cleanup(run_nanorc):
     if gb_space >= gb_limit:
         pytest.skip(f"This computer ({hostname}) has too much available space in {output_path}.\n    (There is {gb_space} GB of space in {output_path}, limit is {gb_limit} GB)")
 
-    print("============================================")
-    print("Listing the hdf5 files before deleting them:")
-    print("============================================")
     pathlist_string=""
     filelist_string=""
     for data_file in run_nanorc.data_files:
@@ -202,13 +196,18 @@ def test_cleanup(run_nanorc):
         if str(data_file.parent) not in pathlist_string:
             pathlist_string += " " + str(data_file.parent)
 
-    os.system(f"df -h {pathlist_string}")
-    print("--------------------")
-    os.system(f"ls -alF {filelist_string}");
+    if pathlist_string and filelist_string:
+        print("============================================")
+        print("Listing the hdf5 files before deleting them:")
+        print("============================================")
 
-    for data_file in run_nanorc.data_files:
-        data_file.unlink()
+        os.system(f"df -h {pathlist_string}")
+        print("--------------------")
+        os.system(f"ls -alF {filelist_string}");
 
-    print("--------------------")
-    os.system(f"df -h {pathlist_string}")
-    print("============================================")
+        for data_file in run_nanorc.data_files:
+            data_file.unlink()
+
+        print("--------------------")
+        os.system(f"df -h {pathlist_string}")
+        print("============================================")
