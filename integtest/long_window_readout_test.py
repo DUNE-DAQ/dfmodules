@@ -26,14 +26,14 @@ latency_buffer_size=600000
 data_rate_slowdown_factor=1
 minimum_cpu_count=24
 minimum_free_memory_gb=52
+minimum_total_disk_space_gb=32  # double what we need
+minimum_free_disk_space_gb=24   # 50% more than what we need
 
 # Default values for validation parameters
 expected_number_of_data_files=4*number_of_dataflow_apps
 check_for_logfile_errors=True
 expected_event_count=202
 expected_event_count_tolerance= 9
-minimum_total_disk_space_gb=32  # double what we need
-minimum_free_disk_space_gb=24   # 50% more than what we need
 wib1_frag_hsi_trig_params={"fragment_type_description": "WIB", 
                            "fragment_type": "ProtoWIB",
                            "hdf5_source_subsystem": "Detector_Readout",
@@ -90,17 +90,15 @@ if cpu_count < minimum_cpu_count or free_mem < minimum_free_memory_gb:
 confgen_name="daqconf_multiru_gen"
 # The arguments to pass to the config generator, excluding the json
 # output directory (the test framework handles that)
-hardware_map_contents = integtest_file_gen.generate_hwmap_file(number_of_data_producers, number_of_readout_apps)
+dro_map_contents = integtest_file_gen.generate_dromap_contents(number_of_data_producers, number_of_readout_apps)
 
 conf_dict = config_file_gen.get_default_config_dict()
 conf_dict["readout"]["data_rate_slowdown_factor"] = data_rate_slowdown_factor
 conf_dict["readout"]["latency_buffer_size"] = latency_buffer_size
-#conf_dict["readout"]["default_data_file"] = "asset://?label=ProtoWIB&subsystem=readout" # ProtoWIB
 #conf_dict["readout"]["default_data_file"] = "asset://?label=DuneWIB&subsystem=readout" # DuneWIB
 conf_dict["readout"]["default_data_file"] = "asset://?checksum=e96fd6efd3f98a9a3bfaba32975b476e" # WIBEth
-#conf_dict["readout"]["clock_speed_hz"] = 50000000 # ProtoWIB
 conf_dict["readout"]["clock_speed_hz"] = 62500000 # DuneWIB/WIBEth
-conf_dict["readout"]["eth_mode"] = True # WIBEth
+conf_dict["readout"]["use_fake_cards"] = True
 conf_dict["readout"]["emulated_data_times_start_with_now"] = True
 conf_dict["trigger"]["trigger_rate_hz"] = trigger_rate
 conf_dict["trigger"]["trigger_window_before_ticks"] = readout_window_time_before
@@ -197,9 +195,6 @@ def test_cleanup(run_nanorc):
     if not sufficient_disk_space:
         pytest.skip(f"The raw data output path ({actual_output_path}) does not have enough space to run this test.")
 
-    print("============================================")
-    print("Listing the hdf5 files before deleting them:")
-    print("============================================")
     pathlist_string=""
     filelist_string=""
     for data_file in run_nanorc.data_files:
@@ -207,13 +202,18 @@ def test_cleanup(run_nanorc):
         if str(data_file.parent) not in pathlist_string:
             pathlist_string += " " + str(data_file.parent)
 
-    os.system(f"df -h {pathlist_string}")
-    print("--------------------")
-    os.system(f"ls -alF {filelist_string}");
+    if pathlist_string and filelist_string:
+        print("============================================")
+        print("Listing the hdf5 files before deleting them:")
+        print("============================================")
 
-    for data_file in run_nanorc.data_files:
-        data_file.unlink()
+        os.system(f"df -h {pathlist_string}")
+        print("--------------------")
+        os.system(f"ls -alF {filelist_string}");
 
-    print("--------------------")
-    os.system(f"df -h {pathlist_string}")
-    print("============================================")
+        for data_file in run_nanorc.data_files:
+            data_file.unlink()
+
+        print("--------------------")
+        os.system(f"df -h {pathlist_string}")
+        print("============================================")

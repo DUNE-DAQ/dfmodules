@@ -73,7 +73,7 @@ ignored_logfile_problems={"dqm": ["client will not be able to connect to Kafka c
 confgen_name="daqconf_multiru_gen"
 # The arguments to pass to the config generator, excluding the json
 # output directory (the test framework handles that)
-hardware_map_contents = integtest_file_gen.generate_hwmap_file(number_of_data_producers, number_of_readout_apps)
+dro_map_contents = integtest_file_gen.generate_dromap_contents(number_of_data_producers, number_of_readout_apps)
 
 conf_dict = config_file_gen.get_default_config_dict()
 conf_dict["readout"]["data_rate_slowdown_factor"] = data_rate_slowdown_factor
@@ -81,7 +81,7 @@ conf_dict["readout"]["latency_buffer_size"] = 200000
 #conf_dict["readout"]["default_data_file"] = "asset://?label=DuneWIB&subsystem=readout" # DuneWIB
 conf_dict["readout"]["default_data_file"] = "asset://?checksum=e96fd6efd3f98a9a3bfaba32975b476e" # WIBEth
 conf_dict["readout"]["clock_speed_hz"] = 62500000 # DuneWIB/WIBEth
-conf_dict["readout"]["eth_mode"] = True # WIBEth
+conf_dict["readout"]["use_fake_cards"] = True
 conf_dict["trigger"]["trigger_rate_hz"] = trigger_rate
 conf_dict["trigger"]["trigger_window_before_ticks"] = 1000
 conf_dict["trigger"]["trigger_window_after_ticks"] = 1000
