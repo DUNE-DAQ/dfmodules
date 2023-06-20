@@ -95,10 +95,14 @@ conf_dict["trigger"]["trigger_window_before_ticks"] = readout_window_time_before
 conf_dict["trigger"]["trigger_window_after_ticks"] = readout_window_time_after
 
 swtpg_conf = copy.deepcopy(conf_dict)
-swtpg_conf["readout"]["enable_software_tpg"] = True
+swtpg_conf["readout"]["emulator_mode"] = True
+swtpg_conf["readout"]["enable_tpg"] = True
+swtpg_conf["readout"]["tpg_threshold"] = 150
+swtpg_conf["readout"]["tpg_algorithm"] = "SimpleThreshold"
+swtpg_conf["readout"]["default_data_file"] = "asset://?checksum=dd156b4895f1b06a06b6ff38e37bd798" # WIBEth All Zeros
 
 confgen_arguments={"WIBEth_System": conf_dict,
-#                   "Software_TPG_System": swtpg_conf,
+                   "Software_TPG_System": swtpg_conf,
                   }
 
 # The commands to run in nanorc, as a list
@@ -132,9 +136,9 @@ def test_data_files(run_nanorc):
     local_expected_event_count=expected_event_count
     local_event_count_tolerance=expected_event_count_tolerance
     fragment_check_list=[triggercandidate_frag_params, hsi_frag_params]
-    if "enable_software_tpg" in run_nanorc.confgen_config["readout"].keys() and run_nanorc.confgen_config["readout"]["enable_software_tpg"]:
-        local_expected_event_count+=(270*number_of_data_producers*run_duration/100)
-        local_event_count_tolerance+=(10*number_of_data_producers*run_duration/100)
+    if "enable_tpg" in run_nanorc.confgen_config["readout"].keys() and run_nanorc.confgen_config["readout"]["enable_tpg"]:
+        local_expected_event_count+=(number_of_data_producers*run_duration/10)
+        local_event_count_tolerance+=(number_of_data_producers*run_duration/10)
         #fragment_check_list.append(wib1_frag_multi_trig_params) # ProtoWIB
         #fragment_check_list.append(wib2_frag_multi_trig_params) # DuneWIB
         fragment_check_list.append(wibeth_frag_multi_trig_params) # WIBEth

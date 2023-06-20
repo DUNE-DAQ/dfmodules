@@ -93,8 +93,11 @@ for df_app in range(number_of_dataflow_apps):
     conf_dict["dataflow"]["apps"].append(dfapp_conf)
 
 swtpg_conf = copy.deepcopy(conf_dict)
-swtpg_conf["readout"]["enable_software_tpg"] = True
-swtpg_conf["readout"]["software_tpg_threshold"] = 150
+swtpg_conf["readout"]["emulator_mode"] = True
+swtpg_conf["readout"]["enable_tpg"] = True
+swtpg_conf["readout"]["tpg_threshold"] = 150
+swtpg_conf["readout"]["tpg_algorithm"] = "Simplethreshold"
+swtpg_conf["readout"]["default_data_file"] = "asset://?checksum=dd156b4895f1b06a06b6ff38e37bd798" # WIBEth All Zeros
 swtpg_conf["dataflow"]["token_count"] = int(math.ceil(max(10, 3*number_of_data_producers*number_of_readout_apps)/number_of_dataflow_apps))
 
 dqm_conf = copy.deepcopy(conf_dict)
