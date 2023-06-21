@@ -104,16 +104,20 @@ conf_dict = config_file_gen.get_default_config_dict()
 conf_dict["readout"]["clock_speed_hz"] = 50000000
 conf_dict["readout"]["data_rate_slowdown_factor"] = data_rate_slowdown_factor
 conf_dict["readout"]["latency_buffer_size"] = 200000
-#conf_dict["readout"]["default_data_file"] = "asset://?label=ProtoWIB&subsystem=readout" # ProtoWIB
-#conf_dict["readout"]["default_data_file"] = "asset://?label=DuneWIB&subsystem=readout" # DuneWIB
-conf_dict["readout"]["default_data_file"] = "asset://?checksum=e96fd6efd3f98a9a3bfaba32975b476e" # WIBEth
-#conf_dict["readout"]["clock_speed_hz"] = 50000000 # ProtoWIB
 conf_dict["readout"]["clock_speed_hz"] = 62500000 # DuneWIB/WIBEth
 conf_dict["readout"]["eth_mode"] = True # WIBEth
 conf_dict["trigger"]["trigger_rate_hz"] = pulser_trigger_rate
 conf_dict["trigger"]["enable_tpset_writing"] = True
 conf_dict["trigger"]["tpset_output_path"] = output_dir
-conf_dict["readout"]["enable_software_tpg"] = True
+
+conf_dict["readout"]["emulator_mode"] = True
+conf_dict["readout"]["enable_tpg"] = True
+conf_dict["readout"]["tpg_threshold"] = 500
+conf_dict["readout"]["tpg_algorithm"] = "SimpleThreshold"
+conf_dict["readout"]["default_data_file"] = "asset://?checksum=dd156b4895f1b06a06b6ff38e37bd798" # WIBEth All Zeros
+conf_dict["trigger"]["mlt_send_timed_out_tds"] = False
+conf_dict["trigger"]["tpg_channel_map"] = "PD2HDChannelMap"
+conf_dict["trigger"]["trigger_activity_config"] = {"prescale": 300}
 
 conf_dict["dataflow"]["token_count"] = int(math.ceil(max(10, 3*number_of_data_producers*number_of_readout_apps)/number_of_dataflow_apps))
 conf_dict["dataflow"]["apps"] = [] # Remove preconfigured dataflow0 app

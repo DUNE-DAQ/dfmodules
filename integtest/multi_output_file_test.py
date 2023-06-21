@@ -93,7 +93,14 @@ conf_dict["trigger"]["trigger_window_after_ticks"] = 1000
 conf_dict["dataflow"]["apps"][0]["max_file_size"] = 1074000000
 
 swtpg_conf = copy.deepcopy(conf_dict)
-swtpg_conf["readout"]["enable_software_tpg"] = True
+swtpg_conf["readout"]["emulator_mode"] = True
+swtpg_conf["readout"]["enable_tpg"] = True
+swtpg_conf["readout"]["tpg_threshold"] = 500
+swtpg_conf["readout"]["tpg_algorithm"] = "SimpleThreshold"
+swtpg_conf["readout"]["default_data_file"] = "asset://?checksum=dd156b4895f1b06a06b6ff38e37bd798" # WIBEth All Zeros
+swtpg_conf["trigger"]["mlt_send_timed_out_tds"] = False
+swtpg_conf["trigger"]["tpg_channel_map"] = "PD2HDChannelMap"
+swtpg_conf["trigger"]["trigger_activity_config"] = {"prescale": 300}
 swtpg_conf["dataflow"]["token_count"] = max(10, 3*number_of_data_producers*number_of_readout_apps)
 
 multiout_conf = copy.deepcopy(conf_dict)
@@ -101,13 +108,20 @@ multiout_conf["dataflow"]["apps"][0]["output_paths"] = [".", "."]
 multiout_conf["dataflow"]["apps"][0]["max_file_size"] = 4*1024*1024*1024
 
 multiout_tpg_conf = copy.deepcopy(multiout_conf)
-multiout_tpg_conf["readout"]["enable_software_tpg"] = True
+multiout_tpg_conf["readout"]["emulator_mode"] = True
+multiout_tpg_conf["readout"]["enable_tpg"] = True
+multiout_tpg_conf["readout"]["tpg_threshold"] = 500
+multiout_tpg_conf["readout"]["tpg_algorithm"] = "SimpleThreshold"
+multiout_tpg_conf["readout"]["default_data_file"] = "asset://?checksum=dd156b4895f1b06a06b6ff38e37bd798" # WIBEth All Zeros
+multiout_tpg_conf["trigger"]["mlt_send_timed_out_tds"] = False
+multiout_tpg_conf["trigger"]["tpg_channel_map"] = "PD2HDChannelMap"
+multiout_tpg_conf["trigger"]["trigger_activity_config"] = {"prescale": 300}
 multiout_tpg_conf["dataflow"]["token_count"] = max(10, 3*number_of_data_producers*number_of_readout_apps)
 
 confgen_arguments={"WIBEth_System (Rollover files)": conf_dict,
-                   #"Software_TPG_System (Rollover files)": swtpg_conf,
+                   "Software_TPG_System (Rollover files)": swtpg_conf,
                    "WIBEth_System (Multiple outputs)": multiout_conf,
-                   #"Software_TPG_System (Multiple outputs)": multiout_tpg_conf
+                   "Software_TPG_System (Multiple outputs)": multiout_tpg_conf
                   }
 
 # The commands to run in nanorc, as a list
