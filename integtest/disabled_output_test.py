@@ -97,9 +97,12 @@ conf_dict["trigger"]["trigger_window_after_ticks"] = readout_window_time_after
 swtpg_conf = copy.deepcopy(conf_dict)
 swtpg_conf["readout"]["emulator_mode"] = True
 swtpg_conf["readout"]["enable_tpg"] = True
-swtpg_conf["readout"]["tpg_threshold"] = 150
+swtpg_conf["readout"]["tpg_threshold"] = 500
 swtpg_conf["readout"]["tpg_algorithm"] = "SimpleThreshold"
 swtpg_conf["readout"]["default_data_file"] = "asset://?checksum=dd156b4895f1b06a06b6ff38e37bd798" # WIBEth All Zeros
+swtpg_conf["trigger"]["mlt_send_timed_out_tds"] = False
+swtpg_conf["trigger"]["tpg_channel_map"] = "PD2HDChannelMap"
+swtpg_conf["trigger"]["trigger_activity_config"] = {"prescale": 300}
 
 confgen_arguments={"WIBEth_System": conf_dict,
                    "Software_TPG_System": swtpg_conf,
