@@ -80,9 +80,9 @@ confgen_name="daqconf_multiru_gen"
 dro_map_contents = integtest_file_gen.generate_dromap_contents(number_of_data_producers, number_of_readout_apps)
 
 conf_dict = config_file_gen.get_default_config_dict()
-conf_dict["readout"]["data_rate_slowdown_factor"] = data_rate_slowdown_factor
+conf_dict["daq_common"]["data_rate_slowdown_factor"] = data_rate_slowdown_factor
 conf_dict["readout"]["use_fake_data_producers"] = True
-conf_dict["readout"]["clock_speed_hz"] = 62500000 # DuneWIB/WIBEth
+conf_dict["detector"]["clock_speed_hz"] = 62500000 # DuneWIB/WIBEth
 conf_dict["readout"]["use_fake_cards"] = True
 conf_dict["trigger"]["trigger_rate_hz"] = trigger_rate
 conf_dict["trigger"]["trigger_window_before_ticks"] = readout_window_time_before

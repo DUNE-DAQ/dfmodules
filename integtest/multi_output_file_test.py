@@ -17,7 +17,7 @@ data_rate_slowdown_factor=1
 # Default values for validation parameters
 expected_number_of_data_files=4
 check_for_logfile_errors=True
-wib1_frag_hsi_trig_params={"fragment_type_description": "WIB", 
+wib1_frag_hsi_trig_params={"fragment_type_description": "WIB",
                            "fragment_type": "ProtoWIB",
                            "hdf5_source_subsystem": "Detector_Readout",
                            "expected_fragment_count": (number_of_data_producers*number_of_readout_apps),
@@ -27,7 +27,7 @@ wib1_frag_multi_trig_params={"fragment_type_description": "WIB",
                              "hdf5_source_subsystem": "Detector_Readout",
                              "expected_fragment_count": (number_of_data_producers*number_of_readout_apps),
                              "min_size_bytes": 72, "max_size_bytes": 270000}
-wib2_frag_hsi_trig_params={"fragment_type_description": "WIB", 
+wib2_frag_hsi_trig_params={"fragment_type_description": "WIB",
                            "fragment_type": "WIB",
                            "hdf5_source_subsystem": "Detector_Readout",
                            "expected_fragment_count": (number_of_data_producers*number_of_readout_apps),
@@ -80,11 +80,12 @@ confgen_name="daqconf_multiru_gen"
 dro_map_contents = integtest_file_gen.generate_dromap_contents(number_of_data_producers, number_of_readout_apps)
 
 conf_dict = config_file_gen.get_default_config_dict()
-conf_dict["readout"]["data_rate_slowdown_factor"] = data_rate_slowdown_factor
+conf_dict["daq_common"]["data_rate_slowdown_factor"] = data_rate_slowdown_factor
 conf_dict["readout"]["latency_buffer_size"] = 200000
+conf_dict["detector"]["op_env"] = "integtest"
 #conf_dict["readout"]["default_data_file"] = "asset://?label=DuneWIB&subsystem=readout" # DuneWIB
 conf_dict["readout"]["default_data_file"] = "asset://?checksum=e96fd6efd3f98a9a3bfaba32975b476e" # WIBEth
-conf_dict["readout"]["clock_speed_hz"] = 62500000 # DuneWIB/WIBEth
+conf_dict["detector"]["clock_speed_hz"] = 62500000 # DuneWIB/WIBEth
 conf_dict["readout"]["use_fake_cards"] = True
 conf_dict["readout"]["emulated_data_times_start_with_now"] = True
 conf_dict["trigger"]["trigger_rate_hz"] = 10
@@ -93,7 +94,7 @@ conf_dict["trigger"]["trigger_window_after_ticks"] = 1000
 conf_dict["dataflow"]["apps"][0]["max_file_size"] = 1074000000
 
 swtpg_conf = copy.deepcopy(conf_dict)
-swtpg_conf["readout"]["enable_software_tpg"] = True
+swtpg_conf["readout"]["enable_tpg"] = True
 swtpg_conf["dataflow"]["token_count"] = max(10, 3*number_of_data_producers*number_of_readout_apps)
 
 multiout_conf = copy.deepcopy(conf_dict)
@@ -101,7 +102,7 @@ multiout_conf["dataflow"]["apps"][0]["output_paths"] = [".", "."]
 multiout_conf["dataflow"]["apps"][0]["max_file_size"] = 4*1024*1024*1024
 
 multiout_tpg_conf = copy.deepcopy(multiout_conf)
-multiout_tpg_conf["readout"]["enable_software_tpg"] = True
+multiout_tpg_conf["readout"]["enable_tpg"] = True
 multiout_tpg_conf["dataflow"]["token_count"] = max(10, 3*number_of_data_producers*number_of_readout_apps)
 
 confgen_arguments={"WIBEth_System (Rollover files)": conf_dict,
@@ -135,7 +136,7 @@ def test_log_files(run_nanorc):
 def test_data_files(run_nanorc):
     local_file_count=expected_number_of_data_files
     fragment_check_list=[triggercandidate_frag_params, hsi_frag_params]
-    if "enable_software_tpg" in run_nanorc.confgen_config["readout"].keys() and run_nanorc.confgen_config["readout"]["enable_software_tpg"]:
+    if "enable_tpg" in run_nanorc.confgen_config["readout"].keys() and run_nanorc.confgen_config["readout"]["enable_tpg"]:
         local_file_count=5
         #fragment_check_list.append(wib1_frag_multi_trig_params) # ProtoWIB
         #fragment_check_list.append(wib2_frag_multi_trig_params) # DuneWIB
