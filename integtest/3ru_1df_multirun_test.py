@@ -3,6 +3,7 @@ import os
 import re
 import copy
 import psutil
+import math
 import urllib.request
 
 import dfmodules.data_file_checks as data_file_checks
@@ -14,13 +15,14 @@ import dfmodules.integtest_file_gen as integtest_file_gen
 number_of_data_producers=3
 number_of_readout_apps=3
 run_duration=20  # seconds
-data_rate_slowdown_factor=10
+trigger_rate=0.1 # Hz
+data_rate_slowdown_factor=1
 
 # Default values for validation parameters
 expected_number_of_data_files=3
 check_for_logfile_errors=True
-expected_event_count=run_duration
-expected_event_count_tolerance=2
+expected_event_count=trigger_rate * run_duration
+expected_event_count_tolerance=math.ceil(expected_event_count / 10)
 minimum_cpu_count=18
 minimum_free_memory_gb=24
 wib1_frag_hsi_trig_params={"fragment_type_description": "WIB", 
@@ -108,6 +110,7 @@ conf_dict["readout"]["latency_buffer_size"] = 200000
 conf_dict["readout"]["default_data_file"] = "asset://?checksum=e96fd6efd3f98a9a3bfaba32975b476e" # WIBEth
 conf_dict["readout"]["clock_speed_hz"] = 62500000 # DuneWIB/WIBEth
 conf_dict["readout"]["use_fake_cards"] = True
+conf_dict["trigger"]["trigger_rate_hz"] = trigger_rate
 
 swtpg_conf = copy.deepcopy(conf_dict)
 swtpg_conf["readout"]["emulator_mode"] = True

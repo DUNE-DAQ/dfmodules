@@ -13,9 +13,9 @@ import dfmodules.integtest_file_gen as integtest_file_gen
 number_of_data_producers=2
 number_of_readout_apps=2
 number_of_dataflow_apps=2
-pulser_trigger_rate=1.0 # Hz
+pulser_trigger_rate=0.1 # Hz
 run_duration=30  # seconds
-data_rate_slowdown_factor=10
+data_rate_slowdown_factor=1
 output_dir = "."
 
 # Default values for validation parameters

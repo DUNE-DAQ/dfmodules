@@ -1,3 +1,4 @@
+import math
 import pytest
 import os
 import re
@@ -12,15 +13,16 @@ import dfmodules.integtest_file_gen as integtest_file_gen
 # Values that help determine the running conditions
 number_of_data_producers=2
 run_duration=20  # seconds
-data_rate_slowdown_factor=10
+trigger_rate = 0.1 # Hz
+data_rate_slowdown_factor=1
 readout_window_time_before=1000
 readout_window_time_after=1001
 
 # Default values for validation parameters
 expected_number_of_data_files=2
 check_for_logfile_errors=True
-expected_event_count=run_duration
-expected_event_count_tolerance=2
+expected_event_count=trigger_rate * run_duration
+expected_event_count_tolerance=math.ceil(expected_event_count / 10)
 wib1_frag_hsi_trig_params={"fragment_type_description": "WIB", 
                            "fragment_type": "ProtoWIB",
                            "hdf5_source_subsystem": "Detector_Readout",
@@ -90,7 +92,7 @@ conf_dict["readout"]["latency_buffer_size"] = 200000
 conf_dict["readout"]["default_data_file"] = "asset://?checksum=e96fd6efd3f98a9a3bfaba32975b476e" # WIBEth
 conf_dict["readout"]["clock_speed_hz"] = 62500000 # DuneWIB/WIBEth
 conf_dict["readout"]["use_fake_cards"] = True
-conf_dict["trigger"]["trigger_rate_hz"] = 1.0
+conf_dict["trigger"]["trigger_rate_hz"] = trigger_rate
 conf_dict["trigger"]["trigger_window_before_ticks"] = readout_window_time_before
 conf_dict["trigger"]["trigger_window_after_ticks"] = readout_window_time_after
 
