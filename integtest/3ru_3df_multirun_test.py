@@ -142,7 +142,7 @@ def test_data_files(run_nanorc):
     low_number_of_files=expected_number_of_data_files
     high_number_of_files=expected_number_of_data_files
     fragment_check_list=[triggercandidate_frag_params, hsi_frag_params]
-    if "enable_software_tpg" in run_nanorc.confgen_config["readout"].keys() and run_nanorc.confgen_config["readout"]["enable_software_tpg"]:
+    if "enable_tpg" in run_nanorc.confgen_config["readout"].keys() and run_nanorc.confgen_config["readout"]["enable_tpg"]:
         local_expected_event_count+=(265*number_of_data_producers*number_of_readout_apps*run_duration/(100*number_of_dataflow_apps))
         local_event_count_tolerance+=(10*number_of_data_producers*number_of_readout_apps*run_duration/(100*number_of_dataflow_apps))
         #fragment_check_list.append(wib2_frag_multi_trig_params) # DuneWIB
