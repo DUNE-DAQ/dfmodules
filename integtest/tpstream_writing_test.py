@@ -98,14 +98,14 @@ ignored_logfile_problems={}
 confgen_name="daqconf_multiru_gen"
 # The arguments to pass to the config generator, excluding the json
 # output directory (the test framework handles that)
-hardware_map_contents = integtest_file_gen.generate_hwmap_file(number_of_data_producers, number_of_readout_apps)
+dro_map_contents = integtest_file_gen.generate_dromap_contents(number_of_data_producers, number_of_readout_apps)
 
 conf_dict = config_file_gen.get_default_config_dict()
 conf_dict["readout"]["clock_speed_hz"] = 50000000
 conf_dict["readout"]["data_rate_slowdown_factor"] = data_rate_slowdown_factor
 conf_dict["readout"]["latency_buffer_size"] = 200000
 conf_dict["readout"]["clock_speed_hz"] = 62500000 # DuneWIB/WIBEth
-conf_dict["readout"]["eth_mode"] = True # WIBEth
+conf_dict["readout"]["use_fake_cards"] = True # WIBEth
 conf_dict["trigger"]["trigger_rate_hz"] = pulser_trigger_rate
 conf_dict["trigger"]["enable_tpset_writing"] = True
 conf_dict["trigger"]["tpset_output_path"] = output_dir
