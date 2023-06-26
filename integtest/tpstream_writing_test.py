@@ -66,7 +66,7 @@ wibeth_frag_multi_trig_params={"fragment_type_description": "WIBEth",
 wibeth_tpset_params={"fragment_type_description": "TP Stream", 
                    "fragment_type": "Trigger_Primitive",
                    "hdf5_source_subsystem": "Trigger",
-                   "expected_fragment_count": (number_of_data_producers*number_of_readout_apps),
+                   "expected_fragment_count": number_of_readout_apps,
                    "min_size_bytes": 72, "max_size_bytes": 3291080}
 triggercandidate_frag_params={"fragment_type_description": "Trigger Candidate", 
                               "fragment_type": "Trigger_Candidate",
