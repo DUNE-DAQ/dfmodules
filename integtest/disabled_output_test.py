@@ -1,3 +1,4 @@
+import math
 import pytest
 import os
 import re
@@ -12,16 +13,17 @@ import dfmodules.integtest_file_gen as integtest_file_gen
 # Values that help determine the running conditions
 number_of_data_producers=2
 run_duration=20  # seconds
-data_rate_slowdown_factor=10
+trigger_rate = 0.1 # Hz
+data_rate_slowdown_factor=1
 readout_window_time_before=1000
 readout_window_time_after=1001
 
 # Default values for validation parameters
 expected_number_of_data_files=2
 check_for_logfile_errors=True
-expected_event_count=run_duration
-expected_event_count_tolerance=2
-wib1_frag_hsi_trig_params={"fragment_type_description": "WIB",
+expected_event_count=trigger_rate * run_duration
+expected_event_count_tolerance=math.ceil(expected_event_count / 10)
+wib1_frag_hsi_trig_params={"fragment_type_description": "WIB", 
                            "fragment_type": "ProtoWIB",
                            "hdf5_source_subsystem": "Detector_Readout",
                            "expected_fragment_count": number_of_data_producers,
@@ -90,15 +92,22 @@ conf_dict["readout"]["latency_buffer_size"] = 200000
 conf_dict["readout"]["default_data_file"] = "asset://?checksum=e96fd6efd3f98a9a3bfaba32975b476e" # WIBEth
 conf_dict["detector"]["clock_speed_hz"] = 62500000 # DuneWIB/WIBEth
 conf_dict["readout"]["use_fake_cards"] = True
-conf_dict["trigger"]["trigger_rate_hz"] = 1.0
+conf_dict["trigger"]["trigger_rate_hz"] = trigger_rate
 conf_dict["trigger"]["trigger_window_before_ticks"] = readout_window_time_before
 conf_dict["trigger"]["trigger_window_after_ticks"] = readout_window_time_after
 
 swtpg_conf = copy.deepcopy(conf_dict)
+swtpg_conf["readout"]["emulator_mode"] = True
 swtpg_conf["readout"]["enable_tpg"] = True
+swtpg_conf["readout"]["tpg_threshold"] = 500
+swtpg_conf["readout"]["tpg_algorithm"] = "SimpleThreshold"
+swtpg_conf["readout"]["default_data_file"] = "asset://?checksum=dd156b4895f1b06a06b6ff38e37bd798" # WIBEth All Zeros
+swtpg_conf["trigger"]["mlt_send_timed_out_tds"] = False
+swtpg_conf["trigger"]["tpg_channel_map"] = "PD2HDChannelMap"
+swtpg_conf["trigger"]["trigger_activity_config"] = {"prescale": 300}
 
 confgen_arguments={"WIBEth_System": conf_dict,
-#                   "Software_TPG_System": swtpg_conf,
+                   "Software_TPG_System": swtpg_conf,
                   }
 
 # The commands to run in nanorc, as a list
@@ -133,8 +142,8 @@ def test_data_files(run_nanorc):
     local_event_count_tolerance=expected_event_count_tolerance
     fragment_check_list=[triggercandidate_frag_params, hsi_frag_params]
     if "enable_tpg" in run_nanorc.confgen_config["readout"].keys() and run_nanorc.confgen_config["readout"]["enable_tpg"]:
-        local_expected_event_count+=(270*number_of_data_producers*run_duration/100)
-        local_event_count_tolerance+=(10*number_of_data_producers*run_duration/100)
+        local_expected_event_count+=(number_of_data_producers * run_duration / 5)  #(270*number_of_data_producers*run_duration/(100))
+        local_event_count_tolerance+=(number_of_data_producers * run_duration / 10)  #(10*number_of_data_producers*run_duration/(100))
         #fragment_check_list.append(wib1_frag_multi_trig_params) # ProtoWIB
         #fragment_check_list.append(wib2_frag_multi_trig_params) # DuneWIB
         fragment_check_list.append(wibeth_frag_multi_trig_params) # WIBEth

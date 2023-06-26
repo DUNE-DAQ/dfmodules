@@ -3,6 +3,7 @@ import os
 import re
 import copy
 import psutil
+import math
 import urllib.request
 
 import dfmodules.data_file_checks as data_file_checks
@@ -14,13 +15,14 @@ import dfmodules.integtest_file_gen as integtest_file_gen
 number_of_data_producers=3
 number_of_readout_apps=3
 run_duration=20  # seconds
-data_rate_slowdown_factor=10
+trigger_rate=0.1 # Hz
+data_rate_slowdown_factor=1
 
 # Default values for validation parameters
 expected_number_of_data_files=3
 check_for_logfile_errors=True
-expected_event_count=run_duration
-expected_event_count_tolerance=2
+expected_event_count=trigger_rate * run_duration
+expected_event_count_tolerance=math.ceil(expected_event_count / 10)
 minimum_cpu_count=18
 minimum_free_memory_gb=24
 wib1_frag_hsi_trig_params={"fragment_type_description": "WIB",
@@ -108,16 +110,24 @@ conf_dict["readout"]["latency_buffer_size"] = 200000
 conf_dict["readout"]["default_data_file"] = "asset://?checksum=e96fd6efd3f98a9a3bfaba32975b476e" # WIBEth
 conf_dict["detector"]["clock_speed_hz"] = 62500000 # DuneWIB/WIBEth
 conf_dict["readout"]["use_fake_cards"] = True
+conf_dict["trigger"]["trigger_rate_hz"] = trigger_rate
 
 swtpg_conf = copy.deepcopy(conf_dict)
+swtpg_conf["readout"]["emulator_mode"] = True
 swtpg_conf["readout"]["enable_tpg"] = True
+swtpg_conf["readout"]["tpg_threshold"] = 500
+swtpg_conf["readout"]["tpg_algorithm"] = "SimpleThreshold"
+swtpg_conf["readout"]["default_data_file"] = "asset://?checksum=dd156b4895f1b06a06b6ff38e37bd798" # WIBEth All Zeros
+swtpg_conf["trigger"]["mlt_send_timed_out_tds"] = False
+swtpg_conf["trigger"]["tpg_channel_map"] = "PD2HDChannelMap"
+swtpg_conf["trigger"]["trigger_activity_config"] = {"prescale": 300}
 swtpg_conf["dataflow"]["token_count"] = max(10, 3*number_of_data_producers*number_of_readout_apps)
 
 dqm_conf = copy.deepcopy(conf_dict)
 dqm_conf["dqm"]["enable_dqm"] = True
 
 confgen_arguments={"WIBEth_System": conf_dict,
-#                   "Software_TPG_System": swtpg_conf,
+                   "Software_TPG_System": swtpg_conf,
                    "DQM_System": dqm_conf,
                   }
 
@@ -167,8 +177,8 @@ def test_data_files(run_nanorc):
     local_event_count_tolerance=expected_event_count_tolerance
     fragment_check_list=[triggercandidate_frag_params, hsi_frag_params]
     if "enable_tpg" in run_nanorc.confgen_config["readout"].keys() and run_nanorc.confgen_config["readout"]["enable_tpg"]:
-        local_expected_event_count+=(270*number_of_data_producers*number_of_readout_apps*run_duration/100)
-        local_event_count_tolerance+=(10*number_of_data_producers*number_of_readout_apps*run_duration/100)
+        local_expected_event_count+=(number_of_data_producers * run_duration / 2)  #(270*number_of_data_producers*run_duration/(100))
+        local_event_count_tolerance+=(number_of_data_producers * run_duration / 4)  #(10*number_of_data_producers*run_duration/(100))
         #fragment_check_list.append(wib1_frag_multi_trig_params) # ProtoWIB
         #fragment_check_list.append(wib2_frag_multi_trig_params) # DuneWIB
         fragment_check_list.append(wibeth_frag_multi_trig_params) # WIBEth
