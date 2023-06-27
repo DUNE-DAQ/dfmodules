@@ -103,7 +103,7 @@ swtpg_conf["readout"]["tpg_threshold"] = 500
 swtpg_conf["readout"]["tpg_algorithm"] = "SimpleThreshold"
 swtpg_conf["readout"]["default_data_file"] = "asset://?checksum=dd156b4895f1b06a06b6ff38e37bd798" # WIBEth All Zeros
 swtpg_conf["trigger"]["mlt_send_timed_out_tds"] = False
-swtpg_conf["trigger"]["tpg_channel_map"] = "PD2HDChannelMap"
+swtpg_conf["detector"]["tpc_channel_map"] = "PD2HDChannelMap"
 swtpg_conf["trigger"]["trigger_activity_config"] = {"prescale": 300}
 
 confgen_arguments={"WIBEth_System": conf_dict,
