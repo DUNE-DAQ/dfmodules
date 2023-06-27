@@ -90,7 +90,7 @@ conf_dict["readout"]["latency_buffer_size"] = 200000
 conf_dict["readout"]["default_data_file"] = "asset://?checksum=e96fd6efd3f98a9a3bfaba32975b476e" # WIBEth
 conf_dict["detector"]["clock_speed_hz"] = 62500000 # DuneWIB/WIBEth
 conf_dict["readout"]["use_fake_cards"] = True
-conf_dict["trigger"]["trigger_rate_hz"] = 1.0
+conf_dict["hsi"]["random_trigger_rate_hz"] = 1.0
 conf_dict["trigger"]["trigger_window_before_ticks"] = readout_window_time_before
 conf_dict["trigger"]["trigger_window_after_ticks"] = readout_window_time_after
 
