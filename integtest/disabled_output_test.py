@@ -21,7 +21,7 @@ expected_number_of_data_files=2
 check_for_logfile_errors=True
 expected_event_count=run_duration
 expected_event_count_tolerance=2
-wib1_frag_hsi_trig_params={"fragment_type_description": "WIB", 
+wib1_frag_hsi_trig_params={"fragment_type_description": "WIB",
                            "fragment_type": "ProtoWIB",
                            "hdf5_source_subsystem": "Detector_Readout",
                            "expected_fragment_count": number_of_data_producers,
@@ -31,7 +31,7 @@ wib1_frag_multi_trig_params={"fragment_type_description": "WIB",
                              "hdf5_source_subsystem": "Detector_Readout",
                              "expected_fragment_count": number_of_data_producers,
                              "min_size_bytes": 72, "max_size_bytes": 54000}
-wib2_frag_hsi_trig_params={"fragment_type_description": "WIB", 
+wib2_frag_hsi_trig_params={"fragment_type_description": "WIB",
                            "fragment_type": "WIB",
                            "hdf5_source_subsystem": "Detector_Readout",
                            "expected_fragment_count": (number_of_data_producers),
@@ -84,18 +84,18 @@ confgen_name="daqconf_multiru_gen"
 dro_map_contents = integtest_file_gen.generate_dromap_contents(number_of_data_producers)
 
 conf_dict = config_file_gen.get_default_config_dict()
-conf_dict["readout"]["data_rate_slowdown_factor"] = data_rate_slowdown_factor
+conf_dict["daq_common"]["data_rate_slowdown_factor"] = data_rate_slowdown_factor
 conf_dict["readout"]["latency_buffer_size"] = 200000
 #conf_dict["readout"]["default_data_file"] = "asset://?label=DuneWIB&subsystem=readout" # DuneWIB
 conf_dict["readout"]["default_data_file"] = "asset://?checksum=e96fd6efd3f98a9a3bfaba32975b476e" # WIBEth
-conf_dict["readout"]["clock_speed_hz"] = 62500000 # DuneWIB/WIBEth
+conf_dict["detector"]["clock_speed_hz"] = 62500000 # DuneWIB/WIBEth
 conf_dict["readout"]["use_fake_cards"] = True
-conf_dict["trigger"]["trigger_rate_hz"] = 1.0
+conf_dict["hsi"]["random_trigger_rate_hz"] = 1.0
 conf_dict["trigger"]["trigger_window_before_ticks"] = readout_window_time_before
 conf_dict["trigger"]["trigger_window_after_ticks"] = readout_window_time_after
 
 swtpg_conf = copy.deepcopy(conf_dict)
-swtpg_conf["readout"]["enable_software_tpg"] = True
+swtpg_conf["readout"]["enable_tpg"] = True
 
 confgen_arguments={"WIBEth_System": conf_dict,
 #                   "Software_TPG_System": swtpg_conf,
@@ -132,7 +132,7 @@ def test_data_files(run_nanorc):
     local_expected_event_count=expected_event_count
     local_event_count_tolerance=expected_event_count_tolerance
     fragment_check_list=[triggercandidate_frag_params, hsi_frag_params]
-    if "enable_software_tpg" in run_nanorc.confgen_config["readout"].keys() and run_nanorc.confgen_config["readout"]["enable_software_tpg"]:
+    if "enable_tpg" in run_nanorc.confgen_config["readout"].keys() and run_nanorc.confgen_config["readout"]["enable_tpg"]:
         local_expected_event_count+=(270*number_of_data_producers*run_duration/100)
         local_event_count_tolerance+=(10*number_of_data_producers*run_duration/100)
         #fragment_check_list.append(wib1_frag_multi_trig_params) # ProtoWIB

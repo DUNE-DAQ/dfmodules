@@ -23,11 +23,11 @@ expected_number_of_data_files=3
 check_for_logfile_errors=True
 expected_event_count=run_duration
 expected_event_count_tolerance=2
-wib1_frag_hsi_trig_params={"fragment_type_description": "WIB", 
+wib1_frag_hsi_trig_params={"fragment_type_description": "WIB",
                            "fragment_type": "ProtoWIB",
                            "hdf5_source_subsystem": "Detector_Readout",
                            "expected_fragment_count": number_of_data_producers,
-                           "min_size_bytes": baseline_fragment_size_bytes, 
+                           "min_size_bytes": baseline_fragment_size_bytes,
                            "max_size_bytes": baseline_fragment_size_bytes}
 wib2_frag_params={"fragment_type_description": "WIB2",
                   "fragment_type": "WIB",
@@ -57,10 +57,10 @@ confgen_name="daqconf_multiru_gen"
 dro_map_contents = integtest_file_gen.generate_dromap_contents(number_of_data_producers)
 
 conf_dict = config_file_gen.get_default_config_dict()
-conf_dict["readout"]["data_rate_slowdown_factor"] = data_rate_slowdown_factor
+conf_dict["daq_common"]["data_rate_slowdown_factor"] = data_rate_slowdown_factor
 conf_dict["readout"]["use_fake_data_producers"] = True
 #conf_dict["readout"]["clock_speed_hz"] = 50000000 # ProtoWIB
-conf_dict["readout"]["clock_speed_hz"] = 62500000 # DuneWIB/WIBEth
+conf_dict["detector"]["clock_speed_hz"] = 62500000 # DuneWIB/WIBEth
 conf_dict["readout"]["use_fake_cards"] = True
 conf_dict["trigger"]["trigger_window_before_ticks"] = 1000
 conf_dict["trigger"]["trigger_window_after_ticks"] = 1001
