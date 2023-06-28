@@ -14,9 +14,9 @@ import dfmodules.integtest_file_gen as integtest_file_gen
 number_of_data_producers=2
 number_of_readout_apps=3
 number_of_dataflow_apps=3
-trigger_rate=0.3 # Hz
+trigger_rate=3 # Hz
 run_duration=20  # seconds
-data_rate_slowdown_factor=1
+data_rate_slowdown_factor=10
 
 # Default values for validation parameters
 expected_number_of_data_files=3*number_of_dataflow_apps
@@ -93,6 +93,8 @@ for df_app in range(number_of_dataflow_apps):
     conf_dict["dataflow"]["apps"].append(dfapp_conf)
 
 swtpg_conf = copy.deepcopy(conf_dict)
+swtpg_conf["daq_common"]["data_rate_slowdown_factor"] = data_rate_slowdown_factor / 10
+swtpg_conf["hsi"]["random_trigger_rate_hz"] = trigger_rate / 10 # Scaling to avoid issues in Trigger app
 swtpg_conf["readout"]["emulator_mode"] = True
 swtpg_conf["readout"]["enable_tpg"] = True
 swtpg_conf["readout"]["tpg_threshold"] = 500
@@ -143,6 +145,8 @@ def test_data_files(run_nanorc):
     high_number_of_files=expected_number_of_data_files
     fragment_check_list=[triggercandidate_frag_params, hsi_frag_params]
     if "enable_tpg" in run_nanorc.confgen_config["readout"].keys() and run_nanorc.confgen_config["readout"]["enable_tpg"]:
+        local_expected_event_count = expected_event_count / 10 # Scaling to avoid issues with Trigger app
+        local_event_count_tolerance = local_expected_event_count / 10
         local_expected_event_count+=(number_of_data_producers * run_duration / 5)  #(270*number_of_data_producers*run_duration/(100))
         local_event_count_tolerance+=(number_of_data_producers * run_duration / 10)  #(10*number_of_data_producers*run_duration/(100))
         #fragment_check_list.append(wib2_frag_multi_trig_params) # DuneWIB
