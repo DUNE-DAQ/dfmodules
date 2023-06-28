@@ -116,7 +116,7 @@ conf_dict["readout"]["tpg_threshold"] = 500
 conf_dict["readout"]["tpg_algorithm"] = "SimpleThreshold"
 conf_dict["readout"]["default_data_file"] = "asset://?checksum=dd156b4895f1b06a06b6ff38e37bd798" # WIBEth All Zeros
 conf_dict["trigger"]["mlt_send_timed_out_tds"] = False
-conf_dict["trigger"]["tpg_channel_map"] = "PD2HDChannelMap"
+conf_dict["detector"]["tpc_channel_map"] = "PD2HDChannelMap"
 conf_dict["trigger"]["trigger_activity_config"] = {"prescale": 300}
 
 conf_dict["dataflow"]["token_count"] = int(math.ceil(max(10, 3*number_of_data_producers*number_of_readout_apps)/number_of_dataflow_apps))
