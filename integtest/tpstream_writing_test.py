@@ -106,7 +106,7 @@ conf_dict["readout"]["data_rate_slowdown_factor"] = data_rate_slowdown_factor
 conf_dict["readout"]["latency_buffer_size"] = 200000
 conf_dict["readout"]["clock_speed_hz"] = 62500000 # DuneWIB/WIBEth
 conf_dict["readout"]["use_fake_cards"] = True # WIBEth
-conf_dict["trigger"]["trigger_rate_hz"] = pulser_trigger_rate
+conf_dict["hsi"]["random_trigger_rate_hz"] = pulser_trigger_rate
 conf_dict["trigger"]["enable_tpset_writing"] = True
 conf_dict["trigger"]["tpset_output_path"] = output_dir
 
