@@ -13,8 +13,8 @@ import dfmodules.integtest_file_gen as integtest_file_gen
 # Values that help determine the running conditions
 number_of_data_producers=2
 run_duration=20  # seconds
-trigger_rate = 0.1 # Hz
-data_rate_slowdown_factor=1
+trigger_rate = 1.0 # Hz
+data_rate_slowdown_factor=10
 readout_window_time_before=1000
 readout_window_time_after=1001
 
@@ -97,6 +97,8 @@ conf_dict["trigger"]["trigger_window_before_ticks"] = readout_window_time_before
 conf_dict["trigger"]["trigger_window_after_ticks"] = readout_window_time_after
 
 swtpg_conf = copy.deepcopy(conf_dict)
+swtpg_conf["daq_common"]["data_rate_slowdown_factor"] = data_rate_slowdown_factor / 10
+swtpg_conf["hsi"]["random_trigger_rate_hz"] = trigger_rate / 10 # Scaling to avoid issues in the trigger app
 swtpg_conf["readout"]["emulator_mode"] = True
 swtpg_conf["readout"]["enable_tpg"] = True
 swtpg_conf["readout"]["tpg_threshold"] = 500
@@ -142,6 +144,8 @@ def test_data_files(run_nanorc):
     local_event_count_tolerance=expected_event_count_tolerance
     fragment_check_list=[triggercandidate_frag_params, hsi_frag_params]
     if "enable_tpg" in run_nanorc.confgen_config["readout"].keys() and run_nanorc.confgen_config["readout"]["enable_tpg"]:
+        local_expected_event_count = expected_event_count / 10 # Scaling to avoid issues in the trigger app
+        local_event_count_tolerance = expected_event_count_tolerance / 10 
         local_expected_event_count+=(number_of_data_producers * run_duration / 5)  #(270*number_of_data_producers*run_duration/(100))
         local_event_count_tolerance+=(number_of_data_producers * run_duration / 10)  #(10*number_of_data_producers*run_duration/(100))
         #fragment_check_list.append(wib1_frag_multi_trig_params) # ProtoWIB
