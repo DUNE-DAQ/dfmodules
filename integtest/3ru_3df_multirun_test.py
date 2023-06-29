@@ -14,9 +14,9 @@ import dfmodules.integtest_file_gen as integtest_file_gen
 number_of_data_producers=2
 number_of_readout_apps=3
 number_of_dataflow_apps=3
-trigger_rate=3 # Hz
+trigger_rate=3.0 # Hz
 run_duration=20  # seconds
-data_rate_slowdown_factor=10
+data_rate_slowdown_factor=1
 
 # Default values for validation parameters
 expected_number_of_data_files=3*number_of_dataflow_apps
@@ -93,16 +93,12 @@ for df_app in range(number_of_dataflow_apps):
     conf_dict["dataflow"]["apps"].append(dfapp_conf)
 
 swtpg_conf = copy.deepcopy(conf_dict)
-swtpg_conf["daq_common"]["data_rate_slowdown_factor"] = data_rate_slowdown_factor / 10
-swtpg_conf["hsi"]["random_trigger_rate_hz"] = trigger_rate / 10 # Scaling to avoid issues in Trigger app
 swtpg_conf["readout"]["emulator_mode"] = True
 swtpg_conf["readout"]["enable_tpg"] = True
 swtpg_conf["readout"]["tpg_threshold"] = 500
 swtpg_conf["readout"]["tpg_algorithm"] = "SimpleThreshold"
 swtpg_conf["readout"]["default_data_file"] = "asset://?checksum=dd156b4895f1b06a06b6ff38e37bd798" # WIBEth All Zeros
-swtpg_conf["trigger"]["mlt_send_timed_out_tds"] = False
-swtpg_conf["detector"]["tpc_channel_map"] = "PD2HDChannelMap"
-swtpg_conf["trigger"]["trigger_activity_config"] = {"prescale": 300}
+swtpg_conf["trigger"]["trigger_activity_config"] = {"prescale": 25}
 swtpg_conf["dataflow"]["token_count"] = int(math.ceil(max(10, 3*number_of_data_producers*number_of_readout_apps)/number_of_dataflow_apps))
 
 dqm_conf = copy.deepcopy(conf_dict)
@@ -145,10 +141,8 @@ def test_data_files(run_nanorc):
     high_number_of_files=expected_number_of_data_files
     fragment_check_list=[triggercandidate_frag_params, hsi_frag_params]
     if "enable_tpg" in run_nanorc.confgen_config["readout"].keys() and run_nanorc.confgen_config["readout"]["enable_tpg"]:
-        local_expected_event_count = expected_event_count / 10 # Scaling to avoid issues with Trigger app
-        local_event_count_tolerance = local_expected_event_count / 10
-        local_expected_event_count+=(number_of_data_producers * run_duration / 5)  #(270*number_of_data_producers*run_duration/(100))
-        local_event_count_tolerance+=(number_of_data_producers * run_duration / 10)  #(10*number_of_data_producers*run_duration/(100))
+        local_expected_event_count+=(250*number_of_data_producers*number_of_readout_apps*run_duration/(100*number_of_dataflow_apps))
+        local_event_count_tolerance+=(10*number_of_data_producers*number_of_readout_apps*run_duration/(100*number_of_dataflow_apps))
         #fragment_check_list.append(wib2_frag_multi_trig_params) # DuneWIB
         fragment_check_list.append(wibeth_frag_multi_trig_params) # WIBEth
         fragment_check_list.append(triggertp_frag_params)
