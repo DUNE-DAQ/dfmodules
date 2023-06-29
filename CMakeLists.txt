@@ -13,6 +13,7 @@ find_package(opmonlib REQUIRED)
 find_package(iomanager REQUIRED)
 find_package(detdataformats REQUIRED)
 find_package(trgdataformats REQUIRED)
+find_package(utilities REQUIRED)
 
 # JCF, Dec-1-2021: removed timinglibs
 find_package(triggeralgs REQUIRED)
@@ -34,7 +35,7 @@ daq_add_plugin( HDF5DataStore      duneDataStore LINK_LIBRARIES logging::logging
 daq_add_plugin( DataWriter            duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager )
 daq_add_plugin( DataFlowOrchestrator  duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager )
 daq_add_plugin( TriggerRecordBuilder  duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager )
-daq_add_plugin( FakeDataProd          duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager)
+daq_add_plugin( FakeDataProd          duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager utilities::utilities )
 daq_add_plugin( TPStreamWriter        duneDAQModule LINK_LIBRARIES dfmodules hdf5libs::hdf5libs trigger::trigger serialization::serialization readoutlibs::readoutlibs Boost::iostreams )
 
 ##############################################################################

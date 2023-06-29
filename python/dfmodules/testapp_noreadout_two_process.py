@@ -165,7 +165,7 @@ def generate_df(
                                            )
                  ),
 
-                ("qton_timesync", qton.Conf(msg_type="dunedaq::dfmessages::TimeSync",
+                ("qton_timesync", qton.Conf(msg_type="dunedaq::utilities::TimeSync",
                                             msg_module_name="TimeSyncNQ",
                                             sender_config=nos.Conf(ipm_plugin_type="ZmqSender",
                                                                    address=network_endpoints["timesync"],
@@ -315,7 +315,7 @@ def generate_trigemu(
                                             )
                  ),
 
-                ("ntoq_timesync", ntoq.Conf(msg_type="dunedaq::dfmessages::TimeSync",
+                ("ntoq_timesync", ntoq.Conf(msg_type="dunedaq::utilities::TimeSync",
                                            msg_module_name="TimeSyncNQ",
                                            receiver_config=nor.Conf(ipm_plugin_type="ZmqReceiver",
                                                                     address=network_endpoints["timesync"])

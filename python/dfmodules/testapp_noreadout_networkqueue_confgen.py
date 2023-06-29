@@ -218,7 +218,7 @@ def generate(
                                             )
                  ),
 
-                ("qton_timesync", qton.Conf(msg_type="dunedaq::dfmessages::TimeSync",
+                ("qton_timesync", qton.Conf(msg_type="dunedaq::utilities::TimeSync",
                                             msg_module_name="TimeSyncNQ",
                                             sender_config=nos.Conf(ipm_plugin_type="ZmqSender",
                                                                    address= "tcp://127.0.0.1:12347",
@@ -226,7 +226,7 @@ def generate(
                                            )
                 ),
         
-                ("ntoq_timesync", ntoq.Conf(msg_type="dunedaq::dfmessages::TimeSync",
+                ("ntoq_timesync", ntoq.Conf(msg_type="dunedaq::utilities::TimeSync",
                                            msg_module_name="TimeSyncNQ",
                                            receiver_config=nor.Conf(ipm_plugin_type="ZmqReceiver",
                                                                     address= "tcp://127.0.0.1:12347")

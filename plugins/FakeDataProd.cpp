@@ -13,7 +13,7 @@
 
 #include "appfwk/DAQModuleHelper.hpp"
 #include "dfmessages/Fragment_serialization.hpp"
-#include "dfmessages/TimeSync.hpp"
+#include "utilities/TimeSync.hpp"
 #include "iomanager/IOManager.hpp"
 #include "logging/Logging.hpp"
 
@@ -124,7 +124,7 @@ FakeDataProd::do_timesync(std::atomic<bool>& running_flag)
 {
 
   auto iom = iomanager::IOManager::get();
-  auto sender_ptr = iom->get_sender<dfmessages::TimeSync>(m_timesync_id);
+  auto sender_ptr = iom->get_sender<utilities::TimeSync>(m_timesync_id);
 
   int sent_count = 0;
   uint64_t msg_seqno = 0; // NOLINT (build/unsigned)
@@ -132,7 +132,7 @@ FakeDataProd::do_timesync(std::atomic<bool>& running_flag)
     auto time_now = std::chrono::system_clock::now().time_since_epoch();
     uint64_t current_timestamp = // NOLINT (build/unsigned)
       std::chrono::duration_cast<std::chrono::nanoseconds>(time_now).count();
-    auto timesyncmsg = dfmessages::TimeSync(current_timestamp);
+    auto timesyncmsg = utilities::TimeSync(current_timestamp);
     ++msg_seqno;
     timesyncmsg.run_number = m_run_number;
     timesyncmsg.sequence_number = msg_seqno;
