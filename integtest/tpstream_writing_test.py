@@ -13,7 +13,7 @@ import dfmodules.integtest_file_gen as integtest_file_gen
 number_of_data_producers=2
 number_of_readout_apps=2
 number_of_dataflow_apps=2
-pulser_trigger_rate=0.1 # Hz
+pulser_trigger_rate=1.0 # Hz
 run_duration=30  # seconds
 data_rate_slowdown_factor=1
 output_dir = "."
@@ -114,9 +114,7 @@ conf_dict["readout"]["enable_tpg"] = True
 conf_dict["readout"]["tpg_threshold"] = 500
 conf_dict["readout"]["tpg_algorithm"] = "SimpleThreshold"
 conf_dict["readout"]["default_data_file"] = "asset://?checksum=dd156b4895f1b06a06b6ff38e37bd798" # WIBEth All Zeros
-conf_dict["trigger"]["mlt_send_timed_out_tds"] = False
-conf_dict["detector"]["tpc_channel_map"] = "PD2HDChannelMap"
-conf_dict["trigger"]["trigger_activity_config"] = {"prescale": 300}
+conf_dict["trigger"]["trigger_activity_config"] = {"prescale": 25}
 
 conf_dict["dataflow"]["token_count"] = int(math.ceil(max(10, 3*number_of_data_producers*number_of_readout_apps)/number_of_dataflow_apps))
 conf_dict["dataflow"]["apps"] = [] # Remove preconfigured dataflow0 app
@@ -160,8 +158,8 @@ def test_data_files(run_nanorc):
     high_number_of_files=expected_number_of_data_files
     fragment_check_list=[triggercandidate_frag_params, hsi_frag_params]
     if "enable_tpg" in run_nanorc.confgen_config["readout"].keys() and run_nanorc.confgen_config["readout"]["enable_tpg"]:
-        local_expected_event_count+=(number_of_data_producers * run_duration / 5)  #(270*number_of_data_producers*run_duration/(100))
-        local_event_count_tolerance+=(number_of_data_producers * run_duration / 10)  #(10*number_of_data_producers*run_duration/(100))
+        local_expected_event_count+=(250*number_of_data_producers*number_of_readout_apps*run_duration/(100*number_of_dataflow_apps))
+        local_event_count_tolerance+=(10*number_of_data_producers*number_of_readout_apps*run_duration/(100*number_of_dataflow_apps))
         #fragment_check_list.append(wib1_frag_multi_trig_params) # ProtoWIB
         #fragment_check_list.append(wib2_frag_multi_trig_params) # DuneWIB
         fragment_check_list.append(wibeth_frag_multi_trig_params) # WIBEth

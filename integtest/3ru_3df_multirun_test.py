@@ -56,7 +56,7 @@ triggeractivity_frag_params={"fragment_type_description": "Trigger Activity",
 triggertp_frag_params={"fragment_type_description": "Trigger with TPs",
                        "fragment_type": "Trigger_Primitive",
                        "hdf5_source_subsystem": "Trigger",
-                       "expected_fragment_count": ((number_of_data_producers*number_of_readout_apps)),
+                       "expected_fragment_count": (2*number_of_readout_apps),
                        "min_size_bytes": 72, "max_size_bytes": 16000}
 hsi_frag_params ={"fragment_type_description": "HSI",
                              "fragment_type": "Hardware_Signal",
@@ -99,6 +99,7 @@ swtpg_conf["readout"]["tpg_threshold"] = 500
 swtpg_conf["readout"]["tpg_algorithm"] = "SimpleThreshold"
 swtpg_conf["readout"]["default_data_file"] = "asset://?checksum=dd156b4895f1b06a06b6ff38e37bd798" # WIBEth All Zeros
 swtpg_conf["trigger"]["trigger_activity_config"] = {"prescale": 25}
+swtpg_conf["trigger"]["mlt_merge_overlapping_tcs"] = False
 swtpg_conf["dataflow"]["token_count"] = int(math.ceil(max(10, 3*number_of_data_producers*number_of_readout_apps)/number_of_dataflow_apps))
 
 dqm_conf = copy.deepcopy(conf_dict)
