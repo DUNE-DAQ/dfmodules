@@ -46,7 +46,7 @@ wibeth_frag_multi_trig_params={"fragment_type_description": "WIBEth",
                   "fragment_type": "WIBEth",
                   "hdf5_source_subsystem": "Detector_Readout",
                   "expected_fragment_count": (number_of_data_producers*number_of_readout_apps),
-                  "min_size_bytes": 72, "max_size_bytes": 14472}
+                  "min_size_bytes": 72, "max_size_bytes": 194472}
 triggercandidate_frag_params={"fragment_type_description": "Trigger Candidate",
                               "fragment_type": "Trigger_Candidate",
                               "hdf5_source_subsystem": "Trigger",
@@ -60,7 +60,7 @@ triggeractivity_frag_params={"fragment_type_description": "Trigger Activity",
 triggertp_frag_params={"fragment_type_description": "Trigger with TPs",
                        "fragment_type": "Trigger_Primitive",
                        "hdf5_source_subsystem": "Trigger",
-                       "expected_fragment_count": ((number_of_data_producers*number_of_readout_apps)),
+                       "expected_fragment_count": (2*number_of_readout_apps),
                        "min_size_bytes": 72, "max_size_bytes": 16000}
 hsi_frag_params ={"fragment_type_description": "HSI",
                              "fragment_type": "Hardware_Signal",
@@ -94,7 +94,13 @@ conf_dict["trigger"]["trigger_window_after_ticks"] = 1000
 conf_dict["dataflow"]["apps"][0]["max_file_size"] = 1074000000
 
 swtpg_conf = copy.deepcopy(conf_dict)
+swtpg_conf["readout"]["emulator_mode"] = True
 swtpg_conf["readout"]["enable_tpg"] = True
+swtpg_conf["readout"]["tpg_threshold"] = 500
+swtpg_conf["readout"]["tpg_algorithm"] = "SimpleThreshold"
+swtpg_conf["readout"]["default_data_file"] = "asset://?checksum=dd156b4895f1b06a06b6ff38e37bd798" # WIBEth All Zeros
+swtpg_conf["trigger"]["trigger_activity_config"] = {"prescale": 300}
+swtpg_conf["trigger"]["mlt_merge_overlapping_tcs"] = False
 swtpg_conf["dataflow"]["token_count"] = max(10, 3*number_of_data_producers*number_of_readout_apps)
 
 multiout_conf = copy.deepcopy(conf_dict)
@@ -102,13 +108,19 @@ multiout_conf["dataflow"]["apps"][0]["output_paths"] = [".", "."]
 multiout_conf["dataflow"]["apps"][0]["max_file_size"] = 4*1024*1024*1024
 
 multiout_tpg_conf = copy.deepcopy(multiout_conf)
+multiout_tpg_conf["readout"]["emulator_mode"] = True
 multiout_tpg_conf["readout"]["enable_tpg"] = True
+multiout_tpg_conf["readout"]["tpg_threshold"] = 500
+multiout_tpg_conf["readout"]["tpg_algorithm"] = "SimpleThreshold"
+multiout_tpg_conf["readout"]["default_data_file"] = "asset://?checksum=dd156b4895f1b06a06b6ff38e37bd798" # WIBEth All Zeros
+multiout_tpg_conf["trigger"]["trigger_activity_config"] = {"prescale": 300}
+multiout_tpg_conf["trigger"]["mlt_merge_overlapping_tcs"] = False
 multiout_tpg_conf["dataflow"]["token_count"] = max(10, 3*number_of_data_producers*number_of_readout_apps)
 
 confgen_arguments={"WIBEth_System (Rollover files)": conf_dict,
-                   #"Software_TPG_System (Rollover files)": swtpg_conf,
+                   "Software_TPG_System (Rollover files)": swtpg_conf,
                    "WIBEth_System (Multiple outputs)": multiout_conf,
-                   #"Software_TPG_System (Multiple outputs)": multiout_tpg_conf
+                   "Software_TPG_System (Multiple outputs)": multiout_tpg_conf
                   }
 
 # The commands to run in nanorc, as a list
@@ -137,7 +149,7 @@ def test_data_files(run_nanorc):
     local_file_count=expected_number_of_data_files
     fragment_check_list=[triggercandidate_frag_params, hsi_frag_params]
     if "enable_tpg" in run_nanorc.confgen_config["readout"].keys() and run_nanorc.confgen_config["readout"]["enable_tpg"]:
-        local_file_count=5
+        local_file_count=4  # 5
         #fragment_check_list.append(wib1_frag_multi_trig_params) # ProtoWIB
         #fragment_check_list.append(wib2_frag_multi_trig_params) # DuneWIB
         fragment_check_list.append(wibeth_frag_multi_trig_params) # WIBEth
