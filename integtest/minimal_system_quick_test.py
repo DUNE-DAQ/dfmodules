@@ -59,12 +59,16 @@ dro_map_contents = integtest_file_gen.generate_dromap_contents(number_of_data_pr
 conf_dict = config_file_gen.get_default_config_dict()
 conf_dict["detector"]["op_env"] = "integtest"
 conf_dict["daq_common"]["data_rate_slowdown_factor"] = data_rate_slowdown_factor
-#conf_dict["readout"]["default_data_file"] = "asset://?label=DuneWIB&subsystem=readout" # DuneWIB
-conf_dict["readout"]["default_data_file"] = "asset://?checksum=e96fd6efd3f98a9a3bfaba32975b476e" # WIBEth
 conf_dict["detector"]["clock_speed_hz"] = 62500000 # DuneWIB/WIBEth
 conf_dict["readout"]["use_fake_cards"] = True
 conf_dict["trigger"]["trigger_window_before_ticks"] = readout_window_time_before
 conf_dict["trigger"]["trigger_window_after_ticks"] = readout_window_time_after
+
+conf_dict["readout"]["data_files"] = []
+datafile_conf = {}
+datafile_conf["data_file"] = "asset://?checksum=e96fd6efd3f98a9a3bfaba32975b476e" # WIBEth
+datafile_conf["detector_id"] = 3
+conf_dict["readout"]["data_files"].append(datafile_conf)
 
 confgen_arguments={"MinimalSystem": conf_dict}
 # The commands to run in nanorc, as a list
