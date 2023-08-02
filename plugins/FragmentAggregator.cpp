@@ -98,14 +98,18 @@ FragmentAggregator::process_fragment(std::unique_ptr<daqdataformats::Fragment>& 
            std::scoped_lock lock(m_mutex);
            auto dr_iter = m_data_req_map.find(std::make_tuple<dfmessages::trigger_number_t, dfmessages::sequence_number_t, daqdataformats::SourceID>
                    (fragment->get_trigger_number(), fragment->get_sequence_number(), fragment->get_element_id()));
-	   if (dr_iter != m_data_req_map.end())
+	   if (dr_iter != m_data_req_map.end()) {
 	   	trb_identifier = dr_iter->second;
+		m_data_req_map.erase(dr_iter);
+	   }
 	   else {
 		   ers::error(UnknownFragmentDestination(ERS_HERE, fragment->get_trigger_number(), 
 				fragment->get_sequence_number(), fragment->get_element_id()));
+		   return;
 	   }
         }
         // Forward Data Request to the right DLH
+	//
         try {
                 auto sender = get_iom_sender<std::unique_ptr<daqdataformats::Fragment>> (trb_identifier);
                 sender->send(std::move(fragment), iomanager::Sender::s_no_block);
