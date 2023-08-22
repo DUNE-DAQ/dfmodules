@@ -13,7 +13,7 @@
 #include "appfwk/DAQModuleHelper.hpp"
 #include "appfwk/cmd/Nljs.hpp"
 #include "appfwk/cmd/Nljs.hpp"
-//#include "dfmessages/Fragment_serialization.hpp"
+#include "dfmessages/Fragment_serialization.hpp"
 #include "logging/Logging.hpp"
 
 #include "iomanager/IOManager.hpp"
@@ -81,7 +81,8 @@ FragmentAggregator::process_data_request(dfmessages::DataRequest& data_request) 
 	try {
 		auto sender = get_iom_sender<dfmessages::DataRequest>
 			("data_requests_for_" + data_request.request_information.component.to_string());
-		data_request.data_destination = "fragment_output";
+                // 22-Aug-2023, KAB: the destination needs to be the connection UID, not the connection name
+		data_request.data_destination = "fragment_queue";
 		sender->send(std::move(data_request), iomanager::Sender::s_no_block);
 	}
 	catch(const ers::Issue& excpt) {
@@ -108,8 +109,6 @@ FragmentAggregator::process_fragment(std::unique_ptr<daqdataformats::Fragment>& 
 		   return;
 	   }
         }
-        // Forward Data Request to the right DLH
-	//
         try {
                 auto sender = get_iom_sender<std::unique_ptr<daqdataformats::Fragment>> (trb_identifier);
                 sender->send(std::move(fragment), iomanager::Sender::s_no_block);
