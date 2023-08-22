@@ -3,18 +3,22 @@ local ns = "dunedaq.dfmodules.triggerrecordbuilder";
 local s = moo.oschema.schema(ns);
 
 local types = {
-    sourceid_number : s.number("sourceid_number", "u4",
-                     doc="Source identifier"),
+    numeric_value : s.number("NumericValue", "u4", doc="Reasonably sized number"),
 
-    timeout: s.number( "Timeout", "u8", 
-                       doc="Queue timeout in milliseconds" ),    
+    sourceid_subsystem : s.string("SourceIDSubsystem", doc="Name of a SourceID Subsystem"),
 
-    timestamp_diff: s.number( "TimestampDiff", "i8", 
-                              doc="A timestamp difference" ),
+    source_id : s.record("SourceID", [
+        s.field("subsys", self.sourceid_subsystem, doc="SourceID subsystem"),
+        s.field("id", self.numeric_value, 0, doc="SourceID ID"),
+    ], doc="A single SourceID"),
+
+    timeout: s.number( "Timeout", "u8", doc="Queue timeout in milliseconds" ),    
+
+    timestamp_diff: s.number( "TimestampDiff", "i8", doc="A timestamp difference" ),
 
     dro_appname : s.string("DROAppNameString", doc="The name of a DetectorReadout application"),
 
-    sourceid_list : s.sequence("SourceIDList", self.sourceid_number, doc="List of SourceIDs"),
+    sourceid_list : s.sequence("SourceIDList", self.source_id, doc="List of SourceIDs"),
 
     dro_appname_srcid_entry : s.record("DROAppNameSrcIDEntry", [
         s.field("appname", self.dro_appname, doc="DetectorReadout application name"),
@@ -29,7 +33,7 @@ local types = {
                                            doc="Timeout for a TR to be sent incomplete. 0 means no timeout"),
                                    s.field("max_time_window", self.timestamp_diff, 0, 
                                            doc="Maximum time window size for Data requests. 0 means no slicing"),
-                                   s.field("source_id", self.sourceid_number, doc="Source ID of TRB instance, added to trigger record header"),
+                                   s.field("source_id", self.numeric_value, doc="Source ID of TRB instance, added to trigger record header"),
                                    s.field("dro_appname_srcid_map", self.dro_appname_srcid_map, doc="The map of readout app names to source IDs"),
                                   ] , 
                    doc="TriggerRecordBuilder configuration")
