@@ -1,5 +1,6 @@
 /**
- * @file FragmentAggregator.hpp Module to dispatch data requests within an application, aggregate and send fragments using the IOMManager
+ * @file FragmentAggregator.hpp Module to dispatch data requests within an application, aggregate and send fragments
+ * using the IOMManager
  *
  * This is part of the DUNE DAQ , copyright 2020.
  * Licensing/copyright details are in the COPYING file that you should have
@@ -10,30 +11,31 @@
 #define DFMODULES_PLUGINS_FRAGMENTAGGREGATOR_HPP_
 
 #include "daqdataformats/Fragment.hpp"
-#include "dfmessages/DataRequest.hpp"
 #include "daqdataformats/SourceID.hpp"
+#include "dfmessages/DataRequest.hpp"
 
 #include "appfwk/DAQModule.hpp"
 
-#include "iomanager/Sender.hpp"
 #include "iomanager/Receiver.hpp"
+#include "iomanager/Sender.hpp"
 
 #include <atomic>
-#include <string>
-#include <mutex>
-#include <tuple>
 #include <map>
+#include <mutex>
+#include <string>
+#include <tuple>
 
 namespace dunedaq {
 /**
  * @brief Unknown TRB
  */
-ERS_DECLARE_ISSUE(dfmodules,               ///< Namespace
+ERS_DECLARE_ISSUE(dfmodules,                  ///< Namespace
                   UnknownFragmentDestination, ///< Issue class name
-                  "Could not find a valid destination for sending Fragment with trigger number: " << trg_num << " sequence number: " << seq_num << " from DLH " << src, ///< Message
-                  ((uint64_t)trg_num)               ///< Message parameters
-                  ((uint16_t)seq_num) ///< Message parameters
-                  ((daqdataformats::SourceID)src) ///< Message parameters
+                  "Could not find a valid destination for sending Fragment with trigger number: "
+                    << trg_num << " sequence number: " << seq_num << " from DLH " << src, ///< Message
+                  ((uint64_t)trg_num)                                                     ///< Message parameters
+                  ((uint16_t)seq_num)                                                     ///< Message parameters
+                  ((daqdataformats::SourceID)src)                                         ///< Message parameters
 )
 
 namespace dfmodules {
@@ -51,7 +53,6 @@ public:
   void init(const nlohmann::json& obj) override;
   void get_info(opmonlib::InfoCollector& ci, int level) override;
 
-  
 private:
   // Commands
   void do_start(const nlohmann::json& obj);
@@ -68,11 +69,12 @@ private:
   std::atomic<int> m_packets_processed{ 0 };
 
   // TRB tracking
-  std::map<std::tuple<dfmessages::trigger_number_t, dfmessages::sequence_number_t, daqdataformats::SourceID>, std::string> m_data_req_map;
+  std::map<std::tuple<dfmessages::trigger_number_t, dfmessages::sequence_number_t, daqdataformats::SourceID>,
+           std::string>
+    m_data_req_map;
   std::mutex m_mutex;
 };
 } // namespace dfmodules
 } // namespace dunedaq
 
 #endif // DFMODULES_PLUGINS_FRAGMENTAGGREGATOR_HPP_
-
