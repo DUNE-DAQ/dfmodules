@@ -11,10 +11,10 @@ import urllib.request
 import copy
 import shutil
 
-import dfmodules.data_file_checks as data_file_checks
+import integrationtest.data_file_checks as data_file_checks
 import integrationtest.log_file_checks as log_file_checks
 import integrationtest.config_file_gen as config_file_gen
-import dfmodules.integtest_file_gen as integtest_file_gen
+import integrationtest.dro_map_gen as dro_map_gen
 
 # Values that help determine the running conditions
 output_path_parameter="."
@@ -77,7 +77,7 @@ if total_disk_space_gb < minimum_total_disk_space_gb or free_disk_space_gb < min
 confgen_name="daqconf_multiru_gen"
 # The arguments to pass to the config generator, excluding the json
 # output directory (the test framework handles that)
-dro_map_contents = integtest_file_gen.generate_dromap_contents(number_of_data_producers, number_of_readout_apps)
+dro_map_contents = dro_map_gen.generate_dromap_contents(number_of_data_producers, number_of_readout_apps)
 
 conf_dict = config_file_gen.get_default_config_dict()
 conf_dict["daq_common"]["data_rate_slowdown_factor"] = data_rate_slowdown_factor
