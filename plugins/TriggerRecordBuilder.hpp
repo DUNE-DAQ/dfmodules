@@ -146,6 +146,16 @@ ERS_DECLARE_ISSUE(dfmodules,                ///< Namespace
                   ((dfmodules::TriggerId)trigger_id) ///< Message parameters
 )
 
+/**
+ * @brief Missing connection ID
+ */
+ERS_DECLARE_ISSUE(dfmodules,           ///< Namespace
+                  MissingConnectionID, ///< Issue class name
+                  "No connection ID was found for connection name \"" << conn_name
+                  << "\" in the conn_ref list that was provided at 'init' time.",
+                  ((std::string)conn_name)                   ///< Message parameters
+)
+
 namespace dfmodules {
 
 /**
@@ -220,6 +230,7 @@ private:
   std::chrono::milliseconds m_loop_sleep;
   std::string m_reply_connection;
   daqdataformats::SourceID m_this_trb_source_id;
+  std::map<std::string, std::string> m_conn_ref_map;
 
   // Input Connections
   std::shared_ptr<trigger_decision_receiver_t> m_trigger_decision_input;
