@@ -97,7 +97,8 @@ conf_dict["trigger"]["trigger_window_before_ticks"] = readout_window_time_before
 conf_dict["trigger"]["trigger_window_after_ticks"] = readout_window_time_after
 
 swtpg_conf = copy.deepcopy(conf_dict)
-swtpg_conf["readout"]["emulator_mode"] = True
+swtpg_conf["readout"]["generate_periodic_adc_pattern"] = True
+swtpg_conf["readout"]["emulated_TP_rate_per_ch"] = 0.25
 swtpg_conf["readout"]["enable_tpg"] = True
 swtpg_conf["readout"]["tpg_threshold"] = 500
 swtpg_conf["readout"]["tpg_algorithm"] = "SimpleThreshold"
