@@ -94,7 +94,8 @@ conf_dict["trigger"]["trigger_window_after_ticks"] = 1000
 conf_dict["dataflow"]["apps"][0]["max_file_size"] = 1074000000
 
 swtpg_conf = copy.deepcopy(conf_dict)
-swtpg_conf["readout"]["emulator_mode"] = True
+swtpg_conf["readout"]["generate_periodic_adc_pattern"] = True
+swtpg_conf["readout"]["emulated_TP_rate_per_ch"] = 1
 swtpg_conf["readout"]["enable_tpg"] = True
 swtpg_conf["readout"]["tpg_threshold"] = 500
 swtpg_conf["readout"]["tpg_algorithm"] = "SimpleThreshold"
@@ -108,7 +109,8 @@ multiout_conf["dataflow"]["apps"][0]["output_paths"] = [".", "."]
 multiout_conf["dataflow"]["apps"][0]["max_file_size"] = 4*1024*1024*1024
 
 multiout_tpg_conf = copy.deepcopy(multiout_conf)
-multiout_tpg_conf["readout"]["emulator_mode"] = True
+multiout_tpg_conf["readout"]["generate_periodic_adc_pattern"] = True
+multiout_tpg_conf["readout"]["emulated_TP_rate_per_ch"] = 1
 multiout_tpg_conf["readout"]["enable_tpg"] = True
 multiout_tpg_conf["readout"]["tpg_threshold"] = 500
 multiout_tpg_conf["readout"]["tpg_algorithm"] = "SimpleThreshold"
