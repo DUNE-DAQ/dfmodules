@@ -88,7 +88,7 @@ TriggerRecordBuilder::init(const data_t& init_data)
   m_conn_ref_map.clear();
   auto ini = init_data.get<appfwk::app::ModInit>();
   for (const auto &cr : ini.conn_refs) {
-    if (cr.name.find("request_destination_for_") != std::string::end()) {
+    if (cr.name.find("request_destination_for_") != std::string::npos) {
       m_conn_ref_map[cr.name] = cr.uid;
     }
   }
