@@ -88,7 +88,7 @@ TriggerRecordBuilder::init(const data_t& init_data)
   m_conn_ref_map.clear();
   auto ini = init_data.get<appfwk::app::ModInit>();
   for (const auto &cr : ini.conn_refs) {
-    if (cr.name.find("request_destination_for_") != std::string::npos) {
+    if (cr.name.find("request_output_") != std::string::npos) {
       m_conn_ref_map[cr.name] = cr.uid;
     }
   }
@@ -578,7 +578,7 @@ TriggerRecordBuilder::dispatch_data_requests(dfmessages::DataRequest dr,
   auto it_req = m_map_sourceid_connections.find(sid);
   if (it_req == m_map_sourceid_connections.end() || it_req->second == nullptr) {
     try {
-      std::string map_key = "request_destination_for_" + sid.to_string();
+      std::string map_key = "request_output_" + sid.to_string();
       auto map_element = m_conn_ref_map.find(map_key);
       if (map_element == m_conn_ref_map.end()) {
         ers::error(dunedaq::dfmodules::MissingConnectionID(ERS_HERE, map_key));
