@@ -192,8 +192,8 @@ FakeDataProd::process_data_request(dfmessages::DataRequest& data_request)
 
   try {
     auto iom = iomanager::IOManager::get();
-    iom->get_sender<daqdataformats::Fragment>(data_request.data_destination)
-      ->send(std::move(*data_fragment_ptr), std::chrono::milliseconds(1000));
+    iom->get_sender<std::unique_ptr<daqdataformats::Fragment>>(data_request.data_destination)
+      ->send(std::move(data_fragment_ptr), std::chrono::milliseconds(1000));
   } catch (ers::Issue& e) {
     ers::warning(FragmentTransmissionFailed(ERS_HERE, get_name(), data_request.trigger_number, e));
   }
