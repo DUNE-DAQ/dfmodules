@@ -230,13 +230,13 @@ private:
   std::chrono::milliseconds m_loop_sleep;
   std::string m_reply_connection;
   daqdataformats::SourceID m_this_trb_source_id;
-  std::map<std::string, std::string> m_conn_ref_map;
 
   // Input Connections
   std::shared_ptr<trigger_decision_receiver_t> m_trigger_decision_input;
   std::shared_ptr<fragment_receiver_t> m_fragment_input;
 
   // Output connections
+  std::map<std::string, std::string> m_producer_conn_ref_map;
   std::shared_ptr<trigger_record_sender_t> m_trigger_record_output;
   mutable std::mutex m_map_sourceid_connections_mutex;
   std::map<daqdataformats::SourceID, std::shared_ptr<data_req_sender_t>> m_map_sourceid_connections; ///< Mappinng between SourceID and connections
