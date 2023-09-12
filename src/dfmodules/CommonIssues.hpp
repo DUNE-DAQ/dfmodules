@@ -14,6 +14,7 @@
 
 #include "appfwk/DAQModule.hpp"
 #include "daqdataformats/SourceID.hpp"
+#include "daqdataformats/Types.hpp"
 
 #include <string>
 
@@ -64,12 +65,17 @@ ERS_DECLARE_ISSUE_BASE(dfmodules,
                        ((size_t)run_number))
 
 /**
- * @brief Unknown SourceID
+ * @brief Data Request sender lookup failed
  */
-ERS_DECLARE_ISSUE(dfmodules,    ///< Namespace
-                  UnknownSourceID, ///< Issue class name
-                  "Unknown SourceID: " << source_id,
-                  ((daqdataformats::SourceID)source_id) ///< Message parameters
+ERS_DECLARE_ISSUE(dfmodules,            ///< Namespace
+                  DRSenderLookupFailed, ///< Issue class name
+                  "Unable to determine the Data Request message sender for SourceID [" << sid
+                  << "]. No DataRequest will be sent to this data source for run/trigger/sequence number "
+                  << runno << "/" << trigno << "/" << seqno << ".",
+                  ((daqdataformats::SourceID)sid)            ///< Message parameters
+                  ((daqdataformats::run_number_t)runno)      ///< Message parameters
+                  ((daqdataformats::trigger_number_t)trigno) ///< Message parameters
+                  ((daqdataformats::sequence_number_t)seqno) ///< Message parameters
 )
 
 /**
