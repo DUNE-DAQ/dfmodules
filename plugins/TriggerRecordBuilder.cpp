@@ -85,6 +85,14 @@ TriggerRecordBuilder::init(const data_t& init_data)
   // copied into the DataRequests so that data producers know where to send their fragments
   m_reply_connection = ci["data_fragment_all"];
 
+  m_producer_conn_ref_map.clear();
+  auto ini = init_data.get<appfwk::app::ModInit>();
+  for (const auto &cr : ini.conn_refs) {
+    if (cr.name.find("request_output_") != std::string::npos) {
+      m_producer_conn_ref_map[cr.name] = cr.uid;
+    }
+  }
+
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
 
@@ -570,18 +578,26 @@ TriggerRecordBuilder::dispatch_data_requests(dfmessages::DataRequest dr,
   auto it_req = m_map_sourceid_connections.find(sid);
   if (it_req == m_map_sourceid_connections.end() || it_req->second == nullptr) {
     try {
-      auto uid = "data_requests_for_" + sid.to_string();
-      sender = get_iom_sender<dfmessages::DataRequest>(uid);
+      std::string map_key = "request_output_" + sid.to_string();
+      auto map_element = m_producer_conn_ref_map.find(map_key);
+      if (map_element == m_producer_conn_ref_map.end()) {
+        ers::error(dunedaq::dfmodules::MissingConnectionID(ERS_HERE, map_key));
+      } else {
+        std::string uid = map_element->second;
+        sender = get_iom_sender<dfmessages::DataRequest>(uid);
 
-      m_map_sourceid_connections[sid] = sender;
+        m_map_sourceid_connections[sid] = sender;
 
-      m_loop_sleep = std::chrono::duration_cast<std::chrono::milliseconds>(
-        m_queue_timeout / (2. + log2(m_map_sourceid_connections.size())));
-      if (m_loop_sleep.count() == 0)
-        m_loop_sleep = m_queue_timeout;
+        m_loop_sleep = std::chrono::duration_cast<std::chrono::milliseconds>(
+                m_queue_timeout / (2. + log2(m_map_sourceid_connections.size())));
+        if (m_loop_sleep.count() == 0) {
+          m_loop_sleep = m_queue_timeout;
+        }
+      }
     } catch (ers::Issue const& iss) {
       // if sourceid request is not valid. then trhow error and continue
-      ers::error(dunedaq::dfmodules::UnknownSourceID(ERS_HERE, sid, iss));
+      ers::error(dunedaq::dfmodules::DRSenderLookupFailed(ERS_HERE, sid, dr.run_number, dr.trigger_number,
+                                                          dr.sequence_number, iss));
       ++m_invalid_requests;
       return false; // lk goes out of scope, is destroyed
     }
@@ -592,8 +608,9 @@ TriggerRecordBuilder::dispatch_data_requests(dfmessages::DataRequest dr,
   lk.unlock();
 
   if (sender == nullptr) {
-    // if sourceid request is not valid. then trhow error and continue
-    ers::error(dunedaq::dfmodules::UnknownSourceID(ERS_HERE, sid));
+    // if sender lookup failed, report error and continue
+    ers::error(dunedaq::dfmodules::DRSenderLookupFailed(ERS_HERE, sid, dr.run_number, dr.trigger_number,
+                                                        dr.sequence_number));
     ++m_invalid_requests;
     return false;
   }

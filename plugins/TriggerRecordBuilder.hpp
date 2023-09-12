@@ -146,6 +146,16 @@ ERS_DECLARE_ISSUE(dfmodules,                ///< Namespace
                   ((dfmodules::TriggerId)trigger_id) ///< Message parameters
 )
 
+/**
+ * @brief Missing connection ID
+ */
+ERS_DECLARE_ISSUE(dfmodules,           ///< Namespace
+                  MissingConnectionID, ///< Issue class name
+                  "No connection ID was found for connection name \"" << conn_name
+                  << "\" in the conn_ref list that was provided at 'init' time.",
+                  ((std::string)conn_name)                   ///< Message parameters
+)
+
 namespace dfmodules {
 
 /**
@@ -226,6 +236,7 @@ private:
   std::shared_ptr<fragment_receiver_t> m_fragment_input;
 
   // Output connections
+  std::map<std::string, std::string> m_producer_conn_ref_map;
   std::shared_ptr<trigger_record_sender_t> m_trigger_record_output;
   mutable std::mutex m_map_sourceid_connections_mutex;
   std::map<daqdataformats::SourceID, std::shared_ptr<data_req_sender_t>> m_map_sourceid_connections; ///< Mappinng between SourceID and connections

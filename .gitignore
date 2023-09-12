@@ -7,3 +7,6 @@ Structs.hpp
 frames.bin
 wib2-frames.bin
 __pycache__
+
+# clang formatting temporary files
+.clang-format
