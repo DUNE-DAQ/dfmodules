@@ -74,7 +74,7 @@ ignored_logfile_problems={"trigger": ["zipped_tpset_q: Unable to push within tim
 # to run the config generation and nanorc
 
 # The name of the python module for the config generation
-confgen_name="daqconf_multiru_gen"
+confgen_name="fddaqconf_gen"
 # The arguments to pass to the config generator, excluding the json
 # output directory (the test framework handles that)
 dro_map_contents = dro_map_gen.generate_dromap_contents(number_of_data_producers, number_of_readout_apps)
