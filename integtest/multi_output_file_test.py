@@ -102,7 +102,7 @@ swtpg_conf["readout"]["tpg_algorithm"] = "SimpleThreshold"
 swtpg_conf["readout"]["default_data_file"] = "asset://?checksum=dd156b4895f1b06a06b6ff38e37bd798" # WIBEth All Zeros
 swtpg_conf["trigger"]["trigger_activity_config"] = {"prescale": 300}
 swtpg_conf["trigger"]["mlt_merge_overlapping_tcs"] = False
-swtpg_conf["dataflow"]["token_count"] = max(10, 3*number_of_data_producers*number_of_readout_apps)
+swtpg_conf["dataflow"]["token_count"] = max(10, 6*number_of_data_producers*number_of_readout_apps)
 
 multiout_conf = copy.deepcopy(conf_dict)
 multiout_conf["dataflow"]["apps"][0]["output_paths"] = [".", "."]
@@ -117,7 +117,7 @@ multiout_tpg_conf["readout"]["tpg_algorithm"] = "SimpleThreshold"
 multiout_tpg_conf["readout"]["default_data_file"] = "asset://?checksum=dd156b4895f1b06a06b6ff38e37bd798" # WIBEth All Zeros
 multiout_tpg_conf["trigger"]["trigger_activity_config"] = {"prescale": 300}
 multiout_tpg_conf["trigger"]["mlt_merge_overlapping_tcs"] = False
-multiout_tpg_conf["dataflow"]["token_count"] = max(10, 3*number_of_data_producers*number_of_readout_apps)
+multiout_tpg_conf["dataflow"]["token_count"] = max(10, 6*number_of_data_producers*number_of_readout_apps)
 
 confgen_arguments={"WIBEth_System (Rollover files)": conf_dict,
                    "Software_TPG_System (Rollover files)": swtpg_conf,
