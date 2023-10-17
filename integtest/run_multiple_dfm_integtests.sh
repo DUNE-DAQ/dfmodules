@@ -71,7 +71,7 @@ done
 # other setup
 TIMESTAMP=`date '+%Y%m%d%H%M%S'`
 mkdir -p /tmp/pytest-of-${USER}
-ITGRUNNER_LOG_FILE="/tmp/pytest-of-${USER}/daq-systemtest_integtest_bundle_${TIMESTAMP}.log"
+ITGRUNNER_LOG_FILE="/tmp/pytest-of-${USER}/dfmodules_integtest_bundle_${TIMESTAMP}.log"
 
 # run the tests
 let overall_loop_count=0
