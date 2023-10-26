@@ -40,7 +40,8 @@ enum
   TLVL_WORK_STEPS = 10,
   TLVL_TRIGDEC_RECEIVED = 21,
   TLVL_NOTIFY_TRIGGER = 22,
-  TLVL_DISPATCH_TO_TRB = 23
+  TLVL_DISPATCH_TO_TRB = 23,
+  TLVL_TDTOKEN_RECEIVED = 24
 };
 
 namespace dunedaq::dfmodules {
@@ -327,8 +328,9 @@ DataFlowOrchestrator::receive_trigger_complete_token(const dfmessages::TriggerDe
     return;
   }
 
-  TLOG() << get_name() << " Received TriggerDecisionToken for trigger_number " << token.trigger_number << " and run "
-         << token.run_number << " (current run is " << m_run_number << ")";
+  TLOG_DEBUG(TLVL_TDTOKEN_RECEIVED) << get_name() << " Received TriggerDecisionToken for trigger_number "
+                                    << token.trigger_number << " and run " << token.run_number
+                                    << " (current run is " << m_run_number << ")";
   // add a check to see if the application data found
   if (token.run_number != m_run_number) {
     std::ostringstream oss_source;
