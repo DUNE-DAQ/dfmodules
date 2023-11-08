@@ -4,5 +4,9 @@ Nljs.hpp
 Structs.hpp
 
 # integtest temporary files
-integtest/frames.bin
-integtest/__pycache__
+frames.bin
+wib2-frames.bin
+__pycache__
+
+# clang formatting temporary files
+.clang-format

@@ -146,6 +146,16 @@ ERS_DECLARE_ISSUE(dfmodules,                ///< Namespace
                   ((dfmodules::TriggerId)trigger_id) ///< Message parameters
 )
 
+/**
+ * @brief Missing connection ID
+ */
+ERS_DECLARE_ISSUE(dfmodules,           ///< Namespace
+                  MissingConnectionID, ///< Issue class name
+                  "No connection ID was found for connection name \"" << conn_name
+                  << "\" in the conn_ref list that was provided at 'init' time.",
+                  ((std::string)conn_name)                   ///< Message parameters
+)
+
 namespace dfmodules {
 
 /**
@@ -176,7 +186,6 @@ protected:
   using trigger_decision_receiver_t = iomanager::ReceiverConcept<dfmessages::TriggerDecision>;
   using data_req_sender_t = iomanager::SenderConcept<dfmessages::DataRequest>;
   using fragment_receiver_t = iomanager::ReceiverConcept<std::unique_ptr<daqdataformats::Fragment>>;
-  using fragment_receivers_t = std::vector<std::shared_ptr<fragment_receiver_t>>;
 
   using trigger_record_ptr_t = std::unique_ptr<daqdataformats::TriggerRecord>;
   using trigger_record_sender_t = iomanager::SenderConcept<trigger_record_ptr_t>;
@@ -224,9 +233,10 @@ private:
 
   // Input Connections
   std::shared_ptr<trigger_decision_receiver_t> m_trigger_decision_input;
-  fragment_receivers_t m_fragment_inputs;
+  std::shared_ptr<fragment_receiver_t> m_fragment_input;
 
   // Output connections
+  std::map<std::string, std::string> m_producer_conn_ref_map;
   std::shared_ptr<trigger_record_sender_t> m_trigger_record_output;
   mutable std::mutex m_map_sourceid_connections_mutex;
   std::map<daqdataformats::SourceID, std::shared_ptr<data_req_sender_t>> m_map_sourceid_connections; ///< Mappinng between SourceID and connections

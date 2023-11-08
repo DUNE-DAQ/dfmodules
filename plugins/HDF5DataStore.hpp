@@ -20,6 +20,7 @@
 #include "hdf5libs/HDF5RawDataFile.hpp"
 #include "hdf5libs/hdf5filelayout/Nljs.hpp"
 #include "hdf5libs/hdf5filelayout/Structs.hpp"
+#include "hdf5libs/hdf5rawdatafile/Structs.hpp"
 
 #include "appfwk/DAQModule.hpp"
 #include "logging/Logging.hpp"
@@ -121,7 +122,7 @@ public:
 
     m_config_params = conf.get<hdf5datastore::ConfParams>();
     m_file_layout_params = m_config_params.file_layout_parameters;
-    m_hardware_map_file = m_config_params.hardware_map_file;
+    m_hardware_map = m_config_params.srcid_geoid_map;
 
     m_operation_mode = m_config_params.mode;
     m_path = m_config_params.directory_path;
@@ -173,7 +174,7 @@ public:
                                   current_free_space,
                                   (m_free_space_safety_factor_for_write * tr_size),
                                   msg_oss.str());
-      std::string msg = "writing a trigger record to file " + m_file_handle->get_file_name();
+      std::string msg = "writing a trigger record to file" + (m_file_handle ? " " + m_file_handle->get_file_name() : "");
       throw RetryableDataStoreProblem(ERS_HERE, get_name(), msg, issue);
     }
 
@@ -315,7 +316,7 @@ private:
   std::string m_basic_name_of_open_file;
   unsigned m_open_flags_of_open_file;
   daqdataformats::run_number_t m_run_number;
-  std::string m_hardware_map_file;
+  hdf5libs::hdf5rawdatafile::SrcIDGeoIDMap m_hardware_map;
 
   // Total number of generated files
   size_t m_file_index;
@@ -415,14 +416,12 @@ private:
       m_basic_name_of_open_file = file_name;
       m_open_flags_of_open_file = open_flags;
       try {
-        std::shared_ptr<detchannelmaps::HardwareMapService> hw_map_svc(
-          new detchannelmaps::HardwareMapService(m_hardware_map_file));
         m_file_handle.reset(new hdf5libs::HDF5RawDataFile(unique_filename,
                                                           m_run_number,
                                                           m_file_index,
                                                           m_config_params.filename_parameters.writer_identifier,
                                                           m_file_layout_params,
-                                                          hw_map_svc,
+                                                          m_hardware_map,
                                                           ".writing",
                                                           open_flags));
       } catch (std::exception const& excpt) {

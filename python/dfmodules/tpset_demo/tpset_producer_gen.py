@@ -41,7 +41,7 @@ def generate(
     cmd_data = {}
 
     # Derived parameters
-    CLOCK_FREQUENCY_HZ = 50000000 / SLOWDOWN_FACTOR
+    CLOCK_FREQUENCY_HZ = 62500000 / SLOWDOWN_FACTOR
 
     # Define modules and queues
     queue_specs = [

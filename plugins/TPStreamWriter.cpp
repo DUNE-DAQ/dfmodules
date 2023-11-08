@@ -167,6 +167,9 @@ TPStreamWriter::do_work(std::atomic<bool>& running_flag)
       continue;
     }
 
+    if (tpset.type == trigger::TPSet::Type::kHeartbeat)
+	    continue;
+
     TLOG_DEBUG(21) << "Number of TPs in TPSet is " << tpset.objects.size() << ", Source ID is " << tpset.origin
                    << ", seqno is " << tpset.seqno << ", start timestamp is " << tpset.start_time << ", run number is "
                    << tpset.run_number << ", slice id is " << (tpset.start_time / m_accumulation_interval_ticks);

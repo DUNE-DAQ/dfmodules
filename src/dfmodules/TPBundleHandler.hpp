@@ -14,7 +14,7 @@
 
 #include "daqdataformats/TimeSlice.hpp"
 #include "daqdataformats/Types.hpp"
-#include "detdataformats/trigger/TriggerPrimitive.hpp"
+#include "trgdataformats/TriggerPrimitive.hpp"
 #include "ers/Issue.hpp"
 #include "trigger/TPSet.hpp"
 
