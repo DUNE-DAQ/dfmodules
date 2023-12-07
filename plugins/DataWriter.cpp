@@ -56,9 +56,10 @@ DataWriter::DataWriter(const std::string& name)
 }
 
 void
-DataWriter::init(const data_t& init_data)
+DataWriter::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
+  auto mdal = mcfg->module<appdal::DataWriter>();
   auto iom = iomanager::IOManager::get();
   auto qi = appfwk::connection_index(init_data, { "trigger_record_input", "token_output" });
   m_trigger_record_connection = qi["trigger_record_input"] ;

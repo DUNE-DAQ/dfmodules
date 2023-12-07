@@ -44,7 +44,7 @@ public:
   DataWriter(DataWriter&&) = delete;                 ///< DataWriter is not move-constructible
   DataWriter& operator=(DataWriter&&) = delete;      ///< DataWriter is not move-assignable
 
-  void init(const data_t&) override;
+  void init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg) override;
   void get_info(opmonlib::InfoCollector& ci, int level) override;
 
 private:

@@ -49,7 +49,7 @@ TPStreamWriter::TPStreamWriter(const std::string& name)
 }
 
 void
-TPStreamWriter::init(const nlohmann::json& payload)
+TPStreamWriter::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
   m_tpset_source = iomanager::IOManager::get()->get_receiver<incoming_t>( appfwk::connection_uid(payload, "tpset_source"));

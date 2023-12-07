@@ -9,6 +9,8 @@
 #include "FragmentAggregator.hpp"
 #include "dfmodules/CommonIssues.hpp"
 
+#include "appdal/FragmentAggregator.hpp"
+#include "coredal/Connection.hpp"
 #include "appfwk/DAQModuleHelper.hpp"
 #include "appfwk/app/Nljs.hpp"
 #include "dfmessages/Fragment_serialization.hpp"
@@ -30,18 +32,24 @@ FragmentAggregator::FragmentAggregator(const std::string& name)
 }
 
 void
-FragmentAggregator::init(const data_t& init_data)
+FragmentAggregator::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
 {
-  auto ci = appfwk::connection_index(init_data, { "data_req_input", "fragment_input" });
+  auto mdal = mcfg->module<appdal::FragmentAggregator>(get_name());
 
-  m_data_req_input = ci["data_req_input"];
-  m_fragment_input = ci["fragment_input"];
+  auto inputs = mdal->get_inputs();
+  for (auto con : mdal->get_inputs()) {
+    if (con->get_data_type() == "dfmessages::DataRequest") {
+      m_data_req_input = con->UID();
+    }
+    if (con->get_data_type() == "daqdataformats::Fragment") {
+      m_fragment_input = con->UID();
+    }
+  }
 
   m_producer_conn_ref_map.clear();
-  auto ini = init_data.get<appfwk::app::ModInit>();
-  for (const auto& cr : ini.conn_refs) {
-    if (cr.name.find("request_output_") != std::string::npos) {
-      m_producer_conn_ref_map[cr.name] = cr.uid;
+    for (const auto cr : mdal->get_outputs()) {
+    if (cr->get_data_type() == "dfmessages::DataRequest") {
+      m_producer_conn_ref_map[cr->UID()] = cr->UID(); // TODO: Fix when I understand connection relationships
     }
   }
 }

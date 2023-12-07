@@ -54,7 +54,7 @@ FakeDataProd::FakeDataProd(const std::string& name)
 }
 
 void
-FakeDataProd::init(const data_t& init_data)
+FakeDataProd::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
   auto qi = appfwk::connection_index(init_data, { "data_request_input_queue", "timesync_output" });

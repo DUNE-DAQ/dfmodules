@@ -84,7 +84,7 @@ public:
   DataFlowOrchestrator(DataFlowOrchestrator&&) = delete;            ///< DataFlowOrchestrator is not move-constructible
   DataFlowOrchestrator& operator=(DataFlowOrchestrator&&) = delete; ///< DataFlowOrchestrator is not move-assignable
 
-  void init(const data_t&) override;
+  void init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg) override;
 
 protected:
   virtual std::shared_ptr<AssignedTriggerDecision> find_slot(const dfmessages::TriggerDecision& decision);

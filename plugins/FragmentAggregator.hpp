@@ -50,7 +50,7 @@ public:
   FragmentAggregator(FragmentAggregator&&) = delete;
   FragmentAggregator& operator=(FragmentAggregator&&) = delete;
 
-  void init(const nlohmann::json& obj) override;
+  void init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg) override;
   void get_info(opmonlib::InfoCollector& ci, int level) override;
 
 private:

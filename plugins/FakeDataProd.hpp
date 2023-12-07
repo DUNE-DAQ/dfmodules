@@ -59,7 +59,7 @@ public:
   FakeDataProd(FakeDataProd&&) = delete;                 ///< FakeDataProd is not move-constructible
   FakeDataProd& operator=(FakeDataProd&&) = delete;      ///< FakeDataProd is not move-assignable
 
-  void init(const data_t&) override;
+  void init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg) override;
 
 private:
   // Commands

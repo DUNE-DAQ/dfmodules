@@ -179,7 +179,7 @@ public:
   TriggerRecordBuilder(TriggerRecordBuilder&&) = delete;            ///< TriggerRecordBuilder is not move-constructible
   TriggerRecordBuilder& operator=(TriggerRecordBuilder&&) = delete; ///< TriggerRecordBuilder is not move-assignable
 
-  void init(const data_t&) override;
+  void init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg) override;
   void get_info(opmonlib::InfoCollector& ci, int level) override;
 
 protected:

@@ -42,7 +42,7 @@ public:
   TPStreamWriter(TPStreamWriter&&) = delete;                 ///< TPStreamWriter is not move-constructible
   TPStreamWriter& operator=(TPStreamWriter&&) = delete;      ///< TPStreamWriter is not move-assignable
 
-  void init(const data_t&) override;
+  void init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg) override;
   void get_info(opmonlib::InfoCollector& ci, int level) override;
 
 private:
