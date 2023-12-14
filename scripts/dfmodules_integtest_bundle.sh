@@ -10,12 +10,13 @@ Usage:
 "${script_name}" [option(s)]
 
 Options:
-    -h, --help
+    -h, --help : prints out usage information
     -s <DAQ session number (formerly known as partition number), default=1)>
     -f <zero-based index of the first test to be run, default=0>
     -l <zero-based index of the last test to be run, default=999>
     -n <number of times to run each individual test, default=1>
     -N <number of times to run the full set of selected tests, default=1>
+    --stop-on-failure : causes the script to stop when one of the integtests reports a failure
 """
     let counter=0
     echo "List of available tests:"
@@ -26,7 +27,7 @@ Options:
     echo ""
 }
 
-TEMP=`getopt -o hs:f:l:n:N: --long help -- "$@"`
+TEMP=`getopt -o hs:f:l:n:N: --long help,stop-on-failure -- "$@"`
 eval set -- "$TEMP"
 
 let session_number=1
@@ -34,6 +35,7 @@ let first_test_index=0
 let last_test_index=999
 let individual_run_count=1
 let overall_run_count=1
+let stop_on_failure=0
 
 while true; do
     case "$1" in
@@ -60,6 +62,10 @@ while true; do
         -N)
             let overall_run_count=$2
             shift 2
+            ;;
+        --stop-on-failure)
+            let stop_on_failure=1
+            shift
             ;;
         --)
             shift
@@ -93,6 +99,14 @@ while [[ ${overall_loop_count} -lt ${overall_run_count} ]]; do
         fi
 
         let individual_loop_count=${individual_loop_count}+1
+
+        if [[ ${stop_on_failure} -gt 0 ]]; then
+            search_result=`tail -20 ${ITGRUNNER_LOG_FILE} | grep -i fail`
+            #echo "failure search result is ${search_result}"
+            if [[ ${search_result} != "" ]]; then
+                break 3
+            fi
+        fi
       done
 
     fi
