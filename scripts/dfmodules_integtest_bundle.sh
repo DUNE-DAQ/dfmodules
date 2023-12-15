@@ -10,12 +10,13 @@ Usage:
 "${script_name}" [option(s)]
 
 Options:
-    -h, --help
+    -h, --help : prints out usage information
     -s <DAQ session number (formerly known as partition number), default=1)>
     -f <zero-based index of the first test to be run, default=0>
     -l <zero-based index of the last test to be run, default=999>
     -n <number of times to run each individual test, default=1>
     -N <number of times to run the full set of selected tests, default=1>
+    --stop-on-failure : causes the script to stop when one of the integtests reports a failure
 """
     let counter=0
     echo "List of available tests:"
@@ -26,7 +27,7 @@ Options:
     echo ""
 }
 
-TEMP=`getopt -o hs:f:l:n:N: --long help -- "$@"`
+TEMP=`getopt -o hs:f:l:n:N: --long help,stop-on-failure -- "$@"`
 eval set -- "$TEMP"
 
 let session_number=1
@@ -34,6 +35,7 @@ let first_test_index=0
 let last_test_index=999
 let individual_run_count=1
 let overall_run_count=1
+let stop_on_failure=0
 
 while true; do
     case "$1" in
@@ -61,6 +63,10 @@ while true; do
             let overall_run_count=$2
             shift 2
             ;;
+        --stop-on-failure)
+            let stop_on_failure=1
+            shift
+            ;;
         --)
             shift
             break
@@ -84,9 +90,23 @@ while [[ ${overall_loop_count} -lt ${overall_run_count} ]]; do
       let individual_loop_count=0
       while [[ ${individual_loop_count} -lt ${individual_run_count} ]]; do
         echo "===== Running ${TEST_NAME}" >> ${ITGRUNNER_LOG_FILE}
-        pytest -s ${TEST_NAME} --nanorc-option partition-number ${session_number} | tee -a ${ITGRUNNER_LOG_FILE}
+        if [[ -e "./${TEST_NAME}" ]]; then
+          pytest -s ./${TEST_NAME} --nanorc-option partition-number ${session_number} | tee -a ${ITGRUNNER_LOG_FILE}
+        elif [[ -e "${DBT_AREA_ROOT}/sourcecode/dfmodules/integtest/${TEST_NAME}" ]]; then
+          pytest -s ${DBT_AREA_ROOT}/sourcecode/dfmodules/integtest/${TEST_NAME} --nanorc-option partition-number ${session_number} | tee -a ${ITGRUNNER_LOG_FILE}
+        else
+          pytest -s ${DFMODULES_SHARE}/integtest/${TEST_NAME} --nanorc-option partition-number ${session_number} | tee -a ${ITGRUNNER_LOG_FILE}
+        fi
 
         let individual_loop_count=${individual_loop_count}+1
+
+        if [[ ${stop_on_failure} -gt 0 ]]; then
+            search_result=`tail -20 ${ITGRUNNER_LOG_FILE} | grep -i fail`
+            #echo "failure search result is ${search_result}"
+            if [[ ${search_result} != "" ]]; then
+                break 3
+            fi
+        fi
       done
 
     fi
@@ -97,13 +117,13 @@ while [[ ${overall_loop_count} -lt ${overall_run_count} ]]; do
 done
 
 # print out summary information
-echo ""
-echo ""
-echo "+++++++++++++++++++++++++++++++++++++++++++++++++"
-echo "++++++++++++++++++++ SUMMARY ++++++++++++++++++++"
-echo "+++++++++++++++++++++++++++++++++++++++++++++++++"
-echo ""
-date
-echo "Log file is: ${ITGRUNNER_LOG_FILE}"
-echo ""
-grep '=====' ${ITGRUNNER_LOG_FILE} | egrep ' in |Running'
+echo ""                                                   | tee -a ${ITGRUNNER_LOG_FILE}
+echo ""                                                   | tee -a ${ITGRUNNER_LOG_FILE}
+echo "+++++++++++++++++++++++++++++++++++++++++++++++++"  | tee -a ${ITGRUNNER_LOG_FILE}
+echo "++++++++++++++++++++ SUMMARY ++++++++++++++++++++"  | tee -a ${ITGRUNNER_LOG_FILE}
+echo "+++++++++++++++++++++++++++++++++++++++++++++++++"  | tee -a ${ITGRUNNER_LOG_FILE}
+echo ""                                                   | tee -a ${ITGRUNNER_LOG_FILE}
+date                                                      | tee -a ${ITGRUNNER_LOG_FILE}
+echo "Log file is: ${ITGRUNNER_LOG_FILE}"                 | tee -a ${ITGRUNNER_LOG_FILE}
+echo ""                                                   | tee -a ${ITGRUNNER_LOG_FILE}
+grep '=====' ${ITGRUNNER_LOG_FILE} | egrep ' in |Running' | tee -a ${ITGRUNNER_LOG_FILE}
