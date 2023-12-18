@@ -11,7 +11,8 @@
 #include "dfmodules/fakedataprod/Nljs.hpp"
 #include "dfmodules/fakedataprodinfo/InfoNljs.hpp"
 
-#include "appfwk/DAQModuleHelper.hpp"
+#include "appdal/FakeDataProd.hpp"
+#include "coredal/Connection.hpp"
 #include "dfmessages/Fragment_serialization.hpp"
 #include "dfmessages/TimeSync.hpp"
 #include "iomanager/IOManager.hpp"
@@ -57,10 +58,21 @@ void
 FakeDataProd::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
-  auto qi = appfwk::connection_index(init_data, { "data_request_input_queue", "timesync_output" });
+  auto mdal = mcfg->module<appdal::FakeDataProd>(get_name());
 
-  m_data_request_id = qi["data_request_input_queue"];
-  m_timesync_id = qi["timesync_output"];
+  auto inputs = mdal->get_inputs();
+  auto outputs = mdal->get_outputs();
+
+  if (inputs[0]->get_data_type() != "dfmessages::DataRequest") {
+    throw InvalidQueueFatalError(ERS_HERE, get_name(), "DataRequest Input queue");
+  }
+  m_data_request_id = inputs[0]->UID();
+
+  for (auto con : outputs) {
+    if (con->get_data_type() == "utilities::TimeSync") {
+      m_timesync_id = con->UID();
+    }
+  }
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }

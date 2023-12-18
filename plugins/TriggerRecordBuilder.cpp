@@ -9,8 +9,9 @@
 #include "TriggerRecordBuilder.hpp"
 #include "dfmodules/CommonIssues.hpp"
 
-#include "appfwk/DAQModuleHelper.hpp"
+#include "appdal/TRBuilder.hpp"
 #include "appfwk/app/Nljs.hpp"
+#include "coredal/Connection.hpp"
 #include "dfmessages/TriggerRecord_serialization.hpp"
 #include "dfmodules/triggerrecordbuilder/Nljs.hpp"
 #include "dfmodules/triggerrecordbuilder/Structs.hpp"
@@ -69,27 +70,39 @@ TriggerRecordBuilder::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
   // Get single queues
   //---------------------------------
 
-  auto ci = appfwk::connection_index(init_data, { "trigger_decision_input", "trigger_record_output", "data_fragment_all" });
-
+  auto mdal = mcfg->module<appdal::TRBuilder>(get_name());
   auto iom = iomanager::IOManager::get();
-  m_trigger_decision_input = iom->get_receiver<dfmessages::TriggerDecision>(ci["trigger_decision_input"]);
-  m_trigger_record_output =
-    iom->get_sender<std::unique_ptr<daqdataformats::TriggerRecord>>(ci["trigger_record_output"]);
+  for (auto con : mdal->get_inputs()) {
+    if (con->get_data_type() == "dfmessages::TriggerDecision") {
+      m_trigger_decision_input = iom->get_receiver<dfmessages::TriggerDecision>(con->UID());
+    }
+    if (con->get_data_type() == "std::unique_ptr<daqdataformats::Fragment>") {
+      m_fragment_input = iom->get_receiver<std::unique_ptr<daqdataformats::Fragment>>(con->UID());
 
-  m_fragment_input = iom->get_receiver<std::unique_ptr<daqdataformats::Fragment>>(ci["data_fragment_all"]);
-  if (ci.count("mon_connection") > 0) {
-    m_mon_receiver = iom->get_receiver<dfmessages::TRMonRequest>(ci["mon_connection"]);
+      // save the data fragment receiver global connection name for later, when it gets
+      // copied into the DataRequests so that data producers know where to send their fragments
+      m_reply_connection = con->UID();
+    }
+    if (con->get_data_type() == "dfmessages::TRMonRequest") {
+      m_mon_receiver = iom->get_receiver<dfmessages::TRMonRequest>(con->UID());
+    }
   }
 
-  // save the data fragment receiver global connection name for later, when it gets
-  // copied into the DataRequests so that data producers know where to send their fragments
-  m_reply_connection = ci["data_fragment_all"];
+  if (m_trigger_decision_input == nullptr) {
+    throw InvalidQueueFatalError(ERS_HERE, get_name(), "TriggerDecision Input queue"); 
+  }
+  if (m_fragment_input == nullptr) {
+    throw InvalidQueueFatalError(ERS_HERE, get_name(), "Fragment Input queue"); 
+  }
 
-  m_producer_conn_ref_map.clear();
-  auto ini = init_data.get<appfwk::app::ModInit>();
-  for (const auto &cr : ini.conn_refs) {
-    if (cr.name.find("request_output_") != std::string::npos) {
-      m_producer_conn_ref_map[cr.name] = cr.uid;
+  m_producer_conn_ids.clear();
+  for (auto con : mdal->get_outputs()) {
+    if (con->get_data_type() == "std::unique_ptr<daqdataformats::TriggerRecord>") {
+      m_trigger_record_output =
+        iom->get_sender<std::unique_ptr<daqdataformats::TriggerRecord>>(con->UID());
+    }
+    if (con->get_data_type() == "dfmessages::DataRequest") {
+      m_producer_conn_ids.insert(con->UID());
     }
   }
 
@@ -578,26 +591,26 @@ TriggerRecordBuilder::dispatch_data_requests(dfmessages::DataRequest dr,
   auto it_req = m_map_sourceid_connections.find(sid);
   if (it_req == m_map_sourceid_connections.end() || it_req->second == nullptr) {
     try {
-      std::string map_key = "request_output_" + sid.to_string();
-      auto map_element = m_producer_conn_ref_map.find(map_key);
-      if (map_element == m_producer_conn_ref_map.end()) {
+      std::string map_key = "data-request-to-" + sid.to_string() + "-" + get_name();
+      auto id_element = m_producer_conn_ids.find(map_key);
+      if (id_element == m_producer_conn_ids.end()) {
         ers::error(dunedaq::dfmodules::MissingConnectionID(ERS_HERE, map_key));
       } else {
-        std::string uid = map_element->second;
+        std::string uid = *id_element;
         sender = get_iom_sender<dfmessages::DataRequest>(uid);
 
         m_map_sourceid_connections[sid] = sender;
 
         m_loop_sleep = std::chrono::duration_cast<std::chrono::milliseconds>(
-                m_queue_timeout / (2. + log2(m_map_sourceid_connections.size())));
+          m_queue_timeout / (2. + log2(m_map_sourceid_connections.size())));
         if (m_loop_sleep.count() == 0) {
           m_loop_sleep = m_queue_timeout;
         }
       }
     } catch (ers::Issue const& iss) {
       // if sourceid request is not valid. then trhow error and continue
-      ers::error(dunedaq::dfmodules::DRSenderLookupFailed(ERS_HERE, sid, dr.run_number, dr.trigger_number,
-                                                          dr.sequence_number, iss));
+      ers::error(dunedaq::dfmodules::DRSenderLookupFailed(
+        ERS_HERE, sid, dr.run_number, dr.trigger_number, dr.sequence_number, iss));
       ++m_invalid_requests;
       return false; // lk goes out of scope, is destroyed
     }
@@ -609,8 +622,8 @@ TriggerRecordBuilder::dispatch_data_requests(dfmessages::DataRequest dr,
 
   if (sender == nullptr) {
     // if sender lookup failed, report error and continue
-    ers::error(dunedaq::dfmodules::DRSenderLookupFailed(ERS_HERE, sid, dr.run_number, dr.trigger_number,
-                                                        dr.sequence_number));
+    ers::error(
+      dunedaq::dfmodules::DRSenderLookupFailed(ERS_HERE, sid, dr.run_number, dr.trigger_number, dr.sequence_number));
     ++m_invalid_requests;
     return false;
   }

@@ -12,7 +12,8 @@
 #include "dfmodules/datafloworchestrator/Nljs.hpp"
 #include "dfmodules/datafloworchestratorinfo/InfoNljs.hpp"
 
-#include "appfwk/DAQModuleHelper.hpp"
+#include "appdal/DFOModule.hpp"
+#include "coredal/Connection.hpp"
 #include "appfwk/app/Nljs.hpp"
 #include "iomanager/IOManager.hpp"
 #include "logging/Logging.hpp"
@@ -61,18 +62,26 @@ DataFlowOrchestrator::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
 
+  auto mdal = mcfg->module<appdal::DFOModule>(get_name());
   auto iom = iomanager::IOManager::get();
-  auto mandatory_connections =
-    appfwk::connection_index(init_data, { "token_connection", "td_connection", "busy_connection" });
 
-  m_token_connection = mandatory_connections["token_connection"];
-  m_td_connection = mandatory_connections["td_connection"];
-  auto busy_connection = mandatory_connections["busy_connection"];
+  for (auto con : mdal->get_inputs()) {
+    if (con->get_data_type() == "dfmessages::TriggerDecisionToken") {
+      m_token_connection = con->UID();
+    }
+    if (con->get_data_type() == "dfmessages::TriggerDecision") {
+      m_td_connection = con->UID();
+    }
+  }
+  for (auto con : mdal->get_outputs()) {
+    if (con->get_data_type() == "dfmessages::TriggerInhibit") {
+      m_busy_sender = iom->get_sender<dfmessages::TriggerInhibit>(con->UID());
+    }
+  }
 
   // these are just tests to check if the connections are ok
   iom->get_receiver<dfmessages::TriggerDecisionToken>(m_token_connection);
   iom->get_receiver<dfmessages::TriggerDecision>(m_td_connection);
-  m_busy_sender = iom->get_sender<dfmessages::TriggerInhibit>(busy_connection);
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }

@@ -14,16 +14,12 @@
 
 #include "HDF5FileUtils.hpp"
 #include "dfmodules/DataStore.hpp"
-#include "dfmodules/hdf5datastore/Nljs.hpp"
-#include "dfmodules/hdf5datastore/Structs.hpp"
 
 #include "hdf5libs/HDF5RawDataFile.hpp"
-#include "hdf5libs/hdf5filelayout/Nljs.hpp"
-#include "hdf5libs/hdf5filelayout/Structs.hpp"
-#include "hdf5libs/hdf5rawdatafile/Structs.hpp"
 
 #include "appfwk/DAQModule.hpp"
 #include "logging/Logging.hpp"
+#include "appdal/DataStoreConf.hpp"
 
 #include "boost/date_time/posix_time/posix_time.hpp"
 #include "boost/lexical_cast.hpp"

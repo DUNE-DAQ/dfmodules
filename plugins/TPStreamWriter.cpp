@@ -12,7 +12,8 @@
 #include "dfmodules/tpstreamwriter/Nljs.hpp"
 #include "dfmodules/tpstreamwriterinfo/InfoNljs.hpp"
 
-#include "appfwk/DAQModuleHelper.hpp"
+#include "appdal/TPWriter.hpp"
+#include "coredal/Connection.hpp"
 #include "iomanager/IOManager.hpp"
 #include "daqdataformats/Fragment.hpp"
 #include "daqdataformats/Types.hpp"
@@ -52,7 +53,9 @@ void
 TPStreamWriter::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
-  m_tpset_source = iomanager::IOManager::get()->get_receiver<incoming_t>( appfwk::connection_uid(payload, "tpset_source"));
+  auto mdal = mcfg->module<appdal::TPWriter>(get_name());
+  assert(mdal->get_inputs().size() == 1);
+  m_tpset_source = iomanager::IOManager::get()->get_receiver<trigger::TPSet>(mdal->get_inputs()[0]->UID());
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
 

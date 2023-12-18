@@ -10,9 +10,8 @@
 #include "dfmodules/CommonIssues.hpp"
 
 #include "appdal/FragmentAggregator.hpp"
-#include "coredal/Connection.hpp"
-#include "appfwk/DAQModuleHelper.hpp"
 #include "appfwk/app/Nljs.hpp"
+#include "coredal/Connection.hpp"
 #include "dfmessages/Fragment_serialization.hpp"
 #include "logging/Logging.hpp"
 
@@ -46,10 +45,10 @@ FragmentAggregator::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
     }
   }
 
-  m_producer_conn_ref_map.clear();
-    for (const auto cr : mdal->get_outputs()) {
+  m_producer_conn_ids.clear();
+  for (const auto cr : mdal->get_outputs()) {
     if (cr->get_data_type() == "dfmessages::DataRequest") {
-      m_producer_conn_ref_map[cr->UID()] = cr->UID(); // TODO: Fix when I understand connection relationships
+      m_producer_conn_ids.insert(cr->UID());
     }
   }
 }
@@ -96,16 +95,16 @@ FragmentAggregator::process_data_request(dfmessages::DataRequest& data_request)
   }
   // Forward Data Request to the right DLH
   try {
-    std::string map_key = "request_output_" + data_request.request_information.component.to_string();
-    auto map_element = m_producer_conn_ref_map.find(map_key);
-    if (map_element == m_producer_conn_ref_map.end()) {
+    std::string component_name = "inputReqToDLH-" + data_request.request_information.component.to_string();
+    auto uid_elem = m_producer_conn_ids.find(component_name);
+    if (uid_elem == m_producer_conn_ids.end()) {
       ers::error(dunedaq::dfmodules::DRSenderLookupFailed(ERS_HERE,
                                                           data_request.request_information.component,
                                                           data_request.run_number,
                                                           data_request.trigger_number,
                                                           data_request.sequence_number));
     } else {
-      std::string uid = map_element->second;
+      std::string uid = *uid_elem;
       auto sender = get_iom_sender<dfmessages::DataRequest>(uid);
       data_request.data_destination = "fragment_queue";
       sender->send(std::move(data_request), iomanager::Sender::s_no_block);

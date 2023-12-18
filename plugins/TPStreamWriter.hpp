@@ -63,8 +63,7 @@ private:
   uint32_t m_source_id; // NOLINT(build/unsigned)
 
   // Queue sources and sinks
-  using incoming_t = trigger::TPSet;
-  using source_t = iomanager::ReceiverConcept<incoming_t>;
+  using source_t = iomanager::ReceiverConcept<trigger::TPSet>;
   std::shared_ptr<source_t> m_tpset_source;
 
   // Worker(s)

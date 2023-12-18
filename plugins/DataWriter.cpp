@@ -8,10 +8,10 @@
 
 #include "DataWriter.hpp"
 #include "dfmodules/CommonIssues.hpp"
-#include "dfmodules/datawriter/Nljs.hpp"
 #include "dfmodules/datawriterinfo/InfoNljs.hpp"
 
-#include "appfwk/DAQModuleHelper.hpp"
+#include "appdal/DataWriter.hpp"
+#include "coredal/Connection.hpp"
 #include "daqdataformats/Fragment.hpp"
 #include "dfmessages/TriggerDecision.hpp"
 #include "dfmessages/TriggerRecord_serialization.hpp"
@@ -59,14 +59,26 @@ void
 DataWriter::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
-  auto mdal = mcfg->module<appdal::DataWriter>();
+  auto mdal = mcfg->module<appdal::DataWriter>(get_name());
   auto iom = iomanager::IOManager::get();
-  auto qi = appfwk::connection_index(init_data, { "trigger_record_input", "token_output" });
-  m_trigger_record_connection = qi["trigger_record_input"] ;
+
+  auto inputs = mdal->get_inputs();
+  auto outputs = mdal->get_outputs();
+
+  m_data_writer_conf = mdal->get_configuration();
+
+  if (inputs[0]->get_data_type() != "std::unique_ptr<daqdataformats::TriggerRecord>") {
+    throw InvalidQueueFatalError(ERS_HERE, get_name(), "TriggerRecord Input queue"); 
+  }
+  if (outputs[0]->get_data_type() != "dfmessages::TriggerDecisionToken") {
+    throw InvalidQueueFatalError(ERS_HERE, get_name(), "TriggerDecisionToken Output queue"); 
+  }
+
+  m_trigger_record_connection = inputs[0]->UID();
   // try to create the receiver to see test the connection anyway
   m_tr_receiver = iom -> get_receiver<std::unique_ptr<daqdataformats::TriggerRecord>>(m_trigger_record_connection);
 
-  m_token_output = iom-> get_sender<dfmessages::TriggerDecisionToken>(qi["token_output"]);
+  m_token_output = iom->get_sender<dfmessages::TriggerDecisionToken>(outputs[0]->UID());
   
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }

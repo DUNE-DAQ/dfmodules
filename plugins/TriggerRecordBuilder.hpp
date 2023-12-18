@@ -236,7 +236,7 @@ private:
   std::shared_ptr<fragment_receiver_t> m_fragment_input;
 
   // Output connections
-  std::map<std::string, std::string> m_producer_conn_ref_map;
+  std::set<std::string> m_producer_conn_ids;
   std::shared_ptr<trigger_record_sender_t> m_trigger_record_output;
   mutable std::mutex m_map_sourceid_connections_mutex;
   std::map<daqdataformats::SourceID, std::shared_ptr<data_req_sender_t>> m_map_sourceid_connections; ///< Mappinng between SourceID and connections
