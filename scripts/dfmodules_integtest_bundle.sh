@@ -97,13 +97,12 @@ while [[ ${overall_loop_count} -lt ${overall_run_count} ]]; do
         else
           pytest -s ${DFMODULES_SHARE}/integtest/${TEST_NAME} --nanorc-option partition-number ${session_number} | tee -a ${ITGRUNNER_LOG_FILE}
         fi
+        let pytest_return_code=${PIPESTATUS[0]}
 
         let individual_loop_count=${individual_loop_count}+1
 
         if [[ ${stop_on_failure} -gt 0 ]]; then
-            search_result=`tail -20 ${ITGRUNNER_LOG_FILE} | grep -i fail`
-            #echo "failure search result is ${search_result}"
-            if [[ ${search_result} != "" ]]; then
+            if [[ ${pytest_return_code} -ne 0 ]]; then
                 break 3
             fi
         fi
