@@ -17,6 +17,7 @@
 
 #include "utilities/NamedObject.hpp"
 #include "cetlib/BasicPluginFactory.h"
+#include "appdal/DataStoreConf.hpp"
 #include "cetlib/compiler_macros.h"
 #include "daqdataformats/TimeSlice.hpp"
 #include "daqdataformats/TriggerRecord.hpp"
@@ -44,7 +45,7 @@
 // NOLINTNEXTLINE(build/define_used)
 #define DEFINE_DUNE_DATA_STORE(klass)                                                                                  \
   EXTERN_C_FUNC_DECLARE_START                                                                                          \
-  std::unique_ptr<dunedaq::dfmodules::DataStore> make(const nlohmann::json& conf)                                      \
+  std::unique_ptr<dunedaq::dfmodules::DataStore> make(const appdal::DataStoreConf* conf)                                      \
   {                                                                                                                    \
     return std::unique_ptr<dunedaq::dfmodules::DataStore>(new klass(conf));                                            \
   }                                                                                                                    \
@@ -60,7 +61,7 @@ ERS_DECLARE_ISSUE(dfmodules,               ///< Namespace
                   DataStoreCreationFailed, ///< Type of the Issue
                   "Failed to create DataStore " << plugin_name << " with configuration "
                                                 << conf,           ///< Log Message from the issue
-                  ((std::string)plugin_name)((nlohmann::json)conf) ///< Message parameters
+                  ((std::string)plugin_name)((std::string)conf) ///< Message parameters
 )
 /// @endcond LCOV_EXCL_STOP
 
@@ -145,7 +146,7 @@ private:
  * @return unique_ptr to created DataStore instance
  */
 inline std::unique_ptr<DataStore>
-make_data_store(const std::string& type, const nlohmann::json& conf)
+make_data_store(const std::string& type, const appdal::DataStoreConf* conf)
 {
   static cet::BasicPluginFactory bpf("duneDataStore", "make"); // NOLINT
 
@@ -153,7 +154,7 @@ make_data_store(const std::string& type, const nlohmann::json& conf)
   try {
     ds = bpf.makePlugin<std::unique_ptr<DataStore>>(type, conf);
   } catch (const cet::exception& cexpt) {
-    throw DataStoreCreationFailed(ERS_HERE, type, conf, cexpt);
+    throw DataStoreCreationFailed(ERS_HERE, type, conf->UID(), cexpt);
   }
 
   return ds;
@@ -166,9 +167,9 @@ make_data_store(const std::string& type, const nlohmann::json& conf)
  * @return unique_ptr to created DataStore instance
  */
 inline std::unique_ptr<DataStore>
-make_data_store(const nlohmann::json& conf)
+make_data_store(const appdal::DataStoreConf* conf)
 {
-  return make_data_store(conf["type"].get<std::string>(), conf);
+  return make_data_store(conf->get_type(), conf);
 }
 
 } // namespace dfmodules

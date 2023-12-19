@@ -9,7 +9,6 @@
 #include "TPStreamWriter.hpp"
 #include "dfmodules/CommonIssues.hpp"
 #include "dfmodules/TPBundleHandler.hpp"
-#include "dfmodules/tpstreamwriter/Nljs.hpp"
 #include "dfmodules/tpstreamwriterinfo/InfoNljs.hpp"
 
 #include "appdal/TPWriter.hpp"
@@ -56,6 +55,7 @@ TPStreamWriter::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
   auto mdal = mcfg->module<appdal::TPWriter>(get_name());
   assert(mdal->get_inputs().size() == 1);
   m_tpset_source = iomanager::IOManager::get()->get_receiver<trigger::TPSet>(mdal->get_inputs()[0]->UID());
+  m_tp_writer_conf = mdal->get_configuration();
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
 
@@ -72,16 +72,15 @@ TPStreamWriter::get_info(opmonlib::InfoCollector& ci, int /*level*/)
 }
 
 void
-TPStreamWriter::do_conf(const data_t& payload)
+TPStreamWriter::do_conf(const data_t& )
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
-  tpstreamwriter::ConfParams conf_params = payload.get<tpstreamwriter::ConfParams>();
-  m_accumulation_interval_ticks = conf_params.tp_accumulation_interval_ticks;
-  m_source_id = conf_params.source_id;
+  m_accumulation_interval_ticks = m_tp_writer_conf->get_tp_accumulation_interval();
+  m_source_id = m_tp_writer_conf->get_source_id();
 
   // create the DataStore instance here
   try {
-    m_data_writer = make_data_store(payload["data_store_parameters"]);
+    m_data_writer = make_data_store(m_tp_writer_conf->get_data_store_params());
   } catch (const ers::Issue& excpt) {
     throw UnableToConfigure(ERS_HERE, get_name(), excpt);
   }

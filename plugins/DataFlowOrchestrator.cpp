@@ -8,8 +8,6 @@
 
 #include "DataFlowOrchestrator.hpp"
 #include "dfmodules/CommonIssues.hpp"
-
-#include "dfmodules/datafloworchestrator/Nljs.hpp"
 #include "dfmodules/datafloworchestratorinfo/InfoNljs.hpp"
 
 #include "appdal/DFOModule.hpp"
@@ -78,7 +76,7 @@ DataFlowOrchestrator::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
       m_busy_sender = iom->get_sender<dfmessages::TriggerInhibit>(con->UID());
     }
   }
-
+  m_dfo_conf = mdal->get_configuration();
   // these are just tests to check if the connections are ok
   iom->get_receiver<dfmessages::TriggerDecisionToken>(m_token_connection);
   iom->get_receiver<dfmessages::TriggerDecision>(m_td_connection);
@@ -87,18 +85,16 @@ DataFlowOrchestrator::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
 }
 
 void
-DataFlowOrchestrator::do_conf(const data_t& payload)
+DataFlowOrchestrator::do_conf(const data_t&)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
 
-  auto parsed_conf = payload.get<datafloworchestrator::ConfParams>();
+  m_queue_timeout = std::chrono::milliseconds(m_dfo_conf->get_general_queue_timeout_ms());
+  m_stop_timeout = std::chrono::microseconds(m_dfo_conf->get_stop_timeout_ms());
+  m_busy_threshold = m_dfo_conf->get_busy_threshold();
+  m_free_threshold = m_dfo_conf->get_free_threshold();
 
-  m_queue_timeout = std::chrono::milliseconds(parsed_conf.general_queue_timeout);
-  m_stop_timeout = std::chrono::microseconds(parsed_conf.stop_timeout * 1000);
-  m_busy_threshold = parsed_conf.thresholds.busy;
-  m_free_threshold = parsed_conf.thresholds.free;
-
-  m_td_send_retries = parsed_conf.td_send_retries;
+  m_td_send_retries = m_dfo_conf->get_td_send_retries();
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method, there are "
                                       << m_dataflow_availability.size() << " TRB apps defined";

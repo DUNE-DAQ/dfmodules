@@ -11,6 +11,7 @@
 
 #include "dfmodules/triggerrecordbuilderinfo/InfoNljs.hpp"
 
+#include "appdal/TRBConf.hpp"
 #include "daqdataformats/Fragment.hpp"
 #include "daqdataformats/SourceID.hpp"
 #include "daqdataformats/TriggerRecord.hpp"
@@ -226,6 +227,7 @@ private:
   void do_work(std::atomic<bool>&);
 
   // Configuration
+  const appdal::TRBConf* m_trb_conf;
   std::chrono::milliseconds m_queue_timeout;
   std::chrono::milliseconds m_loop_sleep;
   std::string m_reply_connection;

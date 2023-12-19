@@ -14,6 +14,7 @@
 #include "dfmodules/DataStore.hpp"
 
 #include "appfwk/DAQModule.hpp"
+#include "appdal/TPWriterConf.hpp"
 #include "iomanager/Receiver.hpp"
 #include "daqdataformats/TimeSlice.hpp"
 #include "trigger/TPSet.hpp"
@@ -57,6 +58,7 @@ private:
   void do_work(std::atomic<bool>&);
 
   // Configuration
+  const appdal::TPWriterConf* m_tp_writer_conf;
   std::chrono::milliseconds m_queue_timeout;
   size_t m_accumulation_interval_ticks;
   daqdataformats::run_number_t m_run_number;

@@ -8,7 +8,6 @@
 
 #include "FakeDataProd.hpp"
 #include "dfmodules/CommonIssues.hpp"
-#include "dfmodules/fakedataprod/Nljs.hpp"
 #include "dfmodules/fakedataprodinfo/InfoNljs.hpp"
 
 #include "appdal/FakeDataProd.hpp"
@@ -73,22 +72,21 @@ FakeDataProd::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
       m_timesync_id = con->UID();
     }
   }
-
+  m_fake_data_prod_conf = mdal->get_configuration();
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
 
 void
-FakeDataProd::do_conf(const data_t& payload)
+FakeDataProd::do_conf(const data_t& )
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
 
-  fakedataprod::ConfParams tmpConfig = payload.get<fakedataprod::ConfParams>();
-  m_sourceid.subsystem = daqdataformats::SourceID::string_to_subsystem(tmpConfig.system_type);
-  m_sourceid.id = tmpConfig.source_id;
-  m_time_tick_diff = tmpConfig.time_tick_diff;
-  m_frame_size = tmpConfig.frame_size;
-  m_response_delay = tmpConfig.response_delay;
-  m_fragment_type = daqdataformats::string_to_fragment_type(tmpConfig.fragment_type);
+  m_sourceid.subsystem = daqdataformats::SourceID::string_to_subsystem(m_fake_data_prod_conf->get_system_type());
+  m_sourceid.id = m_fake_data_prod_conf->get_source_id();
+  m_time_tick_diff = m_fake_data_prod_conf->get_time_tick_diff();
+  m_frame_size = m_fake_data_prod_conf->get_frame_size();
+  m_response_delay = m_fake_data_prod_conf->get_response_delay();
+  m_fragment_type = daqdataformats::string_to_fragment_type(m_fake_data_prod_conf->get_fragment_type());
 
   TLOG_DEBUG(TLVL_CONFIG) << get_name() << ": configured for link number " << m_sourceid.id;
 

@@ -10,7 +10,9 @@
 #include "dfmodules/CommonIssues.hpp"
 #include "dfmodules/datawriterinfo/InfoNljs.hpp"
 
+#include "coredal/Application.hpp"
 #include "appdal/DataWriter.hpp"
+#include "appdal/TRBuilder.hpp"
 #include "coredal/Connection.hpp"
 #include "daqdataformats/Fragment.hpp"
 #include "dfmessages/TriggerDecision.hpp"
@@ -75,6 +77,10 @@ DataWriter::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
   }
 
   m_trigger_record_connection = inputs[0]->UID();
+
+  // NOTE: The following assumes that the DFApplication sets its TriggerDecision input UID to the application name!
+  m_trigger_decision_connection = mcfg->configuration_manager()->application()->get_application_name();
+
   // try to create the receiver to see test the connection anyway
   m_tr_receiver = iom -> get_receiver<std::unique_ptr<daqdataformats::TriggerRecord>>(m_trigger_record_connection);
 
@@ -99,25 +105,23 @@ DataWriter::get_info(opmonlib::InfoCollector& ci, int /*level*/)
   ci.add(dwi);
 }
 void
-DataWriter::do_conf(const data_t& payload)
+DataWriter::do_conf(const data_t&)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
 
-  datawriter::ConfParams conf_params = payload.get<datawriter::ConfParams>();
-  m_data_storage_prescale = conf_params.data_storage_prescale;
+  m_data_storage_prescale = m_data_writer_conf->get_data_storage_prescale();
   TLOG_DEBUG(TLVL_CONFIG) << get_name() << ": data_storage_prescale is " << m_data_storage_prescale;
-  TLOG_DEBUG(TLVL_CONFIG) << get_name() << ": data_store_parameters are " << conf_params.data_store_parameters;
-  m_min_write_retry_time_usec = conf_params.min_write_retry_time_usec;
+  TLOG_DEBUG(TLVL_CONFIG) << get_name() << ": data_store_parameters are " << m_data_writer_conf->get_data_store_params();
+  m_min_write_retry_time_usec = m_data_writer_conf->get_min_write_retry_time_ms() * 1000;
   if (m_min_write_retry_time_usec < 1) {
     m_min_write_retry_time_usec = 1;
   }
-  m_max_write_retry_time_usec = conf_params.max_write_retry_time_usec;
-  m_write_retry_time_increase_factor = conf_params.write_retry_time_increase_factor;
-  m_trigger_decision_connection = conf_params.decision_connection;
+  m_max_write_retry_time_usec = m_data_writer_conf->get_max_write_retry_time_ms() * 1000;
+  m_write_retry_time_increase_factor = m_data_writer_conf->get_write_retry_time_increase_factor();
 
   // create the DataStore instance here
   try {
-    m_data_writer = make_data_store(payload["data_store_parameters"]);
+    m_data_writer = make_data_store(m_data_writer_conf->get_data_store_params());
   } catch (const ers::Issue& excpt) {
     throw UnableToConfigure(ERS_HERE, get_name(), excpt);
   }

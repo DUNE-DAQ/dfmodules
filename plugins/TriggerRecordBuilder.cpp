@@ -13,8 +13,6 @@
 #include "appfwk/app/Nljs.hpp"
 #include "coredal/Connection.hpp"
 #include "dfmessages/TriggerRecord_serialization.hpp"
-#include "dfmodules/triggerrecordbuilder/Nljs.hpp"
-#include "dfmodules/triggerrecordbuilder/Structs.hpp"
 #include "logging/Logging.hpp"
 
 #include "iomanager/IOManager.hpp"
@@ -106,6 +104,8 @@ TriggerRecordBuilder::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
     }
   }
 
+  m_trb_conf = mdal->get_configuration();
+
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
 
@@ -145,23 +145,21 @@ TriggerRecordBuilder::get_info(opmonlib::InfoCollector& ci, int /*level*/)
 }
 
 void
-TriggerRecordBuilder::do_conf(const data_t& payload)
+TriggerRecordBuilder::do_conf(const data_t& )
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
 
   m_map_sourceid_connections.clear();
 
-  triggerrecordbuilder::ConfParams parsed_conf = payload.get<triggerrecordbuilder::ConfParams>();
+  m_trigger_timeout = duration_type(m_trb_conf->get_trigger_record_timeout_ms());
 
-  m_trigger_timeout = duration_type(parsed_conf.trigger_record_timeout_ms);
-
-  m_loop_sleep = m_queue_timeout = std::chrono::milliseconds(parsed_conf.general_queue_timeout);
+  m_loop_sleep = m_queue_timeout = std::chrono::milliseconds(m_trb_conf->get_queues_timeout());
 
   TLOG() << get_name() << ": timeouts (ms): queue = " << m_queue_timeout.count() << ", loop = " << m_loop_sleep.count();
-  m_max_time_window = parsed_conf.max_time_window;
+  m_max_time_window = m_trb_conf->get_max_time_window();
 
   m_this_trb_source_id.subsystem = daqdataformats::SourceID::Subsystem::kTRBuilder;
-  m_this_trb_source_id.id = parsed_conf.source_id;
+  m_this_trb_source_id.id = m_trb_conf->get_source_id();
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
 }

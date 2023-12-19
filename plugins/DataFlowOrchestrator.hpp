@@ -9,9 +9,9 @@
 #ifndef DFMODULES_PLUGINS_DATAFLOWORCHESTRATOR_HPP_
 #define DFMODULES_PLUGINS_DATAFLOWORCHESTRATOR_HPP_
 
-#include "dfmodules/datafloworchestrator/Structs.hpp"
-
 #include "dfmodules/TriggerRecordBuilderData.hpp"
+
+#include "appdal/DFOConf.hpp"
 
 #include "daqdataformats/TriggerRecord.hpp"
 #include "dfmessages/DataRequest.hpp"
@@ -114,6 +114,7 @@ private:
   virtual void assign_trigger_decision(const std::shared_ptr<AssignedTriggerDecision>& assignment);
 
   // Configuration
+  const appdal::DFOConf* m_dfo_conf;
   std::chrono::milliseconds m_queue_timeout;
   std::chrono::microseconds m_stop_timeout;
   dunedaq::daqdataformats::run_number_t m_run_number;
