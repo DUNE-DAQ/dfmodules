@@ -11,6 +11,7 @@
 #include "dfmodules/datawriterinfo/InfoNljs.hpp"
 
 #include "coredal/Application.hpp"
+#include "coredal/Session.hpp"
 #include "appdal/DataWriter.hpp"
 #include "appdal/TRBuilder.hpp"
 #include "coredal/Connection.hpp"
@@ -68,6 +69,7 @@ DataWriter::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
   auto outputs = mdal->get_outputs();
 
   m_data_writer_conf = mdal->get_configuration();
+  m_readout_map = mcfg->configuration_manager()->session()->get_readout_map();
 
   if (inputs[0]->get_data_type() != "std::unique_ptr<daqdataformats::TriggerRecord>") {
     throw InvalidQueueFatalError(ERS_HERE, get_name(), "TriggerRecord Input queue"); 
@@ -121,7 +123,7 @@ DataWriter::do_conf(const data_t&)
 
   // create the DataStore instance here
   try {
-    m_data_writer = make_data_store(m_data_writer_conf->get_data_store_params());
+    m_data_writer = make_data_store(m_data_writer_conf->get_data_store_params(), m_readout_map);
   } catch (const ers::Issue& excpt) {
     throw UnableToConfigure(ERS_HERE, get_name(), excpt);
   }

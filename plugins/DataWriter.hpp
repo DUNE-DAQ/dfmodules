@@ -61,6 +61,7 @@ private:
 
   // Configuration
   const appdal::DataWriterConf* m_data_writer_conf;
+  const coredal::ReadoutMap* m_readout_map;
   // size_t m_sleep_msec_while_running;
   std::chrono::milliseconds m_queue_timeout;
   bool m_data_storage_is_enabled;

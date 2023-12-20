@@ -20,6 +20,13 @@
 #include "appfwk/DAQModule.hpp"
 #include "logging/Logging.hpp"
 #include "appdal/DataStoreConf.hpp"
+#include "appdal/FilenameParams.hpp"
+#include "appdal/HDF5FileLayoutParams.hpp"
+#include "appdal/HDF5PathParams.hpp"
+#include "coredal/ReadoutMap.hpp"
+#include "coredal/ReadoutGroup.hpp"
+#include "coredal/GeoId.hpp"
+#include "coredal/DROStreamConf.hpp"
 
 #include "boost/date_time/posix_time/posix_time.hpp"
 #include "boost/lexical_cast.hpp"
@@ -108,7 +115,7 @@ public:
    * @param name, path, filename, operationMode
    *
    */
-  explicit HDF5DataStore(const appdal::DataStoreConf* conf)
+  explicit HDF5DataStore(const appdal::DataStoreConf* conf, const coredal::ReadoutMap* readoutMap)
     : DataStore(conf->UID())
     , m_basic_name_of_open_file("")
     , m_open_flags_of_open_file(0)
@@ -118,7 +125,7 @@ public:
 
     m_config_params = conf;
     m_file_layout_params = m_config_params->get_file_layout_params();
-    //m_hardware_map = m_config_params->get_srcid_geoid_map;
+    m_hardware_map = convert_to_json(readoutMap);
 
     m_operation_mode = m_config_params->get_mode();
     m_path = m_config_params->get_directory_path();
@@ -308,7 +315,7 @@ private:
   HDF5DataStore& operator=(HDF5DataStore&&) = delete;
 
   std::unique_ptr<hdf5libs::HDF5RawDataFile> m_file_handle;
-  hdf5libs::hdf5filelayout::FileLayoutParams m_file_layout_params;
+  const appdal::HDF5FileLayoutParams* m_file_layout_params;
   std::string m_basic_name_of_open_file;
   unsigned m_open_flags_of_open_file;
   daqdataformats::run_number_t m_run_number;
@@ -341,26 +348,27 @@ private:
     if (work_oss.str().length() > 0) {
       work_oss << "/";
     }
-    work_oss << m_config_params->get_filename_params().overall_prefix;
+    work_oss << m_config_params->get_filename_params()->get_overall_prefix();
     if (work_oss.str().length() > 0) {
       work_oss << "_";
     }
 
-    work_oss << m_config_params->get_filename_params().run_number_prefix;
-    work_oss << std::setw(m_config_params->get_filename_params().digits_for_run_number) << std::setfill('0') << run_number;
+    work_oss << m_config_params->get_filename_params()->get_run_number_prefix();
+    work_oss << std::setw(m_config_params->get_filename_params()->get_digits_for_run_number()) << std::setfill('0')
+             << run_number;
     work_oss << "_";
-    if (m_config_params->get_mode == "one-event-per-file") {
+    if (m_config_params->get_mode() == "one-event-per-file") {
 
-      work_oss << m_config_params->get_filename_params().trigger_number_prefix;
-      work_oss << std::setw(m_config_params->get_filename_params().digits_for_trigger_number) << std::setfill('0')
+      work_oss << m_config_params->get_filename_params()->get_trigger_number_prefix();
+      work_oss << std::setw(m_config_params->get_filename_params()->get_digits_for_trigger_number()) << std::setfill('0')
                << record_number;
-    } else if (m_config_params->get_mode == "all-per-file") {
+    } else if (m_config_params->get_mode() == "all-per-file") {
 
-      work_oss << m_config_params->get_filename_params().file_index_prefix;
-      work_oss << std::setw(m_config_params->get_filename_params().digits_for_file_index) << std::setfill('0')
+      work_oss << m_config_params->get_filename_params()->get_file_index_prefix();
+      work_oss << std::setw(m_config_params->get_filename_params()->get_digits_for_file_index()) << std::setfill('0')
                << m_file_index;
     }
-    work_oss << "_" << m_config_params->get_filename_params().writer_identifier;
+    work_oss << "_" << m_config_params->get_filename_params()->get_writer_identifier();
     work_oss << ".hdf5";
     return work_oss.str();
   }
@@ -415,8 +423,8 @@ private:
         m_file_handle.reset(new hdf5libs::HDF5RawDataFile(unique_filename,
                                                           m_run_number,
                                                           m_file_index,
-                                                          m_config_params->get_filename_params().writer_identifier,
-                                                          m_file_layout_params,
+                                                          m_config_params->get_filename_params()->get_writer_identifier(),
+                                                          convert_to_json(m_file_layout_params),
                                                           m_hardware_map,
                                                           ".writing",
                                                           open_flags));
@@ -434,12 +442,80 @@ private:
 
         // write attributes that aren't being handled by the HDF5RawDataFile right now
         // m_file_handle->write_attribute("data_format_version",(int)m_key_translator_ptr->get_current_version());
-        m_file_handle->write_attribute("operational_environment", (std::string)m_config_params->get_operational_environment);
+        m_file_handle->write_attribute("operational_environment", (std::string)m_config_params->get_operational_environment());
       }
     } else {
       TLOG_DEBUG(TLVL_BASIC) << get_name() << ": Pointer file to  " << m_basic_name_of_open_file
                              << " was already opened with open_flags " << std::to_string(m_open_flags_of_open_file);
     }
+  }
+
+  hdf5libs::hdf5rawdatafile::GeoID convert_to_json(const coredal::GeoId* geoid)
+  {
+    hdf5libs::hdf5rawdatafile::GeoID output;
+
+    output.det_id = geoid->get_detector_id();
+    output.crate_id = geoid->get_crate_id();
+    output.slot_id = geoid->get_slot_id();
+    output.stream_id = geoid->get_stream_id();
+
+    return output;
+  }
+
+  hdf5libs::hdf5rawdatafile::SrcIDGeoIDMap convert_to_json(const coredal::ReadoutGroup* group) {
+
+    hdf5libs::hdf5rawdatafile::SrcIDGeoIDMap output;
+
+    // Do we want to check for disabled groups?
+
+    for (auto res : group->get_contains()) {
+      hdf5libs::hdf5rawdatafile::SrcIDGeoIDEntry entry;
+      auto stream = res->cast<coredal::DROStreamConf>();
+
+      entry.src_id = stream->get_src_id();
+      entry.geo_id = convert_to_json(stream->get_geo_id());
+
+      output.push_back(entry);
+    }
+
+    return output;
+  }
+
+  hdf5libs::hdf5rawdatafile::SrcIDGeoIDMap convert_to_json(const coredal::ReadoutMap* map) {
+    hdf5libs::hdf5rawdatafile::SrcIDGeoIDMap output;
+
+    for (auto group : map->get_groups()) {
+        auto groupMap = convert_to_json(group);
+      output.insert(output.end(), groupMap.begin(), groupMap.end());
+    }
+
+    return output;
+  }
+  hdf5libs::hdf5filelayout::PathParams convert_to_json(const appdal::HDF5PathParams* params) {
+    hdf5libs::hdf5filelayout::PathParams output;
+
+    output.detector_group_type = params->get_detector_group_type();
+    output.detector_group_name = params->get_detector_group_name();
+    output.element_name_prefix = params->get_element_name_prefix();
+    output.digits_for_element_number = params->get_digits_for_element_number();
+
+    return output;
+  }
+  hdf5libs::hdf5filelayout::FileLayoutParams convert_to_json(const appdal::HDF5FileLayoutParams* params) {
+    hdf5libs::hdf5filelayout::FileLayoutParams output;
+
+    output.record_name_prefix = params->get_record_name_prefix();
+    output.digits_for_record_number = params->get_digits_for_record_number();
+    output.digits_for_sequence_number = params->get_digits_for_sequence_number();
+    output.record_header_dataset_name = params->get_record_header_dataset_name();
+    output.raw_data_group_name = params->get_raw_data_group_name();
+    output.view_group_name = params->get_view_group_name();
+
+    for (auto& path_param : params->get_path_params_list()) {
+      output.path_param_list.push_back(convert_to_json(path_param));
+    }
+
+    return output;
   }
 
   size_t get_free_space(const std::string& the_path)

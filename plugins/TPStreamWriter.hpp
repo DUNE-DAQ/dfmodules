@@ -59,6 +59,7 @@ private:
 
   // Configuration
   const appdal::TPWriterConf* m_tp_writer_conf;
+  const coredal::ReadoutMap* m_readout_map;
   std::chrono::milliseconds m_queue_timeout;
   size_t m_accumulation_interval_ticks;
   daqdataformats::run_number_t m_run_number;

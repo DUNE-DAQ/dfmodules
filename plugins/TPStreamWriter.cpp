@@ -13,6 +13,7 @@
 
 #include "appdal/TPWriter.hpp"
 #include "coredal/Connection.hpp"
+#include "coredal/Session.hpp"
 #include "iomanager/IOManager.hpp"
 #include "daqdataformats/Fragment.hpp"
 #include "daqdataformats/Types.hpp"
@@ -56,6 +57,7 @@ TPStreamWriter::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
   assert(mdal->get_inputs().size() == 1);
   m_tpset_source = iomanager::IOManager::get()->get_receiver<trigger::TPSet>(mdal->get_inputs()[0]->UID());
   m_tp_writer_conf = mdal->get_configuration();
+  m_readout_map = mcfg->configuration_manager()->session()->get_readout_map();
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
 
@@ -80,7 +82,7 @@ TPStreamWriter::do_conf(const data_t& )
 
   // create the DataStore instance here
   try {
-    m_data_writer = make_data_store(m_tp_writer_conf->get_data_store_params());
+    m_data_writer = make_data_store(m_tp_writer_conf->get_data_store_params(), m_readout_map);
   } catch (const ers::Issue& excpt) {
     throw UnableToConfigure(ERS_HERE, get_name(), excpt);
   }
