@@ -116,7 +116,7 @@ public:
    *
    */
   explicit HDF5DataStore(const appdal::DataStoreConf* conf, const coredal::ReadoutMap* readoutMap)
-    : DataStore(conf->UID())
+    : DataStore(std::string(conf->UID()))
     , m_basic_name_of_open_file("")
     , m_open_flags_of_open_file(0)
     , m_run_number(0)

@@ -39,16 +39,16 @@ daq_add_plugin( FakeDataProd          duneDAQModule LINK_LIBRARIES dfmodules iom
 daq_add_plugin( TPStreamWriter        duneDAQModule LINK_LIBRARIES dfmodules hdf5libs::hdf5libs trigger::trigger serialization::serialization readoutlibs::readoutlibs Boost::iostreams )
 
 ##############################################################################
-#daq_add_unit_test( HDF5FileUtils_test       LINK_LIBRARIES dfmodules )
+daq_add_unit_test( HDF5FileUtils_test       LINK_LIBRARIES dfmodules )
 
-#daq_add_unit_test( HDF5Write_test           LINK_LIBRARIES dfmodules hdf5libs::hdf5libs )
-#add_dependencies(  HDF5Write_test dfmodules_HDF5DataStore_duneDataStore )
+daq_add_unit_test( HDF5Write_test           LINK_LIBRARIES dfmodules hdf5libs::hdf5libs )
+add_dependencies(  HDF5Write_test dfmodules_HDF5DataStore_duneDataStore )
 
 #daq_add_unit_test( DataFlowOrchestrator_test LINK_LIBRARIES dfmodules )
 #add_dependencies( DataFlowOrchestrator_test dfmodules_DataFlowOrchestrator_duneDAQModule)
 
-#daq_add_unit_test( TriggerRecordBuilderData_test LINK_LIBRARIES dfmodules )
-#daq_add_unit_test( DataStoreFactory_test    LINK_LIBRARIES dfmodules )
+daq_add_unit_test( TriggerRecordBuilderData_test LINK_LIBRARIES dfmodules )
+daq_add_unit_test( DataStoreFactory_test    LINK_LIBRARIES dfmodules )
 
 ##############################################################################
 
