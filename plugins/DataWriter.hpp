@@ -13,6 +13,7 @@
 
 #include "appfwk/DAQModule.hpp"
 #include "appdal/DataWriterConf.hpp"
+#include "coredal/ReadoutMap.hpp"
 #include "daqdataformats/TriggerRecord.hpp"
 #include "dfmessages/TriggerDecisionToken.hpp"
 #include "iomanager/Receiver.hpp"

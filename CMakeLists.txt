@@ -21,7 +21,7 @@ find_package(serialization REQUIRED) ## MR This can probably be removed? Unless 
 find_package(readoutlibs REQUIRED)
 find_package(Boost COMPONENTS iostreams unit_test_framework REQUIRED)
 
-#daq_codegen( *.jsonnet DEP_PKGS hdf5libs TEMPLATES Structs.hpp.j2 Nljs.hpp.j2 )
+daq_codegen( *.jsonnet DEP_PKGS hdf5libs TEMPLATES Structs.hpp.j2 Nljs.hpp.j2 )
 daq_codegen( info/*.jsonnet DEP_PKGS opmonlib TEMPLATES opmonlib/InfoStructs.hpp.j2 opmonlib/InfoNljs.hpp.j2 )
 
 ##############################################################################
@@ -32,7 +32,7 @@ daq_add_library( TriggerInhibitAgent.cpp TriggerRecordBuilderData.cpp TPBundleHa
 daq_add_plugin( HDF5DataStore      duneDataStore LINK_LIBRARIES logging::logging daqdataformats::daqdataformats hdf5libs::hdf5libs appfwk::appfwk stdc++fs)
 
 daq_add_plugin( FragmentAggregator    duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager )
-daq_add_plugin( DataWriter            duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager )
+daq_add_plugin( DataWriter            duneDAQModule LINK_LIBRARIES dfmodules hdf5libs::hdf5libs iomanager::iomanager )
 daq_add_plugin( DataFlowOrchestrator  duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager )
 daq_add_plugin( TriggerRecordBuilder  duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager )
 daq_add_plugin( FakeDataProd          duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager)

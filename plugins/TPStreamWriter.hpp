@@ -15,6 +15,7 @@
 
 #include "appfwk/DAQModule.hpp"
 #include "appdal/TPWriterConf.hpp"
+#include "coredal/ReadoutMap.hpp"
 #include "iomanager/Receiver.hpp"
 #include "daqdataformats/TimeSlice.hpp"
 #include "trigger/TPSet.hpp"

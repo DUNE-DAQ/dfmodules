@@ -15,15 +15,13 @@
 #ifndef DFMODULES_INCLUDE_DFMODULES_DATASTORE_HPP_
 #define DFMODULES_INCLUDE_DFMODULES_DATASTORE_HPP_
 
-#include "appdal/DataStoreConf.hpp"
-#include "coredal/ReadoutMap.hpp"
+#include "utilities/NamedObject.hpp"
 #include "cetlib/BasicPluginFactory.h"
 #include "cetlib/compiler_macros.h"
 #include "daqdataformats/TimeSlice.hpp"
 #include "daqdataformats/TriggerRecord.hpp"
 #include "daqdataformats/Types.hpp"
 #include "logging/Logging.hpp"
-#include "utilities/NamedObject.hpp"
 
 #include "nlohmann/json.hpp"
 
@@ -46,10 +44,9 @@
 // NOLINTNEXTLINE(build/define_used)
 #define DEFINE_DUNE_DATA_STORE(klass)                                                                                  \
   EXTERN_C_FUNC_DECLARE_START                                                                                          \
-  std::unique_ptr<dunedaq::dfmodules::DataStore> make(const dunedaq::appdal::DataStoreConf* conf,                      \
-                                                      const dunedaq::coredal::ReadoutMap* readoutMap)                  \
+  std::unique_ptr<dunedaq::dfmodules::DataStore> make(const nlohmann::json& conf)                                      \
   {                                                                                                                    \
-    return std::unique_ptr<dunedaq::dfmodules::DataStore>(new klass(conf, readoutMap));                                \
+    return std::unique_ptr<dunedaq::dfmodules::DataStore>(new klass(conf));                                            \
   }                                                                                                                    \
   }
 
@@ -62,8 +59,8 @@ namespace dunedaq {
 ERS_DECLARE_ISSUE(dfmodules,               ///< Namespace
                   DataStoreCreationFailed, ///< Type of the Issue
                   "Failed to create DataStore " << plugin_name << " with configuration "
-                                                << conf,        ///< Log Message from the issue
-                  ((std::string)plugin_name)((std::string)conf) ///< Message parameters
+                                                << conf,           ///< Log Message from the issue
+                  ((std::string)plugin_name)((nlohmann::json)conf) ///< Message parameters
 )
 /// @endcond LCOV_EXCL_STOP
 
@@ -103,8 +100,7 @@ public:
    */
   explicit DataStore(const std::string& name)
     : utilities::NamedObject(name)
-  {
-  }
+  {}
 
   /**
    * @brief Writes the TriggerRecord into the DataStore.
@@ -149,15 +145,15 @@ private:
  * @return unique_ptr to created DataStore instance
  */
 inline std::unique_ptr<DataStore>
-make_data_store(const std::string& type, const appdal::DataStoreConf* conf, const coredal::ReadoutMap* readoutMap)
+make_data_store(const std::string& type, const nlohmann::json& conf)
 {
   static cet::BasicPluginFactory bpf("duneDataStore", "make"); // NOLINT
 
   std::unique_ptr<DataStore> ds;
   try {
-    ds = bpf.makePlugin<std::unique_ptr<DataStore>>(type, conf, readoutMap);
+    ds = bpf.makePlugin<std::unique_ptr<DataStore>>(type, conf);
   } catch (const cet::exception& cexpt) {
-    throw DataStoreCreationFailed(ERS_HERE, type, conf->UID(), cexpt);
+    throw DataStoreCreationFailed(ERS_HERE, type, conf, cexpt);
   }
 
   return ds;
@@ -170,9 +166,9 @@ make_data_store(const std::string& type, const appdal::DataStoreConf* conf, cons
  * @return unique_ptr to created DataStore instance
  */
 inline std::unique_ptr<DataStore>
-make_data_store(const appdal::DataStoreConf* conf, const coredal::ReadoutMap* readoutMap)
+make_data_store(const nlohmann::json& conf)
 {
-  return make_data_store(conf->get_type(), conf, readoutMap);
+  return make_data_store(conf["type"].get<std::string>(), conf);
 }
 
 } // namespace dfmodules

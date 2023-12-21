@@ -7,8 +7,10 @@
  */
 
 #include "DataWriter.hpp"
+#include "SchemaUtils.hpp"
 #include "dfmodules/CommonIssues.hpp"
 #include "dfmodules/datawriterinfo/InfoNljs.hpp"
+#include "dfmodules/hdf5datastore/Nljs.hpp"
 
 #include "coredal/Application.hpp"
 #include "coredal/Session.hpp"
@@ -123,7 +125,10 @@ DataWriter::do_conf(const data_t&)
 
   // create the DataStore instance here
   try {
-    m_data_writer = make_data_store(m_data_writer_conf->get_data_store_params(), m_readout_map);
+    auto config_params = convert_to_json(m_data_writer_conf->get_data_store_params(), m_readout_map);
+    hdf5datastore::data_t hdf5ds_json;
+    hdf5datastore::to_json(hdf5ds_json, config_params);
+    m_data_writer = make_data_store(hdf5ds_json);
   } catch (const ers::Issue& excpt) {
     throw UnableToConfigure(ERS_HERE, get_name(), excpt);
   }
