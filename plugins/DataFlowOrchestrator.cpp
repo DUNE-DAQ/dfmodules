@@ -93,8 +93,7 @@ DataFlowOrchestrator::do_conf(const data_t& payload)
 
   m_td_send_retries = parsed_conf.td_send_retries;
 
-#if 1
-  // 26-Dec-2023, KAB: added the code below to set up the callback for TriggerDecisionToken messages here
+  // 28-Dec-2023, KAB: added the code below to set up the callback for TriggerDecisionToken messages here
   // in the do_conf() method so that the TriggerDecisionToken messages that are sent from the TRB DataWriter
   // modules to register each TRB instance can be received and processed before the start of the first run.
   // (DataWriter modules send the registration message at "conf" time.)  This will help ensure that the DFO
@@ -107,7 +106,6 @@ DataFlowOrchestrator::do_conf(const data_t& payload)
   auto iom = iomanager::IOManager::get();
   iom->add_callback<dfmessages::TriggerDecisionToken>(
     m_token_connection, std::bind(&DataFlowOrchestrator::receive_trigger_complete_token, this, std::placeholders::_1));
-#endif
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method, there are "
                                       << m_dataflow_availability.size() << " TRB apps defined";
@@ -127,7 +125,7 @@ DataFlowOrchestrator::do_start(const data_t& payload)
 
   m_last_token_received = m_last_td_received = std::chrono::steady_clock::now();
 
-  // 26-Dec-2023, KAB: in this small block of code, the callback for the token connection is removed and
+  // 28-Dec-2023, KAB: in this small block of code, the callback for the token connection is removed and
   // then added back. This is done so that all possible pre-existing conditions are handled. When do_start()
   // is called the first time in a DAQ session, the token connection callback has already been set up
   // (in the do_conf() method),
@@ -156,7 +154,7 @@ DataFlowOrchestrator::do_stop(const data_t& /*args*/)
   auto iom = iomanager::IOManager::get();
   iom->remove_callback<dfmessages::TriggerDecision>(m_td_connection);
   TLOG_DEBUG(TLVL_CONNECTION_SETUP) << get_name() << ": Removed the callback for TriggerDecision messages "
-                                    << "from " << m_td_connection;
+                                    << "from " << m_td_connection << ".";
 
   const int wait_steps = 20;
   auto step_timeout = m_stop_timeout / wait_steps;
@@ -349,8 +347,7 @@ DataFlowOrchestrator::receive_trigger_complete_token(const dfmessages::TriggerDe
       TLOG_DEBUG(TLVL_CONFIG) << "Creating dataflow availability struct for uid " << token.decision_destination;
       m_dataflow_availability[token.decision_destination] =
         TriggerRecordBuilderData(token.decision_destination, m_busy_threshold, m_free_threshold);
-#if 1
-      // 26-Dec-2023, KAB: added the following few lines of code to pre-fetch the TriggerDecision Sender
+      // 28-Dec-2023, KAB: added the following few lines of code to pre-fetch the TriggerDecision Sender
       // for the TRB that we've just heard from. The goal of this is to provide as much time as possible
       // for the Sender to fully establish the connection with the Receiver in the TRB before the connection
       // is needed for sending TriggerDecisions.
@@ -359,10 +356,6 @@ DataFlowOrchestrator::receive_trigger_complete_token(const dfmessages::TriggerDe
       TLOG_DEBUG(TLVL_CONNECTION_SETUP) << get_name() << "Received the registration message from the "
                                         << "TriggerRecordBuilder at destination " << token.decision_destination
                                         << " and pre-fetched a TriggerDecision sender for that TRB.";
-#else
-      TLOG_DEBUG(TLVL_CONNECTION_SETUP) << get_name() << "Received the registration message from the "
-                                        << "TriggerRecordBuilder at destination " << token.decision_destination;
-#endif
     } else {
       TLOG() << TriggerRecordBuilderAppUpdate(ERS_HERE, token.decision_destination, "Has reconnected");
       auto app_it = m_dataflow_availability.find(token.decision_destination);
