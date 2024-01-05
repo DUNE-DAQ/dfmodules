@@ -71,17 +71,17 @@ TriggerRecordBuilder::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
   auto mdal = mcfg->module<appdal::TRBuilder>(get_name());
   auto iom = iomanager::IOManager::get();
   for (auto con : mdal->get_inputs()) {
-    if (con->get_data_type() == "dfmessages::TriggerDecision") {
+    if (con->get_data_type() == datatype_to_string<dfmessages::TriggerDecision>()) {
       m_trigger_decision_input = iom->get_receiver<dfmessages::TriggerDecision>(con->UID());
     }
-    if (con->get_data_type() == "std::unique_ptr<daqdataformats::Fragment>") {
+    if (con->get_data_type() == datatype_to_string<std::unique_ptr<daqdataformats::Fragment>>()) {
       m_fragment_input = iom->get_receiver<std::unique_ptr<daqdataformats::Fragment>>(con->UID());
 
       // save the data fragment receiver global connection name for later, when it gets
       // copied into the DataRequests so that data producers know where to send their fragments
       m_reply_connection = con->UID();
     }
-    if (con->get_data_type() == "dfmessages::TRMonRequest") {
+    if (con->get_data_type() == datatype_to_string<dfmessages::TRMonRequest>()) {
       m_mon_receiver = iom->get_receiver<dfmessages::TRMonRequest>(con->UID());
     }
   }
@@ -95,11 +95,11 @@ TriggerRecordBuilder::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
 
   m_producer_conn_ids.clear();
   for (auto con : mdal->get_outputs()) {
-    if (con->get_data_type() == "std::unique_ptr<daqdataformats::TriggerRecord>") {
+    if (con->get_data_type() == datatype_to_string<std::unique_ptr<daqdataformats::TriggerRecord>>()) {
       m_trigger_record_output =
         iom->get_sender<std::unique_ptr<daqdataformats::TriggerRecord>>(con->UID());
     }
-    if (con->get_data_type() == "dfmessages::DataRequest") {
+    if (con->get_data_type() == datatype_to_string<dfmessages::DataRequest>()) {
       m_producer_conn_ids.insert(con->UID());
     }
   }

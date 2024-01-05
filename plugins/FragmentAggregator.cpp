@@ -37,17 +37,17 @@ FragmentAggregator::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
 
   auto inputs = mdal->get_inputs();
   for (auto con : mdal->get_inputs()) {
-    if (con->get_data_type() == "dfmessages::DataRequest") {
+    if (con->get_data_type() == datatype_to_string < dfmessages::DataRequest>()) {
       m_data_req_input = con->UID();
     }
-    if (con->get_data_type() == "daqdataformats::Fragment") {
+    if (con->get_data_type() == datatype_to_string<daqdataformats::Fragment>()) {
       m_fragment_input = con->UID();
     }
   }
 
   m_producer_conn_ids.clear();
   for (const auto cr : mdal->get_outputs()) {
-    if (cr->get_data_type() == "dfmessages::DataRequest") {
+    if (cr->get_data_type() == datatype_to_string<dfmessages::DataRequest>()) {
       m_producer_conn_ids.insert(cr->UID());
     }
   }

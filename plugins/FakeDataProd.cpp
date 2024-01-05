@@ -62,13 +62,13 @@ FakeDataProd::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
   auto inputs = mdal->get_inputs();
   auto outputs = mdal->get_outputs();
 
-  if (inputs[0]->get_data_type() != "dfmessages::DataRequest") {
+  if (inputs[0]->get_data_type() != datatype_to_string<dfmessages::DataRequest>()) {
     throw InvalidQueueFatalError(ERS_HERE, get_name(), "DataRequest Input queue");
   }
   m_data_request_id = inputs[0]->UID();
 
   for (auto con : outputs) {
-    if (con->get_data_type() == "utilities::TimeSync") {
+    if (con->get_data_type() == datatype_to_string<dfmessages::TimeSync>()) {
       m_timesync_id = con->UID();
     }
   }

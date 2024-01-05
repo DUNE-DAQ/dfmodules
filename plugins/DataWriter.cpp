@@ -73,10 +73,10 @@ DataWriter::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
   m_data_writer_conf = mdal->get_configuration();
   m_readout_map = mcfg->configuration_manager()->session()->get_readout_map();
 
-  if (inputs[0]->get_data_type() != "std::unique_ptr<daqdataformats::TriggerRecord>") {
+  if (inputs[0]->get_data_type() != datatype_to_string<std::unique_ptr<daqdataformats::TriggerRecord>>()) {
     throw InvalidQueueFatalError(ERS_HERE, get_name(), "TriggerRecord Input queue"); 
   }
-  if (outputs[0]->get_data_type() != "dfmessages::TriggerDecisionToken") {
+  if (outputs[0]->get_data_type() != datatype_to_string<dfmessages::TriggerDecisionToken>()) {
     throw InvalidQueueFatalError(ERS_HERE, get_name(), "TriggerDecisionToken Output queue"); 
   }
 
