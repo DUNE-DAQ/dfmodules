@@ -65,18 +65,30 @@ DataFlowOrchestrator::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
   auto iom = iomanager::IOManager::get();
 
   for (auto con : mdal->get_inputs()) {
-    if (con->get_data_type() == "dfmessages::TriggerDecisionToken") {
+    if (con->get_data_type() == "TriggerDecisionToken") {
       m_token_connection = con->UID();
     }
-    if (con->get_data_type() == "dfmessages::TriggerDecision") {
+    if (con->get_data_type() == "TriggerDecision") {
       m_td_connection = con->UID();
     }
   }
   for (auto con : mdal->get_outputs()) {
-    if (con->get_data_type() == "dfmessages::TriggerInhibit") {
+    if (con->get_data_type() == "TriggerInhibit") {
       m_busy_sender = iom->get_sender<dfmessages::TriggerInhibit>(con->UID());
     }
   }
+
+  if (m_token_connection == "") {
+    throw appfwk::MissingConnection(ERS_HERE, get_name(), "TriggerDecisionToken", "input");
+  }
+  if (m_td_connection == "") {
+    throw appfwk::MissingConnection(ERS_HERE, get_name(), "TriggerDecision", "input");
+  }
+  if (m_busy_sender == nullptr) {
+    throw appfwk::MissingConnection(ERS_HERE, get_name(), "TriggerInhibit", "output");
+  
+  }
+
   m_dfo_conf = mdal->get_configuration();
   // these are just tests to check if the connections are ok
   iom->get_receiver<dfmessages::TriggerDecisionToken>(m_token_connection);

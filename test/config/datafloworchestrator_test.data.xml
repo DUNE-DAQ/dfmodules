@@ -63,10 +63,11 @@
 
 <oks-data>
 
-<info name="" type="" num-of-items="55" oks-format="data" oks-version="862f2957270" created-by="gjc" created-on="thinkpad" creation-time="20231116T105446" last-modified-by="eflumerf" last-modified-on="ironvirt9.mshome.net" last-modification-time="20240105T154002"/>
+<info name="" type="" num-of-items="63" oks-format="data" oks-version="862f2957270" created-by="gjc" created-on="thinkpad" creation-time="20231116T105446" last-modified-by="eflumerf" last-modified-on="ironvirt9.mshome.net" last-modification-time="20240105T174142"/>
 
 <include>
  <file path="schema/coredal/dunedaq.schema.xml"/>
+ <file path="/home/eflumerf/Desktop/dune-daq-base/dev-oks/sourcecode/appdal/schema/appdal/application.schema.xml"/>
 </include>
 
 <comments>
@@ -76,6 +77,10 @@
  <comment creation-time="20231117T121356" created-by="gjc" created-on="thinkpad" author="gjc" text="rename"/>
  <comment creation-time="20240105T145227" created-by="eflumerf" created-on="ironvirt9.mshome.net" author="eflumerf" text="test"/>
  <comment creation-time="20240105T154002" created-by="eflumerf" created-on="ironvirt9.mshome.net" author="eflumerf" text="Adding test connections"/>
+ <comment creation-time="20240105T161451" created-by="eflumerf" created-on="ironvirt9.mshome.net" author="eflumerf" text="Fill out connections"/>
+ <comment creation-time="20240105T162114" created-by="eflumerf" created-on="ironvirt9.mshome.net" author="eflumerf" text="Adding DFO Module"/>
+ <comment creation-time="20240105T170629" created-by="eflumerf" created-on="ironvirt9.mshome.net" author="eflumerf" text="Update services used by network connections."/>
+ <comment creation-time="20240105T174142" created-by="eflumerf" created-on="ironvirt9.mshome.net" author="eflumerf" text="Update network connection types"/>
 </comments>
 
 
@@ -89,9 +94,32 @@
  <rel name="runs_on" class="VirtualHost" id="connectionservice"/>
 </obj>
 
+<obj class="DFOConf" id="test">
+ <attr name="general_queue_timeout_ms" type="u32" val="100"/>
+ <attr name="stop_timeout_ms" type="u32" val="100"/>
+ <attr name="td_send_retries" type="s32" val="5"/>
+ <attr name="busy_threshold" type="s32" val="2"/>
+ <attr name="free_threshold" type="s32" val="1"/>
+</obj>
+
+<obj class="DFOModule" id="test">
+ <rel name="inputs">
+  <ref class="NetworkConnection" id="token"/>
+  <ref class="NetworkConnection" id="trigdec"/>
+ </rel>
+ <rel name="outputs">
+  <ref class="NetworkConnection" id="triginh"/>
+  <ref class="NetworkConnection" id="trigdec_0"/>
+ </rel>
+ <rel name="configuration" class="DFOConf" id="test"/>
+</obj>
+
 <obj class="DaqApplication" id="TestApp">
  <attr name="application_name" type="string" val="daq_application"/>
  <rel name="runs_on" class="VirtualHost" id="vlocalhost"/>
+ <rel name="modules">
+  <ref class="DFOModule" id="test"/>
+ </rel>
 </obj>
 
 <obj class="DetectorConfig" id="dummy-detector">
@@ -252,10 +280,28 @@
  </attr>
 </obj>
 
-<obj class="NetworkConnection" id="trigdev_0">
+<obj class="NetworkConnection" id="token">
+ <attr name="data_type" type="string" val="TriggerDecisionToken"/>
+ <attr name="connection_type" type="enum" val="kSendRecv"/>
+ <rel name="associated_service" class="Service" id="token"/>
+</obj>
+
+<obj class="NetworkConnection" id="trigdec">
  <attr name="data_type" type="string" val="TriggerDecision"/>
  <attr name="connection_type" type="enum" val="kSendRecv"/>
- <rel name="associated_service" class="Service" id="test_service"/>
+ <rel name="associated_service" class="Service" id="trigdec"/>
+</obj>
+
+<obj class="NetworkConnection" id="trigdec_0">
+ <attr name="data_type" type="string" val="TriggerDecision"/>
+ <attr name="connection_type" type="enum" val="kSendRecv"/>
+ <rel name="associated_service" class="Service" id="trigdec_0"/>
+</obj>
+
+<obj class="NetworkConnection" id="triginh">
+ <attr name="data_type" type="string" val="TriggerInhibit"/>
+ <attr name="connection_type" type="enum" val="kSendRecv"/>
+ <rel name="associated_service" class="Service" id="triginh"/>
 </obj>
 
 <obj class="PhysicalHost" id="localhost">
@@ -309,9 +355,28 @@
  <rel name="controller" class="RCApplication" id="my-controller"/>
 </obj>
 
-<obj class="Service" id="test_service">
+<obj class="Service" id="token">
  <attr name="protocol" type="string" val="tcp"/>
- <attr name="port" type="u16" val="0"/>
+ <attr name="port" type="u16" val="5053"/>
+ <attr name="eth_device_name" type="string" val="lo"/>
+</obj>
+
+<obj class="Service" id="trigdec">
+ <attr name="protocol" type="string" val="tcp"/>
+ <attr name="port" type="u16" val="5051"/>
+ <attr name="eth_device_name" type="string" val="lo"/>
+</obj>
+
+<obj class="Service" id="trigdec_0">
+ <attr name="protocol" type="string" val="tcp"/>
+ <attr name="port" type="u16" val="5052"/>
+ <attr name="eth_device_name" type="string" val="lo"/>
+</obj>
+
+<obj class="Service" id="triginh">
+ <attr name="protocol" type="string" val="tcp"/>
+ <attr name="port" type="u16" val="5050"/>
+ <attr name="eth_device_name" type="string" val="lo"/>
 </obj>
 
 <obj class="Session" id="partition_name">
