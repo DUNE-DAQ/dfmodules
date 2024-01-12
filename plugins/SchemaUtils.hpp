@@ -9,6 +9,7 @@
 #include "appdal/HDF5PathParams.hpp"
 #include "coredal/DROStreamConf.hpp"
 #include "coredal/GeoId.hpp"
+#include "coredal/DetectorConfig.hpp"
 #include "coredal/ReadoutGroup.hpp"
 #include "coredal/ReadoutMap.hpp"
 
@@ -108,12 +109,12 @@ convert_to_json(const appdal::FilenameParams* params)
 }
 
 hdf5datastore::ConfParams
-convert_to_json(const appdal::DataStoreConf* params, const coredal::ReadoutMap* readout_map)
+convert_to_json(const appdal::DataStoreConf* params, const coredal::ReadoutMap* readout_map, const coredal::DetectorConfig* det_conf)
 {
   hdf5datastore::ConfParams output;
   output.type = params->get_type();
   output.name = params->UID();
-  output.operational_environment = params->get_operational_environment();
+  output.operational_environment = det_conf->get_op_env();
   output.mode = params->get_mode();
   output.directory_path = params->get_directory_path();
   output.max_file_size_bytes = params->get_max_file_size();
