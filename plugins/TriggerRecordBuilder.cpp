@@ -9,7 +9,7 @@
 #include "TriggerRecordBuilder.hpp"
 #include "dfmodules/CommonIssues.hpp"
 
-#include "appdal/TRBuilder.hpp"
+#include "appdal/TriggerRecordBuilder.hpp"
 #include "appfwk/app/Nljs.hpp"
 #include "coredal/Connection.hpp"
 #include "dfmessages/TriggerRecord_serialization.hpp"
@@ -68,7 +68,7 @@ TriggerRecordBuilder::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
   // Get single queues
   //---------------------------------
 
-  auto mdal = mcfg->module<appdal::TRBuilder>(get_name());
+  auto mdal = mcfg->module<appdal::TriggerRecordBuilder>(get_name());
   auto iom = iomanager::IOManager::get();
   for (auto con : mdal->get_inputs()) {
     if (con->get_data_type() == datatype_to_string<dfmessages::TriggerDecision>()) {

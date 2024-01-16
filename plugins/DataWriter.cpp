@@ -15,7 +15,7 @@
 #include "coredal/Application.hpp"
 #include "coredal/Session.hpp"
 #include "appdal/DataWriter.hpp"
-#include "appdal/TRBuilder.hpp"
+#include "appdal/TriggerRecordBuilder.hpp"
 #include "coredal/Connection.hpp"
 #include "daqdataformats/Fragment.hpp"
 #include "dfmessages/TriggerDecision.hpp"
