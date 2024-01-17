@@ -13,7 +13,7 @@
 #include "dfmodules/tpstreamwriterinfo/InfoNljs.hpp"
 #include "SchemaUtils.hpp"
 
-#include "appdal/TPWriter.hpp"
+#include "appdal/TPStreamWriter.hpp"
 #include "coredal/Connection.hpp"
 #include "coredal/Session.hpp"
 #include "iomanager/IOManager.hpp"
@@ -55,7 +55,10 @@ void
 TPStreamWriter::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
-  auto mdal = mcfg->module<appdal::TPWriter>(get_name());
+  auto mdal = mcfg->module<appdal::TPStreamWriter>(get_name());
+  if (!mdal) {
+    throw appfwk::CommandFailed(ERS_HERE, "init", get_name(), "Unable to retrieve configuration object");
+  }
   assert(mdal->get_inputs().size() == 1);
   m_tpset_source = iomanager::IOManager::get()->get_receiver<trigger::TPSet>(mdal->get_inputs()[0]->UID());
   m_tp_writer_conf = mdal->get_configuration();

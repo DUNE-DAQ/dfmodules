@@ -14,7 +14,7 @@
 #include "dfmodules/DataStore.hpp"
 
 #include "appfwk/DAQModule.hpp"
-#include "appdal/TPWriterConf.hpp"
+#include "appdal/TPStreamWriterConf.hpp"
 #include "coredal/ReadoutMap.hpp"
 #include "coredal/DetectorConfig.hpp"
 #include "iomanager/Receiver.hpp"
@@ -60,7 +60,7 @@ private:
   void do_work(std::atomic<bool>&);
 
   // Configuration
-  const appdal::TPWriterConf* m_tp_writer_conf;
+  const appdal::TPStreamWriterConf* m_tp_writer_conf;
   const coredal::ReadoutMap* m_readout_map;
   const coredal::DetectorConfig* m_detector_config;
   std::chrono::milliseconds m_queue_timeout;

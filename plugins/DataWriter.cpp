@@ -15,7 +15,7 @@
 #include "coredal/Application.hpp"
 #include "coredal/Session.hpp"
 #include "appdal/DataWriter.hpp"
-#include "appdal/TRBuilder.hpp"
+#include "appdal/TriggerRecordBuilder.hpp"
 #include "coredal/Connection.hpp"
 #include "daqdataformats/Fragment.hpp"
 #include "dfmessages/TriggerDecision.hpp"
@@ -65,10 +65,21 @@ DataWriter::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
   auto mdal = mcfg->module<appdal::DataWriter>(get_name());
+  if (!mdal) {
+    throw appfwk::CommandFailed(ERS_HERE, "init", get_name(), "Unable to retrieve configuration object");
+  }
   auto iom = iomanager::IOManager::get();
 
   auto inputs = mdal->get_inputs();
   auto outputs = mdal->get_outputs();
+
+  if (inputs.size() != 1) {
+    throw appfwk::CommandFailed(ERS_HERE, "init", get_name(), "Expected 1 input, got " + std::to_string(inputs.size()));
+  }
+  if (outputs.size() != 1) {
+    throw appfwk::CommandFailed(
+      ERS_HERE, "init", get_name(), "Expected 1 output, got " + std::to_string(outputs.size()));  
+  }
 
   m_data_writer_conf = mdal->get_configuration();
   m_readout_map = mcfg->configuration_manager()->session()->get_readout_map();

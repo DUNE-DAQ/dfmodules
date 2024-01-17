@@ -58,6 +58,9 @@ FakeDataProd::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
   auto mdal = mcfg->module<appdal::FakeDataProd>(get_name());
+  if (!mdal) {
+    throw appfwk::CommandFailed(ERS_HERE, "init", get_name(), "Unable to retrieve configuration object");
+  }
 
   auto inputs = mdal->get_inputs();
   auto outputs = mdal->get_outputs();

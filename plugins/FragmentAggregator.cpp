@@ -34,6 +34,9 @@ void
 FragmentAggregator::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
 {
   auto mdal = mcfg->module<appdal::FragmentAggregator>(get_name());
+  if (!mdal) {
+    throw appfwk::CommandFailed(ERS_HERE, "init", get_name(), "Unable to retrieve configuration object");
+  }
 
   auto inputs = mdal->get_inputs();
   for (auto con : mdal->get_inputs()) {

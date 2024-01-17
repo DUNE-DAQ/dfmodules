@@ -10,7 +10,7 @@
 #include "dfmodules/CommonIssues.hpp"
 #include "dfmodules/datafloworchestratorinfo/InfoNljs.hpp"
 
-#include "appdal/DFOModule.hpp"
+#include "appdal/DataFlowOrchestrator.hpp"
 #include "coredal/Connection.hpp"
 #include "appfwk/app/Nljs.hpp"
 #include "iomanager/IOManager.hpp"
@@ -61,7 +61,10 @@ DataFlowOrchestrator::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
 
-  auto mdal = mcfg->module<appdal::DFOModule>(get_name());
+  auto mdal = mcfg->module<appdal::DataFlowOrchestrator>(get_name());
+  if (!mdal) {
+    throw appfwk::CommandFailed(ERS_HERE, "init", get_name(), "Unable to retrieve configuration object");
+  }
   auto iom = iomanager::IOManager::get();
 
   for (auto con : mdal->get_inputs()) {
