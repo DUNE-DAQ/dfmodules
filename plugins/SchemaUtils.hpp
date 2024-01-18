@@ -10,6 +10,7 @@
 #include "coredal/DROStreamConf.hpp"
 #include "coredal/GeoId.hpp"
 #include "coredal/DetectorConfig.hpp"
+#include "coredal/ReadoutInterface.hpp"
 #include "coredal/ReadoutGroup.hpp"
 #include "coredal/ReadoutMap.hpp"
 
@@ -34,16 +35,19 @@ convert_to_json(const coredal::ReadoutGroup* group)
 
   hdf5libs::hdf5rawdatafile::SrcIDGeoIDMap output;
 
-  // Do we want to check for disabled groups?
+  // FIXME: check for disabled groups / interfaces
 
-  for (auto res : group->get_contains()) {
-    hdf5libs::hdf5rawdatafile::SrcIDGeoIDEntry entry;
-    auto stream = res->cast<coredal::DROStreamConf>();
+  for (auto interface_res : group->get_contains()) {
+    auto interface = interface_res->cast<coredal::ReadoutInterface>();
+    for (auto stream_res : interface->get_contains()) {
+      hdf5libs::hdf5rawdatafile::SrcIDGeoIDEntry entry;
+      auto stream = stream_res->cast<coredal::DROStreamConf>();
 
-    entry.src_id = stream->get_src_id();
-    entry.geo_id = convert_to_json(stream->get_geo_id());
+      entry.src_id = stream->get_src_id();
+      entry.geo_id = convert_to_json(stream->get_geo_id());
 
-    output.push_back(entry);
+      output.push_back(entry);
+    }
   }
 
   return output;
