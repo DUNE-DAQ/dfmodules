@@ -67,7 +67,7 @@
 
 <include>
  <file path="schema/coredal/dunedaq.schema.xml"/>
- <file path="/home/eflumerf/Desktop/dune-daq-base/dev-oks/sourcecode/appdal/schema/appdal/application.schema.xml"/>
+ <file path="schema/appdal/application.schema.xml"/>
 </include>
 
 <comments>
@@ -102,7 +102,7 @@
  <attr name="free_threshold" type="s32" val="1"/>
 </obj>
 
-<obj class="DFOModule" id="test">
+<obj class="DataFlowOrchestrator" id="test">
  <rel name="inputs">
   <ref class="NetworkConnection" id="token"/>
   <ref class="NetworkConnection" id="trigdec"/>
@@ -118,7 +118,7 @@
  <attr name="application_name" type="string" val="daq_application"/>
  <rel name="runs_on" class="VirtualHost" id="vlocalhost"/>
  <rel name="modules">
-  <ref class="DFOModule" id="test"/>
+  <ref class="DataFlowOrchestrator" id="test"/>
  </rel>
 </obj>
 
