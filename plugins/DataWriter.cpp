@@ -166,6 +166,18 @@ DataWriter::do_conf(const data_t&)
     throw InvalidDataWriter(ERS_HERE, get_name());
   }
 
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
+}
+
+void
+DataWriter::do_start(const data_t& payload)
+{
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_start() method";
+  
+  rcif::cmd::StartParams start_params = payload.get<rcif::cmd::StartParams>();
+  m_data_storage_is_enabled = (!start_params.disable_data_storage);
+  m_run_number = start_params.run;
+
   TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Sending initial TriggerDecisionToken to DFO to announce my presence";
   dfmessages::TriggerDecisionToken token;
   token.run_number = 0;
@@ -182,20 +194,9 @@ DataWriter::do_conf(const data_t&)
       oss_warn << "Send with sender \"" << m_token_output->get_name() << "\" failed";
       ers::warning(iomanager::OperationFailed(ERS_HERE, oss_warn.str(), excpt));
       wasSentSuccessfully--;
+      std::this_thread::sleep_for(std::chrono::microseconds(5000));
     }
   } while (wasSentSuccessfully);
-  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
-}
-
-void
-DataWriter::do_start(const data_t& payload)
-{
-  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_start() method";
-  
-  rcif::cmd::StartParams start_params = payload.get<rcif::cmd::StartParams>();
-  m_data_storage_is_enabled = (!start_params.disable_data_storage);
-  m_run_number = start_params.run;
-
  
   // 04-Feb-2021, KAB: added this call to allow DataStore to prepare for the run.
   // I've put this call fairly early in this method because it could throw an
