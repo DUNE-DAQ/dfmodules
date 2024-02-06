@@ -16,6 +16,7 @@
 #include "daqdataformats/SourceID.hpp"
 #include "daqdataformats/TriggerRecord.hpp"
 #include "daqdataformats/Types.hpp"
+#include "appdal/ReadoutApplication.hpp"
 #include "dfmessages/DataRequest.hpp"
 #include "dfmessages/TRMonRequest.hpp"
 #include "dfmessages/TriggerDecision.hpp"
@@ -238,7 +239,7 @@ private:
   std::shared_ptr<fragment_receiver_t> m_fragment_input;
 
   // Output connections
-  std::set<std::string> m_producer_conn_ids;
+  void setup_data_request_connections(const appdal::ReadoutApplication* roapp);
   std::shared_ptr<trigger_record_sender_t> m_trigger_record_output;
   mutable std::mutex m_map_sourceid_connections_mutex;
   std::map<daqdataformats::SourceID, std::shared_ptr<data_req_sender_t>> m_map_sourceid_connections; ///< Mappinng between SourceID and connections

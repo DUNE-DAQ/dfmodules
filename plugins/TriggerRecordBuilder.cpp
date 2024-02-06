@@ -9,9 +9,17 @@
 #include "TriggerRecordBuilder.hpp"
 #include "dfmodules/CommonIssues.hpp"
 
+#include "appdal/NetworkConnectionDescriptor.hpp"
+#include "appdal/NetworkConnectionRule.hpp"
+#include "appdal/ReadoutApplication.hpp"
 #include "appdal/TriggerRecordBuilder.hpp"
 #include "appfwk/app/Nljs.hpp"
+#include "coredal/Application.hpp"
 #include "coredal/Connection.hpp"
+#include "coredal/DROStreamConf.hpp"
+#include "coredal/ReadoutGroup.hpp"
+#include "coredal/ReadoutInterface.hpp"
+#include "coredal/Session.hpp"
 #include "dfmessages/TriggerRecord_serialization.hpp"
 #include "logging/Logging.hpp"
 
@@ -91,26 +99,78 @@ TriggerRecordBuilder::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
   }
 
   if (m_trigger_decision_input == nullptr) {
-    throw InvalidQueueFatalError(ERS_HERE, get_name(), "TriggerDecision Input queue"); 
+    throw InvalidQueueFatalError(ERS_HERE, get_name(), "TriggerDecision Input queue");
   }
   if (m_fragment_input == nullptr) {
-    throw InvalidQueueFatalError(ERS_HERE, get_name(), "Fragment Input queue"); 
+    throw InvalidQueueFatalError(ERS_HERE, get_name(), "Fragment Input queue");
   }
 
-  m_producer_conn_ids.clear();
   for (auto con : mdal->get_outputs()) {
     if (con->get_data_type() == datatype_to_string<std::unique_ptr<daqdataformats::TriggerRecord>>()) {
-      m_trigger_record_output =
-        iom->get_sender<std::unique_ptr<daqdataformats::TriggerRecord>>(con->UID());
+      m_trigger_record_output = iom->get_sender<std::unique_ptr<daqdataformats::TriggerRecord>>(con->UID());
     }
-    if (con->get_data_type() == datatype_to_string<dfmessages::DataRequest>()) {
-      m_producer_conn_ids.insert(con->UID());
+  }
+
+  const coredal::Session* session = mcfg->configuration_manager()->session();
+  for (auto& app : session->get_all_applications()) {
+    auto roapp = app->cast<appdal::ReadoutApplication>();
+    if (roapp != nullptr) {
+      setup_data_request_connections(roapp);
     }
   }
 
   m_trb_conf = mdal->get_configuration();
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
+}
+
+void
+TriggerRecordBuilder::setup_data_request_connections(const appdal::ReadoutApplication* roapp)
+{
+  std::vector<uint32_t> app_source_ids;
+  for (auto roGroup : roapp->get_contains()) {
+    // get the readout groups and the interfaces and streams therein; 1 reaout group corresponds to 1 data reader module
+    auto group_rset = roGroup->cast<coredal::ReadoutGroup>();
+    auto interfaces = group_rset->get_contains();
+    for (auto interface_rset : interfaces) {
+      auto interface = interface_rset->cast<coredal::ReadoutInterface>();
+      for (auto res : interface->get_contains()) {
+        auto stream = res->cast<coredal::DROStreamConf>();
+        app_source_ids.push_back(stream->get_src_id());
+      }
+    }
+  }
+
+  const appdal::NetworkConnectionDescriptor* faNetDesc = nullptr;
+  for (auto rule : roapp->get_network_rules()) {
+    auto endpoint_class = rule->get_endpoint_class();
+    auto data_type = rule->get_descriptor()->get_data_type();
+
+    if (endpoint_class == "FragmentAggregator") {
+      faNetDesc = rule->get_descriptor();
+    }
+  }
+  std::string faNetUid = faNetDesc->get_uid_base() + roapp->UID();
+
+  // find the queue for sourceid_req in the map
+  std::unique_lock<std::mutex> lk(m_map_sourceid_connections_mutex);
+  for (auto& source_id : app_source_ids) {
+    daqdataformats::SourceID sid;
+    sid.subsystem = daqdataformats::SourceID::Subsystem::kDetectorReadout;
+    sid.id = source_id;
+    auto it_req = m_map_sourceid_connections.find(sid);
+    if (it_req == m_map_sourceid_connections.end() || it_req->second == nullptr) {
+      m_map_sourceid_connections[sid] = get_iom_sender<dfmessages::DataRequest>(faNetUid);
+
+      // TODO: This probably doesn't belong here, and probably should be more TriggerDecision-dependent
+      m_loop_sleep = std::chrono::duration_cast<std::chrono::milliseconds>(
+        m_queue_timeout / (2. + log2(m_map_sourceid_connections.size())));
+      if (m_loop_sleep.count() == 0) {
+        m_loop_sleep = m_queue_timeout;
+      }
+    }
+  }
+  lk.unlock();
 }
 
 void
@@ -149,11 +209,9 @@ TriggerRecordBuilder::get_info(opmonlib::InfoCollector& ci, int /*level*/)
 }
 
 void
-TriggerRecordBuilder::do_conf(const data_t& )
+TriggerRecordBuilder::do_conf(const data_t&)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
-
-  m_map_sourceid_connections.clear();
 
   m_trigger_timeout = duration_type(m_trb_conf->get_trigger_record_timeout_ms());
 
@@ -161,6 +219,7 @@ TriggerRecordBuilder::do_conf(const data_t& )
 
   TLOG() << get_name() << ": timeouts (ms): queue = " << m_queue_timeout.count() << ", loop = " << m_loop_sleep.count();
   m_max_time_window = m_trb_conf->get_max_time_window();
+  TLOG() << get_name() << ": Max time window is " << m_max_time_window;
 
   m_this_trb_source_id.subsystem = daqdataformats::SourceID::Subsystem::kTRBuilder;
   m_this_trb_source_id.id = m_trb_conf->get_source_id();
@@ -172,8 +231,6 @@ void
 TriggerRecordBuilder::do_scrap(const data_t& /*args*/)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_scrap() method";
-
-  m_map_sourceid_connections.clear();
 
   TLOG() << get_name() << " successfully scrapped";
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_scrap() method";
@@ -502,13 +559,16 @@ TriggerRecordBuilder::create_trigger_records_and_dispatch(const dfmessages::Trig
     daqdataformats::timestamp_t slice_end =
       m_max_time_window > 0 ? std::min(slice_begin + m_max_time_window, end) : end;
 
+    TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": trig_number " << td.trigger_number << ", sequence " << sequence
+                                << " ts=" << slice_begin << ":" << slice_end << " (TR " << begin << ":" << end << ")";
+
     // create the components cropped in time
     decltype(td.components) slice_components;
     for (const auto& component : td.components) {
 
-      if (component.window_begin >= slice_end)
+      if (component.window_begin > slice_end)
         continue;
-      if (component.window_end <= slice_begin)
+      if (component.window_end < slice_begin)
         continue;
 
       daqdataformats::timestamp_t new_begin = std::max(slice_begin, component.window_begin);
@@ -554,7 +614,7 @@ TriggerRecordBuilder::create_trigger_records_and_dispatch(const dfmessages::Trig
     ++new_tr_counter;
 
     // create and send the requests
-    TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Trigger Decision components: " << td.components.size();
+    TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Trigger Decision components: " << td.components.size() << ", slice components: " << slice_components.size();
 
     for (const auto& component : slice_components) {
 
@@ -592,30 +652,12 @@ TriggerRecordBuilder::dispatch_data_requests(dfmessages::DataRequest dr,
   std::shared_ptr<data_req_sender_t> sender = nullptr;
   auto it_req = m_map_sourceid_connections.find(sid);
   if (it_req == m_map_sourceid_connections.end() || it_req->second == nullptr) {
-    try {
-      std::string map_key = "data-request-to-" + sid.to_string() + "-" + get_name();
-      auto id_element = m_producer_conn_ids.find(map_key);
-      if (id_element == m_producer_conn_ids.end()) {
-        ers::error(dunedaq::dfmodules::MissingConnectionID(ERS_HERE, map_key));
-      } else {
-        std::string uid = *id_element;
-        sender = get_iom_sender<dfmessages::DataRequest>(uid);
 
-        m_map_sourceid_connections[sid] = sender;
-
-        m_loop_sleep = std::chrono::duration_cast<std::chrono::milliseconds>(
-          m_queue_timeout / (2. + log2(m_map_sourceid_connections.size())));
-        if (m_loop_sleep.count() == 0) {
-          m_loop_sleep = m_queue_timeout;
-        }
-      }
-    } catch (ers::Issue const& iss) {
-      // if sourceid request is not valid. then trhow error and continue
-      ers::error(dunedaq::dfmodules::DRSenderLookupFailed(
-        ERS_HERE, sid, dr.run_number, dr.trigger_number, dr.sequence_number, iss));
-      ++m_invalid_requests;
-      return false; // lk goes out of scope, is destroyed
-    }
+    // if sourceid request is not valid. then print error and continue
+    ers::error(dunedaq::dfmodules::DRSenderLookupFailed(
+      ERS_HERE, sid, dr.run_number, dr.trigger_number, dr.sequence_number));
+    ++m_invalid_requests;
+    return false; // lk goes out of scope, is destroyed
   } else {
     // get the queue from map element
     sender = it_req->second;
