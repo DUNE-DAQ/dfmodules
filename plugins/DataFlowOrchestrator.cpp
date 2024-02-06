@@ -212,6 +212,7 @@ DataFlowOrchestrator::receive_trigger_decision(const dfmessages::TriggerDecision
     if (assignment == nullptr) { // this can happen if all application are in error state
       ers::error(UnableToAssign(ERS_HERE, decision.trigger_number));
       usleep(500);
+      notify_trigger(is_busy());
       continue;
     }
 

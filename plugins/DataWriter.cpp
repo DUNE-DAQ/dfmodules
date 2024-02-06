@@ -94,8 +94,24 @@ DataWriter::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
 
   m_trigger_record_connection = inputs[0]->UID();
 
-  // NOTE: The following assumes that the DFApplication sets its TriggerDecision input UID to the application name!
-  m_trigger_decision_connection = mcfg->configuration_manager()->application()->get_application_name();
+  auto modules = mcfg->modules();
+  std::string trb_uid = "";
+  for (auto& mod : modules) {
+    if (mod->class_name() == "TriggerRecordBuilder") {
+      trb_uid = mod->UID();
+      break;
+    }
+  }
+
+  auto trbdal = mcfg->module<appdal::TriggerRecordBuilder>(trb_uid);
+  if (!trbdal) {
+    throw appfwk::CommandFailed(ERS_HERE, "init", get_name(), "Unable to retrieve TRB configuration object");
+  }
+  for (auto con : trbdal->get_inputs()) {
+    if (con->get_data_type() == datatype_to_string<dfmessages::TriggerDecision>()) {
+      m_trigger_decision_connection =con->UID();
+    }
+  }
 
   // try to create the receiver to see test the connection anyway
   m_tr_receiver = iom -> get_receiver<std::unique_ptr<daqdataformats::TriggerRecord>>(m_trigger_record_connection);
