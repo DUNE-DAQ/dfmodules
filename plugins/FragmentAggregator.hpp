@@ -64,7 +64,7 @@ private:
   // Input Connection namess
   std::string m_data_req_input;
   std::string m_fragment_input;
-  std::set<std::string> m_producer_conn_ids;
+  std::map<int, std::string> m_producer_conn_ids;
 
   // Stats
   std::atomic<int> m_packets_processed{ 0 };

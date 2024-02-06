@@ -12,6 +12,7 @@
 #include "appdal/FragmentAggregator.hpp"
 #include "appfwk/app/Nljs.hpp"
 #include "coredal/Connection.hpp"
+#include "coredal/QueueWithId.hpp"
 #include "dfmessages/Fragment_serialization.hpp"
 #include "logging/Logging.hpp"
 
@@ -51,7 +52,8 @@ FragmentAggregator::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
   m_producer_conn_ids.clear();
   for (const auto cr : mdal->get_outputs()) {
     if (cr->get_data_type() == datatype_to_string<dfmessages::DataRequest>()) {
-      m_producer_conn_ids.insert(cr->UID());
+	auto qid = cr->cast<coredal::QueueWithId>();
+      	    m_producer_conn_ids[qid->get_id()] = cr->UID();
     }
   }
 }
@@ -98,8 +100,8 @@ FragmentAggregator::process_data_request(dfmessages::DataRequest& data_request)
   }
   // Forward Data Request to the right DLH
   try {
-    std::string component_name = "inputReqToDLH-" + data_request.request_information.component.to_string();
-    auto uid_elem = m_producer_conn_ids.find(component_name);
+    //std::string component_name = "inputReqToDLH-" + data_request.request_information.component.to_string();
+    auto uid_elem = m_producer_conn_ids.find(data_request.request_information.component.id);
     if (uid_elem == m_producer_conn_ids.end()) {
       ers::error(dunedaq::dfmodules::DRSenderLookupFailed(ERS_HERE,
                                                           data_request.request_information.component,
@@ -107,9 +109,9 @@ FragmentAggregator::process_data_request(dfmessages::DataRequest& data_request)
                                                           data_request.trigger_number,
                                                           data_request.sequence_number));
     } else {
-      std::string uid = *uid_elem;
-      auto sender = get_iom_sender<dfmessages::DataRequest>(uid);
-      data_request.data_destination = "fragment_queue";
+      TLOG() << "Send data request to " << uid_elem->second;
+      auto sender = get_iom_sender<dfmessages::DataRequest>(uid_elem->second);
+      data_request.data_destination = sender->get_name();
       sender->send(std::move(data_request), iomanager::Sender::s_no_block);
     }
   } catch (const ers::Issue& excpt) {
