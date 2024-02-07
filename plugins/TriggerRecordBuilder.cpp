@@ -136,7 +136,7 @@ TriggerRecordBuilder::setup_data_request_connections(const appdal::ReadoutApplic
       auto interface = interface_rset->cast<coredal::ReadoutInterface>();
       for (auto res : interface->get_contains()) {
         auto stream = res->cast<coredal::DROStreamConf>();
-        app_source_ids.push_back(stream->get_src_id());
+        app_source_ids.push_back(stream->get_source_id());
       }
     }
   }
