@@ -111,7 +111,7 @@ FragmentAggregator::process_data_request(dfmessages::DataRequest& data_request)
     } else {
       TLOG() << "Send data request to " << uid_elem->second;
       auto sender = get_iom_sender<dfmessages::DataRequest>(uid_elem->second);
-      data_request.data_destination = sender->get_name();
+      data_request.data_destination = m_fragment_input;
       sender->send(std::move(data_request), iomanager::Sender::s_no_block);
     }
   } catch (const ers::Issue& excpt) {
