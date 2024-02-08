@@ -53,7 +53,7 @@ FragmentAggregator::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
   for (const auto cr : mdal->get_outputs()) {
     if (cr->get_data_type() == datatype_to_string<dfmessages::DataRequest>()) {
 	auto qid = cr->cast<coredal::QueueWithId>();
-      	    m_producer_conn_ids[qid->get_id()] = cr->UID();
+      	    m_producer_conn_ids[qid->get_source_id()] = cr->UID();
     }
   }
 }

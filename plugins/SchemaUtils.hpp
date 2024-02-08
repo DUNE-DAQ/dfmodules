@@ -43,7 +43,7 @@ convert_to_json(const coredal::ReadoutGroup* group)
       hdf5libs::hdf5rawdatafile::SrcIDGeoIDEntry entry;
       auto stream = stream_res->cast<coredal::DROStreamConf>();
 
-      entry.src_id = stream->get_src_id();
+      entry.src_id = stream->get_source_id();
       entry.geo_id = convert_to_json(stream->get_geo_id());
 
       output.push_back(entry);
