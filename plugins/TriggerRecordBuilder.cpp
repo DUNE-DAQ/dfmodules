@@ -170,6 +170,26 @@ TriggerRecordBuilder::setup_data_request_connections(const appdal::ReadoutApplic
       }
     }
   }
+  daqdataformats::SourceID trig_sid;
+  trig_sid.subsystem = daqdataformats::SourceID::Subsystem::kTrigger;
+  trig_sid.id = roapp->get_tp_source_id();
+
+  // ID == 0 should disable TPs
+  if (trig_sid.id != 0) {
+    auto it_req = m_map_sourceid_connections.find(trig_sid);
+    if (it_req == m_map_sourceid_connections.end() || it_req->second == nullptr) {
+      m_map_sourceid_connections[trig_sid] = get_iom_sender<dfmessages::DataRequest>(faNetUid);
+    }
+  }
+
+  trig_sid.id = roapp->get_ta_source_id();
+  // ID == 0 should disable TAs
+  if (trig_sid.id != 0) {
+    auto it_req = m_map_sourceid_connections.find(trig_sid);
+    if (it_req == m_map_sourceid_connections.end() || it_req->second == nullptr) {
+      m_map_sourceid_connections[trig_sid] = get_iom_sender<dfmessages::DataRequest>(faNetUid);
+    }
+  }
   lk.unlock();
 }
 
@@ -614,7 +634,8 @@ TriggerRecordBuilder::create_trigger_records_and_dispatch(const dfmessages::Trig
     ++new_tr_counter;
 
     // create and send the requests
-    TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Trigger Decision components: " << td.components.size() << ", slice components: " << slice_components.size();
+    TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Trigger Decision components: " << td.components.size()
+                                << ", slice components: " << slice_components.size();
 
     for (const auto& component : slice_components) {
 
@@ -654,8 +675,8 @@ TriggerRecordBuilder::dispatch_data_requests(dfmessages::DataRequest dr,
   if (it_req == m_map_sourceid_connections.end() || it_req->second == nullptr) {
 
     // if sourceid request is not valid. then print error and continue
-    ers::error(dunedaq::dfmodules::DRSenderLookupFailed(
-      ERS_HERE, sid, dr.run_number, dr.trigger_number, dr.sequence_number));
+    ers::error(
+      dunedaq::dfmodules::DRSenderLookupFailed(ERS_HERE, sid, dr.run_number, dr.trigger_number, dr.sequence_number));
     ++m_invalid_requests;
     return false; // lk goes out of scope, is destroyed
   } else {
