@@ -12,6 +12,7 @@
 #include "appdal/NetworkConnectionDescriptor.hpp"
 #include "appdal/NetworkConnectionRule.hpp"
 #include "appdal/ReadoutApplication.hpp"
+#include "appdal/TriggerApplication.hpp"
 #include "appdal/TriggerRecordBuilder.hpp"
 #include "appfwk/app/Nljs.hpp"
 #include "coredal/Application.hpp"
@@ -133,10 +134,10 @@ void
 TriggerRecordBuilder::setup_data_request_connections(const appdal::TriggerApplication* trgapp)
 {
   std::vector<uint32_t> app_source_ids;
-  app_source_ids->push_back(trgapp->get_source_id());
+  app_source_ids.push_back(trgapp->get_source_id());
 
   const appdal::NetworkConnectionDescriptor* faNetDesc = nullptr;
-  for (auto rule : roapp->get_network_rules()) {
+  for (auto rule : trgapp->get_network_rules()) {
     auto endpoint_class = rule->get_endpoint_class();
     auto data_type = rule->get_descriptor()->get_data_type();
 

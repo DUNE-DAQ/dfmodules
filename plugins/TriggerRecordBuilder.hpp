@@ -17,6 +17,7 @@
 #include "daqdataformats/TriggerRecord.hpp"
 #include "daqdataformats/Types.hpp"
 #include "appdal/ReadoutApplication.hpp"
+#include "appdal/TriggerApplication.hpp"
 #include "dfmessages/DataRequest.hpp"
 #include "dfmessages/TRMonRequest.hpp"
 #include "dfmessages/TriggerDecision.hpp"
