@@ -116,12 +116,55 @@ TriggerRecordBuilder::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
     auto roapp = app->cast<appdal::ReadoutApplication>();
     if (roapp != nullptr) {
       setup_data_request_connections(roapp);
+    } else {
+      auto trgapp = app->cast<appdal::TriggerApplication>();
+      if (trgapp != nullptr) {
+        setup_data_request_connections(trgapp);
+      }
     }
   }
 
   m_trb_conf = mdal->get_configuration();
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
+}
+
+void
+TriggerRecordBuilder::setup_data_request_connections(const appdal::TriggerApplication* trgapp)
+{
+  std::vector<uint32_t> app_source_ids;
+  app_source_ids->push_back(trgapp->get_source_id());
+
+  const appdal::NetworkConnectionDescriptor* faNetDesc = nullptr;
+  for (auto rule : roapp->get_network_rules()) {
+    auto endpoint_class = rule->get_endpoint_class();
+    auto data_type = rule->get_descriptor()->get_data_type();
+
+    if (data_type == "DataRequest") {
+      faNetDesc = rule->get_descriptor();
+    }
+  }
+  std::string faNetUid = faNetDesc->get_uid_base() + trgapp->UID();
+
+  // find the queue for sourceid_req in the map
+  std::unique_lock<std::mutex> lk(m_map_sourceid_connections_mutex);
+  for (auto& source_id : app_source_ids) {
+    daqdataformats::SourceID sid;
+    sid.subsystem = daqdataformats::SourceID::Subsystem::kTrigger;
+    sid.id = source_id;
+    auto it_req = m_map_sourceid_connections.find(sid);
+    if (it_req == m_map_sourceid_connections.end() || it_req->second == nullptr) {
+      m_map_sourceid_connections[sid] = get_iom_sender<dfmessages::DataRequest>(faNetUid);
+
+      // TODO: This probably doesn't belong here, and probably should be more TriggerDecision-dependent
+      m_loop_sleep = std::chrono::duration_cast<std::chrono::milliseconds>(
+        m_queue_timeout / (2. + log2(m_map_sourceid_connections.size())));
+      if (m_loop_sleep.count() == 0) {
+        m_loop_sleep = m_queue_timeout;
+      }
+    }
+  }
+  lk.unlock();
 }
 
 void

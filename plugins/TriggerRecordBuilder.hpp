@@ -239,6 +239,7 @@ private:
   std::shared_ptr<fragment_receiver_t> m_fragment_input;
 
   // Output connections
+  void setup_data_request_connections(const appdal::TriggerApplication* trgapp);
   void setup_data_request_connections(const appdal::ReadoutApplication* roapp);
   std::shared_ptr<trigger_record_sender_t> m_trigger_record_output;
   mutable std::mutex m_map_sourceid_connections_mutex;
