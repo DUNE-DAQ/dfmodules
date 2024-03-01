@@ -7,11 +7,16 @@
  */
 
 #include "DataWriter.hpp"
+#include "SchemaUtils.hpp"
 #include "dfmodules/CommonIssues.hpp"
-#include "dfmodules/datawriter/Nljs.hpp"
 #include "dfmodules/datawriterinfo/InfoNljs.hpp"
+#include "dfmodules/hdf5datastore/Nljs.hpp"
 
-#include "appfwk/DAQModuleHelper.hpp"
+#include "coredal/Application.hpp"
+#include "coredal/Session.hpp"
+#include "appdal/DataWriter.hpp"
+#include "appdal/TriggerRecordBuilder.hpp"
+#include "coredal/Connection.hpp"
 #include "daqdataformats/Fragment.hpp"
 #include "dfmessages/TriggerDecision.hpp"
 #include "dfmessages/TriggerRecord_serialization.hpp"
@@ -56,16 +61,62 @@ DataWriter::DataWriter(const std::string& name)
 }
 
 void
-DataWriter::init(const data_t& init_data)
+DataWriter::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
+  auto mdal = mcfg->module<appdal::DataWriter>(get_name());
+  if (!mdal) {
+    throw appfwk::CommandFailed(ERS_HERE, "init", get_name(), "Unable to retrieve configuration object");
+  }
   auto iom = iomanager::IOManager::get();
-  auto qi = appfwk::connection_index(init_data, { "trigger_record_input", "token_output" });
-  m_trigger_record_connection = qi["trigger_record_input"] ;
+
+  auto inputs = mdal->get_inputs();
+  auto outputs = mdal->get_outputs();
+
+  if (inputs.size() != 1) {
+    throw appfwk::CommandFailed(ERS_HERE, "init", get_name(), "Expected 1 input, got " + std::to_string(inputs.size()));
+  }
+  if (outputs.size() != 1) {
+    throw appfwk::CommandFailed(
+      ERS_HERE, "init", get_name(), "Expected 1 output, got " + std::to_string(outputs.size()));  
+  }
+
+  m_data_writer_conf = mdal->get_configuration();
+  m_readout_map = mcfg->configuration_manager()->session()->get_readout_map();
+  m_detector_config = mcfg->configuration_manager()->session()->get_detector_configuration();
+
+  if (inputs[0]->get_data_type() != datatype_to_string<std::unique_ptr<daqdataformats::TriggerRecord>>()) {
+    throw InvalidQueueFatalError(ERS_HERE, get_name(), "TriggerRecord Input queue"); 
+  }
+  if (outputs[0]->get_data_type() != datatype_to_string<dfmessages::TriggerDecisionToken>()) {
+    throw InvalidQueueFatalError(ERS_HERE, get_name(), "TriggerDecisionToken Output queue"); 
+  }
+
+  m_trigger_record_connection = inputs[0]->UID();
+
+  auto modules = mcfg->modules();
+  std::string trb_uid = "";
+  for (auto& mod : modules) {
+    if (mod->class_name() == "TriggerRecordBuilder") {
+      trb_uid = mod->UID();
+      break;
+    }
+  }
+
+  auto trbdal = mcfg->module<appdal::TriggerRecordBuilder>(trb_uid);
+  if (!trbdal) {
+    throw appfwk::CommandFailed(ERS_HERE, "init", get_name(), "Unable to retrieve TRB configuration object");
+  }
+  for (auto con : trbdal->get_inputs()) {
+    if (con->get_data_type() == datatype_to_string<dfmessages::TriggerDecision>()) {
+      m_trigger_decision_connection =con->UID();
+    }
+  }
+
   // try to create the receiver to see test the connection anyway
   m_tr_receiver = iom -> get_receiver<std::unique_ptr<daqdataformats::TriggerRecord>>(m_trigger_record_connection);
 
-  m_token_output = iom-> get_sender<dfmessages::TriggerDecisionToken>(qi["token_output"]);
+  m_token_output = iom->get_sender<dfmessages::TriggerDecisionToken>(outputs[0]->UID());
   
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
@@ -86,25 +137,26 @@ DataWriter::get_info(opmonlib::InfoCollector& ci, int /*level*/)
   ci.add(dwi);
 }
 void
-DataWriter::do_conf(const data_t& payload)
+DataWriter::do_conf(const data_t&)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
 
-  datawriter::ConfParams conf_params = payload.get<datawriter::ConfParams>();
-  m_data_storage_prescale = conf_params.data_storage_prescale;
+  m_data_storage_prescale = m_data_writer_conf->get_data_storage_prescale();
   TLOG_DEBUG(TLVL_CONFIG) << get_name() << ": data_storage_prescale is " << m_data_storage_prescale;
-  TLOG_DEBUG(TLVL_CONFIG) << get_name() << ": data_store_parameters are " << conf_params.data_store_parameters;
-  m_min_write_retry_time_usec = conf_params.min_write_retry_time_usec;
+  TLOG_DEBUG(TLVL_CONFIG) << get_name() << ": data_store_parameters are " << m_data_writer_conf->get_data_store_params();
+  m_min_write_retry_time_usec = m_data_writer_conf->get_min_write_retry_time_ms() * 1000;
   if (m_min_write_retry_time_usec < 1) {
     m_min_write_retry_time_usec = 1;
   }
-  m_max_write_retry_time_usec = conf_params.max_write_retry_time_usec;
-  m_write_retry_time_increase_factor = conf_params.write_retry_time_increase_factor;
-  m_trigger_decision_connection = conf_params.decision_connection;
+  m_max_write_retry_time_usec = m_data_writer_conf->get_max_write_retry_time_ms() * 1000;
+  m_write_retry_time_increase_factor = m_data_writer_conf->get_write_retry_time_increase_factor();
 
   // create the DataStore instance here
   try {
-    m_data_writer = make_data_store(payload["data_store_parameters"]);
+    auto config_params = convert_to_json(m_data_writer_conf->get_data_store_params(), m_readout_map, m_detector_config);
+    hdf5datastore::data_t hdf5ds_json;
+    hdf5datastore::to_json(hdf5ds_json, config_params);
+    m_data_writer = make_data_store(hdf5ds_json);
   } catch (const ers::Issue& excpt) {
     throw UnableToConfigure(ERS_HERE, get_name(), excpt);
   }
@@ -113,6 +165,18 @@ DataWriter::do_conf(const data_t& payload)
   if (m_data_writer.get() == nullptr) {
     throw InvalidDataWriter(ERS_HERE, get_name());
   }
+
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
+}
+
+void
+DataWriter::do_start(const data_t& payload)
+{
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_start() method";
+  
+  rcif::cmd::StartParams start_params = payload.get<rcif::cmd::StartParams>();
+  m_data_storage_is_enabled = (!start_params.disable_data_storage);
+  m_run_number = start_params.run;
 
   TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Sending initial TriggerDecisionToken to DFO to announce my presence";
   dfmessages::TriggerDecisionToken token;
@@ -130,20 +194,9 @@ DataWriter::do_conf(const data_t& payload)
       oss_warn << "Send with sender \"" << m_token_output->get_name() << "\" failed";
       ers::warning(iomanager::OperationFailed(ERS_HERE, oss_warn.str(), excpt));
       wasSentSuccessfully--;
+      std::this_thread::sleep_for(std::chrono::microseconds(5000));
     }
   } while (wasSentSuccessfully);
-  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
-}
-
-void
-DataWriter::do_start(const data_t& payload)
-{
-  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_start() method";
-  
-  rcif::cmd::StartParams start_params = payload.get<rcif::cmd::StartParams>();
-  m_data_storage_is_enabled = (!start_params.disable_data_storage);
-  m_run_number = start_params.run;
-
  
   // 04-Feb-2021, KAB: added this call to allow DataStore to prepare for the run.
   // I've put this call fairly early in this method because it could throw an

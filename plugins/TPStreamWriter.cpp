@@ -9,10 +9,13 @@
 #include "TPStreamWriter.hpp"
 #include "dfmodules/CommonIssues.hpp"
 #include "dfmodules/TPBundleHandler.hpp"
-#include "dfmodules/tpstreamwriter/Nljs.hpp"
+#include "dfmodules/hdf5datastore/Nljs.hpp"
 #include "dfmodules/tpstreamwriterinfo/InfoNljs.hpp"
+#include "SchemaUtils.hpp"
 
-#include "appfwk/DAQModuleHelper.hpp"
+#include "appdal/TPStreamWriter.hpp"
+#include "coredal/Connection.hpp"
+#include "coredal/Session.hpp"
 #include "iomanager/IOManager.hpp"
 #include "daqdataformats/Fragment.hpp"
 #include "daqdataformats/Types.hpp"
@@ -49,10 +52,18 @@ TPStreamWriter::TPStreamWriter(const std::string& name)
 }
 
 void
-TPStreamWriter::init(const nlohmann::json& payload)
+TPStreamWriter::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
-  m_tpset_source = iomanager::IOManager::get()->get_receiver<incoming_t>( appfwk::connection_uid(payload, "tpset_source"));
+  auto mdal = mcfg->module<appdal::TPStreamWriter>(get_name());
+  if (!mdal) {
+    throw appfwk::CommandFailed(ERS_HERE, "init", get_name(), "Unable to retrieve configuration object");
+  }
+  assert(mdal->get_inputs().size() == 1);
+  m_tpset_source = iomanager::IOManager::get()->get_receiver<trigger::TPSet>(mdal->get_inputs()[0]->UID());
+  m_tp_writer_conf = mdal->get_configuration();
+  m_readout_map = mcfg->configuration_manager()->session()->get_readout_map();
+  m_detector_config = mcfg->configuration_manager()->session()->get_detector_configuration();
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
 
@@ -69,16 +80,18 @@ TPStreamWriter::get_info(opmonlib::InfoCollector& ci, int /*level*/)
 }
 
 void
-TPStreamWriter::do_conf(const data_t& payload)
+TPStreamWriter::do_conf(const data_t& )
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
-  tpstreamwriter::ConfParams conf_params = payload.get<tpstreamwriter::ConfParams>();
-  m_accumulation_interval_ticks = conf_params.tp_accumulation_interval_ticks;
-  m_source_id = conf_params.source_id;
+  m_accumulation_interval_ticks = m_tp_writer_conf->get_tp_accumulation_interval();
+  m_source_id = m_tp_writer_conf->get_source_id();
 
   // create the DataStore instance here
   try {
-    m_data_writer = make_data_store(payload["data_store_parameters"]);
+    auto config_params = convert_to_json(m_tp_writer_conf->get_data_store_params(), m_readout_map, m_detector_config);
+    hdf5datastore::data_t hdf5ds_json;
+    hdf5datastore::to_json(hdf5ds_json, config_params);
+    m_data_writer = make_data_store(hdf5ds_json);
   } catch (const ers::Issue& excpt) {
     throw UnableToConfigure(ERS_HERE, get_name(), excpt);
   }

@@ -8,11 +8,10 @@
 
 #include "DataFlowOrchestrator.hpp"
 #include "dfmodules/CommonIssues.hpp"
-
-#include "dfmodules/datafloworchestrator/Nljs.hpp"
 #include "dfmodules/datafloworchestratorinfo/InfoNljs.hpp"
 
-#include "appfwk/DAQModuleHelper.hpp"
+#include "appdal/DataFlowOrchestrator.hpp"
+#include "coredal/Connection.hpp"
 #include "appfwk/app/Nljs.hpp"
 #include "iomanager/IOManager.hpp"
 #include "logging/Logging.hpp"
@@ -58,39 +57,61 @@ DataFlowOrchestrator::DataFlowOrchestrator(const std::string& name)
 }
 
 void
-DataFlowOrchestrator::init(const data_t& init_data)
+DataFlowOrchestrator::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
 
+  auto mdal = mcfg->module<appdal::DataFlowOrchestrator>(get_name());
+  if (!mdal) {
+    throw appfwk::CommandFailed(ERS_HERE, "init", get_name(), "Unable to retrieve configuration object");
+  }
   auto iom = iomanager::IOManager::get();
-  auto mandatory_connections =
-    appfwk::connection_index(init_data, { "token_connection", "td_connection", "busy_connection" });
 
-  m_token_connection = mandatory_connections["token_connection"];
-  m_td_connection = mandatory_connections["td_connection"];
-  auto busy_connection = mandatory_connections["busy_connection"];
+  for (auto con : mdal->get_inputs()) {
+    if (con->get_data_type() == datatype_to_string<dfmessages::TriggerDecisionToken>()) {
+      m_token_connection = con->UID();
+    }
+    if (con->get_data_type() == datatype_to_string<dfmessages::TriggerDecision>()) {
+      m_td_connection = con->UID();
+    }
+  }
+  for (auto con : mdal->get_outputs()) {
+    if (con->get_data_type() == datatype_to_string<dfmessages::TriggerInhibit>()) {
+      m_busy_sender = iom->get_sender<dfmessages::TriggerInhibit>(con->UID());
+    }
+  }
 
+  if (m_token_connection == "") {
+    throw appfwk::MissingConnection(
+      ERS_HERE, get_name(), datatype_to_string<dfmessages::TriggerDecisionToken>(), "input");
+  }
+  if (m_td_connection == "") {
+    throw appfwk::MissingConnection(ERS_HERE, get_name(), datatype_to_string<dfmessages::TriggerDecision>(), "input");
+  }
+  if (m_busy_sender == nullptr) {
+    throw appfwk::MissingConnection(ERS_HERE, get_name(), datatype_to_string<dfmessages::TriggerInhibit>(), "output");
+  
+  }
+
+  m_dfo_conf = mdal->get_configuration();
   // these are just tests to check if the connections are ok
   iom->get_receiver<dfmessages::TriggerDecisionToken>(m_token_connection);
   iom->get_receiver<dfmessages::TriggerDecision>(m_td_connection);
-  m_busy_sender = iom->get_sender<dfmessages::TriggerInhibit>(busy_connection);
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
 
 void
-DataFlowOrchestrator::do_conf(const data_t& payload)
+DataFlowOrchestrator::do_conf(const data_t&)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
 
-  auto parsed_conf = payload.get<datafloworchestrator::ConfParams>();
+  m_queue_timeout = std::chrono::milliseconds(m_dfo_conf->get_general_queue_timeout_ms());
+  m_stop_timeout = std::chrono::microseconds(m_dfo_conf->get_stop_timeout_ms());
+  m_busy_threshold = m_dfo_conf->get_busy_threshold();
+  m_free_threshold = m_dfo_conf->get_free_threshold();
 
-  m_queue_timeout = std::chrono::milliseconds(parsed_conf.general_queue_timeout);
-  m_stop_timeout = std::chrono::microseconds(parsed_conf.stop_timeout * 1000);
-  m_busy_threshold = parsed_conf.thresholds.busy;
-  m_free_threshold = parsed_conf.thresholds.free;
-
-  m_td_send_retries = parsed_conf.td_send_retries;
+  m_td_send_retries = m_dfo_conf->get_td_send_retries();
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method, there are "
                                       << m_dataflow_availability.size() << " TRB apps defined";
@@ -191,6 +212,7 @@ DataFlowOrchestrator::receive_trigger_decision(const dfmessages::TriggerDecision
     if (assignment == nullptr) { // this can happen if all application are in error state
       ers::error(UnableToAssign(ERS_HERE, decision.trigger_number));
       usleep(500);
+      notify_trigger(is_busy());
       continue;
     }
 

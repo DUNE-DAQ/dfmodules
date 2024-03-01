@@ -11,10 +11,13 @@
 
 #include "dfmodules/triggerrecordbuilderinfo/InfoNljs.hpp"
 
+#include "appdal/TRBConf.hpp"
 #include "daqdataformats/Fragment.hpp"
 #include "daqdataformats/SourceID.hpp"
 #include "daqdataformats/TriggerRecord.hpp"
 #include "daqdataformats/Types.hpp"
+#include "appdal/ReadoutApplication.hpp"
+#include "appdal/TriggerApplication.hpp"
 #include "dfmessages/DataRequest.hpp"
 #include "dfmessages/TRMonRequest.hpp"
 #include "dfmessages/TriggerDecision.hpp"
@@ -179,7 +182,7 @@ public:
   TriggerRecordBuilder(TriggerRecordBuilder&&) = delete;            ///< TriggerRecordBuilder is not move-constructible
   TriggerRecordBuilder& operator=(TriggerRecordBuilder&&) = delete; ///< TriggerRecordBuilder is not move-assignable
 
-  void init(const data_t&) override;
+  void init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg) override;
   void get_info(opmonlib::InfoCollector& ci, int level) override;
 
 protected:
@@ -226,6 +229,7 @@ private:
   void do_work(std::atomic<bool>&);
 
   // Configuration
+  const appdal::TRBConf* m_trb_conf;
   std::chrono::milliseconds m_queue_timeout;
   std::chrono::milliseconds m_loop_sleep;
   std::string m_reply_connection;
@@ -236,7 +240,8 @@ private:
   std::shared_ptr<fragment_receiver_t> m_fragment_input;
 
   // Output connections
-  std::map<std::string, std::string> m_producer_conn_ref_map;
+  void setup_data_request_connections(const appdal::TriggerApplication* trgapp);
+  void setup_data_request_connections(const appdal::ReadoutApplication* roapp);
   std::shared_ptr<trigger_record_sender_t> m_trigger_record_output;
   mutable std::mutex m_map_sourceid_connections_mutex;
   std::map<daqdataformats::SourceID, std::shared_ptr<data_req_sender_t>> m_map_sourceid_connections; ///< Mappinng between SourceID and connections

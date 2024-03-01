@@ -9,8 +9,10 @@
 #include "FragmentAggregator.hpp"
 #include "dfmodules/CommonIssues.hpp"
 
-#include "appfwk/DAQModuleHelper.hpp"
+#include "appdal/FragmentAggregator.hpp"
 #include "appfwk/app/Nljs.hpp"
+#include "coredal/Connection.hpp"
+#include "coredal/QueueWithId.hpp"
 #include "dfmessages/Fragment_serialization.hpp"
 #include "logging/Logging.hpp"
 
@@ -30,18 +32,28 @@ FragmentAggregator::FragmentAggregator(const std::string& name)
 }
 
 void
-FragmentAggregator::init(const data_t& init_data)
+FragmentAggregator::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
 {
-  auto ci = appfwk::connection_index(init_data, { "data_req_input", "fragment_input" });
+  auto mdal = mcfg->module<appdal::FragmentAggregator>(get_name());
+  if (!mdal) {
+    throw appfwk::CommandFailed(ERS_HERE, "init", get_name(), "Unable to retrieve configuration object");
+  }
 
-  m_data_req_input = ci["data_req_input"];
-  m_fragment_input = ci["fragment_input"];
+  auto inputs = mdal->get_inputs();
+  for (auto con : mdal->get_inputs()) {
+    if (con->get_data_type() == datatype_to_string < dfmessages::DataRequest>()) {
+      m_data_req_input = con->UID();
+    }
+    if (con->get_data_type() == datatype_to_string<daqdataformats::Fragment>()) {
+      m_fragment_input = con->UID();
+    }
+  }
 
-  m_producer_conn_ref_map.clear();
-  auto ini = init_data.get<appfwk::app::ModInit>();
-  for (const auto& cr : ini.conn_refs) {
-    if (cr.name.find("request_output_") != std::string::npos) {
-      m_producer_conn_ref_map[cr.name] = cr.uid;
+  m_producer_conn_ids.clear();
+  for (const auto cr : mdal->get_outputs()) {
+    if (cr->get_data_type() == datatype_to_string<dfmessages::DataRequest>()) {
+	auto qid = cr->cast<coredal::QueueWithId>();
+      	    m_producer_conn_ids[qid->get_source_id()] = cr->UID();
     }
   }
 }
@@ -88,18 +100,18 @@ FragmentAggregator::process_data_request(dfmessages::DataRequest& data_request)
   }
   // Forward Data Request to the right DLH
   try {
-    std::string map_key = "request_output_" + data_request.request_information.component.to_string();
-    auto map_element = m_producer_conn_ref_map.find(map_key);
-    if (map_element == m_producer_conn_ref_map.end()) {
+    //std::string component_name = "inputReqToDLH-" + data_request.request_information.component.to_string();
+    auto uid_elem = m_producer_conn_ids.find(data_request.request_information.component.id);
+    if (uid_elem == m_producer_conn_ids.end()) {
       ers::error(dunedaq::dfmodules::DRSenderLookupFailed(ERS_HERE,
                                                           data_request.request_information.component,
                                                           data_request.run_number,
                                                           data_request.trigger_number,
                                                           data_request.sequence_number));
     } else {
-      std::string uid = map_element->second;
-      auto sender = get_iom_sender<dfmessages::DataRequest>(uid);
-      data_request.data_destination = "fragment_queue";
+      TLOG() << "Send data request to " << uid_elem->second;
+      auto sender = get_iom_sender<dfmessages::DataRequest>(uid_elem->second);
+      data_request.data_destination = m_fragment_input;
       sender->send(std::move(data_request), iomanager::Sender::s_no_block);
     }
   } catch (const ers::Issue& excpt) {

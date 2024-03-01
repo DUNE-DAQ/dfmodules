@@ -12,6 +12,9 @@
 #include "dfmodules/DataStore.hpp"
 
 #include "appfwk/DAQModule.hpp"
+#include "appdal/DataWriterConf.hpp"
+#include "coredal/ReadoutMap.hpp"
+#include "coredal/DetectorConfig.hpp"
 #include "daqdataformats/TriggerRecord.hpp"
 #include "dfmessages/TriggerDecisionToken.hpp"
 #include "iomanager/Receiver.hpp"
@@ -44,7 +47,7 @@ public:
   DataWriter(DataWriter&&) = delete;                 ///< DataWriter is not move-constructible
   DataWriter& operator=(DataWriter&&) = delete;      ///< DataWriter is not move-assignable
 
-  void init(const data_t&) override;
+  void init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg) override;
   void get_info(opmonlib::InfoCollector& ci, int level) override;
 
 private:
@@ -59,6 +62,9 @@ private:
   std::atomic<bool> m_running = false;
 
   // Configuration
+  const appdal::DataWriterConf* m_data_writer_conf;
+  const coredal::ReadoutMap* m_readout_map;
+  const coredal::DetectorConfig* m_detector_config;
   // size_t m_sleep_msec_while_running;
   std::chrono::milliseconds m_queue_timeout;
   bool m_data_storage_is_enabled;

@@ -14,6 +14,9 @@
 #include "dfmodules/DataStore.hpp"
 
 #include "appfwk/DAQModule.hpp"
+#include "appdal/TPStreamWriterConf.hpp"
+#include "coredal/ReadoutMap.hpp"
+#include "coredal/DetectorConfig.hpp"
 #include "iomanager/Receiver.hpp"
 #include "daqdataformats/TimeSlice.hpp"
 #include "trigger/TPSet.hpp"
@@ -42,7 +45,7 @@ public:
   TPStreamWriter(TPStreamWriter&&) = delete;                 ///< TPStreamWriter is not move-constructible
   TPStreamWriter& operator=(TPStreamWriter&&) = delete;      ///< TPStreamWriter is not move-assignable
 
-  void init(const data_t&) override;
+  void init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg) override;
   void get_info(opmonlib::InfoCollector& ci, int level) override;
 
 private:
@@ -57,14 +60,16 @@ private:
   void do_work(std::atomic<bool>&);
 
   // Configuration
+  const appdal::TPStreamWriterConf* m_tp_writer_conf;
+  const coredal::ReadoutMap* m_readout_map;
+  const coredal::DetectorConfig* m_detector_config;
   std::chrono::milliseconds m_queue_timeout;
   size_t m_accumulation_interval_ticks;
   daqdataformats::run_number_t m_run_number;
   uint32_t m_source_id; // NOLINT(build/unsigned)
 
   // Queue sources and sinks
-  using incoming_t = trigger::TPSet;
-  using source_t = iomanager::ReceiverConcept<incoming_t>;
+  using source_t = iomanager::ReceiverConcept<trigger::TPSet>;
   std::shared_ptr<source_t> m_tpset_source;
 
   // Worker(s)

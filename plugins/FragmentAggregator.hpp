@@ -50,7 +50,7 @@ public:
   FragmentAggregator(FragmentAggregator&&) = delete;
   FragmentAggregator& operator=(FragmentAggregator&&) = delete;
 
-  void init(const nlohmann::json& obj) override;
+  void init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg) override;
   void get_info(opmonlib::InfoCollector& ci, int level) override;
 
 private:
@@ -64,7 +64,7 @@ private:
   // Input Connection namess
   std::string m_data_req_input;
   std::string m_fragment_input;
-  std::map<std::string, std::string> m_producer_conn_ref_map;
+  std::map<int, std::string> m_producer_conn_ids;
 
   // Stats
   std::atomic<int> m_packets_processed{ 0 };

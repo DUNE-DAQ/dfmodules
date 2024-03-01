@@ -32,7 +32,7 @@ daq_add_library( TriggerInhibitAgent.cpp TriggerRecordBuilderData.cpp TPBundleHa
 daq_add_plugin( HDF5DataStore      duneDataStore LINK_LIBRARIES logging::logging daqdataformats::daqdataformats hdf5libs::hdf5libs appfwk::appfwk stdc++fs)
 
 daq_add_plugin( FragmentAggregator    duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager )
-daq_add_plugin( DataWriter            duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager )
+daq_add_plugin( DataWriter            duneDAQModule LINK_LIBRARIES dfmodules hdf5libs::hdf5libs iomanager::iomanager )
 daq_add_plugin( DataFlowOrchestrator  duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager )
 daq_add_plugin( TriggerRecordBuilder  duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager )
 daq_add_plugin( FakeDataProd          duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager)
@@ -48,7 +48,6 @@ daq_add_unit_test( DataFlowOrchestrator_test LINK_LIBRARIES dfmodules )
 add_dependencies( DataFlowOrchestrator_test dfmodules_DataFlowOrchestrator_duneDAQModule)
 
 daq_add_unit_test( TriggerRecordBuilderData_test LINK_LIBRARIES dfmodules )
-
 daq_add_unit_test( DataStoreFactory_test    LINK_LIBRARIES dfmodules )
 
 ##############################################################################

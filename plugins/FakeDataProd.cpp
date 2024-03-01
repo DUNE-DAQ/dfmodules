@@ -8,10 +8,10 @@
 
 #include "FakeDataProd.hpp"
 #include "dfmodules/CommonIssues.hpp"
-#include "dfmodules/fakedataprod/Nljs.hpp"
 #include "dfmodules/fakedataprodinfo/InfoNljs.hpp"
 
-#include "appfwk/DAQModuleHelper.hpp"
+#include "appdal/FakeDataProd.hpp"
+#include "coredal/Connection.hpp"
 #include "dfmessages/Fragment_serialization.hpp"
 #include "dfmessages/TimeSync.hpp"
 #include "iomanager/IOManager.hpp"
@@ -54,29 +54,42 @@ FakeDataProd::FakeDataProd(const std::string& name)
 }
 
 void
-FakeDataProd::init(const data_t& init_data)
+FakeDataProd::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
-  auto qi = appfwk::connection_index(init_data, { "data_request_input_queue", "timesync_output" });
+  auto mdal = mcfg->module<appdal::FakeDataProd>(get_name());
+  if (!mdal) {
+    throw appfwk::CommandFailed(ERS_HERE, "init", get_name(), "Unable to retrieve configuration object");
+  }
 
-  m_data_request_id = qi["data_request_input_queue"];
-  m_timesync_id = qi["timesync_output"];
+  auto inputs = mdal->get_inputs();
+  auto outputs = mdal->get_outputs();
 
+  if (inputs[0]->get_data_type() != datatype_to_string<dfmessages::DataRequest>()) {
+    throw InvalidQueueFatalError(ERS_HERE, get_name(), "DataRequest Input queue");
+  }
+  m_data_request_id = inputs[0]->UID();
+
+  for (auto con : outputs) {
+    if (con->get_data_type() == datatype_to_string<dfmessages::TimeSync>()) {
+      m_timesync_id = con->UID();
+    }
+  }
+  m_fake_data_prod_conf = mdal->get_configuration();
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
 
 void
-FakeDataProd::do_conf(const data_t& payload)
+FakeDataProd::do_conf(const data_t& )
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
 
-  fakedataprod::ConfParams tmpConfig = payload.get<fakedataprod::ConfParams>();
-  m_sourceid.subsystem = daqdataformats::SourceID::string_to_subsystem(tmpConfig.system_type);
-  m_sourceid.id = tmpConfig.source_id;
-  m_time_tick_diff = tmpConfig.time_tick_diff;
-  m_frame_size = tmpConfig.frame_size;
-  m_response_delay = tmpConfig.response_delay;
-  m_fragment_type = daqdataformats::string_to_fragment_type(tmpConfig.fragment_type);
+  m_sourceid.subsystem = daqdataformats::SourceID::string_to_subsystem(m_fake_data_prod_conf->get_system_type());
+  m_sourceid.id = m_fake_data_prod_conf->get_source_id();
+  m_time_tick_diff = m_fake_data_prod_conf->get_time_tick_diff();
+  m_frame_size = m_fake_data_prod_conf->get_frame_size();
+  m_response_delay = m_fake_data_prod_conf->get_response_delay();
+  m_fragment_type = daqdataformats::string_to_fragment_type(m_fake_data_prod_conf->get_fragment_type());
 
   TLOG_DEBUG(TLVL_CONFIG) << get_name() << ": configured for link number " << m_sourceid.id;
 
