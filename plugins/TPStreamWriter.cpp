@@ -64,6 +64,7 @@ TPStreamWriter::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
   m_tp_writer_conf = mdal->get_configuration();
   m_readout_map = mcfg->configuration_manager()->session()->get_readout_map();
   m_detector_config = mcfg->configuration_manager()->session()->get_detector_configuration();
+  m_source_id = mdal->get_source_id();
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
 
@@ -84,7 +85,6 @@ TPStreamWriter::do_conf(const data_t& )
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
   m_accumulation_interval_ticks = m_tp_writer_conf->get_tp_accumulation_interval();
-  m_source_id = m_tp_writer_conf->get_source_id();
 
   // create the DataStore instance here
   try {
