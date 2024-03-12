@@ -443,7 +443,7 @@ private:
         // m_file_handle->write_attribute("data_format_version",(int)m_key_translator_ptr->get_current_version());
         m_file_handle->write_attribute("operational_environment", (std::string)m_config_params.operational_environment);
         m_file_handle->write_attribute("offline_data_stream", (std::string)m_config_params.offline_data_stream);
-        m_file_handle->write_attribute("run_is_for_test_purposes", (bool)m_run_is_for_test_purposes);
+        m_file_handle->write_attribute("run_is_for_test_purposes", (std::string)(m_run_is_for_test_purposes ? "true" : "false"));
       }
     } else {
       TLOG_DEBUG(TLVL_BASIC) << get_name() << ": Pointer file to  " << m_basic_name_of_open_file
