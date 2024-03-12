@@ -45,6 +45,7 @@
 enum
 {
   TLVL_ENTER_EXIT_METHODS = 5,
+  TLVL_INIT = 8,
   TLVL_WORK_STEPS = 10,
   TLVL_BOOKKEEPING = 15,
   TLVL_DISPATCH_DATAREQ = 21,
@@ -144,6 +145,12 @@ TriggerRecordBuilder::setup_data_request_connections(const appdal::SmartDaqAppli
       faNetDesc = rule->get_descriptor();
     }
   }
+
+  if (faNetDesc == nullptr) {
+    TLOG_DEBUG(TLVL_INIT) << "SmartDaqApplication " << smartapp->UID() << " does not have any DataRequest inputs";
+    return;
+  }
+
   std::string faNetUid = faNetDesc->get_uid_base() + smartapp->UID();
 
   // find the queue for sourceid_req in the map
