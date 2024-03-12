@@ -120,7 +120,8 @@ public:
    * This allows DataStore instances to make any preparations that will be
    * beneficial in advance of the first data blocks being written or read.
    */
-  virtual void prepare_for_run(daqdataformats::run_number_t run_number) = 0;
+  virtual void prepare_for_run(daqdataformats::run_number_t run_number,
+                               bool run_is_for_test_purposes) = 0;
 
   /**
    * @brief Informs the DataStore that writes or reads of data blocks associated

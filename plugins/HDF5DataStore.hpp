@@ -254,9 +254,11 @@ public:
    *
    * This method may throw an exception if it finds a problem.
    */
-  void prepare_for_run(daqdataformats::run_number_t run_number)
+  void prepare_for_run(daqdataformats::run_number_t run_number,
+                       bool run_is_for_test_purposes)
   {
     m_run_number = run_number;
+    m_run_is_for_test_purposes = run_is_for_test_purposes;
 
     struct statvfs vfs_results;
     TLOG_DEBUG(TLVL_BASIC) << get_name() << ": Preparing to get the statvfs results for path: \"" << m_path << "\"";
@@ -316,6 +318,7 @@ private:
   std::string m_basic_name_of_open_file;
   unsigned m_open_flags_of_open_file;
   daqdataformats::run_number_t m_run_number;
+  bool m_run_is_for_test_purposes;
   hdf5libs::hdf5rawdatafile::SrcIDGeoIDMap m_hardware_map;
 
   // Total number of generated files
@@ -439,6 +442,8 @@ private:
         // write attributes that aren't being handled by the HDF5RawDataFile right now
         // m_file_handle->write_attribute("data_format_version",(int)m_key_translator_ptr->get_current_version());
         m_file_handle->write_attribute("operational_environment", (std::string)m_config_params.operational_environment);
+        m_file_handle->write_attribute("offline_data_stream", (std::string)m_config_params.offline_data_stream);
+        m_file_handle->write_attribute("run_is_for_test_purposes", (bool)m_run_is_for_test_purposes);
       }
     } else {
       TLOG_DEBUG(TLVL_BASIC) << get_name() << ": Pointer file to  " << m_basic_name_of_open_file
