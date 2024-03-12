@@ -17,7 +17,7 @@
 #include "daqdataformats/TriggerRecord.hpp"
 #include "daqdataformats/Types.hpp"
 #include "appdal/ReadoutApplication.hpp"
-#include "appdal/TriggerApplication.hpp"
+#include "appdal/SmartDaqApplication.hpp"
 #include "dfmessages/DataRequest.hpp"
 #include "dfmessages/TRMonRequest.hpp"
 #include "dfmessages/TriggerDecision.hpp"
@@ -240,7 +240,7 @@ private:
   std::shared_ptr<fragment_receiver_t> m_fragment_input;
 
   // Output connections
-  void setup_data_request_connections(const appdal::TriggerApplication* trgapp);
+  void setup_data_request_connections(const appdal::SmartDaqApplication* trgapp);
   void setup_data_request_connections(const appdal::ReadoutApplication* roapp);
   std::shared_ptr<trigger_record_sender_t> m_trigger_record_output;
   mutable std::mutex m_map_sourceid_connections_mutex;
