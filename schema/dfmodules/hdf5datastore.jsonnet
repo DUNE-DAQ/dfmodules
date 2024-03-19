@@ -59,7 +59,8 @@ local types = {
         s.field("free_space_safety_factor_for_write", self.factor, 5.0,
                 doc="The safety factor that should be used when determining if there is sufficient free disk space during write operations"),
         s.field("srcid_geoid_map", hdf5rdf.SrcIDGeoIDMap, doc="The Source-Geo Id map"),
-        
+	s.field("offline_data_stream", self.ds_string, "cosmics")
+
     ], doc="HDF5DataStore configuration"),
 
 };

@@ -144,7 +144,6 @@ DataWriter::do_start(const data_t& payload)
   m_data_storage_is_enabled = (!start_params.disable_data_storage);
   m_run_number = start_params.run;
 
- 
   // 04-Feb-2021, KAB: added this call to allow DataStore to prepare for the run.
   // I've put this call fairly early in this method because it could throw an
   // exception and abort the run start.  And, it seems sensible to avoid starting
@@ -159,7 +158,7 @@ DataWriter::do_start(const data_t& payload)
     }
     
     try {
-      m_data_writer->prepare_for_run(m_run_number);
+      m_data_writer->prepare_for_run(m_run_number, (start_params.production_vs_test == "TEST"));
     } catch (const ers::Issue& excpt) {
       throw UnableToStart(ERS_HERE, get_name(), m_run_number, excpt);
     }
