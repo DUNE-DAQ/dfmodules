@@ -14,6 +14,7 @@
 #include "appdal/ReadoutApplication.hpp"
 #include "appdal/TriggerApplication.hpp"
 #include "appdal/TriggerRecordBuilder.hpp"
+#include "appdal/SourceIDConf.hpp"
 #include "appfwk/app/Nljs.hpp"
 #include "coredal/Application.hpp"
 #include "coredal/Connection.hpp"
@@ -44,6 +45,7 @@
 enum
 {
   TLVL_ENTER_EXIT_METHODS = 5,
+  TLVL_INIT = 8,
   TLVL_WORK_STEPS = 10,
   TLVL_BOOKKEEPING = 15,
   TLVL_DISPATCH_DATAREQ = 21,
@@ -115,12 +117,13 @@ TriggerRecordBuilder::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
   const coredal::Session* session = mcfg->configuration_manager()->session();
   for (auto& app : session->get_all_applications()) {
     auto roapp = app->cast<appdal::ReadoutApplication>();
+    auto smartapp = app->cast<appdal::SmartDaqApplication>();
     if (roapp != nullptr) {
       setup_data_request_connections(roapp);
-    } else {
-      auto trgapp = app->cast<appdal::TriggerApplication>();
-      if (trgapp != nullptr) {
-        setup_data_request_connections(trgapp);
+    } else if (smartapp != nullptr) {
+      auto source_id_check = smartapp->get_source_id();
+      if (source_id_check != nullptr) {
+        setup_data_request_connections(smartapp);
       }
     }
   }
@@ -131,13 +134,10 @@ TriggerRecordBuilder::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
 }
 
 void
-TriggerRecordBuilder::setup_data_request_connections(const appdal::TriggerApplication* trgapp)
+TriggerRecordBuilder::setup_data_request_connections(const appdal::SmartDaqApplication* smartapp)
 {
-  std::vector<uint32_t> app_source_ids;
-  app_source_ids.push_back(trgapp->get_source_id());
-
   const appdal::NetworkConnectionDescriptor* faNetDesc = nullptr;
-  for (auto rule : trgapp->get_network_rules()) {
+  for (auto rule : smartapp->get_network_rules()) {
     auto endpoint_class = rule->get_endpoint_class();
     auto data_type = rule->get_descriptor()->get_data_type();
 
@@ -145,26 +145,31 @@ TriggerRecordBuilder::setup_data_request_connections(const appdal::TriggerApplic
       faNetDesc = rule->get_descriptor();
     }
   }
-  std::string faNetUid = faNetDesc->get_uid_base() + trgapp->UID();
+
+  if (faNetDesc == nullptr) {
+    TLOG_DEBUG(TLVL_INIT) << "SmartDaqApplication " << smartapp->UID() << " does not have any DataRequest inputs";
+    return;
+  }
+
+  std::string faNetUid = faNetDesc->get_uid_base() + smartapp->UID();
 
   // find the queue for sourceid_req in the map
   std::unique_lock<std::mutex> lk(m_map_sourceid_connections_mutex);
-  for (auto& source_id : app_source_ids) {
-    daqdataformats::SourceID sid;
-    sid.subsystem = daqdataformats::SourceID::Subsystem::kTrigger;
-    sid.id = source_id;
-    auto it_req = m_map_sourceid_connections.find(sid);
-    if (it_req == m_map_sourceid_connections.end() || it_req->second == nullptr) {
-      m_map_sourceid_connections[sid] = get_iom_sender<dfmessages::DataRequest>(faNetUid);
+  daqdataformats::SourceID sid;
+  sid.subsystem = daqdataformats::SourceID::string_to_subsystem(smartapp->get_source_id()->get_subsystem());
+  sid.id = smartapp->get_source_id()->get_id();
+  auto it_req = m_map_sourceid_connections.find(sid);
+  if (it_req == m_map_sourceid_connections.end() || it_req->second == nullptr) {
+    m_map_sourceid_connections[sid] = get_iom_sender<dfmessages::DataRequest>(faNetUid);
 
-      // TODO: This probably doesn't belong here, and probably should be more TriggerDecision-dependent
-      m_loop_sleep = std::chrono::duration_cast<std::chrono::milliseconds>(
-        m_queue_timeout / (2. + log2(m_map_sourceid_connections.size())));
-      if (m_loop_sleep.count() == 0) {
-        m_loop_sleep = m_queue_timeout;
-      }
+    // TODO: This probably doesn't belong here, and probably should be more TriggerDecision-dependent
+    m_loop_sleep = std::chrono::duration_cast<std::chrono::milliseconds>(
+      m_queue_timeout / (2. + log2(m_map_sourceid_connections.size())));
+    if (m_loop_sleep.count() == 0) {
+      m_loop_sleep = m_queue_timeout;
     }
   }
+
   lk.unlock();
 }
 
