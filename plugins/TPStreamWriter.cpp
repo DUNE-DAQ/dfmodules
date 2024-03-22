@@ -21,7 +21,6 @@
 
 #include "boost/date_time/posix_time/posix_time.hpp"
 
-#include <chrono>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -74,6 +73,8 @@ TPStreamWriter::do_conf(const data_t& payload)
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
   tpstreamwriter::ConfParams conf_params = payload.get<tpstreamwriter::ConfParams>();
   m_accumulation_interval_ticks = conf_params.tp_accumulation_interval_ticks;
+  m_accumulation_inactivity_time_before_write =
+    std::chrono::milliseconds(static_cast<int>(1000*conf_params.tp_accumulation_inactivity_time_before_write_sec));
   m_source_id = conf_params.source_id;
 
   // create the DataStore instance here
@@ -155,7 +156,7 @@ TPStreamWriter::do_work(std::atomic<bool>& running_flag)
   daqdataformats::timestamp_t first_timestamp = 0;
   daqdataformats::timestamp_t last_timestamp = 0;
 
-  TPBundleHandler tp_bundle_handler(m_accumulation_interval_ticks, m_run_number, std::chrono::seconds(1));
+  TPBundleHandler tp_bundle_handler(m_accumulation_interval_ticks, m_run_number, m_accumulation_inactivity_time_before_write);
 
   while (running_flag.load()) {
     trigger::TPSet tpset;
@@ -213,11 +214,11 @@ TPStreamWriter::do_work(std::atomic<bool>& running_flag)
           usleep(retry_wait_usec);
           retry_wait_usec *= 2;
         } catch (const std::exception& excpt) {
-          ers::error(DataWritingProblem(ERS_HERE,
-                                        get_name(),
-                                        timeslice_ptr->get_header().timeslice_number,
-                                        timeslice_ptr->get_header().run_number,
-                                        excpt));
+          ers::warning(DataWritingProblem(ERS_HERE,
+                                          get_name(),
+                                          timeslice_ptr->get_header().timeslice_number,
+                                          timeslice_ptr->get_header().run_number,
+                                          excpt));
         }
       } while (should_retry && running_flag.load());
     }

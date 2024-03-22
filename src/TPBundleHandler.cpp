@@ -129,6 +129,10 @@ TPBundleHandler::add_tpset(trigger::TPSet&& tpset)
     m_slice_index_offset = tsidx_from_begin_time - 1;
   }
 
+  if (tsidx_from_begin_time <= m_slice_index_offset) {
+    return;
+  }
+
   // add the TPSet to any 'extra' accumulators
   for (size_t tsidx = (tsidx_from_begin_time + 1); tsidx <= tsidx_from_end_time; ++tsidx) {
     {
