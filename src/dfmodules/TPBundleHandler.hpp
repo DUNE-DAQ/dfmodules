@@ -93,6 +93,11 @@ public:
     return m_update_time;
   }
 
+  void update_slice_number(int delta)
+  {
+    m_slice_number += delta;
+  }
+
 private:
   daqdataformats::timestamp_t m_begin_time;
   daqdataformats::timestamp_t m_end_time;
@@ -115,6 +120,7 @@ public:
     , m_run_number(run_number)
     , m_cooling_off_time(cooling_off_time)
     , m_slice_index_offset(0)
+    , m_one_or_more_time_slices_have_aged_out(false)
   {
   }
 
@@ -136,6 +142,7 @@ private:
   size_t m_slice_index_offset;
   std::map<daqdataformats::timestamp_t, TimeSliceAccumulator> m_timeslice_accumulators;
   mutable std::mutex m_accumulator_map_mutex;
+  bool m_one_or_more_time_slices_have_aged_out;
 };
 } // namespace dfmodules
 } // namespace dunedaq

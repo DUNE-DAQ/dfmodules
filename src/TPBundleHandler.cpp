@@ -133,9 +133,19 @@ TPBundleHandler::add_tpset(trigger::TPSet&& tpset)
   // than the one that we started with. Discard them so that we don't get
   // TimeSlices with large timeslice_ids (e.g. -1 converted to a uint64_t).
   if (tsidx_from_begin_time <= m_slice_index_offset) {
+    auto lk = std::lock_guard<std::mutex>(m_accumulator_map_mutex);
     int64_t diff = static_cast<int64_t>(tsidx_from_begin_time) - static_cast<int64_t>(m_slice_index_offset);
-    ers::warning(TardyTPSetReceived(ERS_HERE, tpset.origin.id, tpset.start_time, diff));
-    return;
+    if (! m_one_or_more_time_slices_have_aged_out) {
+      TLOG() << "Updating the slice numbers of existing accumulators by " << (1-diff);
+      for (auto& [local_tsidx, local_accum] : m_timeslice_accumulators) {
+        local_accum.update_slice_number(1 - diff);
+      }
+      m_slice_index_offset -= (1 - diff);
+    }
+    else {
+      ers::warning(TardyTPSetReceived(ERS_HERE, tpset.origin.id, tpset.start_time, diff));
+      return;
+    }
   }
 
   // add the TPSet to any 'extra' accumulators
@@ -187,6 +197,7 @@ TPBundleHandler::get_properly_aged_timeslices()
     m_timeslice_accumulators.erase(tsidx);
   }
 
+  if (list_of_timeslices.size() > 0) {m_one_or_more_time_slices_have_aged_out = true;}
   return list_of_timeslices;
 }
 
