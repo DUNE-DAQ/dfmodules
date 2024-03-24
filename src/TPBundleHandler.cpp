@@ -129,7 +129,12 @@ TPBundleHandler::add_tpset(trigger::TPSet&& tpset)
     m_slice_index_offset = tsidx_from_begin_time - 1;
   }
 
+  // 24-Mar-2024, KAB: added check for TimeSlice indexes that are earlier
+  // than the one that we started with. Discard them so that we don't get
+  // TimeSlices with large timeslice_ids (e.g. -1 converted to a uint64_t).
   if (tsidx_from_begin_time <= m_slice_index_offset) {
+    int64_t diff = static_cast<int64_t>(tsidx_from_begin_time) - static_cast<int64_t>(m_slice_index_offset);
+    ers::warning(TardyTPSetReceived(ERS_HERE, tpset.origin.id, tpset.start_time, diff));
     return;
   }
 
@@ -180,6 +185,23 @@ TPBundleHandler::get_properly_aged_timeslices()
   auto lk = std::lock_guard<std::mutex>(m_accumulator_map_mutex);
   for (auto& tsidx : elements_to_be_removed) {
     m_timeslice_accumulators.erase(tsidx);
+  }
+
+  return list_of_timeslices;
+}
+
+std::vector<std::unique_ptr<daqdataformats::TimeSlice>>
+TPBundleHandler::get_all_remaining_timeslices()
+{
+  std::vector<std::unique_ptr<daqdataformats::TimeSlice>> list_of_timeslices;
+
+  for (auto& [tsidx, accum] : m_timeslice_accumulators) {
+    list_of_timeslices.push_back(accum.get_timeslice());
+  }
+
+  {
+    auto lk = std::lock_guard<std::mutex>(m_accumulator_map_mutex);
+    m_timeslice_accumulators.clear();
   }
 
   return list_of_timeslices;
