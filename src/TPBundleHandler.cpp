@@ -130,7 +130,9 @@ TPBundleHandler::add_tpset(trigger::TPSet&& tpset)
   }
 
   // 24-Mar-2024, KAB: added check for TimeSlice indexes that are earlier
-  // than the one that we started with. Discard them so that we don't get
+  // than the one that we started with. We try to gracefully handle them
+  // by adjusting the slice_ids of existing slices, but if we can't do that,
+  // we discard them so that we don't get
   // TimeSlices with large timeslice_ids (e.g. -1 converted to a uint64_t).
   if (tsidx_from_begin_time <= m_slice_index_offset) {
     auto lk = std::lock_guard<std::mutex>(m_accumulator_map_mutex);
