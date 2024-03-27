@@ -21,7 +21,6 @@
 
 #include "boost/date_time/posix_time/posix_time.hpp"
 
-#include <chrono>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -74,6 +73,8 @@ TPStreamWriter::do_conf(const data_t& payload)
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
   tpstreamwriter::ConfParams conf_params = payload.get<tpstreamwriter::ConfParams>();
   m_accumulation_interval_ticks = conf_params.tp_accumulation_interval_ticks;
+  m_accumulation_inactivity_time_before_write =
+    std::chrono::milliseconds(static_cast<int>(1000*conf_params.tp_accumulation_inactivity_time_before_write_sec));
   m_source_id = conf_params.source_id;
 
   // create the DataStore instance here
@@ -155,38 +156,44 @@ TPStreamWriter::do_work(std::atomic<bool>& running_flag)
   daqdataformats::timestamp_t first_timestamp = 0;
   daqdataformats::timestamp_t last_timestamp = 0;
 
-  TPBundleHandler tp_bundle_handler(m_accumulation_interval_ticks, m_run_number, std::chrono::seconds(1));
+  TPBundleHandler tp_bundle_handler(m_accumulation_interval_ticks, m_run_number, m_accumulation_inactivity_time_before_write);
 
-  while (running_flag.load()) {
+  bool possible_pending_data = true;
+  while (running_flag.load() || possible_pending_data) {
     trigger::TPSet tpset;
     try {
       tpset = m_tpset_source->receive(m_queue_timeout);
       ++n_tpset_received;
       ++m_tpset_received;
+
+      if (tpset.type == trigger::TPSet::Type::kHeartbeat)
+        continue;
+
+      TLOG_DEBUG(21) << "Number of TPs in TPSet is " << tpset.objects.size() << ", Source ID is " << tpset.origin
+                     << ", seqno is " << tpset.seqno << ", start timestamp is " << tpset.start_time << ", run number is "
+                     << tpset.run_number << ", slice id is " << (tpset.start_time / m_accumulation_interval_ticks);
+
+      // 30-Mar-2022, KAB: added test for matching run number.  This is to avoid getting
+      // confused by TPSets that happen to be leftover in transit from one run to the
+      // next (which we have observed in v2.10.x systems).
+      if (tpset.run_number != m_run_number) {
+        TLOG_DEBUG(22) << "Discarding TPSet with invalid run number " << tpset.run_number << " (current is "
+                       << m_run_number << "),  Source ID is " << tpset.origin << ", seqno is " << tpset.seqno;
+        continue;
+      }
+
+      tp_bundle_handler.add_tpset(std::move(tpset));
     } catch (iomanager::TimeoutExpired&) {
-      continue;
+      if (running_flag.load()) {continue;}
     }
 
-    if (tpset.type == trigger::TPSet::Type::kHeartbeat)
-	    continue;
-
-    TLOG_DEBUG(21) << "Number of TPs in TPSet is " << tpset.objects.size() << ", Source ID is " << tpset.origin
-                   << ", seqno is " << tpset.seqno << ", start timestamp is " << tpset.start_time << ", run number is "
-                   << tpset.run_number << ", slice id is " << (tpset.start_time / m_accumulation_interval_ticks);
-
-    // 30-Mar-2022, KAB: added test for matching run number.  This is to avoid getting
-    // confused by TPSets that happen to be leftover in transit from one run to the
-    // next (which we have observed in v2.10.x systems).
-    if (tpset.run_number != m_run_number) {
-      TLOG_DEBUG(22) << "Discarding TPSet with invalid run number " << tpset.run_number << " (current is "
-                     << m_run_number << "),  Source ID is " << tpset.origin << ", seqno is " << tpset.seqno;
-      continue;
+    std::vector<std::unique_ptr<daqdataformats::TimeSlice>> list_of_timeslices;
+    if (running_flag.load()) {
+      list_of_timeslices = tp_bundle_handler.get_properly_aged_timeslices();
+    } else {
+      list_of_timeslices = tp_bundle_handler.get_all_remaining_timeslices();
+      possible_pending_data = false;
     }
-
-    tp_bundle_handler.add_tpset(std::move(tpset));
-
-    std::vector<std::unique_ptr<daqdataformats::TimeSlice>> list_of_timeslices =
-      tp_bundle_handler.get_properly_aged_timeslices();
     for (auto& timeslice_ptr : list_of_timeslices) {
       daqdataformats::SourceID sid(daqdataformats::SourceID::Subsystem::kTRBuilder, m_source_id);
       timeslice_ptr->set_element_id(sid);
@@ -213,11 +220,11 @@ TPStreamWriter::do_work(std::atomic<bool>& running_flag)
           usleep(retry_wait_usec);
           retry_wait_usec *= 2;
         } catch (const std::exception& excpt) {
-          ers::error(DataWritingProblem(ERS_HERE,
-                                        get_name(),
-                                        timeslice_ptr->get_header().timeslice_number,
-                                        timeslice_ptr->get_header().run_number,
-                                        excpt));
+          ers::warning(DataWritingProblem(ERS_HERE,
+                                          get_name(),
+                                          timeslice_ptr->get_header().timeslice_number,
+                                          timeslice_ptr->get_header().run_number,
+                                          excpt));
         }
       } while (should_retry && running_flag.load());
     }

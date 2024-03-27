@@ -19,6 +19,7 @@
 #include "trigger/TPSet.hpp"
 #include "utilities/WorkerThread.hpp"
 
+#include <chrono>
 #include <memory>
 #include <string>
 
@@ -59,6 +60,7 @@ private:
   // Configuration
   std::chrono::milliseconds m_queue_timeout;
   size_t m_accumulation_interval_ticks;
+  std::chrono::steady_clock::duration m_accumulation_inactivity_time_before_write;
   daqdataformats::run_number_t m_run_number;
   uint32_t m_source_id; // NOLINT(build/unsigned)
 
