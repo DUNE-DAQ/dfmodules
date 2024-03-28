@@ -89,8 +89,8 @@ conf_dict["detector"]["clock_speed_hz"] = 62500000 # DuneWIB/WIBEth
 conf_dict["readout"]["use_fake_cards"] = True
 conf_dict["readout"]["emulated_data_times_start_with_now"] = True
 conf_dict["hsi"]["random_trigger_rate_hz"] = 10
-conf_dict["trigger"]["trigger_window_before_ticks"] = 52000
-conf_dict["trigger"]["trigger_window_after_ticks"] = 1000
+conf_dict["trigger"]["ttcm_input_map"] = [{'signal': 1, 'tc_type_name': 'kTiming',
+                                           'time_before': 52000, 'time_after': 1000}]
 conf_dict["dataflow"]["apps"][0]["max_file_size"] = 1074000000
 
 swtpg_conf = copy.deepcopy(conf_dict)

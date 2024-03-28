@@ -85,8 +85,9 @@ conf_dict["readout"]["use_fake_data_producers"] = True
 conf_dict["detector"]["clock_speed_hz"] = 62500000 # DuneWIB/WIBEth
 conf_dict["readout"]["use_fake_cards"] = True
 conf_dict["hsi"]["random_trigger_rate_hz"] = trigger_rate
-conf_dict["trigger"]["trigger_window_before_ticks"] = readout_window_time_before
-conf_dict["trigger"]["trigger_window_after_ticks"] = readout_window_time_after
+conf_dict["trigger"]["ttcm_input_map"] = [{'signal': 1, 'tc_type_name': 'kTiming',
+                                           'time_before': readout_window_time_before,
+                                           'time_after': readout_window_time_after}]
 
 conf_dict["dataflow"]["token_count"] = token_count
 conf_dict["dataflow"]["apps"] = [] # Remove preconfigured dataflow0 app
@@ -98,7 +99,9 @@ for df_app in range(number_of_dataflow_apps):
     conf_dict["dataflow"]["apps"].append(dfapp_conf)
 
 oversize_conf = copy.deepcopy(conf_dict)
-oversize_conf["trigger"]["trigger_window_before_ticks"] = readout_window_time_before * 2.5
+conf_dict["trigger"]["ttcm_input_map"] = [{'signal': 1, 'tc_type_name': 'kTiming',
+                                           'time_before': readout_window_time_before * 2.5,
+                                           'time_after': readout_window_time_after}]
 
 confgen_arguments={"TRSize_55PercentOfMaxFileSize": conf_dict,
                    "TRSize_125PercentOfMaxFileSize": oversize_conf,
@@ -147,7 +150,7 @@ def test_data_files(run_nanorc):
     local_expected_event_count=expected_event_count
     local_event_count_tolerance=expected_event_count_tolerance
     fragment_check_list=[triggercandidate_frag_params, hsi_frag_params]
-    if "trigger_window_before_ticks" in run_nanorc.confgen_config["trigger"].keys() and run_nanorc.confgen_config["trigger"]["trigger_window_before_ticks"] > 15000000:
+    if "ttcm_input_map" in run_nanorc.confgen_config["trigger"].keys() and run_nanorc.confgen_config["trigger"]["ttcm_input_map"][0]["time_before"] > 15000000:
         fragment_check_list.append(wibeth_frag_125pct_params)
     else:
         fragment_check_list.append(wibeth_frag_55pct_params)

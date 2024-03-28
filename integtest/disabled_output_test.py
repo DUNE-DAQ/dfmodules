@@ -93,8 +93,9 @@ conf_dict["readout"]["default_data_file"] = "asset://?checksum=e96fd6efd3f98a9a3
 conf_dict["detector"]["clock_speed_hz"] = 62500000 # DuneWIB/WIBEth
 conf_dict["readout"]["use_fake_cards"] = True
 conf_dict["hsi"]["random_trigger_rate_hz"] = trigger_rate
-conf_dict["trigger"]["trigger_window_before_ticks"] = readout_window_time_before
-conf_dict["trigger"]["trigger_window_after_ticks"] = readout_window_time_after
+conf_dict["trigger"]["ttcm_input_map"] = [{'signal': 1, 'tc_type_name': 'kTiming',
+                                           'time_before': readout_window_time_before,
+                                           'time_after': readout_window_time_after}]
 
 swtpg_conf = copy.deepcopy(conf_dict)
 swtpg_conf["readout"]["generate_periodic_adc_pattern"] = True
