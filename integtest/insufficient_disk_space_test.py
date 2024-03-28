@@ -105,8 +105,9 @@ conf_dict["daq_common"]["data_rate_slowdown_factor"] = data_rate_slowdown_factor
 conf_dict["readout"]["use_fake_data_producers"] = True
 conf_dict["detector"]["clock_speed_hz"] = 62500000 # DuneWIB/WIBEth
 conf_dict["hsi"]["random_trigger_rate_hz"] = trigger_rate
-conf_dict["trigger"]["trigger_window_before_ticks"] = readout_window_time_before
-conf_dict["trigger"]["trigger_window_after_ticks"] = readout_window_time_after
+conf_dict["trigger"]["ttcm_input_map"] = [{'signal': 1, 'tc_type_name': 'kTiming',
+                                           'time_before': readout_window_time_before,
+                                           'time_after': readout_window_time_after}]
 
 conf_dict["dataflow"]["token_count"] = token_count
 conf_dict["dataflow"]["apps"] = [] # Remove preconfigured dataflow0 app
