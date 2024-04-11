@@ -157,7 +157,7 @@ TriggerRecordBuilder::setup_data_request_connections(const appdal::SmartDaqAppli
   std::unique_lock<std::mutex> lk(m_map_sourceid_connections_mutex);
   daqdataformats::SourceID sid;
   sid.subsystem = daqdataformats::SourceID::string_to_subsystem(smartapp->get_source_id()->get_subsystem());
-  sid.id = smartapp->get_source_id()->get_id();
+  sid.id = smartapp->get_source_id()->get_sid();
   auto it_req = m_map_sourceid_connections.find(sid);
   if (it_req == m_map_sourceid_connections.end() || it_req->second == nullptr) {
     m_map_sourceid_connections[sid] = get_iom_sender<dfmessages::DataRequest>(faNetUid);
