@@ -8,7 +8,9 @@ import urllib.request
 import integrationtest.data_file_checks as data_file_checks
 import integrationtest.log_file_checks as log_file_checks
 import integrationtest.config_file_gen as config_file_gen
-import integrationtest.dro_map_gen as dro_map_gen
+import integrationtest.oks_dro_map_gen as dro_map_gen
+
+pytest_plugins="integrationtest.integrationtest_drunc"
 
 # Values that help determine the running conditions
 number_of_data_producers=2
