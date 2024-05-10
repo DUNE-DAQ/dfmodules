@@ -97,7 +97,7 @@ swtpg_conf = copy.deepcopy(conf_dict)
 swtpg_conf["readout"]["generate_periodic_adc_pattern"] = True
 swtpg_conf["readout"]["emulated_TP_rate_per_ch"] = 1
 swtpg_conf["readout"]["enable_tpg"] = True
-swtpg_conf["readout"]["tpg_threshold"] = 500
+swtpg_conf["readout"]["tpg_threshold_default"] = 500
 swtpg_conf["readout"]["tpg_algorithm"] = "SimpleThreshold"
 swtpg_conf["readout"]["default_data_file"] = "asset://?checksum=dd156b4895f1b06a06b6ff38e37bd798" # WIBEth All Zeros
 swtpg_conf["trigger"]["trigger_activity_plugin"] = ["TriggerActivityMakerPrescalePlugin"]
@@ -115,7 +115,7 @@ multiout_tpg_conf = copy.deepcopy(multiout_conf)
 multiout_tpg_conf["readout"]["generate_periodic_adc_pattern"] = True
 multiout_tpg_conf["readout"]["emulated_TP_rate_per_ch"] = 1
 multiout_tpg_conf["readout"]["enable_tpg"] = True
-multiout_tpg_conf["readout"]["tpg_threshold"] = 500
+multiout_tpg_conf["readout"]["tpg_threshold_default"] = 500
 multiout_tpg_conf["readout"]["tpg_algorithm"] = "SimpleThreshold"
 multiout_tpg_conf["readout"]["default_data_file"] = "asset://?checksum=dd156b4895f1b06a06b6ff38e37bd798" # WIBEth All Zeros
 multiout_tpg_conf["trigger"]["trigger_activity_plugin"] = ["TriggerActivityMakerPrescalePlugin"]
