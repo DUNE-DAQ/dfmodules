@@ -107,12 +107,12 @@ confgen_arguments={"TRSize_55PercentOfMaxFileSize": conf_dict,
                   }
 # The commands to run in nanorc, as a list
 if sufficient_disk_space:
-    nanorc_command_list="integtest-partition boot conf".split()
+    nanorc_command_list="boot conf".split()
     nanorc_command_list+="start_run --wait 10 101 wait ".split() + [str(run_duration)] + "stop_run --wait 2 wait 2".split()
     nanorc_command_list+="start 102 wait 10 enable_triggers wait ".split() + [str(run_duration)] + "stop_run wait 2".split()
     nanorc_command_list+="scrap terminate".split()
 else:
-    nanorc_command_list=["integtest-partition", "boot", "terminate"]
+    nanorc_command_list=["boot", "terminate"]
 
 # The tests themselves
 
