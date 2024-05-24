@@ -152,6 +152,14 @@ private:
   std::atomic<uint64_t> m_processing_token{ 0 };     // NOLINT (build/unsigned)
   std::map<dunedaq::trgdataformats::TriggerCandidateData::Type, TriggerData> m_trigger_counters;
   std::mutex m_trigger_mutex;  // used to safely handle the map above
+  TriggerData & get_trigger_counter(decltype(dfmessages::TriggerDecision::trigger_type) t ) {
+    auto type = (trgdataformats::TriggerCandidateData::Type) t;
+    auto it = m_trigger_counters.find(type);
+    if (it != m_trigger_counters.end()) return it->second;
+    
+    std::lock_guard<std::mutex> guard(m_trigger_mutex);
+    return m_trigger_counters[type];
+  }
 };
 } // namespace dfmodules
 } // namespace dunedaq

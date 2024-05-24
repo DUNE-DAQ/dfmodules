@@ -153,6 +153,9 @@ DataFlowOrchestrator::do_stop(const data_t& /*args*/)
     ers::error(IncompleteTriggerDecision(ERS_HERE, r->decision.trigger_number, m_run_number));
   }
 
+  std::lock_guard<std::mutex> guard(m_trigger_mutex);
+  m_trigger_counters.clear();
+  
   TLOG() << get_name() << " successfully stopped";
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_stop() method";
 }
@@ -182,7 +185,7 @@ DataFlowOrchestrator::receive_trigger_decision(const dfmessages::TriggerDecision
 
   auto decision_received = std::chrono::steady_clock::now();
   ++m_received_decisions;
-  ++m_trigger_counters[(trgdataformats::TriggerCandidateData::Type)decision.trigger_type].received;
+  ++get_trigger_counter(decision.trigger_type).received;
   
   std::chrono::steady_clock::time_point decision_assigned;
   do {
@@ -301,16 +304,6 @@ DataFlowOrchestrator::get_info(opmonlib::InfoCollector& ci, int level)
     ci.add(name, tmp_ic);
   }
 
-  for (auto& [type, data] : m_trigger_counters) {
-    opmonlib::InfoCollector tmp_ic;
-    datafloworchestratorinfo::TriggerInfo i;
-    i.received  = data.received.exchange(0);
-    i.completed = data.completed.exchange(0);
-    tmp_ic.add(i);
-    auto name = dunedaq::trgdataformats::get_trigger_candidate_type_names()[type];
-    ci.add(name, tmp_ic);
-  }
-  
   datafloworchestratorinfo::Info info;
   info.tokens_received = m_received_tokens.exchange(0);
   info.decisions_sent = m_sent_decisions.exchange(0);
@@ -320,8 +313,19 @@ DataFlowOrchestrator::get_info(opmonlib::InfoCollector& ci, int level)
   info.forwarding_decision = m_forwarding_decision.exchange(0);
   info.waiting_for_token = m_waiting_for_token.exchange(0);
   info.processing_token = m_processing_token.exchange(0);
-
   ci.add(info);
+
+  std::lock_guard<std::mutex>	guard(m_trigger_mutex);
+  for (auto& [type, data] : m_trigger_counters) {
+    opmonlib::InfoCollector tmp_ic;
+    datafloworchestratorinfo::TriggerInfo i;
+    i.received  = data.received.exchange(0);
+    i.completed = data.completed.exchange(0);
+    tmp_ic.add(i);
+    auto name = dunedaq::trgdataformats::get_trigger_candidate_type_names()[type];
+    ci.add(name, tmp_ic);
+  }
+
 }
 
 void
@@ -364,7 +368,7 @@ DataFlowOrchestrator::receive_trigger_complete_token(const dfmessages::TriggerDe
 
   try {
     auto dec_ptr = app_it->second.complete_assignment(token.trigger_number, m_metadata_function);
-    ++m_trigger_counters[(trgdataformats::TriggerCandidateData::Type)dec_ptr->decision.trigger_type].completed;
+    ++ get_trigger_counter(dec_ptr->decision.trigger_type).completed;
   } catch (AssignedTriggerDecisionNotFound const& err) {
     ers::error(err);
   }
