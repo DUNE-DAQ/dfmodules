@@ -185,7 +185,10 @@ DataFlowOrchestrator::receive_trigger_decision(const dfmessages::TriggerDecision
 
   auto decision_received = std::chrono::steady_clock::now();
   ++m_received_decisions;
-  ++get_trigger_counter(decision.trigger_type).received;
+  auto trigger_types = unpack_types(decision.trigger_type);
+  for ( const auto t : trigger_types ) {
+    ++get_trigger_counter(t).received;
+  }
   
   std::chrono::steady_clock::time_point decision_assigned;
   do {
@@ -316,11 +319,11 @@ DataFlowOrchestrator::get_info(opmonlib::InfoCollector& ci, int level)
   ci.add(info);
 
   std::lock_guard<std::mutex>	guard(m_trigger_mutex);
-  for (auto& [type, data] : m_trigger_counters) {
+  for ( auto & [type, counts] : m_trigger_counters ) {
     opmonlib::InfoCollector tmp_ic;
     datafloworchestratorinfo::TriggerInfo i;
-    i.received  = data.received.exchange(0);
-    i.completed = data.completed.exchange(0);
+    i.received  = counts.received.exchange(0);
+    i.completed = counts.completed.exchange(0);
     tmp_ic.add(i);
     auto name = dunedaq::trgdataformats::get_trigger_candidate_type_names()[type];
     ci.add(name, tmp_ic);
@@ -368,7 +371,8 @@ DataFlowOrchestrator::receive_trigger_complete_token(const dfmessages::TriggerDe
 
   try {
     auto dec_ptr = app_it->second.complete_assignment(token.trigger_number, m_metadata_function);
-    ++ get_trigger_counter(dec_ptr->decision.trigger_type).completed;
+    auto trigger_types = unpack_types(dec_ptr->decision.trigger_type);
+    for ( const auto t : trigger_types ) ++ get_trigger_counter(t).completed;
   } catch (AssignedTriggerDecisionNotFound const& err) {
     ers::error(err);
   }
@@ -488,5 +492,6 @@ DataFlowOrchestrator::assign_trigger_decision(const std::shared_ptr<AssignedTrig
 }
 
 } // namespace dunedaq::dfmodules
+
 
 DEFINE_DUNE_DAQ_MODULE(dunedaq::dfmodules::DataFlowOrchestrator)
