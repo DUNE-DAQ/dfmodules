@@ -139,13 +139,12 @@ private:
   struct TriggerData {
     std::atomic<uint64_t> received{0};
     std::atomic<uint64_t> completed{0};
-    std::string type;
-    TriggerData(trgdataformats::TriggerCandidateData::Type t)
-      : type(dunedaq::trgdataformats::get_trigger_candidate_type_names()[t]) {;}
   };
   static std::set<trgdataformats::TriggerCandidateData::Type>
   unpack_types( decltype(dfmessages::TriggerDecision::trigger_type) t) {
     std::set<trgdataformats::TriggerCandidateData::Type> results;
+    if (t == dfmessages::TypeDefaults::s_invalid_trigger_type)
+      return results;
     const std::bitset<64> bits(t);
     for( size_t i = 0; i < bits.size(); ++i ) {
       if ( bits[i] ) results.insert((trgdataformats::TriggerCandidateData::Type)i);
@@ -167,10 +166,9 @@ private:
   TriggerData & get_trigger_counter(trgdataformats::TriggerCandidateData::Type type) {
     auto it = m_trigger_counters.find(type);
     if (it != m_trigger_counters.end()) return it->second;
-    
+
     std::lock_guard<std::mutex> guard(m_trigger_mutex);
-    const TriggerData e (type);
-    return m_trigger_counters[type] = e;
+    return m_trigger_counters[type];
   }
 };
 } // namespace dfmodules
