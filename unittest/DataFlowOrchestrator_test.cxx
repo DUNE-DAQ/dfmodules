@@ -40,7 +40,7 @@ BOOST_TEST_GLOBAL_FIXTURE(EnvFixture);
 struct CfgFixture
 {
   CfgFixture()
-  {   std::string oksConfig = "oksconfig:test/config/datafloworchestrator_test.data.xml";
+  {   std::string oksConfig = "oksconflibs:test/config/datafloworchestrator_test.data.xml";
     std::string appName = "TestApp";
     std::string sessionName = "partition_name";
     cfgMgr = std::make_shared<dunedaq::appfwk::ConfigurationManager>(oksConfig, appName, sessionName);
