@@ -18,6 +18,8 @@
 #include "dfmessages/TriggerDecision.hpp"
 #include "dfmessages/TriggerDecisionToken.hpp"
 #include "dfmessages/TriggerInhibit.hpp"
+#include "trgdataformats/TriggerCandidateData.hpp"
+
 
 #include "iomanager/Sender.hpp"
 
@@ -29,6 +31,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <mutex>
 
 namespace dunedaq {
 
@@ -132,6 +135,23 @@ private:
   std::chrono::steady_clock::time_point m_last_token_received;
   std::chrono::steady_clock::time_point m_last_td_received;
 
+  // Struct for statistic
+  struct TriggerData {
+    std::atomic<uint64_t> received{0};
+    std::atomic<uint64_t> completed{0};
+  };
+  static std::set<trgdataformats::TriggerCandidateData::Type>
+  unpack_types( decltype(dfmessages::TriggerDecision::trigger_type) t) {
+    std::set<trgdataformats::TriggerCandidateData::Type> results;
+    if (t == dfmessages::TypeDefaults::s_invalid_trigger_type)
+      return results;
+    const std::bitset<64> bits(t);
+    for( size_t i = 0; i < bits.size(); ++i ) {
+      if ( bits[i] ) results.insert((trgdataformats::TriggerCandidateData::Type)i);
+    }
+    return results;
+  }
+  
   // Statistics
   std::atomic<uint64_t> m_received_tokens{ 0 };      // NOLINT (build/unsigned)
   std::atomic<uint64_t> m_sent_decisions{ 0 };       // NOLINT (build/unsigned)
@@ -141,6 +161,15 @@ private:
   std::atomic<uint64_t> m_forwarding_decision{ 0 };  // NOLINT (build/unsigned)
   std::atomic<uint64_t> m_waiting_for_token{ 0 };    // NOLINT (build/unsigned)
   std::atomic<uint64_t> m_processing_token{ 0 };     // NOLINT (build/unsigned)
+  std::map<dunedaq::trgdataformats::TriggerCandidateData::Type, TriggerData> m_trigger_counters;
+  std::mutex m_trigger_mutex;  // used to safely handle the map above
+  TriggerData & get_trigger_counter(trgdataformats::TriggerCandidateData::Type type) {
+    auto it = m_trigger_counters.find(type);
+    if (it != m_trigger_counters.end()) return it->second;
+
+    std::lock_guard<std::mutex> guard(m_trigger_mutex);
+    return m_trigger_counters[type];
+  }
 };
 } // namespace dfmodules
 } // namespace dunedaq
