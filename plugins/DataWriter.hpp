@@ -62,6 +62,7 @@ private:
   std::atomic<bool> m_running = false;
 
   // Configuration
+  std::shared_ptr<appfwk::ModuleConfiguration> m_module_configuration;
   const appdal::DataWriterConf* m_data_writer_conf;
   const coredal::ReadoutMap* m_readout_map;
   const coredal::DetectorConfig* m_detector_config;

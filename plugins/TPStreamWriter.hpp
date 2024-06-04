@@ -60,6 +60,8 @@ private:
   void do_work(std::atomic<bool>&);
 
   // Configuration
+
+  std::shared_ptr<appfwk::ModuleConfiguration> m_module_configuration;
   const appdal::TPStreamWriterConf* m_tp_writer_conf;
   const coredal::ReadoutMap* m_readout_map;
   const coredal::DetectorConfig* m_detector_config;
