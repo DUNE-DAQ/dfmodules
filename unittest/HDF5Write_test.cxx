@@ -11,8 +11,8 @@
 #include "dfmodules/hdf5datastore/Nljs.hpp"
 #include "dfmodules/hdf5datastore/Structs.hpp"
 
-#include "appdal/DataStoreConf.hpp"
-#include "coredal/ReadoutMap.hpp"
+#include "appmodel/DataStoreConf.hpp"
+#include "confmodel/ReadoutMap.hpp"
 #include "detdataformats/DetID.hpp"
 #include "hdf5libs/hdf5filelayout/Nljs.hpp"
 #include "hdf5libs/hdf5filelayout/Structs.hpp"

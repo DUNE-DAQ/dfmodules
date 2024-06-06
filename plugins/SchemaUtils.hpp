@@ -3,21 +3,21 @@
 #include "hdf5libs/hdf5filelayout/Structs.hpp"
 #include "hdf5libs/hdf5rawdatafile/Structs.hpp"
 
-#include "appdal/DataStoreConf.hpp"
-#include "appdal/FilenameParams.hpp"
-#include "appdal/HDF5FileLayoutParams.hpp"
-#include "appdal/HDF5PathParams.hpp"
-#include "coredal/DROStreamConf.hpp"
-#include "coredal/GeoId.hpp"
-#include "coredal/DetectorConfig.hpp"
-#include "coredal/ReadoutInterface.hpp"
-#include "coredal/ReadoutGroup.hpp"
-#include "coredal/ReadoutMap.hpp"
+#include "appmodel/DataStoreConf.hpp"
+#include "appmodel/FilenameParams.hpp"
+#include "appmodel/HDF5FileLayoutParams.hpp"
+#include "appmodel/HDF5PathParams.hpp"
+#include "confmodel/DROStreamConf.hpp"
+#include "confmodel/GeoId.hpp"
+#include "confmodel/DetectorConfig.hpp"
+#include "confmodel/ReadoutInterface.hpp"
+#include "confmodel/ReadoutGroup.hpp"
+#include "confmodel/ReadoutMap.hpp"
 
 namespace dunedaq::dfmodules {
 
 hdf5libs::hdf5rawdatafile::GeoID
-convert_to_json(const coredal::GeoId* geoid)
+convert_to_json(const confmodel::GeoId* geoid)
 {
   hdf5libs::hdf5rawdatafile::GeoID output;
 
@@ -30,7 +30,7 @@ convert_to_json(const coredal::GeoId* geoid)
 }
 
 hdf5libs::hdf5rawdatafile::SrcIDGeoIDMap
-convert_to_json(const coredal::ReadoutGroup* group)
+convert_to_json(const confmodel::ReadoutGroup* group)
 {
 
   hdf5libs::hdf5rawdatafile::SrcIDGeoIDMap output;
@@ -38,10 +38,10 @@ convert_to_json(const coredal::ReadoutGroup* group)
   // FIXME: check for disabled groups / interfaces
 
   for (auto interface_res : group->get_contains()) {
-    auto interface = interface_res->cast<coredal::ReadoutInterface>();
+    auto interface = interface_res->cast<confmodel::ReadoutInterface>();
     for (auto stream_res : interface->get_contains()) {
       hdf5libs::hdf5rawdatafile::SrcIDGeoIDEntry entry;
-      auto stream = stream_res->cast<coredal::DROStreamConf>();
+      auto stream = stream_res->cast<confmodel::DROStreamConf>();
 
       entry.src_id = stream->get_source_id();
       entry.geo_id = convert_to_json(stream->get_geo_id());
@@ -54,7 +54,7 @@ convert_to_json(const coredal::ReadoutGroup* group)
 }
 
 hdf5libs::hdf5rawdatafile::SrcIDGeoIDMap
-convert_to_json(const coredal::ReadoutMap* map)
+convert_to_json(const confmodel::ReadoutMap* map)
 {
   hdf5libs::hdf5rawdatafile::SrcIDGeoIDMap output;
 
@@ -66,7 +66,7 @@ convert_to_json(const coredal::ReadoutMap* map)
   return output;
 }
 hdf5libs::hdf5filelayout::PathParams
-convert_to_json(const appdal::HDF5PathParams* params)
+convert_to_json(const appmodel::HDF5PathParams* params)
 {
   hdf5libs::hdf5filelayout::PathParams output;
 
@@ -78,7 +78,7 @@ convert_to_json(const appdal::HDF5PathParams* params)
   return output;
 }
 hdf5libs::hdf5filelayout::FileLayoutParams
-convert_to_json(const appdal::HDF5FileLayoutParams* params)
+convert_to_json(const appmodel::HDF5FileLayoutParams* params)
 {
   hdf5libs::hdf5filelayout::FileLayoutParams output;
 
@@ -97,7 +97,7 @@ convert_to_json(const appdal::HDF5FileLayoutParams* params)
 }
 
 hdf5datastore::FileNameParams
-convert_to_json(const appdal::FilenameParams* params)
+convert_to_json(const appmodel::FilenameParams* params)
 {
   hdf5datastore::FileNameParams output;
   output.overall_prefix = params->get_overall_prefix();
@@ -113,7 +113,7 @@ convert_to_json(const appdal::FilenameParams* params)
 }
 
 hdf5datastore::ConfParams
-convert_to_json(const appdal::DataStoreConf* params, const coredal::ReadoutMap* readout_map, const coredal::DetectorConfig* det_conf)
+convert_to_json(const appmodel::DataStoreConf* params, const confmodel::ReadoutMap* readout_map, const confmodel::DetectorConfig* det_conf)
 {
   hdf5datastore::ConfParams output;
   output.type = params->get_type();

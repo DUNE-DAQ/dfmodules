@@ -14,9 +14,9 @@
 #include "dfmodules/DataStore.hpp"
 
 #include "appfwk/DAQModule.hpp"
-#include "appdal/TPStreamWriterConf.hpp"
-#include "coredal/ReadoutMap.hpp"
-#include "coredal/DetectorConfig.hpp"
+#include "appmodel/TPStreamWriterConf.hpp"
+#include "confmodel/ReadoutMap.hpp"
+#include "confmodel/DetectorConfig.hpp"
 #include "iomanager/Receiver.hpp"
 #include "daqdataformats/TimeSlice.hpp"
 #include "trigger/TPSet.hpp"
@@ -60,9 +60,9 @@ private:
   void do_work(std::atomic<bool>&);
 
   // Configuration
-  const appdal::TPStreamWriterConf* m_tp_writer_conf;
-  const coredal::ReadoutMap* m_readout_map;
-  const coredal::DetectorConfig* m_detector_config;
+  const appmodel::TPStreamWriterConf* m_tp_writer_conf;
+  const confmodel::ReadoutMap* m_readout_map;
+  const confmodel::DetectorConfig* m_detector_config;
   std::chrono::milliseconds m_queue_timeout;
   size_t m_accumulation_interval_ticks;
   daqdataformats::run_number_t m_run_number;

@@ -66,8 +66,8 @@
 <info name="" type="" num-of-items="63" oks-format="data" oks-version="862f2957270" created-by="gjc" created-on="thinkpad" creation-time="20231116T105446" last-modified-by="eflumerf" last-modified-on="ironvirt9.mshome.net" last-modification-time="20240105T174142"/>
 
 <include>
- <file path="schema/coredal/dunedaq.schema.xml"/>
- <file path="schema/appdal/application.schema.xml"/>
+ <file path="schema/confmodel/dunedaq.schema.xml"/>
+ <file path="schema/appmodel/application.schema.xml"/>
 </include>
 
 <comments>
