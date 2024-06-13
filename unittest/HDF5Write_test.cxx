@@ -10,13 +10,13 @@
 #include "dfmodules/DataStore.hpp"
 #include "appfwk/ModuleConfiguration.hpp"
 
-#include "appdal/DataWriter.hpp"
-#include "appdal/DataWriterConf.hpp"
-#include "appdal/DataStoreConf.hpp"
-#include "appdal/FilenameParams.hpp"
-#include "coredal/DetectorConfig.hpp"
-#include "coredal/Session.hpp"
-#include "coredal/ReadoutMap.hpp"
+#include "appmodel/DataWriter.hpp"
+#include "appmodel/DataWriterConf.hpp"
+#include "appmodel/FilenameParams.hpp"
+#include "confmodel/DetectorConfig.hpp"
+#include "confmodel/Session.hpp"
+#include "appmodel/DataStoreConf.hpp"
+#include "confmodel/ReadoutMap.hpp"
 #include "detdataformats/DetID.hpp"
 
 #define BOOST_TEST_MODULE HDF5Write_test // NOLINT

@@ -10,12 +10,12 @@
 #include "dfmodules/CommonIssues.hpp"
 #include "dfmodules/datawriterinfo/InfoNljs.hpp"
 
-#include "coredal/Application.hpp"
-#include "coredal/Session.hpp"
-#include "appdal/DataWriter.hpp"
-#include "appdal/DataStoreConf.hpp"
-#include "appdal/TriggerRecordBuilder.hpp"
-#include "coredal/Connection.hpp"
+#include "confmodel/Application.hpp"
+#include "confmodel/Session.hpp"
+#include "appmodel/DataWriter.hpp"
+#include "appmodel/TriggerRecordBuilder.hpp"
+#include "appmodel/DataStoreConf.hpp"
+#include "confmodel/Connection.hpp"
 #include "daqdataformats/Fragment.hpp"
 #include "dfmessages/TriggerDecision.hpp"
 #include "dfmessages/TriggerRecord_serialization.hpp"
@@ -63,7 +63,7 @@ void
 DataWriter::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
-  auto mdal = mcfg->module<appdal::DataWriter>(get_name());
+  auto mdal = mcfg->module<appmodel::DataWriter>(get_name());
   if (!mdal) {
     throw appfwk::CommandFailed(ERS_HERE, "init", get_name(), "Unable to retrieve configuration object");
   }
@@ -103,7 +103,7 @@ DataWriter::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
     }
   }
 
-  auto trbdal = mcfg->module<appdal::TriggerRecordBuilder>(trb_uid);
+  auto trbdal = mcfg->module<appmodel::TriggerRecordBuilder>(trb_uid);
   if (!trbdal) {
     throw appfwk::CommandFailed(ERS_HERE, "init", get_name(), "Unable to retrieve TRB configuration object");
   }
