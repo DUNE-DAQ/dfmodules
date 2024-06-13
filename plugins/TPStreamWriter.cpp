@@ -62,8 +62,6 @@ TPStreamWriter::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
   m_module_configuration = mcfg;
   m_tpset_source = iomanager::IOManager::get()->get_receiver<trigger::TPSet>(mdal->get_inputs()[0]->UID());
   m_tp_writer_conf = mdal->get_configuration();
-  m_readout_map = mcfg->configuration_manager()->session()->get_readout_map();
-  m_detector_config = mcfg->configuration_manager()->session()->get_detector_configuration();
   m_source_id = mdal->get_source_id();
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }

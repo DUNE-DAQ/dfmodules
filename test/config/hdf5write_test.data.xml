@@ -66,8 +66,8 @@
 <info name="" type="" num-of-items="63" oks-format="data" oks-version="862f2957270" created-by="gjc" created-on="thinkpad" creation-time="20231116T105446" last-modified-by="eflumerf" last-modified-on="ironvirt9.mshome.net" last-modification-time="20240105T174142"/>
 
 <include>
- <file path="schema/coredal/dunedaq.schema.xml"/>
- <file path="schema/appdal/application.schema.xml"/>
+ <file path="schema/confmodel/dunedaq.schema.xml"/>
+ <file path="schema/appmodel/application.schema.xml"/>
   <file path="test/config/hdf5write_test_hwmap.data.xml"/>
 </include>
 
@@ -333,13 +333,34 @@
  <attr name="queue_type" type="enum" val="kFollySPSCQueue"/>
 </obj>
 
-<obj class="RCApplication" id="my-controller">
+	<obj class="RCApplication" id="df-controller">
+		<attr name="commandline_parameters" type="string" val="file:///home/gjc/DUNE/fddaq-v4.2.0-a9/listrev/controller.json ${PORT} my-controller partition_name"/>
+		<attr name="application_name" type="string" val="drunc-controller"/>
+		<rel name="runs_on" class="VirtualHost" id="controller"/>
+		<rel name="fsm" class="FSMconfiguration" id="fsmConf-1"/>
+		<rel name="broadcaster" class="RCBroadcaster" id="bcaster"/>
+	</obj>
+<obj class="RCApplication" id="my-controller-3-1">
  <attr name="commandline_parameters" type="string" val="file:///home/gjc/DUNE/fddaq-v4.2.0-a9/listrev/controller.json ${PORT} my-controller partition_name"/>
  <attr name="application_name" type="string" val="drunc-controller"/>
  <rel name="runs_on" class="VirtualHost" id="controller"/>
  <rel name="fsm" class="FSMconfiguration" id="fsmConf-1"/>
  <rel name="broadcaster" class="RCBroadcaster" id="bcaster"/>
 </obj>
+	<obj class="RCApplication" id="my-controller-5-1">
+		<attr name="commandline_parameters" type="string" val="file:///home/gjc/DUNE/fddaq-v4.2.0-a9/listrev/controller.json ${PORT} my-controller partition_name"/>
+		<attr name="application_name" type="string" val="drunc-controller"/>
+		<rel name="runs_on" class="VirtualHost" id="controller"/>
+		<rel name="fsm" class="FSMconfiguration" id="fsmConf-1"/>
+		<rel name="broadcaster" class="RCBroadcaster" id="bcaster"/>
+	</obj>
+	<obj class="RCApplication" id="my-controller-5-10">
+		<attr name="commandline_parameters" type="string" val="file:///home/gjc/DUNE/fddaq-v4.2.0-a9/listrev/controller.json ${PORT} my-controller partition_name"/>
+		<attr name="application_name" type="string" val="drunc-controller"/>
+		<rel name="runs_on" class="VirtualHost" id="controller"/>
+		<rel name="fsm" class="FSMconfiguration" id="fsmConf-1"/>
+		<rel name="broadcaster" class="RCBroadcaster" id="bcaster"/>
+	</obj>
 
 <obj class="RCBroadcaster" id="bcaster">
  <attr name="type" type="enum" val="kafka"/>
@@ -347,12 +368,41 @@
  <attr name="publish_timeout" type="u32" val="2"/>
 </obj>
 
-<obj class="Segment" id="generated-segment">
- <rel name="applications">
-  <ref class="DaqApplication" id="TestApp"/>
- </rel>
- <rel name="controller" class="RCApplication" id="my-controller"/>
-</obj>
+	<obj class="Segment" id="df-segment">
+		<rel name="applications">
+			<ref class="DaqApplication" id="TestApp"/>
+
+		</rel>
+		<rel name="controller" class="RCApplication" id="df-controller"/>
+	</obj>
+
+	<obj class="Segment" id="generated-segment-3-1">
+		<rel name="applications">
+			<ref class="ReadoutApplication" id="ru-3-1"/>
+		</rel>
+		<rel name="segments">
+			<ref class="Segment" id="df-segment"/>
+		</rel>
+		<rel name="controller" class="RCApplication" id="my-controller-3-1"/>
+	</obj>
+	<obj class="Segment" id="generated-segment-5-1">
+		<rel name="applications">
+			<ref class="ReadoutApplication" id="ru-5-1"/>
+		</rel>
+		<rel name="segments">
+			<ref class="Segment" id="df-segment"/>
+		</rel>
+		<rel name="controller" class="RCApplication" id="my-controller-5-1"/>
+	</obj>
+	<obj class="Segment" id="generated-segment-5-10">
+		<rel name="applications">
+			<ref class="ReadoutApplication" id="ru-5-10"/>
+		</rel>
+		<rel name="segments">
+			<ref class="Segment" id="df-segment"/>
+		</rel>
+		<rel name="controller" class="RCApplication" id="my-controller-5-10"/>
+	</obj>
 
 <obj class="Session" id="test-session-3-1">
  <attr name="use_connectivity_server" type="bool" val="0"/>
@@ -363,9 +413,8 @@
  <rel name="environment">
   <ref class="VariableSet" id="common-env"/>
  </rel>
- <rel name="segment" class="Segment" id="generated-segment"/>
+ <rel name="segment" class="Segment" id="generated-segment-3-1"/>
  <rel name="detector_configuration" class="DetectorConfig" id="dummy-detector"/>
- <rel name="readout_map" class="ReadoutMap" id="dummyRoMap-3-1"/>
 </obj>
   <obj class="Session" id="test-session-5-1">
     <attr name="use_connectivity_server" type="bool" val="0"/>
@@ -376,9 +425,8 @@
     <rel name="environment">
       <ref class="VariableSet" id="common-env"/>
     </rel>
-    <rel name="segment" class="Segment" id="generated-segment"/>
+    <rel name="segment" class="Segment" id="generated-segment-5-1"/>
     <rel name="detector_configuration" class="DetectorConfig" id="dummy-detector"/>
-    <rel name="readout_map" class="ReadoutMap" id="dummyRoMap-5-1"/>
   </obj>
   <obj class="Session" id="test-session-5-10">
     <attr name="use_connectivity_server" type="bool" val="0"/>
@@ -389,9 +437,8 @@
     <rel name="environment">
       <ref class="VariableSet" id="common-env"/>
     </rel>
-    <rel name="segment" class="Segment" id="generated-segment"/>
+    <rel name="segment" class="Segment" id="generated-segment-5-10"/>
     <rel name="detector_configuration" class="DetectorConfig" id="dummy-detector"/>
-    <rel name="readout_map" class="ReadoutMap" id="dummyRoMap-5-10"/>
   </obj>
 
 <obj class="Variable" id="CMD_FAC">

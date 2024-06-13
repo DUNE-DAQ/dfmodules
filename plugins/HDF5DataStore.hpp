@@ -17,11 +17,10 @@
 
 #include "hdf5libs/HDF5RawDataFile.hpp"
 
-#include "coredal/ReadoutMap.hpp"
-#include "coredal/DetectorConfig.hpp"
-#include "coredal/Session.hpp"
-#include "appdal/DataStoreConf.hpp"
-#include "appdal/FilenameParams.hpp"
+#include "appmodel/DataStoreConf.hpp"
+#include "appmodel/FilenameParams.hpp"
+#include "confmodel/DetectorConfig.hpp"
+#include "confmodel/Session.hpp"
 
 #include "appfwk/DAQModule.hpp"
 #include "logging/Logging.hpp"
@@ -121,10 +120,11 @@ public:
   {
     TLOG_DEBUG(TLVL_BASIC) << get_name();
 
-    m_config_params = mcfg->module<appdal::DataStoreConf>(name);
+    m_config_params = mcfg->module<appmodel::DataStoreConf>(name);
     m_file_layout_params = m_config_params->get_file_layout_params();
-    m_hardware_map = mcfg->configuration_manager()->session()->get_readout_map();
+    m_session = mcfg->configuration_manager()->session();
     m_operational_environment = mcfg->configuration_manager()->session()->get_detector_configuration()->get_op_env();
+    m_writer_identifier = name;
 
     m_operation_mode = m_config_params->get_mode();
     m_path = m_config_params->get_directory_path();
@@ -176,7 +176,8 @@ public:
                                   current_free_space,
                                   (m_free_space_safety_factor_for_write * tr_size),
                                   msg_oss.str());
-      std::string msg = "writing a trigger record to file" + (m_file_handle ? " " + m_file_handle->get_file_name() : "");
+      std::string msg =
+        "writing a trigger record to file" + (m_file_handle ? " " + m_file_handle->get_file_name() : "");
       throw RetryableDataStoreProblem(ERS_HERE, get_name(), msg, issue);
     }
 
@@ -314,12 +315,13 @@ private:
   HDF5DataStore& operator=(HDF5DataStore&&) = delete;
 
   std::unique_ptr<hdf5libs::HDF5RawDataFile> m_file_handle;
-  const appdal::HDF5FileLayoutParams* m_file_layout_params;
+  const appmodel::HDF5FileLayoutParams* m_file_layout_params;
   std::string m_basic_name_of_open_file;
   unsigned m_open_flags_of_open_file;
   daqdataformats::run_number_t m_run_number;
-  const coredal::ReadoutMap* m_hardware_map;
+  const confmodel::Session* m_session;
   std::string m_operational_environment;
+  std::string m_writer_identifier;
 
   // Total number of generated files
   size_t m_file_index;
@@ -328,7 +330,7 @@ private:
   size_t m_recorded_size;
 
   // Configuration
-  const appdal::DataStoreConf* m_config_params;
+  const appmodel::DataStoreConf* m_config_params;
   std::string m_operation_mode;
   std::string m_path;
   size_t m_max_file_size;
@@ -348,7 +350,7 @@ private:
     if (work_oss.str().length() > 0) {
       work_oss << "/";
     }
-    work_oss << m_config_params->get_filename_params()->get_overall_prefix();
+    work_oss << m_operational_environment + "_" + m_config_params->get_filename_params()->get_file_type_prefix();
     if (work_oss.str().length() > 0) {
       work_oss << "_";
     }
@@ -361,15 +363,14 @@ private:
 
       work_oss << m_config_params->get_filename_params()->get_trigger_number_prefix();
       work_oss << std::setw(m_config_params->get_filename_params()->get_digits_for_trigger_number())
-               << std::setfill('0')
-               << record_number;
+               << std::setfill('0') << record_number;
     } else if (m_config_params->get_mode() == "all-per-file") {
 
       work_oss << m_config_params->get_filename_params()->get_file_index_prefix();
       work_oss << std::setw(m_config_params->get_filename_params()->get_digits_for_file_index()) << std::setfill('0')
                << m_file_index;
     }
-    work_oss << "_" << m_config_params->get_filename_params()->get_writer_identifier();
+    work_oss << "_" << m_writer_identifier;
     work_oss << ".hdf5";
     return work_oss.str();
   }
@@ -421,14 +422,15 @@ private:
       m_basic_name_of_open_file = file_name;
       m_open_flags_of_open_file = open_flags;
       try {
-        m_file_handle.reset(new hdf5libs::HDF5RawDataFile(unique_filename,
-                                                          m_run_number,
-                                                          m_file_index,
-                                        m_config_params->get_filename_params()->get_writer_identifier(),
-                                                          m_file_layout_params,
-                                                          hdf5libs::HDF5SourceIDHandler::make_source_id_geo_id_map(m_hardware_map),
-                                                          ".writing",
-                                                          open_flags));
+        m_file_handle.reset(
+          new hdf5libs::HDF5RawDataFile(unique_filename,
+                                        m_run_number,
+                                        m_file_index,
+                                        m_writer_identifier,
+                                        m_file_layout_params,
+                                        hdf5libs::HDF5SourceIDHandler::make_source_id_geo_id_map(m_session),
+                                        ".writing",
+                                        open_flags));
       } catch (std::exception const& excpt) {
         throw FileOperationProblem(ERS_HERE, get_name(), unique_filename, excpt);
       } catch (...) { // NOLINT(runtime/exceptions)

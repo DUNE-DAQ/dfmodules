@@ -15,8 +15,6 @@
 
 #include "appfwk/DAQModule.hpp"
 #include "appmodel/TPStreamWriterConf.hpp"
-#include "confmodel/ReadoutMap.hpp"
-#include "confmodel/DetectorConfig.hpp"
 #include "iomanager/Receiver.hpp"
 #include "daqdataformats/TimeSlice.hpp"
 #include "trigger/TPSet.hpp"
@@ -63,8 +61,6 @@ private:
 
   std::shared_ptr<appfwk::ModuleConfiguration> m_module_configuration;
   const appmodel::TPStreamWriterConf* m_tp_writer_conf;
-  const confmodel::ReadoutMap* m_readout_map;
-  const confmodel::DetectorConfig* m_detector_config;
   std::chrono::milliseconds m_queue_timeout;
   size_t m_accumulation_interval_ticks;
   daqdataformats::run_number_t m_run_number;

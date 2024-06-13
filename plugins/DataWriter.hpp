@@ -13,8 +13,6 @@
 
 #include "appfwk/DAQModule.hpp"
 #include "appmodel/DataWriterConf.hpp"
-#include "confmodel/ReadoutMap.hpp"
-#include "confmodel/DetectorConfig.hpp"
 #include "daqdataformats/TriggerRecord.hpp"
 #include "dfmessages/TriggerDecisionToken.hpp"
 #include "iomanager/Receiver.hpp"
@@ -64,8 +62,6 @@ private:
   // Configuration
   std::shared_ptr<appfwk::ModuleConfiguration> m_module_configuration;
   const appmodel::DataWriterConf* m_data_writer_conf;
-  const confmodel::ReadoutMap* m_readout_map;
-  const confmodel::DetectorConfig* m_detector_config;
   // size_t m_sleep_msec_while_running;
   std::chrono::milliseconds m_queue_timeout;
   bool m_data_storage_is_enabled;
