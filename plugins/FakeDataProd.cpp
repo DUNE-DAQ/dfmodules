@@ -10,8 +10,8 @@
 #include "dfmodules/CommonIssues.hpp"
 #include "dfmodules/fakedataprodinfo/InfoNljs.hpp"
 
-#include "appdal/FakeDataProd.hpp"
-#include "coredal/Connection.hpp"
+#include "appmodel/FakeDataProd.hpp"
+#include "confmodel/Connection.hpp"
 #include "dfmessages/Fragment_serialization.hpp"
 #include "dfmessages/TimeSync.hpp"
 #include "iomanager/IOManager.hpp"
@@ -57,7 +57,7 @@ void
 FakeDataProd::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
-  auto mdal = mcfg->module<appdal::FakeDataProd>(get_name());
+  auto mdal = mcfg->module<appmodel::FakeDataProd>(get_name());
   if (!mdal) {
     throw appfwk::CommandFailed(ERS_HERE, "init", get_name(), "Unable to retrieve configuration object");
   }

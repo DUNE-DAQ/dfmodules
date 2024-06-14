@@ -23,11 +23,8 @@ BOOST_AUTO_TEST_CASE(invalid_request)
 {
 
   // we want to pass an invalid DataStore type and see if we get an exception
-  BOOST_CHECK_THROW(make_data_store("dummy", nlohmann::json{}), DataStoreCreationFailed);
+  BOOST_CHECK_THROW(make_data_store("dummy", "dummy", nullptr), DataStoreCreationFailed);
 
-  // we want to ask for a DataStore configuring absolutely nothing, not even its type
-  // and check if we get an exception
-  BOOST_CHECK_THROW(make_data_store(nlohmann::json{}), std::exception);
 }
 
 #if 0

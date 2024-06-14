@@ -9,19 +9,18 @@
 #include "TriggerRecordBuilder.hpp"
 #include "dfmodules/CommonIssues.hpp"
 
-#include "appdal/NetworkConnectionDescriptor.hpp"
-#include "appdal/NetworkConnectionRule.hpp"
-#include "appdal/ReadoutApplication.hpp"
-#include "appdal/TriggerApplication.hpp"
-#include "appdal/TriggerRecordBuilder.hpp"
-#include "appdal/SourceIDConf.hpp"
+#include "appmodel/NetworkConnectionDescriptor.hpp"
+#include "appmodel/NetworkConnectionRule.hpp"
+#include "appmodel/ReadoutApplication.hpp"
+#include "appmodel/TriggerApplication.hpp"
+#include "appmodel/TriggerRecordBuilder.hpp"
+#include "appmodel/SourceIDConf.hpp"
 #include "appfwk/app/Nljs.hpp"
-#include "coredal/Application.hpp"
-#include "coredal/Connection.hpp"
-#include "coredal/DROStreamConf.hpp"
-#include "coredal/ReadoutGroup.hpp"
-#include "coredal/ReadoutInterface.hpp"
-#include "coredal/Session.hpp"
+#include "confmodel/Application.hpp"
+#include "confmodel/DetectorToDaqConnection.hpp"
+#include "confmodel/DetectorStream.hpp"
+#include "confmodel/Connection.hpp"
+#include "confmodel/Session.hpp"
 #include "dfmessages/TriggerRecord_serialization.hpp"
 #include "logging/Logging.hpp"
 
@@ -79,7 +78,7 @@ TriggerRecordBuilder::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
   // Get single queues
   //---------------------------------
 
-  auto mdal = mcfg->module<appdal::TriggerRecordBuilder>(get_name());
+  auto mdal = mcfg->module<appmodel::TriggerRecordBuilder>(get_name());
   if (!mdal) {
     throw appfwk::CommandFailed(ERS_HERE, "init", get_name(), "Unable to retrieve configuration object");
   }
@@ -114,10 +113,10 @@ TriggerRecordBuilder::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
     }
   }
 
-  const coredal::Session* session = mcfg->configuration_manager()->session();
+  const confmodel::Session* session = mcfg->configuration_manager()->session();
   for (auto& app : session->get_all_applications()) {
-    auto roapp = app->cast<appdal::ReadoutApplication>();
-    auto smartapp = app->cast<appdal::SmartDaqApplication>();
+    auto roapp = app->cast<appmodel::ReadoutApplication>();
+    auto smartapp = app->cast<appmodel::SmartDaqApplication>();
     if (roapp != nullptr) {
       setup_data_request_connections(roapp);
     } else if (smartapp != nullptr) {
@@ -134,9 +133,9 @@ TriggerRecordBuilder::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
 }
 
 void
-TriggerRecordBuilder::setup_data_request_connections(const appdal::SmartDaqApplication* smartapp)
+TriggerRecordBuilder::setup_data_request_connections(const appmodel::SmartDaqApplication* smartapp)
 {
-  const appdal::NetworkConnectionDescriptor* faNetDesc = nullptr;
+  const appmodel::NetworkConnectionDescriptor* faNetDesc = nullptr;
   for (auto rule : smartapp->get_network_rules()) {
     auto endpoint_class = rule->get_endpoint_class();
     auto data_type = rule->get_descriptor()->get_data_type();
@@ -174,23 +173,31 @@ TriggerRecordBuilder::setup_data_request_connections(const appdal::SmartDaqAppli
 }
 
 void
-TriggerRecordBuilder::setup_data_request_connections(const appdal::ReadoutApplication* roapp)
+TriggerRecordBuilder::setup_data_request_connections(const appmodel::ReadoutApplication* roapp)
 {
   std::vector<uint32_t> app_source_ids;
-  for (auto roGroup : roapp->get_contains()) {
-    // get the readout groups and the interfaces and streams therein; 1 reaout group corresponds to 1 data reader module
-    auto group_rset = roGroup->cast<coredal::ReadoutGroup>();
-    auto interfaces = group_rset->get_contains();
-    for (auto interface_rset : interfaces) {
-      auto interface = interface_rset->cast<coredal::ReadoutInterface>();
-      for (auto res : interface->get_contains()) {
-        auto stream = res->cast<coredal::DROStreamConf>();
-        app_source_ids.push_back(stream->get_source_id());
-      }
+  for (auto d2d_conn_res : roapp->get_contains()) {
+
+    TLOG() << "Processing DetectorToDaqConnection " << d2d_conn_res->UID();
+    // get the readout groups and the interfaces and streams therein; 1 reaout group corresponds to 1 data reader
+    // module
+    auto d2d_conn = d2d_conn_res->cast<confmodel::DetectorToDaqConnection>();
+
+    if (!d2d_conn) {
+      continue;
+    }
+
+    // Loop over senders
+    for (auto dros : d2d_conn->get_streams()) {
+
+      auto stream = dros->cast<confmodel::DetectorStream>();
+      if (!stream)
+        continue;
+      app_source_ids.push_back(stream->get_source_id());
     }
   }
 
-  const appdal::NetworkConnectionDescriptor* faNetDesc = nullptr;
+  const appmodel::NetworkConnectionDescriptor* faNetDesc = nullptr;
   for (auto rule : roapp->get_network_rules()) {
     auto endpoint_class = rule->get_endpoint_class();
     auto data_type = rule->get_descriptor()->get_data_type();

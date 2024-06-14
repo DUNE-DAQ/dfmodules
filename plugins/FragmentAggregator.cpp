@@ -9,10 +9,10 @@
 #include "FragmentAggregator.hpp"
 #include "dfmodules/CommonIssues.hpp"
 
-#include "appdal/FragmentAggregator.hpp"
+#include "appmodel/FragmentAggregator.hpp"
 #include "appfwk/app/Nljs.hpp"
-#include "coredal/Connection.hpp"
-#include "coredal/QueueWithId.hpp"
+#include "confmodel/Connection.hpp"
+#include "confmodel/QueueWithId.hpp"
 #include "dfmessages/Fragment_serialization.hpp"
 #include "logging/Logging.hpp"
 
@@ -34,7 +34,7 @@ FragmentAggregator::FragmentAggregator(const std::string& name)
 void
 FragmentAggregator::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
 {
-  auto mdal = mcfg->module<appdal::FragmentAggregator>(get_name());
+  auto mdal = mcfg->module<appmodel::FragmentAggregator>(get_name());
   if (!mdal) {
     throw appfwk::CommandFailed(ERS_HERE, "init", get_name(), "Unable to retrieve configuration object");
   }
@@ -52,7 +52,7 @@ FragmentAggregator::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
   m_producer_conn_ids.clear();
   for (const auto cr : mdal->get_outputs()) {
     if (cr->get_data_type() == datatype_to_string<dfmessages::DataRequest>()) {
-	auto qid = cr->cast<coredal::QueueWithId>();
+	auto qid = cr->cast<confmodel::QueueWithId>();
       	    m_producer_conn_ids[qid->get_source_id()] = cr->UID();
     }
   }

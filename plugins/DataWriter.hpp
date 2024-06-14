@@ -12,9 +12,7 @@
 #include "dfmodules/DataStore.hpp"
 
 #include "appfwk/DAQModule.hpp"
-#include "appdal/DataWriterConf.hpp"
-#include "coredal/ReadoutMap.hpp"
-#include "coredal/DetectorConfig.hpp"
+#include "appmodel/DataWriterConf.hpp"
 #include "daqdataformats/TriggerRecord.hpp"
 #include "dfmessages/TriggerDecisionToken.hpp"
 #include "iomanager/Receiver.hpp"
@@ -62,9 +60,8 @@ private:
   std::atomic<bool> m_running = false;
 
   // Configuration
-  const appdal::DataWriterConf* m_data_writer_conf;
-  const coredal::ReadoutMap* m_readout_map;
-  const coredal::DetectorConfig* m_detector_config;
+  std::shared_ptr<appfwk::ModuleConfiguration> m_module_configuration;
+  const appmodel::DataWriterConf* m_data_writer_conf;
   // size_t m_sleep_msec_while_running;
   std::chrono::milliseconds m_queue_timeout;
   bool m_data_storage_is_enabled;

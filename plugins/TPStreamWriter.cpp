@@ -9,13 +9,12 @@
 #include "TPStreamWriter.hpp"
 #include "dfmodules/CommonIssues.hpp"
 #include "dfmodules/TPBundleHandler.hpp"
-#include "dfmodules/hdf5datastore/Nljs.hpp"
 #include "dfmodules/tpstreamwriterinfo/InfoNljs.hpp"
-#include "SchemaUtils.hpp"
 
-#include "appdal/TPStreamWriter.hpp"
-#include "coredal/Connection.hpp"
-#include "coredal/Session.hpp"
+#include "appmodel/DataStoreConf.hpp"
+#include "appmodel/TPStreamWriter.hpp"
+#include "confmodel/Connection.hpp"
+#include "confmodel/Session.hpp"
 #include "iomanager/IOManager.hpp"
 #include "daqdataformats/Fragment.hpp"
 #include "daqdataformats/Types.hpp"
@@ -55,15 +54,14 @@ void
 TPStreamWriter::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
-  auto mdal = mcfg->module<appdal::TPStreamWriter>(get_name());
+  auto mdal = mcfg->module<appmodel::TPStreamWriter>(get_name());
   if (!mdal) {
     throw appfwk::CommandFailed(ERS_HERE, "init", get_name(), "Unable to retrieve configuration object");
   }
   assert(mdal->get_inputs().size() == 1);
+  m_module_configuration = mcfg;
   m_tpset_source = iomanager::IOManager::get()->get_receiver<trigger::TPSet>(mdal->get_inputs()[0]->UID());
   m_tp_writer_conf = mdal->get_configuration();
-  m_readout_map = mcfg->configuration_manager()->session()->get_readout_map();
-  m_detector_config = mcfg->configuration_manager()->session()->get_detector_configuration();
   m_source_id = mdal->get_source_id();
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
@@ -88,10 +86,9 @@ TPStreamWriter::do_conf(const data_t& )
 
   // create the DataStore instance here
   try {
-    auto config_params = convert_to_json(m_tp_writer_conf->get_data_store_params(), m_readout_map, m_detector_config);
-    hdf5datastore::data_t hdf5ds_json;
-    hdf5datastore::to_json(hdf5ds_json, config_params);
-    m_data_writer = make_data_store(hdf5ds_json);
+    m_data_writer = make_data_store(m_tp_writer_conf->get_data_store_params()->get_type(),
+                                    m_tp_writer_conf->get_data_store_params()->UID(),
+                                    m_module_configuration);
   } catch (const ers::Issue& excpt) {
     throw UnableToConfigure(ERS_HERE, get_name(), excpt);
   }
