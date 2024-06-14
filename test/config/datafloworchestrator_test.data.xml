@@ -102,7 +102,7 @@
  <attr name="free_threshold" type="s32" val="1"/>
 </obj>
 
-<obj class="DataFlowOrchestrator" id="test">
+<obj class="DFOModule" id="test">
  <rel name="inputs">
   <ref class="NetworkConnection" id="token"/>
   <ref class="NetworkConnection" id="trigdec"/>
@@ -118,7 +118,7 @@
  <attr name="application_name" type="string" val="daq_application"/>
  <rel name="runs_on" class="VirtualHost" id="vlocalhost"/>
  <rel name="modules">
-  <ref class="DataFlowOrchestrator" id="test"/>
+  <ref class="DFOModule" id="test"/>
  </rel>
 </obj>
 

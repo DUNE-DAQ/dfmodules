@@ -1,18 +1,18 @@
 /**
- * @file TPStreamWriter.cpp TPStreamWriter class implementation
+ * @file TPStreamWriterModule.cpp TPStreamWriterModule class implementation
  *
  * This is part of the DUNE DAQ Software Suite, copyright 2020.
  * Licensing/copyright details are in the COPYING file that you should have
  * received with this code.
  */
 
-#include "TPStreamWriter.hpp"
+#include "TPStreamWriterModule.hpp"
 #include "dfmodules/CommonIssues.hpp"
 #include "dfmodules/TPBundleHandler.hpp"
 #include "dfmodules/tpstreamwriterinfo/InfoNljs.hpp"
 
 #include "appmodel/DataStoreConf.hpp"
-#include "appmodel/TPStreamWriter.hpp"
+#include "appmodel/TPStreamWriterModule.hpp"
 #include "confmodel/Connection.hpp"
 #include "confmodel/Session.hpp"
 #include "iomanager/IOManager.hpp"
@@ -39,22 +39,22 @@ enum
 namespace dunedaq {
 namespace dfmodules {
 
-TPStreamWriter::TPStreamWriter(const std::string& name)
+TPStreamWriterModule::TPStreamWriterModule(const std::string& name)
   : dunedaq::appfwk::DAQModule(name)
-  , m_thread(std::bind(&TPStreamWriter::do_work, this, std::placeholders::_1))
+  , m_thread(std::bind(&TPStreamWriterModule::do_work, this, std::placeholders::_1))
   , m_queue_timeout(100)
 {
-  register_command("conf", &TPStreamWriter::do_conf);
-  register_command("start", &TPStreamWriter::do_start);
-  register_command("stop", &TPStreamWriter::do_stop);
-  register_command("scrap", &TPStreamWriter::do_scrap);
+  register_command("conf", &TPStreamWriterModule::do_conf);
+  register_command("start", &TPStreamWriterModule::do_start);
+  register_command("stop", &TPStreamWriterModule::do_stop);
+  register_command("scrap", &TPStreamWriterModule::do_scrap);
 }
 
 void
-TPStreamWriter::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
+TPStreamWriterModule::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
-  auto mdal = mcfg->module<appmodel::TPStreamWriter>(get_name());
+  auto mdal = mcfg->module<appmodel::TPStreamWriterModule>(get_name());
   if (!mdal) {
     throw appfwk::CommandFailed(ERS_HERE, "init", get_name(), "Unable to retrieve configuration object");
   }
@@ -67,7 +67,7 @@ TPStreamWriter::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
 }
 
 void
-TPStreamWriter::get_info(opmonlib::InfoCollector& ci, int /*level*/)
+TPStreamWriterModule::get_info(opmonlib::InfoCollector& ci, int /*level*/)
 {
   tpstreamwriterinfo::Info info;
 
@@ -79,7 +79,7 @@ TPStreamWriter::get_info(opmonlib::InfoCollector& ci, int /*level*/)
 }
 
 void
-TPStreamWriter::do_conf(const data_t& )
+TPStreamWriterModule::do_conf(const data_t& )
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
   m_accumulation_interval_ticks = m_tp_writer_conf->get_tp_accumulation_interval();
@@ -95,14 +95,14 @@ TPStreamWriter::do_conf(const data_t& )
 
   // ensure that we have a valid dataWriter instance
   if (m_data_writer.get() == nullptr) {
-    throw InvalidDataWriter(ERS_HERE, get_name());
+    throw InvalidDataWriterModule(ERS_HERE, get_name());
   }
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
 }
 
 void
-TPStreamWriter::do_start(const nlohmann::json& payload)
+TPStreamWriterModule::do_start(const nlohmann::json& payload)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_start() method";
   rcif::cmd::StartParams start_params = payload.get<rcif::cmd::StartParams>();
@@ -125,7 +125,7 @@ TPStreamWriter::do_start(const nlohmann::json& payload)
 }
 
 void
-TPStreamWriter::do_stop(const nlohmann::json& /*payload*/)
+TPStreamWriterModule::do_stop(const nlohmann::json& /*payload*/)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_stop() method";
   m_thread.stop_working_thread();
@@ -144,7 +144,7 @@ TPStreamWriter::do_stop(const nlohmann::json& /*payload*/)
 }
 
 void
-TPStreamWriter::do_scrap(const data_t& /*payload*/)
+TPStreamWriterModule::do_scrap(const data_t& /*payload*/)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_scrap() method";
 
@@ -155,7 +155,7 @@ TPStreamWriter::do_scrap(const data_t& /*payload*/)
 }
 
 void
-TPStreamWriter::do_work(std::atomic<bool>& running_flag)
+TPStreamWriterModule::do_work(std::atomic<bool>& running_flag)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() method";
 
@@ -251,4 +251,4 @@ TPStreamWriter::do_work(std::atomic<bool>& running_flag)
 } // namespace dfmodules
 } // namespace dunedaq
 
-DEFINE_DUNE_DAQ_MODULE(dunedaq::dfmodules::TPStreamWriter)
+DEFINE_DUNE_DAQ_MODULE(dunedaq::dfmodules::TPStreamWriterModule)

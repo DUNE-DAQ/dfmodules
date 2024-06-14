@@ -105,9 +105,9 @@ swtpg_conf["readout"]["enable_tpg"] = True
 swtpg_conf["readout"]["tpg_threshold"] = 500
 swtpg_conf["readout"]["tpg_algorithm"] = "SimpleThreshold"
 swtpg_conf["readout"]["default_data_file"] = "asset://?checksum=dd156b4895f1b06a06b6ff38e37bd798" # WIBEth All Zeros
-swtpg_conf["trigger"]["trigger_activity_plugin"] = ["TriggerActivityMakerPrescalePlugin"]
+swtpg_conf["trigger"]["trigger_activity_plugin"] = ["TAMakerPrescaleAlgorithm"]
 swtpg_conf["trigger"]["trigger_activity_config"] = [ {"prescale": 25} ]
-swtpg_conf["trigger"]["trigger_candidate_plugin"] = ["TriggerCandidateMakerPrescalePlugin"]
+swtpg_conf["trigger"]["trigger_candidate_plugin"] = ["TCMakerPrescaleAlgorithm"]
 swtpg_conf["trigger"]["trigger_candidate_config"] = [ {"prescale": 100} ]
 swtpg_conf["trigger"]["mlt_merge_overlapping_tcs"] = False
 

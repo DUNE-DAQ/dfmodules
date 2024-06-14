@@ -1,5 +1,5 @@
 /**
- * @file TriggerRecordBuilder.hpp
+ * @file TRBModule.hpp
  *
  * This is part of the DUNE DAQ Software Suite, copyright 2020.
  * Licensing/copyright details are in the COPYING file that you should have
@@ -162,25 +162,25 @@ ERS_DECLARE_ISSUE(dfmodules,           ///< Namespace
 namespace dfmodules {
 
 /**
- * @brief TriggerRecordBuilder is the Module that collects Trigger
+ * @brief TRBModule is the Module that collects Trigger
  TriggersDecisions, sends the corresponding data requests and collects Fragment
  to form a complete Trigger Record. The TR then sent out possibly to a write
  module
 */
-class TriggerRecordBuilder : public dunedaq::appfwk::DAQModule
+class TRBModule : public dunedaq::appfwk::DAQModule
 {
 public:
   /**
-   * @brief TriggerRecordBuilder Constructor
-   * @param name Instance name for this TriggerRecordBuilder instance
+   * @brief TRBModule Constructor
+   * @param name Instance name for this TRBModule instance
    */
-  explicit TriggerRecordBuilder(const std::string& name);
+  explicit TRBModule(const std::string& name);
 
-  TriggerRecordBuilder(const TriggerRecordBuilder&) = delete; ///< TriggerRecordBuilder is not copy-constructible
-  TriggerRecordBuilder& operator=(const TriggerRecordBuilder&) =
-    delete;                                                         ///< TriggerRecordBuilder is not copy-assignable
-  TriggerRecordBuilder(TriggerRecordBuilder&&) = delete;            ///< TriggerRecordBuilder is not move-constructible
-  TriggerRecordBuilder& operator=(TriggerRecordBuilder&&) = delete; ///< TriggerRecordBuilder is not move-assignable
+  TRBModule(const TRBModule&) = delete; ///< TRBModule is not copy-constructible
+  TRBModule& operator=(const TRBModule&) =
+    delete;                                                         ///< TRBModule is not copy-assignable
+  TRBModule(TRBModule&&) = delete;            ///< TRBModule is not move-constructible
+  TRBModule& operator=(TRBModule&&) = delete; ///< TRBModule is not move-assignable
 
   void init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg) override;
   void get_info(opmonlib::InfoCollector& ci, int level) override;

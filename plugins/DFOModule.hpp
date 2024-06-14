@@ -1,5 +1,5 @@
 /**
- * @file DataFlowOrchestrator.hpp
+ * @file DFOModule.hpp
  *
  * This is part of the DUNE DAQ Software Suite, copyright 2020.
  * Licensing/copyright details are in the COPYING file that you should have
@@ -34,16 +34,16 @@ namespace dunedaq {
 
 // Disable coverage checking LCOV_EXCL_START
 ERS_DECLARE_ISSUE(dfmodules,
-                  TriggerRecordBuilderAppUpdate,
-                  "TriggerRecordBuilder app " << connection_name << ": " << message,
+                  TRBModuleAppUpdate,
+                  "TRBModule app " << connection_name << ": " << message,
                   ((std::string)connection_name)((std::string)message))
 ERS_DECLARE_ISSUE(dfmodules,
                   UnknownTokenSource,
                   "Token from unknown source: " << connection_name,
                   ((std::string)connection_name))
 ERS_DECLARE_ISSUE(dfmodules,
-                  DataFlowOrchestratorRunNumberMismatch,
-                  "DataFlowOrchestrator encountered run number mismatch: recvd ("
+                  DFOModuleRunNumberMismatch,
+                  "DFOModule encountered run number mismatch: recvd ("
                     << received_run_number << ") != " << run_number << " from " << src_app << " for trigger_number "
                     << trig_num,
                   ((uint32_t)received_run_number)((uint32_t)run_number)((std::string)src_app)(
@@ -66,23 +66,23 @@ ERS_DECLARE_ISSUE(dfmodules,
 namespace dfmodules {
 
 /**
- * @brief DataFlowOrchestrator distributes triggers according to the
+ * @brief DFOModule distributes triggers according to the
  * availability of the DF apps in the system
  */
-class DataFlowOrchestrator : public dunedaq::appfwk::DAQModule
+class DFOModule : public dunedaq::appfwk::DAQModule
 {
 public:
   /**
-   * @brief DataFlowOrchestrator Constructor
-   * @param name Instance name for this DataFlowOrchestrator instance
+   * @brief DFOModule Constructor
+   * @param name Instance name for this DFOModule instance
    */
-  explicit DataFlowOrchestrator(const std::string& name);
+  explicit DFOModule(const std::string& name);
 
-  DataFlowOrchestrator(const DataFlowOrchestrator&) = delete; ///< DataFlowOrchestrator is not copy-constructible
-  DataFlowOrchestrator& operator=(const DataFlowOrchestrator&) =
-    delete;                                                         ///< DataFlowOrchestrator is not copy-assignable
-  DataFlowOrchestrator(DataFlowOrchestrator&&) = delete;            ///< DataFlowOrchestrator is not move-constructible
-  DataFlowOrchestrator& operator=(DataFlowOrchestrator&&) = delete; ///< DataFlowOrchestrator is not move-assignable
+  DFOModule(const DFOModule&) = delete; ///< DFOModule is not copy-constructible
+  DFOModule& operator=(const DFOModule&) =
+    delete;                                                         ///< DFOModule is not copy-assignable
+  DFOModule(DFOModule&&) = delete;            ///< DFOModule is not move-constructible
+  DFOModule& operator=(DFOModule&&) = delete; ///< DFOModule is not move-assignable
 
   void init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg) override;
 
