@@ -17,10 +17,9 @@
 #include "appmodel/SourceIDConf.hpp"
 #include "appfwk/app/Nljs.hpp"
 #include "confmodel/Application.hpp"
+#include "confmodel/DetectorToDaqConnection.hpp"
+#include "confmodel/DetectorStream.hpp"
 #include "confmodel/Connection.hpp"
-#include "confmodel/DROStreamConf.hpp"
-#include "confmodel/ReadoutGroup.hpp"
-#include "confmodel/ReadoutInterface.hpp"
 #include "confmodel/Session.hpp"
 #include "dfmessages/TriggerRecord_serialization.hpp"
 #include "logging/Logging.hpp"
@@ -177,16 +176,24 @@ void
 TriggerRecordBuilder::setup_data_request_connections(const appmodel::ReadoutApplication* roapp)
 {
   std::vector<uint32_t> app_source_ids;
-  for (auto roGroup : roapp->get_contains()) {
-    // get the readout groups and the interfaces and streams therein; 1 reaout group corresponds to 1 data reader module
-    auto group_rset = roGroup->cast<confmodel::ReadoutGroup>();
-    auto interfaces = group_rset->get_contains();
-    for (auto interface_rset : interfaces) {
-      auto interface = interface_rset->cast<confmodel::ReadoutInterface>();
-      for (auto res : interface->get_contains()) {
-        auto stream = res->cast<confmodel::DROStreamConf>();
-        app_source_ids.push_back(stream->get_source_id());
-      }
+  for (auto d2d_conn_res : roapp->get_contains()) {
+
+    TLOG() << "Processing DetectorToDaqConnection " << d2d_conn_res->UID();
+    // get the readout groups and the interfaces and streams therein; 1 reaout group corresponds to 1 data reader
+    // module
+    auto d2d_conn = d2d_conn_res->cast<confmodel::DetectorToDaqConnection>();
+
+    if (!d2d_conn) {
+      continue;
+    }
+
+    // Loop over senders
+    for (auto dros : d2d_conn->get_streams()) {
+
+      auto stream = dros->cast<confmodel::DetectorStream>();
+      if (!stream)
+        continue;
+      app_source_ids.push_back(stream->get_source_id());
     }
   }
 

@@ -14,13 +14,13 @@
 
 #include "HDF5FileUtils.hpp"
 #include "dfmodules/DataStore.hpp"
-#include "dfmodules/hdf5datastore/Nljs.hpp"
-#include "dfmodules/hdf5datastore/Structs.hpp"
 
 #include "hdf5libs/HDF5RawDataFile.hpp"
-#include "hdf5libs/hdf5filelayout/Nljs.hpp"
-#include "hdf5libs/hdf5filelayout/Structs.hpp"
-#include "hdf5libs/hdf5rawdatafile/Structs.hpp"
+
+#include "appmodel/DataStoreConf.hpp"
+#include "appmodel/FilenameParams.hpp"
+#include "confmodel/DetectorConfig.hpp"
+#include "confmodel/Session.hpp"
 
 #include "appfwk/DAQModule.hpp"
 #include "logging/Logging.hpp"
@@ -112,23 +112,25 @@ public:
    * @param name, path, filename, operationMode
    *
    */
-  explicit HDF5DataStore(const nlohmann::json& conf)
-    : DataStore(conf.value("name", "data_store"))
+  explicit HDF5DataStore(std::string const& name, std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
+    : DataStore(name)
     , m_basic_name_of_open_file("")
     , m_open_flags_of_open_file(0)
     , m_run_number(0)
   {
-    TLOG_DEBUG(TLVL_BASIC) << get_name() << ": Configuration: " << conf;
+    TLOG_DEBUG(TLVL_BASIC) << get_name();
 
-    m_config_params = conf.get<hdf5datastore::ConfParams>();
-    m_file_layout_params = m_config_params.file_layout_parameters;
-    m_hardware_map = m_config_params.srcid_geoid_map;
+    m_config_params = mcfg->module<appmodel::DataStoreConf>(name);
+    m_file_layout_params = m_config_params->get_file_layout_params();
+    m_session = mcfg->configuration_manager()->session();
+    m_operational_environment = mcfg->configuration_manager()->session()->get_detector_configuration()->get_op_env();
+    m_writer_identifier = name;
 
-    m_operation_mode = m_config_params.mode;
-    m_path = m_config_params.directory_path;
-    m_max_file_size = m_config_params.max_file_size_bytes;
-    m_disable_unique_suffix = m_config_params.disable_unique_filename_suffix;
-    m_free_space_safety_factor_for_write = m_config_params.free_space_safety_factor_for_write;
+    m_operation_mode = m_config_params->get_mode();
+    m_path = m_config_params->get_directory_path();
+    m_max_file_size = m_config_params->get_max_file_size();
+    m_disable_unique_suffix = m_config_params->get_disable_unique_filename_suffix();
+    m_free_space_safety_factor_for_write = m_config_params->get_free_space_safety_factor();
     if (m_free_space_safety_factor_for_write < 1.1) {
       m_free_space_safety_factor_for_write = 1.1;
     }
@@ -174,7 +176,8 @@ public:
                                   current_free_space,
                                   (m_free_space_safety_factor_for_write * tr_size),
                                   msg_oss.str());
-      std::string msg = "writing a trigger record to file" + (m_file_handle ? " " + m_file_handle->get_file_name() : "");
+      std::string msg =
+        "writing a trigger record to file" + (m_file_handle ? " " + m_file_handle->get_file_name() : "");
       throw RetryableDataStoreProblem(ERS_HERE, get_name(), msg, issue);
     }
 
@@ -312,11 +315,13 @@ private:
   HDF5DataStore& operator=(HDF5DataStore&&) = delete;
 
   std::unique_ptr<hdf5libs::HDF5RawDataFile> m_file_handle;
-  hdf5libs::hdf5filelayout::FileLayoutParams m_file_layout_params;
+  const appmodel::HDF5FileLayoutParams* m_file_layout_params;
   std::string m_basic_name_of_open_file;
   unsigned m_open_flags_of_open_file;
   daqdataformats::run_number_t m_run_number;
-  hdf5libs::hdf5rawdatafile::SrcIDGeoIDMap m_hardware_map;
+  const confmodel::Session* m_session;
+  std::string m_operational_environment;
+  std::string m_writer_identifier;
 
   // Total number of generated files
   size_t m_file_index;
@@ -325,7 +330,7 @@ private:
   size_t m_recorded_size;
 
   // Configuration
-  hdf5datastore::ConfParams m_config_params;
+  const appmodel::DataStoreConf* m_config_params;
   std::string m_operation_mode;
   std::string m_path;
   size_t m_max_file_size;
@@ -341,30 +346,31 @@ private:
                             daqdataformats::run_number_t run_number)
   {
     std::ostringstream work_oss;
-    work_oss << m_config_params.directory_path;
+    work_oss << m_config_params->get_directory_path();
     if (work_oss.str().length() > 0) {
       work_oss << "/";
     }
-    work_oss << m_config_params.filename_parameters.overall_prefix;
+    work_oss << m_operational_environment + "_" + m_config_params->get_filename_params()->get_file_type_prefix();
     if (work_oss.str().length() > 0) {
       work_oss << "_";
     }
 
-    work_oss << m_config_params.filename_parameters.run_number_prefix;
-    work_oss << std::setw(m_config_params.filename_parameters.digits_for_run_number) << std::setfill('0') << run_number;
+    work_oss << m_config_params->get_filename_params()->get_run_number_prefix();
+    work_oss << std::setw(m_config_params->get_filename_params()->get_digits_for_run_number()) << std::setfill('0')
+             << run_number;
     work_oss << "_";
-    if (m_config_params.mode == "one-event-per-file") {
+    if (m_config_params->get_mode() == "one-event-per-file") {
 
-      work_oss << m_config_params.filename_parameters.trigger_number_prefix;
-      work_oss << std::setw(m_config_params.filename_parameters.digits_for_trigger_number) << std::setfill('0')
-               << record_number;
-    } else if (m_config_params.mode == "all-per-file") {
+      work_oss << m_config_params->get_filename_params()->get_trigger_number_prefix();
+      work_oss << std::setw(m_config_params->get_filename_params()->get_digits_for_trigger_number())
+               << std::setfill('0') << record_number;
+    } else if (m_config_params->get_mode() == "all-per-file") {
 
-      work_oss << m_config_params.filename_parameters.file_index_prefix;
-      work_oss << std::setw(m_config_params.filename_parameters.digits_for_file_index) << std::setfill('0')
+      work_oss << m_config_params->get_filename_params()->get_file_index_prefix();
+      work_oss << std::setw(m_config_params->get_filename_params()->get_digits_for_file_index()) << std::setfill('0')
                << m_file_index;
     }
-    work_oss << "_" << m_config_params.filename_parameters.writer_identifier;
+    work_oss << "_" << m_writer_identifier;
     work_oss << ".hdf5";
     return work_oss.str();
   }
@@ -416,14 +422,15 @@ private:
       m_basic_name_of_open_file = file_name;
       m_open_flags_of_open_file = open_flags;
       try {
-        m_file_handle.reset(new hdf5libs::HDF5RawDataFile(unique_filename,
-                                                          m_run_number,
-                                                          m_file_index,
-                                                          m_config_params.filename_parameters.writer_identifier,
-                                                          m_file_layout_params,
-                                                          m_hardware_map,
-                                                          ".writing",
-                                                          open_flags));
+        m_file_handle.reset(
+          new hdf5libs::HDF5RawDataFile(unique_filename,
+                                        m_run_number,
+                                        m_file_index,
+                                        m_writer_identifier,
+                                        m_file_layout_params,
+                                        hdf5libs::HDF5SourceIDHandler::make_source_id_geo_id_map(m_session),
+                                        ".writing",
+                                        open_flags));
       } catch (std::exception const& excpt) {
         throw FileOperationProblem(ERS_HERE, get_name(), unique_filename, excpt);
       } catch (...) { // NOLINT(runtime/exceptions)
@@ -438,7 +445,7 @@ private:
 
         // write attributes that aren't being handled by the HDF5RawDataFile right now
         // m_file_handle->write_attribute("data_format_version",(int)m_key_translator_ptr->get_current_version());
-        m_file_handle->write_attribute("operational_environment", (std::string)m_config_params.operational_environment);
+        m_file_handle->write_attribute("operational_environment", (std::string)m_operational_environment);
       }
     } else {
       TLOG_DEBUG(TLVL_BASIC) << get_name() << ": Pointer file to  " << m_basic_name_of_open_file

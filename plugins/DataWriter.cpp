@@ -7,15 +7,14 @@
  */
 
 #include "DataWriter.hpp"
-#include "SchemaUtils.hpp"
 #include "dfmodules/CommonIssues.hpp"
 #include "dfmodules/datawriterinfo/InfoNljs.hpp"
-#include "dfmodules/hdf5datastore/Nljs.hpp"
 
 #include "confmodel/Application.hpp"
 #include "confmodel/Session.hpp"
 #include "appmodel/DataWriter.hpp"
 #include "appmodel/TriggerRecordBuilder.hpp"
+#include "appmodel/DataStoreConf.hpp"
 #include "confmodel/Connection.hpp"
 #include "daqdataformats/Fragment.hpp"
 #include "dfmessages/TriggerDecision.hpp"
@@ -81,9 +80,8 @@ DataWriter::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
       ERS_HERE, "init", get_name(), "Expected 1 output, got " + std::to_string(outputs.size()));  
   }
 
+  m_module_configuration = mcfg;
   m_data_writer_conf = mdal->get_configuration();
-  m_readout_map = mcfg->configuration_manager()->session()->get_readout_map();
-  m_detector_config = mcfg->configuration_manager()->session()->get_detector_configuration();
 
   if (inputs[0]->get_data_type() != datatype_to_string<std::unique_ptr<daqdataformats::TriggerRecord>>()) {
     throw InvalidQueueFatalError(ERS_HERE, get_name(), "TriggerRecord Input queue"); 
@@ -153,10 +151,9 @@ DataWriter::do_conf(const data_t&)
 
   // create the DataStore instance here
   try {
-    auto config_params = convert_to_json(m_data_writer_conf->get_data_store_params(), m_readout_map, m_detector_config);
-    hdf5datastore::data_t hdf5ds_json;
-    hdf5datastore::to_json(hdf5ds_json, config_params);
-    m_data_writer = make_data_store(hdf5ds_json);
+    m_data_writer = make_data_store(m_data_writer_conf->get_data_store_params()->get_type(),
+                                    m_data_writer_conf->get_data_store_params()->UID(),
+                                    m_module_configuration);
   } catch (const ers::Issue& excpt) {
     throw UnableToConfigure(ERS_HERE, get_name(), excpt);
   }
