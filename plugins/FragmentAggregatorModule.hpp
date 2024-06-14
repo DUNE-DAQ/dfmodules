@@ -1,5 +1,5 @@
 /**
- * @file FragmentAggregator.hpp Module to dispatch data requests within an application, aggregate and send fragments
+ * @file FragmentAggregatorModule.hpp Module to dispatch data requests within an application, aggregate and send fragments
  * using the IOMManager
  *
  * This is part of the DUNE DAQ , copyright 2020.
@@ -40,15 +40,15 @@ ERS_DECLARE_ISSUE(dfmodules,                  ///< Namespace
 
 namespace dfmodules {
 
-class FragmentAggregator : public dunedaq::appfwk::DAQModule
+class FragmentAggregatorModule : public dunedaq::appfwk::DAQModule
 {
 public:
-  explicit FragmentAggregator(const std::string& name);
+  explicit FragmentAggregatorModule(const std::string& name);
 
-  FragmentAggregator(const FragmentAggregator&) = delete;
-  FragmentAggregator& operator=(const FragmentAggregator&) = delete;
-  FragmentAggregator(FragmentAggregator&&) = delete;
-  FragmentAggregator& operator=(FragmentAggregator&&) = delete;
+  FragmentAggregatorModule(const FragmentAggregatorModule&) = delete;
+  FragmentAggregatorModule& operator=(const FragmentAggregatorModule&) = delete;
+  FragmentAggregatorModule(FragmentAggregatorModule&&) = delete;
+  FragmentAggregatorModule& operator=(FragmentAggregatorModule&&) = delete;
 
   void init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg) override;
   void get_info(opmonlib::InfoCollector& ci, int level) override;

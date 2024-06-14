@@ -99,11 +99,11 @@
  <attr name="application_name" type="string" val="daq_application"/>
  <rel name="runs_on" class="VirtualHost" id="vlocalhost"/>
  <rel name="modules">
-  <ref class="DataWriter" id="dwm-01"/>
+  <ref class="DataWriterModule" id="dwm-01"/>
  </rel>
 </obj>
 
-  <obj class="DataWriter" id="dwm-01">
+  <obj class="DataWriterModule" id="dwm-01">
     <rel name="configuration" class="DataWriterConf" id="dw-01"/>
   </obj>
 

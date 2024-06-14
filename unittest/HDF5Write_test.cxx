@@ -10,7 +10,7 @@
 #include "dfmodules/DataStore.hpp"
 #include "appfwk/ModuleConfiguration.hpp"
 
-#include "appmodel/DataWriter.hpp"
+#include "appmodel/DataWriterModule.hpp"
 #include "appmodel/DataWriterConf.hpp"
 #include "appmodel/FilenameParams.hpp"
 #include "confmodel/DetectorConfig.hpp"
@@ -160,7 +160,7 @@ BOOST_AUTO_TEST_CASE(WriteEventFiles)
 
   // create the DataStore
   CfgFixture cfg("test-session-3-1");
-  auto data_writer_conf = cfg.modCfg->module<dunedaq::appmodel::DataWriter>("dwm-01")->get_configuration();
+  auto data_writer_conf = cfg.modCfg->module<dunedaq::appmodel::DataWriterModule>("dwm-01")->get_configuration();
   auto data_store_conf = data_writer_conf->get_data_store_params();
 
   auto data_store_conf_obj = data_store_conf->config_object();
@@ -209,7 +209,7 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
 
   // create the DataStore
   CfgFixture cfg("test-session-3-1");
-  auto data_writer_conf = cfg.modCfg->module<dunedaq::appmodel::DataWriter>("dwm-01")->get_configuration();
+  auto data_writer_conf = cfg.modCfg->module<dunedaq::appmodel::DataWriterModule>("dwm-01")->get_configuration();
   auto data_store_conf = data_writer_conf->get_data_store_params();
 
   auto data_store_conf_obj = data_store_conf->config_object();
@@ -257,7 +257,7 @@ BOOST_AUTO_TEST_CASE(CheckWritingSuffix)
 
   // create the DataStore
   CfgFixture cfg("test-session-3-1");
-  auto data_writer_conf = cfg.modCfg->module<dunedaq::appmodel::DataWriter>("dwm-01")->get_configuration();
+  auto data_writer_conf = cfg.modCfg->module<dunedaq::appmodel::DataWriterModule>("dwm-01")->get_configuration();
   auto data_store_conf = data_writer_conf->get_data_store_params();
 
   auto data_store_conf_obj = data_store_conf->config_object();
@@ -314,7 +314,7 @@ BOOST_AUTO_TEST_CASE(FileSizeLimitResultsInMultipleFiles)
 
   // create the DataStore
   CfgFixture cfg("test-session-5-10");
-  auto data_writer_conf = cfg.modCfg->module<dunedaq::appmodel::DataWriter>("dwm-01")->get_configuration();
+  auto data_writer_conf = cfg.modCfg->module<dunedaq::appmodel::DataWriterModule>("dwm-01")->get_configuration();
   auto data_store_conf = data_writer_conf->get_data_store_params();
 
   auto data_store_conf_obj = data_store_conf->config_object();
@@ -366,7 +366,7 @@ BOOST_AUTO_TEST_CASE(SmallFileSizeLimitDataBlockListWrite)
 
   // create the DataStore
   CfgFixture cfg("test-session-5-1");
-  auto data_writer_conf = cfg.modCfg->module<dunedaq::appmodel::DataWriter>("dwm-01")->get_configuration();
+  auto data_writer_conf = cfg.modCfg->module<dunedaq::appmodel::DataWriterModule>("dwm-01")->get_configuration();
   auto data_store_conf = data_writer_conf->get_data_store_params();
 
   auto data_store_conf_obj = data_store_conf->config_object();

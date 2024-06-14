@@ -1,5 +1,5 @@
 /**
- * @file FakeDataProd.hpp
+ * @file FakeDataProdModule.hpp
  *
  * This is part of the DUNE DAQ Software Suite, copyright 2020.
  * Licensing/copyright details are in the COPYING file that you should have
@@ -44,21 +44,21 @@ ERS_DECLARE_ISSUE_BASE(dfmodules,
 namespace dfmodules {
 
 /**
- * @brief FakeDataProd is simply an example
+ * @brief FakeDataProdModule is simply an example
  */
-class FakeDataProd : public dunedaq::appfwk::DAQModule
+class FakeDataProdModule : public dunedaq::appfwk::DAQModule
 {
 public:
   /**
-   * @brief FakeDataProd Constructor
-   * @param name Instance name for this FakeDataProd instance
+   * @brief FakeDataProdModule Constructor
+   * @param name Instance name for this FakeDataProdModule instance
    */
-  explicit FakeDataProd(const std::string& name);
+  explicit FakeDataProdModule(const std::string& name);
 
-  FakeDataProd(const FakeDataProd&) = delete;            ///< FakeDataProd is not copy-constructible
-  FakeDataProd& operator=(const FakeDataProd&) = delete; ///< FakeDataProd is not copy-assignable
-  FakeDataProd(FakeDataProd&&) = delete;                 ///< FakeDataProd is not move-constructible
-  FakeDataProd& operator=(FakeDataProd&&) = delete;      ///< FakeDataProd is not move-assignable
+  FakeDataProdModule(const FakeDataProdModule&) = delete;            ///< FakeDataProdModule is not copy-constructible
+  FakeDataProdModule& operator=(const FakeDataProdModule&) = delete; ///< FakeDataProdModule is not copy-assignable
+  FakeDataProdModule(FakeDataProdModule&&) = delete;                 ///< FakeDataProdModule is not move-constructible
+  FakeDataProdModule& operator=(FakeDataProdModule&&) = delete;      ///< FakeDataProdModule is not move-assignable
 
   void init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg) override;
 
