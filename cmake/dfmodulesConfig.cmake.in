@@ -16,8 +16,6 @@ find_dependency(dfmessages)
 find_dependency(opmonlib)
 find_dependency(triggeralgs)
 find_dependency(trigger)
-find_dependency(serialization)
-find_dependency(datahandlinglibs)
 find_dependency(hdf5libs)
 find_dependency(Boost COMPONENTS iostreams)
 
