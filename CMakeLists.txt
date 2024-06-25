@@ -18,7 +18,7 @@ find_package(trgdataformats REQUIRED)
 find_package(triggeralgs REQUIRED)
 find_package(trigger REQUIRED)
 find_package(serialization REQUIRED) ## MR This can probably be removed? Unless we need it for the TPWriter
-find_package(readoutlibs REQUIRED)
+find_package(datahandlinglibs REQUIRED)
 find_package(Boost COMPONENTS iostreams unit_test_framework REQUIRED)
 
 daq_codegen( info/*.jsonnet DEP_PKGS opmonlib TEMPLATES opmonlib/InfoStructs.hpp.j2 opmonlib/InfoNljs.hpp.j2 )
@@ -35,7 +35,7 @@ daq_add_plugin( DataWriterModule            duneDAQModule LINK_LIBRARIES dfmodul
 daq_add_plugin( DFOModule  duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager )
 daq_add_plugin( TRBModule  duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager )
 daq_add_plugin( FakeDataProdModule          duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager)
-daq_add_plugin( TPStreamWriterModule        duneDAQModule LINK_LIBRARIES dfmodules hdf5libs::hdf5libs trigger::trigger serialization::serialization readoutlibs::readoutlibs Boost::iostreams )
+daq_add_plugin( TPStreamWriterModule        duneDAQModule LINK_LIBRARIES dfmodules hdf5libs::hdf5libs trigger::trigger serialization::serialization datahandlinglibs::datahandlinglibs Boost::iostreams )
 
 ##############################################################################
 daq_add_unit_test( HDF5FileUtils_test       LINK_LIBRARIES dfmodules )
