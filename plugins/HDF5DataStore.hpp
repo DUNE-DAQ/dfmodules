@@ -241,8 +241,13 @@ public:
     }
 
     // write the data block
-    m_file_handle->write(ts);
-    m_recorded_size = m_file_handle->get_recorded_size();
+    try {
+      m_file_handle->write(ts);
+      m_recorded_size = m_file_handle->get_recorded_size();
+    } catch (hdf5libs::TimeSliceAlreadyExists const& excpt) {
+      std::string msg = "writing a time slice to file " + m_file_handle->get_file_name();
+      throw IgnorableDataStoreProblem(ERS_HERE, get_name(), msg, excpt);
+    }
   }
 
   /**

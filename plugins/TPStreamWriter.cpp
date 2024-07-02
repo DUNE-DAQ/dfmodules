@@ -61,7 +61,10 @@ TPStreamWriter::get_info(opmonlib::InfoCollector& ci, int /*level*/)
   tpstreamwriterinfo::Info info;
 
   info.tpset_received = m_tpset_received.exchange(0);
-  info.tpset_written = m_tpset_written.exchange(0);
+  info.tpset_accumulated = m_tpset_accumulated.exchange(0);
+  info.tp_accumulated = m_tp_accumulated.exchange(0);
+  info.tp_written = m_tp_written.exchange(0);
+  info.timeslice_written = m_timeslice_written.exchange(0);
   info.bytes_output = m_bytes_output.exchange(0);
 
   ci.add(info);
@@ -76,6 +79,8 @@ TPStreamWriter::do_conf(const data_t& payload)
   m_accumulation_inactivity_time_before_write =
     std::chrono::milliseconds(static_cast<int>(1000*conf_params.tp_accumulation_inactivity_time_before_write_sec));
   m_source_id = conf_params.source_id;
+  m_warn_user_when_late_tps_are_discarded = conf_params.warn_user_when_late_tps_are_discarded;
+
 
   // create the DataStore instance here
   try {
@@ -182,7 +187,10 @@ TPStreamWriter::do_work(std::atomic<bool>& running_flag)
         continue;
       }
 
+      size_t num_tps_in_tpset = tpset.objects.size();
       tp_bundle_handler.add_tpset(std::move(tpset));
+      ++m_tpset_accumulated;
+      m_tp_accumulated += num_tps_in_tpset;
     } catch (iomanager::TimeoutExpired&) {
       if (running_flag.load()) {continue;}
     }
@@ -205,8 +213,9 @@ TPStreamWriter::do_work(std::atomic<bool>& running_flag)
         should_retry = false;
         try {
           m_data_writer->write(*timeslice_ptr);
-	  ++m_tpset_written;
+	  ++m_timeslice_written;
 	  m_bytes_output += timeslice_ptr->get_total_size_bytes();
+          m_tp_written += (timeslice_ptr->get_total_payload_data_size_bytes() / sizeof(trgdataformats::TriggerPrimitive));
         } catch (const RetryableDataStoreProblem& excpt) {
           should_retry = true;
           ers::error(DataWritingProblem(ERS_HERE,
@@ -219,6 +228,21 @@ TPStreamWriter::do_work(std::atomic<bool>& running_flag)
           }
           usleep(retry_wait_usec);
           retry_wait_usec *= 2;
+        } catch (const IgnorableDataStoreProblem& excpt) {
+          if (m_warn_user_when_late_tps_are_discarded) {
+            std::ostringstream sid_list;
+            bool first_frag = true;
+            for (auto const& frag_ptr : timeslice_ptr->get_fragments_ref()) {
+              if (first_frag) {first_frag = false;}
+              else {sid_list << ",";}
+              sid_list << frag_ptr->get_element_id().to_string();
+            }
+            ers::warning(TardyTPsDiscarded(ERS_HERE,
+                                           get_name(),
+                                           sid_list.str(),
+                                           timeslice_ptr->get_header().timeslice_number,
+                                           timeslice_ptr->get_header().run_number));
+          }
         } catch (const std::exception& excpt) {
           ers::warning(DataWritingProblem(ERS_HERE,
                                           get_name(),
