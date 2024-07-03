@@ -215,7 +215,7 @@ TPStreamWriter::do_work(std::atomic<bool>& running_flag)
           m_data_writer->write(*timeslice_ptr);
 	  ++m_timeslice_written;
 	  m_bytes_output += timeslice_ptr->get_total_size_bytes();
-          m_tp_written += (timeslice_ptr->get_total_payload_data_size_bytes() / sizeof(trgdataformats::TriggerPrimitive));
+          m_tp_written += (timeslice_ptr->get_sum_of_fragment_payload_sizes() / sizeof(trgdataformats::TriggerPrimitive));
         } catch (const RetryableDataStoreProblem& excpt) {
           should_retry = true;
           ers::error(DataWritingProblem(ERS_HERE,
