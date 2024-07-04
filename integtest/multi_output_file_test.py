@@ -55,12 +55,12 @@ triggercandidate_frag_params={"fragment_type_description": "Trigger Candidate",
 triggeractivity_frag_params={"fragment_type_description": "Trigger Activity",
                               "fragment_type": "Trigger_Activity",
                               "hdf5_source_subsystem": "Trigger",
-                              "expected_fragment_count": number_of_readout_apps,
+                              "expected_fragment_count": (3*number_of_readout_apps),
                               "min_size_bytes": 72, "max_size_bytes": 520}
 triggertp_frag_params={"fragment_type_description": "Trigger with TPs",
                        "fragment_type": "Trigger_Primitive",
                        "hdf5_source_subsystem": "Trigger",
-                       "expected_fragment_count": (2*number_of_readout_apps),
+                       "expected_fragment_count": (3*number_of_readout_apps),
                        "min_size_bytes": 72, "max_size_bytes": 16000}
 hsi_frag_params ={"fragment_type_description": "HSI",
                              "fragment_type": "Hardware_Signal",
@@ -132,7 +132,7 @@ confgen_arguments={"WIBEth_System (Rollover files)": conf_dict,
                   }
 
 # The commands to run in nanorc, as a list
-nanorc_command_list="integtest-partition boot conf start_run 101 wait 180 disable_triggers wait 2 stop_run wait 21 start_run 102 wait 120 disable_triggers wait 2 stop_run wait 21 scrap terminate".split()
+nanorc_command_list="integtest-partition boot conf start_run --wait 3 101 wait 180 disable_triggers wait 2 stop_run wait 21 start_run --wait 3 102 wait 120 disable_triggers wait 2 stop_run wait 21 scrap terminate".split()
 
 # The tests themselves
 
