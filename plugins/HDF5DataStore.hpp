@@ -180,12 +180,12 @@ public:
     }
 
     // check if a new file should be opened for this record
-    if (m_current_record_number != std::numeric_limits<size_t>::max() &&
-        tr.get_header_ref().get_trigger_number() != m_current_record_number) {
+    if (! increment_file_index_if_needed(tr_size)) {
       if (m_config_params.mode == "one-event-per-file") {
-        ++m_file_index;
-      } else if (m_config_params.mode == "all-per-file") {
-        increment_file_index_if_needed(tr_size);
+        if (m_current_record_number != std::numeric_limits<size_t>::max() &&
+            tr.get_header_ref().get_trigger_number() != m_current_record_number) {
+          ++m_file_index;
+        }
       }
     }
     m_current_record_number = tr.get_header_ref().get_trigger_number();
@@ -234,12 +234,12 @@ public:
     }
 
     // check if a new file should be opened for this record
-    if (m_current_record_number != std::numeric_limits<size_t>::max() &&
-        ts.get_header().timeslice_number != m_current_record_number) {
+    if (! increment_file_index_if_needed(ts_size)) {
       if (m_config_params.mode == "one-event-per-file") {
-        ++m_file_index;
-      } else if (m_config_params.mode == "all-per-file") {
-        increment_file_index_if_needed(ts_size);
+        if (m_current_record_number != std::numeric_limits<size_t>::max() &&
+            ts.get_header().timeslice_number != m_current_record_number) {
+          ++m_file_index;
+        }
       }
     }
     m_current_record_number = ts.get_header().timeslice_number;
@@ -387,12 +387,14 @@ private:
     return work_oss.str();
   }
 
-  void increment_file_index_if_needed(size_t size_of_next_write)
+  bool increment_file_index_if_needed(size_t size_of_next_write)
   {
     if ((m_recorded_size + size_of_next_write) > m_max_file_size && m_recorded_size > 0) {
       ++m_file_index;
       m_recorded_size = 0;
+      return true;
     }
+    return false;
   }
 
   void open_file_if_needed(const std::string& file_name, unsigned open_flags = HighFive::File::ReadOnly)
