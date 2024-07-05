@@ -246,6 +246,9 @@ TPStreamWriter::do_work(std::atomic<bool>& running_flag)
           usleep(retry_wait_usec);
           retry_wait_usec *= 2;
         } catch (const IgnorableDataStoreProblem& excpt) {
+          int timeslice_number_diff = largest_timeslice_number - timeslice_ptr->get_header().timeslice_number;
+          double seconds_too_late = m_accumulation_interval_seconds * timeslice_number_diff;
+          m_tardy_timeslice_max_seconds = std::max(m_tardy_timeslice_max_seconds.load(), seconds_too_late);
           if (warn_user_when_tardy_tps_are_discarded) {
             std::ostringstream sid_list;
             bool first_frag = true;
@@ -254,14 +257,11 @@ TPStreamWriter::do_work(std::atomic<bool>& running_flag)
               else {sid_list << ",";}
               sid_list << frag_ptr->get_element_id().to_string();
             }
-            int timeslice_number_diff = largest_timeslice_number - timeslice_ptr->get_header().timeslice_number;
-            double seconds_too_late = m_accumulation_interval_seconds * timeslice_number_diff;
             ers::warning(TardyTPsDiscarded(ERS_HERE,
                                            get_name(),
                                            sid_list.str(),
                                            timeslice_ptr->get_header().timeslice_number,
                                            seconds_too_late));
-            m_tardy_timeslice_max_seconds = std::max(m_tardy_timeslice_max_seconds.load(), seconds_too_late);
           }
         } catch (const std::exception& excpt) {
           ers::warning(DataWritingProblem(ERS_HERE,
