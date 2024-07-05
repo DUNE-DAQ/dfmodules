@@ -18,6 +18,8 @@ local info = {
        s.field("timeslices_written", self.uint8, 0, doc="incremental count of TimeSlices that have been written out"),
        s.field("bytes_output", self.uint8, 0, doc="incremental number of bytes that have been written out"),
        s.field("tardy_timeslice_max_seconds", self.float4, 0, doc="incremental max amount of time that a TimeSlice was tardy"),
+       s.field("total_tps_received", self.uint8, 0, doc="count of TPs that have been received in the current run"),
+       s.field("total_tps_written", self.uint8, 0, doc="count of TPs that have been written out in the current run"),
    ], doc="TPSet writer information")
 };
 

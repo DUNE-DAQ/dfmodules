@@ -67,6 +67,8 @@ TPStreamWriter::get_info(opmonlib::InfoCollector& ci, int /*level*/)
   info.timeslices_written = m_timeslices_written.exchange(0);
   info.bytes_output = m_bytes_output.exchange(0);
   info.tardy_timeslice_max_seconds = m_tardy_timeslice_max_seconds.exchange(0.0);
+  info.total_tps_received = m_total_tps_received.load();
+  info.total_tps_written = m_total_tps_written.load();
 
   ci.add(info);
 }
@@ -104,6 +106,8 @@ TPStreamWriter::do_start(const nlohmann::json& payload)
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_start() method";
   rcif::cmd::StartParams start_params = payload.get<rcif::cmd::StartParams>();
   m_run_number = start_params.run;
+  m_total_tps_received.store(0);
+  m_total_tps_written.store(0);
 
   // 06-Mar-2022, KAB: added this call to allow DataStore to prepare for the run.
   // I've put this call fairly early in this method because it could throw an
@@ -194,6 +198,7 @@ TPStreamWriter::do_work(std::atomic<bool>& running_flag)
       size_t num_tps_in_tpset = tpset.objects.size();
       tp_bundle_handler.add_tpset(std::move(tpset));
       m_tps_received += num_tps_in_tpset;
+      m_total_tps_received += num_tps_in_tpset;
     } catch (iomanager::TimeoutExpired&) {
       if (running_flag.load()) {continue;}
     }
@@ -225,7 +230,9 @@ TPStreamWriter::do_work(std::atomic<bool>& running_flag)
           m_data_writer->write(*timeslice_ptr);
 	  ++m_timeslices_written;
 	  m_bytes_output += timeslice_ptr->get_total_size_bytes();
-          m_tps_written += (timeslice_ptr->get_sum_of_fragment_payload_sizes() / sizeof(trgdataformats::TriggerPrimitive));
+          size_t number_of_tps_written = (timeslice_ptr->get_sum_of_fragment_payload_sizes() / sizeof(trgdataformats::TriggerPrimitive));
+          m_tps_written += number_of_tps_written;
+          m_total_tps_written += number_of_tps_written;
         } catch (const RetryableDataStoreProblem& excpt) {
           should_retry = true;
           ers::error(DataWritingProblem(ERS_HERE,
