@@ -14,8 +14,8 @@
 #include "dfmodules/DataStore.hpp"
 
 #include "appfwk/DAQModule.hpp"
-#include "iomanager/Receiver.hpp"
 #include "daqdataformats/TimeSlice.hpp"
+#include "iomanager/Receiver.hpp"
 #include "trigger/TPSet.hpp"
 #include "utilities/WorkerThread.hpp"
 
@@ -63,6 +63,8 @@ private:
   std::chrono::steady_clock::duration m_accumulation_inactivity_time_before_write;
   daqdataformats::run_number_t m_run_number;
   uint32_t m_source_id; // NOLINT(build/unsigned)
+  bool warn_user_when_tardy_tps_are_discarded;
+  double m_accumulation_interval_seconds;
 
   // Queue sources and sinks
   using incoming_t = trigger::TPSet;
@@ -73,10 +75,15 @@ private:
   std::unique_ptr<DataStore> m_data_writer;
 
   // Metrics
-  std::atomic<uint64_t> m_tpset_received = { 0 };         // NOLINT(build/unsigned)
-  std::atomic<uint64_t> m_tpset_written  = { 0 };         // NOLINT(build/unsigned)
-  std::atomic<uint64_t> m_bytes_output   = { 0 };         // NOLINT(build/unsigned)
-
+  std::atomic<uint64_t> m_heartbeat_tpsets = { 0 };   // NOLINT(build/unsigned)
+  std::atomic<uint64_t> m_tpsets_with_tps = { 0 };    // NOLINT(build/unsigned)
+  std::atomic<uint64_t> m_tps_received = { 0 };       // NOLINT(build/unsigned)
+  std::atomic<uint64_t> m_tps_written = { 0 };        // NOLINT(build/unsigned)
+  std::atomic<uint64_t> m_timeslices_written = { 0 }; // NOLINT(build/unsigned)
+  std::atomic<uint64_t> m_bytes_output = { 0 };       // NOLINT(build/unsigned)
+  std::atomic<double>   m_tardy_timeslice_max_seconds = { 0.0 }; // NOLINT(build/unsigned)
+  std::atomic<uint64_t> m_total_tps_received = { 0 }; // NOLINT(build/unsigned)
+  std::atomic<uint64_t> m_total_tps_written = { 0 };  // NOLINT(build/unsigned)
 };
 } // namespace dfmodules
 
@@ -94,6 +101,14 @@ ERS_DECLARE_ISSUE_BASE(dfmodules,
                        "A problem was encountered when writing TimeSlice number " << trnum << " in run " << runnum,
                        ((std::string)name),
                        ((size_t)trnum)((size_t)runnum))
+
+ERS_DECLARE_ISSUE_BASE(dfmodules,
+                       TardyTPsDiscarded,
+                       appfwk::GeneralDAQModuleIssue,
+                       "Tardy TPs from SourceIDs [" << sid_list << "] were discarded from TimeSlice number "
+                       << trnum << " (~" << sec_too_late << " sec too late)",
+                       ((std::string)name),
+                       ((std::string)sid_list)((size_t)trnum)((float)sec_too_late))
 
 } // namespace dunedaq
 

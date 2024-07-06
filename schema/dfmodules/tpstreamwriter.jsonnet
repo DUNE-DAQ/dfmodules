@@ -11,6 +11,8 @@ local types = {
 
     float : s.number("Float", "f4", doc="A floating point number of 4 bytes"),
 
+    flag: s.boolean("Flag", doc="Parameter that can be used to enable or disable functionality"),
+
     conf: s.record("ConfParams", [
         s.field("tp_accumulation_interval_ticks", self.size, 62500000,
                 doc="Size of the TP accumulation window, measured in clock ticks"),
@@ -19,6 +21,8 @@ local types = {
         s.field("data_store_parameters", self.dsparams,
                 doc="Parameters that configure the DataStore associated with this TPStreamWriter"),
         s.field("source_id", self.sourceid_number, 999, doc="Source ID of TPSW instance, added to time slice header"),
+        s.field("warn_user_when_tardy_tps_are_discarded", self.flag, true,
+                doc="Whether to warn users when TimeSlices that contain tardy TPs are discarded"),
     ], doc="TPStreamWriter configuration parameters"),
 
 };
