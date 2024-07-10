@@ -61,12 +61,12 @@ triggercandidate_frag_params={"fragment_type_description": "Trigger Candidate",
 triggeractivity_frag_params={"fragment_type_description": "Trigger Activity",
                               "fragment_type": "Trigger_Activity",
                               "hdf5_source_subsystem": "Trigger",
-                              "expected_fragment_count": 1,
+                              "expected_fragment_count": 3,
                               "min_size_bytes": 72, "max_size_bytes": 216}
 triggertp_frag_params={"fragment_type_description": "Trigger with TPs",
                        "fragment_type": "Trigger_Primitive",
                        "hdf5_source_subsystem": "Trigger",
-                       "expected_fragment_count": 2,  # number of readout apps (1) times 2
+                       "expected_fragment_count": 3,  # number of readout apps (1) times 3, one per plane
                        "min_size_bytes": 72, "max_size_bytes": 16000}
 hsi_frag_params ={"fragment_type_description": "HSI",
                              "fragment_type": "Hardware_Signal",
@@ -116,10 +116,10 @@ confgen_arguments={"WIBEth_System": conf_dict,
 
 # The commands to run in nanorc, as a list
 nanorc_command_list="integtest-partition boot conf".split()
-nanorc_command_list+="start_run --disable-data-storage 101 wait ".split() + [str(run_duration)] + "stop_run --wait 2 wait 2".split()
-nanorc_command_list+="start_run                        102 wait ".split() + [str(run_duration)] + "stop_run --wait 2 wait 2".split()
-nanorc_command_list+="start_run --disable-data-storage 103 wait ".split() + [str(run_duration)] + "disable_triggers wait 2 stop_run wait 2".split()
-nanorc_command_list+="start_run                        104 wait ".split() + [str(run_duration)] + "disable_triggers wait 2 stop_run wait 2".split()
+nanorc_command_list+="start_run --disable-data-storage --wait 2 101 wait ".split() + [str(run_duration)] + "stop_run --wait 2 wait 2".split()
+nanorc_command_list+="start_run                        --wait 2 102 wait ".split() + [str(run_duration)] + "stop_run --wait 2 wait 2".split()
+nanorc_command_list+="start_run --disable-data-storage --wait 2 103 wait ".split() + [str(run_duration)] + "disable_triggers wait 2 stop_run wait 2".split()
+nanorc_command_list+="start_run                        --wait 2 104 wait ".split() + [str(run_duration)] + "disable_triggers wait 2 stop_run wait 2".split()
 nanorc_command_list+="scrap terminate".split()
 
 # The tests themselves
