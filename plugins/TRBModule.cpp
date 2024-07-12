@@ -118,7 +118,9 @@ TRBModule::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
     auto roapp = app->cast<appmodel::ReadoutApplication>();
     auto smartapp = app->cast<appmodel::SmartDaqApplication>();
     if (roapp != nullptr) {
-      setup_data_request_connections(roapp);
+      if (!roapp->disabled(*session)) {
+        setup_data_request_connections(roapp);
+      }
     } else if (smartapp != nullptr) {
       auto source_id_check = smartapp->get_source_id();
       if (source_id_check != nullptr) {
