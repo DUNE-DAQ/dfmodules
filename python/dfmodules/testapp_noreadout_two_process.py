@@ -9,7 +9,7 @@
 #
 # As with testapp_noreadout_confgen.py
 # in this directory, no modules from the readout package are used: the
-# fragments are provided by the FakeDataProd module from dfmodules
+# fragments are provided by the FakeDataProdModule module from dfmodules
 
 
 # Set moo schema search path
@@ -123,7 +123,7 @@ def generate_df(
                         app.QueueInfo(name="data_fragment_input_queue", inst="data_fragments_q", dir="input"),
                     ]),
 
-        mspec("datawriter", "DataWriter", [
+        mspec("datawriter", "DataWriterModule", [
                         app.QueueInfo(name="trigger_record_input_queue", inst="trigger_record_q", dir="input"),
                         app.QueueInfo(name="token_output_queue", inst="token_to_netq", dir="output"),
                     ]),
@@ -134,7 +134,7 @@ def generate_df(
 
         ] + [
 
-                mspec(f"fakedataprod_{idx}", "FakeDataProd", [
+                mspec(f"fakedataprod_{idx}", "FakeDataProdModule", [
                             app.QueueInfo(name="data_request_input_queue", inst=f"data_requests_{idx}", dir="input"),
                             app.QueueInfo(name="data_fragment_output_queue", inst="data_fragments_q", dir="output"),
                             ]) for idx in range(NUMBER_OF_DATA_PRODUCERS)

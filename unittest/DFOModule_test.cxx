@@ -1,13 +1,13 @@
 /**
- * @file DataFlowOrchestrator_test.cxx Test application that tests and demonstrates
- * the functionality of the DataFlowOrchestrator class.
+ * @file DFOModule_test.cxx Test application that tests and demonstrates
+ * the functionality of the DFOModule class.
  *
  * This is part of the DUNE DAQ Application Framework, copyright 2020.
  * Licensing/copyright details are in the COPYING file that you should have
  * received with this code.
  */
 
-#include "DataFlowOrchestrator.hpp"
+#include "DFOModule.hpp"
 
 #include "appfwk/app/Nljs.hpp"
 #include "dfmessages/TriggerDecisionToken.hpp"
@@ -17,7 +17,7 @@
 #include "iomanager/IOManager.hpp"
 #include "iomanager/Sender.hpp"
 
-#define BOOST_TEST_MODULE DataFlowOrchestrator_test // NOLINT
+#define BOOST_TEST_MODULE DFOModule_test // NOLINT
 
 #include "boost/test/unit_test.hpp"
 
@@ -55,7 +55,7 @@ struct CfgFixture
   std::shared_ptr<dunedaq::appfwk::ModuleConfiguration> modCfg;
 };
 
-BOOST_FIXTURE_TEST_SUITE(DataFlowOrchestrator_test, CfgFixture)
+BOOST_FIXTURE_TEST_SUITE(DFOModule_test, CfgFixture)
 
 datafloworchestratorinfo::Info
 get_dfo_info(std::shared_ptr<appfwk::DAQModule> dfo)
@@ -127,26 +127,26 @@ send_trigdec(dfmessages::trigger_number_t trigger_number, bool different_run = f
 
 BOOST_AUTO_TEST_CASE(CopyAndMoveSemantics)
 {
-  BOOST_REQUIRE(!std::is_copy_constructible_v<DataFlowOrchestrator>);
-  BOOST_REQUIRE(!std::is_copy_assignable_v<DataFlowOrchestrator>);
-  BOOST_REQUIRE(!std::is_move_constructible_v<DataFlowOrchestrator>);
-  BOOST_REQUIRE(!std::is_move_assignable_v<DataFlowOrchestrator>);
+  BOOST_REQUIRE(!std::is_copy_constructible_v<DFOModule>);
+  BOOST_REQUIRE(!std::is_copy_assignable_v<DFOModule>);
+  BOOST_REQUIRE(!std::is_move_constructible_v<DFOModule>);
+  BOOST_REQUIRE(!std::is_move_assignable_v<DFOModule>);
 }
 
 BOOST_AUTO_TEST_CASE(Constructor)
 {
-  auto dfo = appfwk::make_module("DataFlowOrchestrator", "test");
+  auto dfo = appfwk::make_module("DFOModule", "test");
 }
 
 BOOST_AUTO_TEST_CASE(Init)
 {
-  auto dfo = appfwk::make_module("DataFlowOrchestrator", "test");
+  auto dfo = appfwk::make_module("DFOModule", "test");
   dfo->init(modCfg);
 }
 
 BOOST_AUTO_TEST_CASE(Commands)
 {
-  auto dfo = appfwk::make_module("DataFlowOrchestrator", "test");
+  auto dfo = appfwk::make_module("DFOModule", "test");
   dfo->init(modCfg);
 
   auto conf_json = "{\"thresholds\": { \"free\": 1, \"busy\": 2 }, "
@@ -172,7 +172,7 @@ BOOST_AUTO_TEST_CASE(Commands)
 
 BOOST_AUTO_TEST_CASE(DataFlow)
 {
-  auto dfo = appfwk::make_module("DataFlowOrchestrator", "test");
+  auto dfo = appfwk::make_module("DFOModule", "test");
   dfo->init(modCfg);
 
   auto conf_json = "{\"thresholds\": { \"free\": 1, \"busy\": 2 }, "
@@ -236,7 +236,7 @@ BOOST_AUTO_TEST_CASE(DataFlow)
 
 BOOST_AUTO_TEST_CASE(SendTrigDecFailed)
 {
-  auto dfo = appfwk::make_module("DataFlowOrchestrator", "test");
+  auto dfo = appfwk::make_module("DFOModule", "test");
   dfo->init(modCfg);
 
   auto conf_json = "{\"thresholds\": { \"free\": 1, \"busy\": 2 }, "

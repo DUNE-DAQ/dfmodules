@@ -1,7 +1,7 @@
 /**
- * @file TPStreamWriter.hpp
+ * @file TPStreamWriterModule.hpp
  *
- * TPStreamWriter is a DAQModule that provides sample code for writing TPSets to disk.
+ * TPStreamWriterModule is a DAQModule that provides sample code for writing TPSets to disk.
  *
  * This is part of the DUNE DAQ Software Suite, copyright 2020.
  * Licensing/copyright details are in the COPYING file that you should have
@@ -27,21 +27,21 @@ namespace dunedaq {
 namespace dfmodules {
 
 /**
- * @brief TPStreamWriter receives TPSets from a queue and prints them out
+ * @brief TPStreamWriterModule receives TPSets from a queue and prints them out
  */
-class TPStreamWriter : public dunedaq::appfwk::DAQModule
+class TPStreamWriterModule : public dunedaq::appfwk::DAQModule
 {
 public:
   /**
-   * @brief TPStreamWriter Constructor
-   * @param name Instance name for this TPStreamWriter instance
+   * @brief TPStreamWriterModule Constructor
+   * @param name Instance name for this TPStreamWriterModule instance
    */
-  explicit TPStreamWriter(const std::string& name);
+  explicit TPStreamWriterModule(const std::string& name);
 
-  TPStreamWriter(const TPStreamWriter&) = delete;            ///< TPStreamWriter is not copy-constructible
-  TPStreamWriter& operator=(const TPStreamWriter&) = delete; ///< TPStreamWriter is not copy-assignable
-  TPStreamWriter(TPStreamWriter&&) = delete;                 ///< TPStreamWriter is not move-constructible
-  TPStreamWriter& operator=(TPStreamWriter&&) = delete;      ///< TPStreamWriter is not move-assignable
+  TPStreamWriterModule(const TPStreamWriterModule&) = delete;            ///< TPStreamWriterModule is not copy-constructible
+  TPStreamWriterModule& operator=(const TPStreamWriterModule&) = delete; ///< TPStreamWriterModule is not copy-assignable
+  TPStreamWriterModule(TPStreamWriterModule&&) = delete;                 ///< TPStreamWriterModule is not move-constructible
+  TPStreamWriterModule& operator=(TPStreamWriterModule&&) = delete;      ///< TPStreamWriterModule is not move-assignable
 
   void init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg) override;
   void get_info(opmonlib::InfoCollector& ci, int level) override;
@@ -82,7 +82,7 @@ private:
 } // namespace dfmodules
 
 ERS_DECLARE_ISSUE_BASE(dfmodules,
-                       InvalidDataWriter,
+                       InvalidDataWriterModule,
                        appfwk::GeneralDAQModuleIssue,
                        "A valid dataWriter instance is not available so it will not be possible to write data. A "
                        "likely cause for this is a skipped or missed Configure transition.",

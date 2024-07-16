@@ -1,5 +1,5 @@
 /**
- * @file DataWriter.hpp
+ * @file DataWriterModule.hpp
  *
  * This is part of the DUNE DAQ Software Suite, copyright 2020.
  * Licensing/copyright details are in the COPYING file that you should have
@@ -29,21 +29,21 @@ namespace dunedaq {
 namespace dfmodules {
 
 /**
- * @brief DataWriter is a shell for what we might write for the MiniDAQApp.
+ * @brief DataWriterModule is a shell for what we might write for the MiniDAQApp.
  */
-class DataWriter : public dunedaq::appfwk::DAQModule
+class DataWriterModule : public dunedaq::appfwk::DAQModule
 {
 public:
   /**
-   * @brief DataWriter Constructor
-   * @param name Instance name for this DataWriter instance
+   * @brief DataWriterModule Constructor
+   * @param name Instance name for this DataWriterModule instance
    */
-  explicit DataWriter(const std::string& name);
+  explicit DataWriterModule(const std::string& name);
 
-  DataWriter(const DataWriter&) = delete;            ///< DataWriter is not copy-constructible
-  DataWriter& operator=(const DataWriter&) = delete; ///< DataWriter is not copy-assignable
-  DataWriter(DataWriter&&) = delete;                 ///< DataWriter is not move-constructible
-  DataWriter& operator=(DataWriter&&) = delete;      ///< DataWriter is not move-assignable
+  DataWriterModule(const DataWriterModule&) = delete;            ///< DataWriterModule is not copy-constructible
+  DataWriterModule& operator=(const DataWriterModule&) = delete; ///< DataWriterModule is not copy-assignable
+  DataWriterModule(DataWriterModule&&) = delete;                 ///< DataWriterModule is not move-constructible
+  DataWriterModule& operator=(DataWriterModule&&) = delete;      ///< DataWriterModule is not move-assignable
 
   void init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg) override;
   void get_info(opmonlib::InfoCollector& ci, int level) override;
@@ -108,7 +108,7 @@ private:
 } // namespace dfmodules
 
 ERS_DECLARE_ISSUE_BASE(dfmodules,
-                       InvalidDataWriter,
+                       InvalidDataWriterModule,
                        appfwk::GeneralDAQModuleIssue,
                        "A valid dataWriter instance is not available so it will not be possible to write data. A "
                        "likely cause for this is a skipped or missed Configure transition.",

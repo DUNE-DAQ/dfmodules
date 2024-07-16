@@ -1,18 +1,18 @@
 /**
- * @file FragmentAggregator.cpp FragmentAggregator implementation
+ * @file FragmentAggregatorModule.cpp FragmentAggregatorModule implementation
  *
  * This is part of the DUNE DAQ , copyright 2020.
  * Licensing/copyright details are in the COPYING file that you should have
  * received with this code.
  */
 
-#include "FragmentAggregator.hpp"
+#include "FragmentAggregatorModule.hpp"
 #include "dfmodules/CommonIssues.hpp"
 
-#include "appmodel/FragmentAggregator.hpp"
+#include "appmodel/FragmentAggregatorModule.hpp"
 #include "appfwk/app/Nljs.hpp"
 #include "confmodel/Connection.hpp"
-#include "confmodel/QueueWithId.hpp"
+#include "confmodel/QueueWithSourceId.hpp"
 #include "dfmessages/Fragment_serialization.hpp"
 #include "logging/Logging.hpp"
 
@@ -24,17 +24,17 @@
 namespace dunedaq {
 namespace dfmodules {
 
-FragmentAggregator::FragmentAggregator(const std::string& name)
+FragmentAggregatorModule::FragmentAggregatorModule(const std::string& name)
   : DAQModule(name)
 {
-  register_command("start", &FragmentAggregator::do_start);
-  register_command("stop_trigger_sources", &FragmentAggregator::do_stop);
+  register_command("start", &FragmentAggregatorModule::do_start);
+  register_command("stop_trigger_sources", &FragmentAggregatorModule::do_stop);
 }
 
 void
-FragmentAggregator::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
+FragmentAggregatorModule::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
 {
-  auto mdal = mcfg->module<appmodel::FragmentAggregator>(get_name());
+  auto mdal = mcfg->module<appmodel::FragmentAggregatorModule>(get_name());
   if (!mdal) {
     throw appfwk::CommandFailed(ERS_HERE, "init", get_name(), "Unable to retrieve configuration object");
   }
@@ -52,14 +52,14 @@ FragmentAggregator::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
   m_producer_conn_ids.clear();
   for (const auto cr : mdal->get_outputs()) {
     if (cr->get_data_type() == datatype_to_string<dfmessages::DataRequest>()) {
-	auto qid = cr->cast<confmodel::QueueWithId>();
+	auto qid = cr->cast<confmodel::QueueWithSourceId>();
       	    m_producer_conn_ids[qid->get_source_id()] = cr->UID();
     }
   }
 }
 
 void
-FragmentAggregator::get_info(opmonlib::InfoCollector& /*ci*/, int /* level */)
+FragmentAggregatorModule::get_info(opmonlib::InfoCollector& /*ci*/, int /* level */)
 {
   // dummyconsumerinfo::Info info;
   // info.packets_processed = m_packets_processed;
@@ -68,18 +68,18 @@ FragmentAggregator::get_info(opmonlib::InfoCollector& /*ci*/, int /* level */)
 }
 
 void
-FragmentAggregator::do_start(const data_t& /* args */)
+FragmentAggregatorModule::do_start(const data_t& /* args */)
 {
   m_packets_processed = 0;
   auto iom = iomanager::IOManager::get();
   iom->add_callback<dfmessages::DataRequest>(
-    m_data_req_input, std::bind(&FragmentAggregator::process_data_request, this, std::placeholders::_1));
+    m_data_req_input, std::bind(&FragmentAggregatorModule::process_data_request, this, std::placeholders::_1));
   iom->add_callback<std::unique_ptr<daqdataformats::Fragment>>(
-    m_fragment_input, std::bind(&FragmentAggregator::process_fragment, this, std::placeholders::_1));
+    m_fragment_input, std::bind(&FragmentAggregatorModule::process_fragment, this, std::placeholders::_1));
 }
 
 void
-FragmentAggregator::do_stop(const data_t& /* args */)
+FragmentAggregatorModule::do_stop(const data_t& /* args */)
 {
   auto iom = iomanager::IOManager::get();
   iom->remove_callback<dfmessages::DataRequest>(m_data_req_input);
@@ -88,7 +88,7 @@ FragmentAggregator::do_stop(const data_t& /* args */)
 }
 
 void
-FragmentAggregator::process_data_request(dfmessages::DataRequest& data_request)
+FragmentAggregatorModule::process_data_request(dfmessages::DataRequest& data_request)
 {
 
   {
@@ -120,7 +120,7 @@ FragmentAggregator::process_data_request(dfmessages::DataRequest& data_request)
 }
 
 void
-FragmentAggregator::process_fragment(std::unique_ptr<daqdataformats::Fragment>& fragment)
+FragmentAggregatorModule::process_fragment(std::unique_ptr<daqdataformats::Fragment>& fragment)
 {
   // Forward Fragment to the right TRB
   std::string trb_identifier;
@@ -149,4 +149,4 @@ FragmentAggregator::process_fragment(std::unique_ptr<daqdataformats::Fragment>& 
 } // namespace dfmodules
 } // namespace dunedaq
 
-DEFINE_DUNE_DAQ_MODULE(dunedaq::dfmodules::FragmentAggregator)
+DEFINE_DUNE_DAQ_MODULE(dunedaq::dfmodules::FragmentAggregatorModule)

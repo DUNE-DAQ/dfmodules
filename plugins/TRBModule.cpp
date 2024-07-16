@@ -1,19 +1,19 @@
 /**
- * @file TriggerRecordBuilder.cpp TriggerRecordBuilder class implementation
+ * @file TRBModule.cpp TRBModule class implementation
  *
  * This is part of the DUNE DAQ Software Suite, copyright 2020.
  * Licensing/copyright details are in the COPYING file that you should have
  * received with this code.
  */
 
-#include "TriggerRecordBuilder.hpp"
+#include "TRBModule.hpp"
 #include "dfmodules/CommonIssues.hpp"
 
 #include "appmodel/NetworkConnectionDescriptor.hpp"
 #include "appmodel/NetworkConnectionRule.hpp"
 #include "appmodel/ReadoutApplication.hpp"
 #include "appmodel/TriggerApplication.hpp"
-#include "appmodel/TriggerRecordBuilder.hpp"
+#include "appmodel/TRBModule.hpp"
 #include "appmodel/SourceIDConf.hpp"
 #include "appfwk/app/Nljs.hpp"
 #include "confmodel/Application.hpp"
@@ -56,20 +56,20 @@ namespace dfmodules {
 
 using daqdataformats::TriggerRecordErrorBits;
 
-TriggerRecordBuilder::TriggerRecordBuilder(const std::string& name)
+TRBModule::TRBModule(const std::string& name)
   : dunedaq::appfwk::DAQModule(name)
-  , m_thread(std::bind(&TriggerRecordBuilder::do_work, this, std::placeholders::_1))
+  , m_thread(std::bind(&TRBModule::do_work, this, std::placeholders::_1))
   , m_queue_timeout(100)
 {
 
-  register_command("conf", &TriggerRecordBuilder::do_conf);
-  register_command("scrap", &TriggerRecordBuilder::do_scrap);
-  register_command("start", &TriggerRecordBuilder::do_start);
-  register_command("stop", &TriggerRecordBuilder::do_stop);
+  register_command("conf", &TRBModule::do_conf);
+  register_command("scrap", &TRBModule::do_scrap);
+  register_command("start", &TRBModule::do_start);
+  register_command("stop", &TRBModule::do_stop);
 }
 
 void
-TriggerRecordBuilder::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
+TRBModule::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
 {
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
@@ -78,7 +78,7 @@ TriggerRecordBuilder::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
   // Get single queues
   //---------------------------------
 
-  auto mdal = mcfg->module<appmodel::TriggerRecordBuilder>(get_name());
+  auto mdal = mcfg->module<appmodel::TRBModule>(get_name());
   if (!mdal) {
     throw appfwk::CommandFailed(ERS_HERE, "init", get_name(), "Unable to retrieve configuration object");
   }
@@ -118,7 +118,9 @@ TriggerRecordBuilder::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
     auto roapp = app->cast<appmodel::ReadoutApplication>();
     auto smartapp = app->cast<appmodel::SmartDaqApplication>();
     if (roapp != nullptr) {
-      setup_data_request_connections(roapp);
+      if (!roapp->disabled(*session)) {
+        setup_data_request_connections(roapp);
+      }
     } else if (smartapp != nullptr) {
       auto source_id_check = smartapp->get_source_id();
       if (source_id_check != nullptr) {
@@ -133,7 +135,7 @@ TriggerRecordBuilder::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
 }
 
 void
-TriggerRecordBuilder::setup_data_request_connections(const appmodel::SmartDaqApplication* smartapp)
+TRBModule::setup_data_request_connections(const appmodel::SmartDaqApplication* smartapp)
 {
   const appmodel::NetworkConnectionDescriptor* faNetDesc = nullptr;
   for (auto rule : smartapp->get_network_rules()) {
@@ -173,7 +175,7 @@ TriggerRecordBuilder::setup_data_request_connections(const appmodel::SmartDaqApp
 }
 
 void
-TriggerRecordBuilder::setup_data_request_connections(const appmodel::ReadoutApplication* roapp)
+TRBModule::setup_data_request_connections(const appmodel::ReadoutApplication* roapp)
 {
   std::vector<uint32_t> app_source_ids;
   for (auto d2d_conn_res : roapp->get_contains()) {
@@ -202,7 +204,7 @@ TriggerRecordBuilder::setup_data_request_connections(const appmodel::ReadoutAppl
     auto endpoint_class = rule->get_endpoint_class();
     auto data_type = rule->get_descriptor()->get_data_type();
 
-    if (endpoint_class == "FragmentAggregator") {
+    if (endpoint_class == "FragmentAggregatorModule") {
       faNetDesc = rule->get_descriptor();
     }
   }
@@ -250,7 +252,7 @@ TriggerRecordBuilder::setup_data_request_connections(const appmodel::ReadoutAppl
 }
 
 void
-TriggerRecordBuilder::get_info(opmonlib::InfoCollector& ci, int /*level*/)
+TRBModule::get_info(opmonlib::InfoCollector& ci, int /*level*/)
 {
 
   triggerrecordbuilderinfo::Info i;
@@ -285,7 +287,7 @@ TriggerRecordBuilder::get_info(opmonlib::InfoCollector& ci, int /*level*/)
 }
 
 void
-TriggerRecordBuilder::do_conf(const data_t&)
+TRBModule::do_conf(const data_t&)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
 
@@ -304,7 +306,7 @@ TriggerRecordBuilder::do_conf(const data_t&)
 }
 
 void
-TriggerRecordBuilder::do_scrap(const data_t& /*args*/)
+TRBModule::do_scrap(const data_t& /*args*/)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_scrap() method";
 
@@ -313,7 +315,7 @@ TriggerRecordBuilder::do_scrap(const data_t& /*args*/)
 }
 
 void
-TriggerRecordBuilder::do_start(const data_t& args)
+TRBModule::do_start(const data_t& args)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_start() method";
 
@@ -322,7 +324,7 @@ TriggerRecordBuilder::do_start(const data_t& args)
   // Register the callback to receive monitoring requests
   if (m_mon_receiver) {
     m_mon_requests.clear();
-    m_mon_receiver->add_callback(std::bind(&TriggerRecordBuilder::tr_requested, this, std::placeholders::_1));
+    m_mon_receiver->add_callback(std::bind(&TRBModule::tr_requested, this, std::placeholders::_1));
   }
 
   m_thread.start_working_thread(get_name());
@@ -331,7 +333,7 @@ TriggerRecordBuilder::do_start(const data_t& args)
 }
 
 void
-TriggerRecordBuilder::do_stop(const data_t& /*args*/)
+TRBModule::do_stop(const data_t& /*args*/)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_stop() method";
   // Unregister the monitoring requests callback
@@ -346,7 +348,7 @@ TriggerRecordBuilder::do_stop(const data_t& /*args*/)
 }
 
 void
-TriggerRecordBuilder::tr_requested(const dfmessages::TRMonRequest& req)
+TRBModule::tr_requested(const dfmessages::TRMonRequest& req)
 {
   ++m_trmon_request_counter;
 
@@ -361,7 +363,7 @@ TriggerRecordBuilder::tr_requested(const dfmessages::TRMonRequest& req)
 }
 
 void
-TriggerRecordBuilder::do_work(std::atomic<bool>& running_flag)
+TRBModule::do_work(std::atomic<bool>& running_flag)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() method";
 
@@ -481,7 +483,7 @@ TriggerRecordBuilder::do_work(std::atomic<bool>& running_flag)
 } // NOLINT(readability/fn_size)
 
 bool
-TriggerRecordBuilder::read_fragments()
+TRBModule::read_fragments()
 {
   std::optional<std::unique_ptr<daqdataformats::Fragment>> temp_fragment;
 
@@ -536,7 +538,7 @@ TriggerRecordBuilder::read_fragments()
 }
 
 bool
-TriggerRecordBuilder::read_and_process_trigger_decision(iomanager::Receiver::timeout_t timeout,
+TRBModule::read_and_process_trigger_decision(iomanager::Receiver::timeout_t timeout,
                                                         std::atomic<bool>& running)
 {
 
@@ -566,8 +568,8 @@ TriggerRecordBuilder::read_and_process_trigger_decision(iomanager::Receiver::tim
   return book_updates;
 }
 
-TriggerRecordBuilder::trigger_record_ptr_t
-TriggerRecordBuilder::extract_trigger_record(const TriggerId& id)
+TRBModule::trigger_record_ptr_t
+TRBModule::extract_trigger_record(const TriggerId& id)
 {
 
   auto it = m_trigger_records.find(id);
@@ -601,7 +603,7 @@ TriggerRecordBuilder::extract_trigger_record(const TriggerId& id)
 }
 
 unsigned int
-TriggerRecordBuilder::create_trigger_records_and_dispatch(const dfmessages::TriggerDecision& td,
+TRBModule::create_trigger_records_and_dispatch(const dfmessages::TriggerDecision& td,
                                                           std::atomic<bool>& running)
 {
 
@@ -718,7 +720,7 @@ TriggerRecordBuilder::create_trigger_records_and_dispatch(const dfmessages::Trig
 }
 
 bool
-TriggerRecordBuilder::dispatch_data_requests(dfmessages::DataRequest dr,
+TRBModule::dispatch_data_requests(dfmessages::DataRequest dr,
                                              const daqdataformats::SourceID& sid,
                                              std::atomic<bool>& running)
 
@@ -771,7 +773,7 @@ TriggerRecordBuilder::dispatch_data_requests(dfmessages::DataRequest dr,
 }
 
 bool
-TriggerRecordBuilder::send_trigger_record(const TriggerId& id, std::atomic<bool>& running)
+TRBModule::send_trigger_record(const TriggerId& id, std::atomic<bool>& running)
 {
 
   trigger_record_ptr_t temp_record(extract_trigger_record(id));
@@ -829,7 +831,7 @@ TriggerRecordBuilder::send_trigger_record(const TriggerId& id, std::atomic<bool>
 }
 
 bool
-TriggerRecordBuilder::check_stale_requests(std::atomic<bool>& running)
+TRBModule::check_stale_requests(std::atomic<bool>& running)
 {
 
   bool book_updates = false;
@@ -874,4 +876,4 @@ TriggerRecordBuilder::check_stale_requests(std::atomic<bool>& running)
 } // namespace dfmodules
 } // namespace dunedaq
 
-DEFINE_DUNE_DAQ_MODULE(dunedaq::dfmodules::TriggerRecordBuilder)
+DEFINE_DUNE_DAQ_MODULE(dunedaq::dfmodules::TRBModule)

@@ -3,10 +3,10 @@
 The _dfmodules_ repository contains the DAQModules that are used in the Dataflow part of the system, the schema files that are used to specify the configuration of those DAQModules, and helper classes that are used for functionality such as storing data on disk.
 
 The DAQModules in this repository are the following:
-* TriggerRecordBuilder
+* TRBModule
    * This module receives TriggerDecision (TD) messages from the DataSelection subsystem (e.g. an instance of the TriggerDecisionEmulator module) and creates DataRequests that are sent to the Readout subsystem based on the components that are requested in the TD message.
    * It also receives the data fragments from the Readout subsystem and builds them together into complete TriggerRecords (TRs).  
-* DataWriter
+* DataWriterModule
    * This module stores the TriggerRecords in a configurable format.  Initially, the storage format is HDF5 files on disk, and additional storage options may be added later.   
 
 This repository also currently contains the definition of the DataStore interface and an initial implementation of that interface for HDF5 files on disk (HDF5DataStore).  
@@ -17,7 +17,7 @@ Configuration parameters are used to customize the behavior of these modules, an
 * TriggerRecordbuilder
    * the map of requested components to modules in the Readout subsystem that will handle their readout
    * timeouts for reading from queues and for declaring an incomplete TriggerRecord stale
-* DataWriter
+* DataWriterModule
    * whether or not to actually store the data or just go through the motions and drop the data on the floor (which is useful sometimes during DAQ system testing)
    * the details of the DataStore implementation to use
 * HDF5DataStore
@@ -33,8 +33,8 @@ Some of the errors that can be encountered by these modules include the followin
 ### Operational Monitoring Metrics
 
 The modules in this package produce operational monitoring metrics to provide visibility into their operation.  Some example quantities that are reported include the following:
-* the TriggerRecordBuilder (TRB) module reports a lot of information that can be useful to understand boht the state of the TRB and part of the surrounding systems. The complete description of all the metrics can be found at this [link](https://github.com/DUNE-DAQ/dfmodules/blob/develop/docs/TRB_metrics.md). The metrics are used to report both error conditions and internal status as well as general information about the data stream.
-* the DataWriter module reports the number of TRs received and written.  Typically, these two values match, but they may not if data storage has been disabled, or if a data-storage prescale has been specified in the configuration.
+* the TRBModule (TRB) module reports a lot of information that can be useful to understand boht the state of the TRB and part of the surrounding systems. The complete description of all the metrics can be found at this [link](https://github.com/DUNE-DAQ/dfmodules/blob/develop/docs/TRB_metrics.md). The metrics are used to report both error conditions and internal status as well as general information about the data stream.
+* the DataWriterModule module reports the number of TRs received and written.  Typically, these two values match, but they may not if data storage has been disabled, or if a data-storage prescale has been specified in the configuration.
 
 ### Raw Data Files
 

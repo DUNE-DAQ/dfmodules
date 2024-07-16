@@ -45,7 +45,7 @@ def generate(
     ]
 
     mod_specs = [
-        mspec("tps_writer", "TPStreamWriter",
+        mspec("tps_writer", "TPStreamWriterModule",
               [app.QueueInfo(name="tpset_source", inst="tpset_q", dir="input")]
               ),
 

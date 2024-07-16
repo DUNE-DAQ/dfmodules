@@ -1,19 +1,19 @@
 /**
- * @file DataWriter.cpp DataWriter class implementation
+ * @file DataWriterModule.cpp DataWriterModule class implementation
  *
  * This is part of the DUNE DAQ Software Suite, copyright 2020.
  * Licensing/copyright details are in the COPYING file that you should have
  * received with this code.
  */
 
-#include "DataWriter.hpp"
+#include "DataWriterModule.hpp"
 #include "dfmodules/CommonIssues.hpp"
 #include "dfmodules/datawriterinfo/InfoNljs.hpp"
 
 #include "confmodel/Application.hpp"
 #include "confmodel/Session.hpp"
-#include "appmodel/DataWriter.hpp"
-#include "appmodel/TriggerRecordBuilder.hpp"
+#include "appmodel/DataWriterModule.hpp"
+#include "appmodel/TRBModule.hpp"
 #include "appmodel/DataStoreConf.hpp"
 #include "confmodel/Connection.hpp"
 #include "daqdataformats/Fragment.hpp"
@@ -34,7 +34,7 @@
 /**
  * @brief Name used by TRACE TLOG calls from this source file
  */
-//#define TRACE_NAME "DataWriter"                   // NOLINT This is the default
+//#define TRACE_NAME "DataWriterModule"                   // NOLINT This is the default
 enum
 {
   TLVL_ENTER_EXIT_METHODS = 5,
@@ -47,23 +47,23 @@ enum
 namespace dunedaq {
 namespace dfmodules {
 
-DataWriter::DataWriter(const std::string& name)
+DataWriterModule::DataWriterModule(const std::string& name)
   : dunedaq::appfwk::DAQModule(name)
   , m_queue_timeout(100)
   , m_data_storage_is_enabled(true)
-  , m_thread(std::bind(&DataWriter::do_work, this, std::placeholders::_1))
+  , m_thread(std::bind(&DataWriterModule::do_work, this, std::placeholders::_1))
 {
-  register_command("conf", &DataWriter::do_conf);
-  register_command("start", &DataWriter::do_start);
-  register_command("stop", &DataWriter::do_stop);
-  register_command("scrap", &DataWriter::do_scrap);
+  register_command("conf", &DataWriterModule::do_conf);
+  register_command("start", &DataWriterModule::do_start);
+  register_command("stop", &DataWriterModule::do_stop);
+  register_command("scrap", &DataWriterModule::do_scrap);
 }
 
 void
-DataWriter::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
+DataWriterModule::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
-  auto mdal = mcfg->module<appmodel::DataWriter>(get_name());
+  auto mdal = mcfg->module<appmodel::DataWriterModule>(get_name());
   if (!mdal) {
     throw appfwk::CommandFailed(ERS_HERE, "init", get_name(), "Unable to retrieve configuration object");
   }
@@ -95,13 +95,13 @@ DataWriter::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
   auto modules = mcfg->modules();
   std::string trb_uid = "";
   for (auto& mod : modules) {
-    if (mod->class_name() == "TriggerRecordBuilder") {
+    if (mod->class_name() == "TRBModule") {
       trb_uid = mod->UID();
       break;
     }
   }
 
-  auto trbdal = mcfg->module<appmodel::TriggerRecordBuilder>(trb_uid);
+  auto trbdal = mcfg->module<appmodel::TRBModule>(trb_uid);
   if (!trbdal) {
     throw appfwk::CommandFailed(ERS_HERE, "init", get_name(), "Unable to retrieve TRB configuration object");
   }
@@ -120,7 +120,7 @@ DataWriter::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
 }
 
 void
-DataWriter::get_info(opmonlib::InfoCollector& ci, int /*level*/)
+DataWriterModule::get_info(opmonlib::InfoCollector& ci, int /*level*/)
 {
   datawriterinfo::Info dwi;
 
@@ -135,7 +135,7 @@ DataWriter::get_info(opmonlib::InfoCollector& ci, int /*level*/)
   ci.add(dwi);
 }
 void
-DataWriter::do_conf(const data_t&)
+DataWriterModule::do_conf(const data_t&)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
 
@@ -160,14 +160,14 @@ DataWriter::do_conf(const data_t&)
 
   // ensure that we have a valid dataWriter instance
   if (m_data_writer.get() == nullptr) {
-    throw InvalidDataWriter(ERS_HERE, get_name());
+    throw InvalidDataWriterModule(ERS_HERE, get_name());
   }
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
 }
 
 void
-DataWriter::do_start(const data_t& payload)
+DataWriterModule::do_start(const data_t& payload)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_start() method";
   
@@ -205,7 +205,7 @@ DataWriter::do_start(const data_t& payload)
     if (m_data_writer.get() == nullptr) {
       // this check is done essentially to notify the user
       // in case the "start" has been called before the "conf"
-      ers::fatal(InvalidDataWriter(ERS_HERE, get_name()));
+      ers::fatal(InvalidDataWriterModule(ERS_HERE, get_name()));
     }
     
     try {
@@ -228,14 +228,14 @@ DataWriter::do_start(const data_t& payload)
 
   m_thread.start_working_thread(get_name());
   //iomanager::IOManager::get()->add_callback<std::unique_ptr<daqdataformats::TriggerRecord>>( m_trigger_record_connection,
-  //											     bind( &DataWriter::receive_trigger_record, this, std::placeholders::_1) );
+  //											     bind( &DataWriterModule::receive_trigger_record, this, std::placeholders::_1) );
 
   TLOG() << get_name() << " successfully started for run number " << m_run_number;
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
 }
 
 void
-DataWriter::do_stop(const data_t& /*args*/)
+DataWriterModule::do_stop(const data_t& /*args*/)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_stop() method";
 
@@ -259,7 +259,7 @@ DataWriter::do_stop(const data_t& /*args*/)
 }
 
 void
-DataWriter::do_scrap(const data_t& /*payload*/)
+DataWriterModule::do_scrap(const data_t& /*payload*/)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_scrap() method";
 
@@ -270,7 +270,7 @@ DataWriter::do_scrap(const data_t& /*payload*/)
 }
 
 void
-DataWriter::receive_trigger_record(std::unique_ptr<daqdataformats::TriggerRecord> & trigger_record_ptr)
+DataWriterModule::receive_trigger_record(std::unique_ptr<daqdataformats::TriggerRecord> & trigger_record_ptr)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": receiving a new TR ptr";
 
@@ -385,7 +385,7 @@ DataWriter::receive_trigger_record(std::unique_ptr<daqdataformats::TriggerRecord
 } // NOLINT(readability/fn_size)
 
 void
-DataWriter::do_work(std::atomic<bool>& running_flag) {
+DataWriterModule::do_work(std::atomic<bool>& running_flag) {
   while (running_flag.load()) {
 	  try {
 		std::unique_ptr<daqdataformats::TriggerRecord> tr = m_tr_receiver-> receive(std::chrono::milliseconds(10));   
@@ -402,4 +402,4 @@ DataWriter::do_work(std::atomic<bool>& running_flag) {
 } // namespace dfmodules
 } // namespace dunedaq
 
-DEFINE_DUNE_DAQ_MODULE(dunedaq::dfmodules::DataWriter)
+DEFINE_DUNE_DAQ_MODULE(dunedaq::dfmodules::DataWriterModule)

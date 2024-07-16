@@ -1,16 +1,16 @@
 /**
- * @file FakeDataProd.cpp FakeDataProd class implementation
+ * @file FakeDataProdModule.cpp FakeDataProdModule class implementation
  *
  * This is part of the DUNE DAQ Software Suite, copyright 2020.
  * Licensing/copyright details are in the COPYING file that you should have
  * received with this code.
  */
 
-#include "FakeDataProd.hpp"
+#include "FakeDataProdModule.hpp"
 #include "dfmodules/CommonIssues.hpp"
 #include "dfmodules/fakedataprodinfo/InfoNljs.hpp"
 
-#include "appmodel/FakeDataProd.hpp"
+#include "appmodel/FakeDataProdModule.hpp"
 #include "confmodel/Connection.hpp"
 #include "dfmessages/Fragment_serialization.hpp"
 #include "dfmessages/TimeSync.hpp"
@@ -28,7 +28,7 @@
 /**
  * @brief Name used by TRACE TLOG calls from this source file
  */
-#define TRACE_NAME "FakeDataProd" // NOLINT
+#define TRACE_NAME "FakeDataProdModule" // NOLINT
 enum
 {
   TLVL_ENTER_EXIT_METHODS = 5,
@@ -40,24 +40,24 @@ enum
 namespace dunedaq {
 namespace dfmodules {
 
-FakeDataProd::FakeDataProd(const std::string& name)
+FakeDataProdModule::FakeDataProdModule(const std::string& name)
   : dunedaq::appfwk::DAQModule(name)
-  , m_timesync_thread(std::bind(&FakeDataProd::do_timesync, this, std::placeholders::_1))
+  , m_timesync_thread(std::bind(&FakeDataProdModule::do_timesync, this, std::placeholders::_1))
   , m_queue_timeout(100)
   , m_run_number(0)
 {
-  register_command("conf", &FakeDataProd::do_conf);
-  register_command("start", &FakeDataProd::do_start);
-  register_command("stop", &FakeDataProd::do_stop);
+  register_command("conf", &FakeDataProdModule::do_conf);
+  register_command("start", &FakeDataProdModule::do_start);
+  register_command("stop", &FakeDataProdModule::do_stop);
 
   m_pid_of_current_process = getpid();
 }
 
 void
-FakeDataProd::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
+FakeDataProdModule::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
-  auto mdal = mcfg->module<appmodel::FakeDataProd>(get_name());
+  auto mdal = mcfg->module<appmodel::FakeDataProdModule>(get_name());
   if (!mdal) {
     throw appfwk::CommandFailed(ERS_HERE, "init", get_name(), "Unable to retrieve configuration object");
   }
@@ -80,7 +80,7 @@ FakeDataProd::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
 }
 
 void
-FakeDataProd::do_conf(const data_t& )
+FakeDataProdModule::do_conf(const data_t& )
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
 
@@ -97,7 +97,7 @@ FakeDataProd::do_conf(const data_t& )
 }
 
 void
-FakeDataProd::do_start(const data_t& payload)
+FakeDataProdModule::do_start(const data_t& payload)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_start() method";
   m_sent_fragments = 0;
@@ -108,12 +108,12 @@ FakeDataProd::do_start(const data_t& payload)
 
   auto iom = iomanager::IOManager::get();
   iom->add_callback<dfmessages::DataRequest>(
-    m_data_request_id, std::bind(&FakeDataProd::process_data_request, this, std::placeholders::_1));
+    m_data_request_id, std::bind(&FakeDataProdModule::process_data_request, this, std::placeholders::_1));
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
 }
 
 void
-FakeDataProd::do_stop(const data_t& /*args*/)
+FakeDataProdModule::do_stop(const data_t& /*args*/)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_stop() method";
   m_timesync_thread.stop_working_thread();
@@ -124,7 +124,7 @@ FakeDataProd::do_stop(const data_t& /*args*/)
 }
 
 void
-FakeDataProd::get_info(opmonlib::InfoCollector& ci, int /*level*/)
+FakeDataProdModule::get_info(opmonlib::InfoCollector& ci, int /*level*/)
 {
   fakedataprodinfo::Info info;
   info.requests_received = m_received_requests;
@@ -133,7 +133,7 @@ FakeDataProd::get_info(opmonlib::InfoCollector& ci, int /*level*/)
 }
 
 void
-FakeDataProd::do_timesync(std::atomic<bool>& running_flag)
+FakeDataProdModule::do_timesync(std::atomic<bool>& running_flag)
 {
 
   auto iom = iomanager::IOManager::get();
@@ -165,7 +165,7 @@ FakeDataProd::do_timesync(std::atomic<bool>& running_flag)
 }
 
 void
-FakeDataProd::process_data_request(dfmessages::DataRequest& data_request)
+FakeDataProdModule::process_data_request(dfmessages::DataRequest& data_request)
 {
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": processsing request " << data_request.request_number;
@@ -217,4 +217,4 @@ FakeDataProd::process_data_request(dfmessages::DataRequest& data_request)
 } // namespace dfmodules
 } // namespace dunedaq
 
-DEFINE_DUNE_DAQ_MODULE(dunedaq::dfmodules::FakeDataProd)
+DEFINE_DUNE_DAQ_MODULE(dunedaq::dfmodules::FakeDataProdModule)

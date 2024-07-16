@@ -1,7 +1,7 @@
 /**
  * @file TriggerRecordBuilderData.hpp TriggerRecordBuilderData Class
  *
- * The TriggerRecordBuilderData class represents the current state of a TriggerRecordBuilder's Trigger Record buffers
+ * The TriggerRecordBuilderData class represents the current state of a TRBModule's Trigger Record buffers
  * for use by the DFO.
  *
  * This is part of the DUNE DAQ Application Framework, copyright 2020.
