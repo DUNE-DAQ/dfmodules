@@ -106,7 +106,6 @@ TriggerRecordBuilderData::complete_assignment(daqdataformats::trigger_number_t t
   ++m_complete_counter;
   auto completion_time =
     std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - dec_ptr->assigned_time);
-  m_complete_microsecond += completion_time.count();
   if (completion_time.count() < m_min_complete_time.load())
     m_min_complete_time.store(completion_time.count());
   if (completion_time.count() > m_max_complete_time.load())
@@ -169,19 +168,14 @@ TriggerRecordBuilderData::add_assignment(std::shared_ptr<AssignedTriggerDecision
 void
 TriggerRecordBuilderData::generate_opmon_data() 
 {
-  using metric_t = opmon::DFApplicationInfo;
-  using const_metric_counter_t = std::invoke_result<decltype(&metric_t::min_time_since_assignment),
-						    metric_t>::type;
-  using metric_counter_t = std::remove_const<const_metric_counter_t>::type;
-  
   metric_t info;
-  info.set_outstanding_decisions(m_assigned_trigger_decisions.size());
-  info.set_min_time_since_assignment( std::numeric_limits<metric_counter_t>::max() );
+  info.set_min_time_since_assignment( std::numeric_limits<time_counter_t>::max() );
   info.set_max_time_since_assignment(0);
 
-  metric_counter_t time = 0;
+  time_counter_t time = 0;
 
-  auto lk = std::lock_guard<std::mutex>(m_assigned_trigger_decisions_mutex);
+  auto lk = std::unique_lock<std::mutex>(m_assigned_trigger_decisions_mutex);
+  info.set_outstanding_decisions(m_assigned_trigger_decisions.size());
   auto current_time = std::chrono::steady_clock::now();
   for (const auto& dec_ptr : m_assigned_trigger_decisions) {
     auto us_since_assignment =
@@ -192,13 +186,14 @@ TriggerRecordBuilderData::generate_opmon_data()
     if (us_since_assignment.count() > info.max_time_since_assignment())
       info.set_max_time_since_assignment(us_since_assignment.count());
   }
-
+  lk.unlock();
+  
   info.set_total_time_since_assignment(time);
 
   // estimate of the capcity
   auto completed_trigger_records = m_complete_counter.exchange(0);
   if ( completed_trigger_records > 0 ) {
-    m_last_average_time = 1e-6*m_complete_microsecond.exchange(0) / completed_trigger_records ;      
+    m_last_average_time = 1e-6*0.5*(m_min_complete_time.exchange(0) + m_max_complete_time.exchange(0)); // in seconds     
   }
   
   // prediction rate metrics

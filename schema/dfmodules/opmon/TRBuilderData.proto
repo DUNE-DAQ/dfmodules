@@ -7,8 +7,8 @@ message DFApplicationInfo {
 
   uint32 outstanding_decisions = 1;
   uint64 total_time_since_assignment = 2;
-  uint64 min_time_since_assignment = 3;
-  uint64 max_time_since_assignment = 4;
+  int64 min_time_since_assignment = 3;
+  int64 max_time_since_assignment = 4;
   
   double capacity_rate = 10; // in Hz
 }
