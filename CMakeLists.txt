@@ -19,11 +19,14 @@ find_package(trigger REQUIRED)
 find_package(Boost COMPONENTS iostreams unit_test_framework REQUIRED)
 
 
+daq_protobuf_codegen( opmon/*.proto )
+
 ##############################################################################
 daq_add_library( TriggerInhibitAgent.cpp TriggerRecordBuilderData.cpp TPBundleHandler.cpp
                  LINK_LIBRARIES 
                  opmonlib::opmonlib ers::ers HighFive appfwk::appfwk logging::logging stdc++fs dfmessages::dfmessages utilities::utilities trigger::trigger detdataformats::detdataformats trgdataformats::trgdataformats)
 
+      
 daq_add_plugin( HDF5DataStore      duneDataStore LINK_LIBRARIES logging::logging daqdataformats::daqdataformats hdf5libs::hdf5libs appfwk::appfwk stdc++fs)
 
 daq_add_plugin( FragmentAggregatorModule    duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager )

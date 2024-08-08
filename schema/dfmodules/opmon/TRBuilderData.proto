@@ -9,6 +9,6 @@ message FDApplicationInfo {
   uint64 min_time_since_assignment = 3;
   uint64 max_time_since_assignment = 4;
   
-  dobule capacity_rate = 10; // in Hz
+  double capacity_rate = 10; // in Hz
 }
 
