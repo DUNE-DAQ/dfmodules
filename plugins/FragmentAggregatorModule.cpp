@@ -58,14 +58,14 @@ FragmentAggregatorModule::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg
   }
 }
 
-void
-FragmentAggregatorModule::get_info(opmonlib::InfoCollector& /*ci*/, int /* level */)
-{
-  // dummyconsumerinfo::Info info;
-  // info.packets_processed = m_packets_processed;
+// void
+// FragmentAggregatorModule::get_info(opmonlib::InfoCollector& /*ci*/, int /* level */)
+// {
+//   // dummyconsumerinfo::Info info;
+//   // info.packets_processed = m_packets_processed;
 
-  // ci.add(info);
-}
+//   // ci.add(info);
+// }
 
 void
 FragmentAggregatorModule::do_start(const data_t& /* args */)

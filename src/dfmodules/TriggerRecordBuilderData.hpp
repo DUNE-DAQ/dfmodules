@@ -17,7 +17,7 @@
 
 #include "ers/Issue.hpp"
 #include "nlohmann/json.hpp"
-#include "opmonlib/InfoCollector.hpp"
+#include "opmonlib/MonitorableObject.hpp"
 
 #include <atomic>
 #include <chrono>
@@ -62,7 +62,7 @@ struct AssignedTriggerDecision
   {}
 };
 
-class TriggerRecordBuilderData
+class TriggerRecordBuilderData : public opmonlib::MonitorableObject
 {
 public:
   TriggerRecordBuilderData() = default;
@@ -89,7 +89,7 @@ public:
     std::function<void(nlohmann::json&)> metadata_fun = nullptr);
   std::list<std::shared_ptr<AssignedTriggerDecision>> flush();
 
-  void get_info(opmonlib::InfoCollector& ci, int level);
+  //void get_info(opmonlib::InfoCollector& ci, int level);
 
   std::chrono::microseconds average_latency(std::chrono::steady_clock::time_point since) const;
 

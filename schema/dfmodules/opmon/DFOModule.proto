@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package dunedaq.dfnodules.opmon;
+
+message TRCompleteInfo {
+
+  uint64 completion_time = 1;  // in microseconds
+  uint64 tr_number = 5;
+  uint64 run_number = 6;
+  uint64 trigger_type = 7;
+}

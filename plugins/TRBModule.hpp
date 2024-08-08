@@ -9,8 +9,6 @@
 #ifndef DFMODULES_PLUGINS_TRIGGERRECORDBUILDER_HPP_
 #define DFMODULES_PLUGINS_TRIGGERRECORDBUILDER_HPP_
 
-#include "dfmodules/triggerrecordbuilderinfo/InfoNljs.hpp"
-
 #include "appmodel/TRBConf.hpp"
 #include "daqdataformats/Fragment.hpp"
 #include "daqdataformats/SourceID.hpp"
@@ -183,7 +181,7 @@ public:
   TRBModule& operator=(TRBModule&&) = delete; ///< TRBModule is not move-assignable
 
   void init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg) override;
-  void get_info(opmonlib::InfoCollector& ci, int level) override;
+  // void get_info(opmonlib::InfoCollector& ci, int level) override;
 
 protected:
   using trigger_decision_receiver_t = iomanager::ReceiverConcept<dfmessages::TriggerDecision>;
@@ -262,7 +260,7 @@ private:
   std::list<dfmessages::TRMonRequest> m_mon_requests;
 
   // book related metrics
-  using metric_counter_type = decltype(triggerrecordbuilderinfo::Info::pending_trigger_decisions);
+  using metric_counter_type = uint64_t; // decltype(triggerrecordbuilderinfo::Info::pending_trigger_decisions);
   mutable std::atomic<metric_counter_type> m_trigger_decisions_counter = { 0 }; // currently
   mutable std::atomic<metric_counter_type> m_fragment_counter = { 0 };          // currently
   mutable std::atomic<metric_counter_type> m_pending_fragment_counter = { 0 };  // currently

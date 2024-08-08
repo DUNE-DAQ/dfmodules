@@ -10,7 +10,6 @@
  */
 
 #include "dfmodules/TriggerRecordBuilderData.hpp"
-#include "dfmodules/dfapplicationinfo/InfoNljs.hpp"
 
 #include "logging/Logging.hpp"
 
@@ -198,45 +197,45 @@ TriggerRecordBuilderData::add_assignment(std::shared_ptr<AssignedTriggerDecision
   }
 }
 
-void
-TriggerRecordBuilderData::get_info(opmonlib::InfoCollector& ci, int /*level*/)
-{
-  dfapplicationinfo::Info info;
+// void
+// TriggerRecordBuilderData::get_info(opmonlib::InfoCollector& ci, int /*level*/)
+// {
+//   dfapplicationinfo::Info info;
   
-  // fill metrics for complete TDs
-  info.completed_trigger_records = m_complete_counter.exchange(0);
-  info.waiting_time = m_complete_microsecond.exchange(0);
-  info.min_completion_time = m_min_complete_time.exchange(std::numeric_limits<int64_t>::max());
-  info.max_completion_time = m_max_complete_time.exchange(0);
+//   // fill metrics for complete TDs
+//   info.completed_trigger_records = m_complete_counter.exchange(0);
+//   info.waiting_time = m_complete_microsecond.exchange(0);
+//   info.min_completion_time = m_min_complete_time.exchange(std::numeric_limits<int64_t>::max());
+//   info.max_completion_time = m_max_complete_time.exchange(0);
 
-  // fill metrics for pending TDs
-  info.min_time_since_assignment = std::numeric_limits<decltype(info.min_time_since_assignment)>::max();
-  info.max_time_since_assignment = 0;
-  info.total_time_since_assignment = 0;
+//   // fill metrics for pending TDs
+//   info.min_time_since_assignment = std::numeric_limits<decltype(info.min_time_since_assignment)>::max();
+//   info.max_time_since_assignment = 0;
+//   info.total_time_since_assignment = 0;
 
-  auto lk = std::lock_guard<std::mutex>(m_assigned_trigger_decisions_mutex);
+//   auto lk = std::lock_guard<std::mutex>(m_assigned_trigger_decisions_mutex);
 
-  info.outstanding_decisions = m_assigned_trigger_decisions.size();
-  auto current_time = std::chrono::steady_clock::now();
-  for (const auto& dec_ptr : m_assigned_trigger_decisions) {
-    auto us_since_assignment =
-      std::chrono::duration_cast<std::chrono::microseconds>(current_time - dec_ptr->assigned_time);
-    info.total_time_since_assignment += us_since_assignment.count();
-    if (us_since_assignment.count() < info.min_time_since_assignment)
-      info.min_time_since_assignment = us_since_assignment.count();
-    if (us_since_assignment.count() > info.max_time_since_assignment)
-      info.max_time_since_assignment = us_since_assignment.count();
-  }
+//   info.outstanding_decisions = m_assigned_trigger_decisions.size();
+//   auto current_time = std::chrono::steady_clock::now();
+//   for (const auto& dec_ptr : m_assigned_trigger_decisions) {
+//     auto us_since_assignment =
+//       std::chrono::duration_cast<std::chrono::microseconds>(current_time - dec_ptr->assigned_time);
+//     info.total_time_since_assignment += us_since_assignment.count();
+//     if (us_since_assignment.count() < info.min_time_since_assignment)
+//       info.min_time_since_assignment = us_since_assignment.count();
+//     if (us_since_assignment.count() > info.max_time_since_assignment)
+//       info.max_time_since_assignment = us_since_assignment.count();
+//   }
 
-  if ( info.completed_trigger_records > 0 ) {
-    m_last_average_time = 1e-6*info.waiting_time/info.completed_trigger_records ;
-  }
+//   if ( info.completed_trigger_records > 0 ) {
+//     m_last_average_time = 1e-6*info.waiting_time/info.completed_trigger_records ;
+//   }
   
-  // prediction rate metrics
-  info.capacity_rate = 0.5*(m_busy_threshold.load()+m_free_threshold.load())/m_last_average_time;
+//   // prediction rate metrics
+//   info.capacity_rate = 0.5*(m_busy_threshold.load()+m_free_threshold.load())/m_last_average_time;
  
-  ci.add(info);
-}
+//   ci.add(info);
+// }
 
 std::chrono::microseconds
 TriggerRecordBuilderData::average_latency(std::chrono::steady_clock::time_point since) const

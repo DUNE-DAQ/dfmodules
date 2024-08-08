@@ -18,7 +18,6 @@ find_package(triggeralgs REQUIRED)
 find_package(trigger REQUIRED)
 find_package(Boost COMPONENTS iostreams unit_test_framework REQUIRED)
 
-daq_codegen( info/*.jsonnet DEP_PKGS opmonlib TEMPLATES opmonlib/InfoStructs.hpp.j2 opmonlib/InfoNljs.hpp.j2 )
 
 ##############################################################################
 daq_add_library( TriggerInhibitAgent.cpp TriggerRecordBuilderData.cpp TPBundleHandler.cpp
