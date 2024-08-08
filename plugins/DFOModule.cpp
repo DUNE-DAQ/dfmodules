@@ -165,7 +165,7 @@ DFOModule::do_stop(const data_t& /*args*/)
 
   std::list<std::shared_ptr<AssignedTriggerDecision>> remnants;
   for (auto& app : m_dataflow_availability) {
-    auto temp = app.second.flush();
+    auto temp = app.second->flush();
     for (auto& td : temp) {
       remnants.push_back(td);
     }
@@ -238,7 +238,7 @@ DFOModule::receive_trigger_decision(const dfmessages::TriggerDecision& decision)
     } else {
       ers::error(
         TRBModuleAppUpdate(ERS_HERE, assignment->connection_name, "Could not send Trigger Decision"));
-      m_dataflow_availability[assignment->connection_name].set_in_error(true);
+      m_dataflow_availability[assignment->connection_name]->set_in_error(true);
     }
 
   } while (m_running_status.load());
@@ -284,21 +284,21 @@ DFOModule::find_slot(const dfmessages::TriggerDecision& decision)
       candidate_it = m_dataflow_availability.begin();
 
     // get rid of the applications in error state
-    if (candidate_it->second.is_in_error()) {
+    if (candidate_it->second->is_in_error()) {
       continue;
     }
 
     // monitor
-    auto slots = candidate_it->second.used_slots();
+    auto slots = candidate_it->second->used_slots();
     if (slots < minimum) {
       minimum = slots;
       minimum_occupied = candidate_it;
     }
 
-    if (candidate_it->second.is_busy())
+    if (candidate_it->second->is_busy())
       continue;
 
-    output = candidate_it->second.make_assignment(decision);
+    output = candidate_it->second->make_assignment(decision);
     m_last_assignement_it = candidate_it;
   }
 
@@ -307,7 +307,7 @@ DFOModule::find_slot(const dfmessages::TriggerDecision& decision)
     // so we assign the decision to that with the lowest
     // number of assignments
     if (minimum_occupied != m_dataflow_availability.end()) {
-      output = minimum_occupied->second.make_assignment(decision);
+      output = minimum_occupied->second->make_assignment(decision);
       m_last_assignement_it = minimum_occupied;
       ers::warning(AssignedToBusyApp(ERS_HERE, decision.trigger_number, minimum_occupied->first, minimum));
     }
@@ -357,12 +357,13 @@ DFOModule::receive_trigger_complete_token(const dfmessages::TriggerDecisionToken
   if (token.run_number == 0 && token.trigger_number == 0) {
     if (m_dataflow_availability.count(token.decision_destination) == 0) {
       TLOG_DEBUG(TLVL_CONFIG) << "Creating dataflow availability struct for uid " << token.decision_destination;
-      m_dataflow_availability[token.decision_destination] =
-        TriggerRecordBuilderData(token.decision_destination, m_busy_threshold, m_free_threshold);
+      auto entry = m_dataflow_availability[token.decision_destination] =
+        std::make_shared<TriggerRecordBuilderData>(token.decision_destination, m_busy_threshold, m_free_threshold);
+      register_node(token.decision_destination, entry);
     } else {
       TLOG() << TRBModuleAppUpdate(ERS_HERE, token.decision_destination, "Has reconnected");
       auto app_it = m_dataflow_availability.find(token.decision_destination);
-      app_it->second.set_in_error(false);
+      app_it->second->set_in_error(false);
     }
     return;
   }
@@ -390,19 +391,19 @@ DFOModule::receive_trigger_complete_token(const dfmessages::TriggerDecisionToken
   auto callback_start = std::chrono::steady_clock::now();
 
   try {
-    auto dec_ptr = app_it->second.complete_assignment(token.trigger_number, m_metadata_function);
+    auto dec_ptr = app_it->second->complete_assignment(token.trigger_number, m_metadata_function);
     auto trigger_types = unpack_types(dec_ptr->decision.trigger_type);
     for ( const auto t : trigger_types ) ++ get_trigger_counter(t).completed;
   } catch (AssignedTriggerDecisionNotFound const& err) {
     ers::error(err);
   }
 
-  if (app_it->second.is_in_error()) {
+  if (app_it->second->is_in_error()) {
     TLOG() << TRBModuleAppUpdate(ERS_HERE, token.decision_destination, "Has reconnected");
-    app_it->second.set_in_error(false);
+    app_it->second->set_in_error(false);
   }
 
-  if (!app_it->second.is_busy()) {
+  if (!app_it->second->is_busy()) {
     notify_trigger(false);
   }
 
@@ -417,7 +418,7 @@ bool
 DFOModule::is_busy() const
 {
   for (auto& dfapp : m_dataflow_availability) {
-    if (!dfapp.second.is_busy())
+    if (!dfapp.second->is_busy())
       return false;
   }
   return true;
@@ -427,7 +428,7 @@ bool
 DFOModule::is_empty() const
 {
   for (auto& dfapp : m_dataflow_availability) {
-    if (dfapp.second.used_slots() != 0)
+    if (dfapp.second->used_slots() != 0)
       return false;
   }
   return true;
@@ -438,7 +439,7 @@ DFOModule::used_slots() const
 {
   size_t total = 0;
   for (auto& dfapp : m_dataflow_availability) {
-    total += dfapp.second.used_slots();
+    total += dfapp.second->used_slots();
   }
   return total;
 }
@@ -508,7 +509,7 @@ DFOModule::dispatch(const std::shared_ptr<AssignedTriggerDecision>& assignment)
 void
 DFOModule::assign_trigger_decision(const std::shared_ptr<AssignedTriggerDecision>& assignment)
 {
-  m_dataflow_availability[assignment->connection_name].add_assignment(assignment);
+  m_dataflow_availability[assignment->connection_name]->add_assignment(assignment);
 }
 
 } // namespace dunedaq::dfmodules

@@ -70,10 +70,12 @@ public:
   TriggerRecordBuilderData(std::string connection_name, size_t busy_threshold, size_t free_threshold);
 
   TriggerRecordBuilderData(TriggerRecordBuilderData const&) = delete;
-  TriggerRecordBuilderData(TriggerRecordBuilderData&&);
+  TriggerRecordBuilderData(TriggerRecordBuilderData&&) = delete;
   TriggerRecordBuilderData& operator=(TriggerRecordBuilderData const&) = delete;
-  TriggerRecordBuilderData& operator=(TriggerRecordBuilderData&&);
+  TriggerRecordBuilderData& operator=(TriggerRecordBuilderData&&) = delete;
 
+  ~TriggerRecordBuilderData() = default;
+  
   bool is_busy() const { return m_in_error || m_is_busy; }
   size_t used_slots() const { return m_assigned_trigger_decisions.size(); }
 
@@ -89,7 +91,7 @@ public:
     std::function<void(nlohmann::json&)> metadata_fun = nullptr);
   std::list<std::shared_ptr<AssignedTriggerDecision>> flush();
 
-  //void get_info(opmonlib::InfoCollector& ci, int level);
+  void generate_opmon_data() override;
 
   std::chrono::microseconds average_latency(std::chrono::steady_clock::time_point since) const;
 

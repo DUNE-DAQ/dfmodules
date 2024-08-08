@@ -2,14 +2,6 @@ syntax = "proto3";
 
 package dunedaq.dfmodules.opmon;
 
-// An info of these type is generated every time a TR is completed 
-message TRCompleteInfo {
-
-  uint64 completion_time = 1;  // in microseconds
-  uint64 tr_number = 5;
-  uint64 run_number = 6;
-  uint64 trigger_type = 7;
-}
 
 // regular metric published byt the DFO
 message DFOInfo {

@@ -92,7 +92,8 @@ protected:
   virtual std::shared_ptr<AssignedTriggerDecision> find_slot(const dfmessages::TriggerDecision& decision);
   // find_slot operates on a round-robin logic
 
-  using data_structure_t = std::map<std::string, TriggerRecordBuilderData>;
+  using trbd_ptr_t = std::shared_ptr<TriggerRecordBuilderData>;
+  using data_structure_t = std::map<std::string, trbd_ptr_t>;
   data_structure_t m_dataflow_availability;
   data_structure_t::iterator m_last_assignement_it;
   std::function<void(nlohmann::json&)> m_metadata_function;

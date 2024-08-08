@@ -63,13 +63,6 @@ BOOST_AUTO_TEST_CASE(Constructors)
   BOOST_REQUIRE_EQUAL(trbd2.is_busy(), false);
   BOOST_REQUIRE(!trbd2.is_in_error());
 
-  TriggerRecordBuilderData trbd3 = std::move(trbd2);
-  BOOST_REQUIRE(!trbd3.is_in_error());
-  TriggerRecordBuilderData trbd4;
-  BOOST_REQUIRE(trbd4.is_in_error());
-  trbd4 = std::move(trbd3);
-  BOOST_REQUIRE(!trbd4.is_in_error());
-
   BOOST_REQUIRE_EXCEPTION(TriggerRecordBuilderData("test", 10, 15),
                           DFOThresholdsNotConsistent,
                           [](DFOThresholdsNotConsistent const&) { return true; });

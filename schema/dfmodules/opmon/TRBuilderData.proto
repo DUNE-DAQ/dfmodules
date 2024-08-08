@@ -1,8 +1,9 @@
 syntax = "proto3";
 
-package dunedaq.dmnodules.opmon;
+package dunedaq.dfmodules.opmon;
 
-message FDApplicationInfo {
+// regular metric published by the TRBuilderData
+message DFApplicationInfo {
 
   uint32 outstanding_decisions = 1;
   uint64 total_time_since_assignment = 2;
@@ -12,3 +13,12 @@ message FDApplicationInfo {
   double capacity_rate = 10; // in Hz
 }
 
+
+// An info of these type is generated every time a TR is completed
+message TRCompleteInfo {
+
+  uint64 completion_time = 1;  // in microseconds
+  uint64 tr_number = 5;
+  uint64 run_number = 6;
+  uint64 trigger_type = 7;
+}
