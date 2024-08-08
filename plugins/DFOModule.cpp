@@ -339,7 +339,7 @@ DFOModule::generate_opmon_data()
   info.set_forwarding_decision(m_forwarding_decision.exchange(0));
   info.set_waiting_for_token(m_waiting_for_token.exchange(0));
   info.set_processing_token(m_processing_token.exchange(0));
-  publish( std::move(dfo_nfo) );
+  publish( std::move(info) );
 
   std::lock_guard<std::mutex>	guard(m_trigger_mutex);
   for ( auto & [type, counts] : m_trigger_counters ) {
@@ -347,7 +347,7 @@ DFOModule::generate_opmon_data()
     ti.set_received(counts.received.exchange(0));
     ti.set_completed(counts.completed.exchange(0));
     auto name = dunedaq::trgdataformats::get_trigger_candidate_type_names()[type];
-    publish( std::move(ti), {{"type", name}}
+    publish( std::move(ti), {{"type", name}} );
    }
 }
 
