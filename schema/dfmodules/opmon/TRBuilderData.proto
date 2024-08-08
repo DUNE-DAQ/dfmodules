@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package dunedaq.dfnodules.opmon;
+package dunedaq.dmnodules.opmon;
 
 message FDApplicationInfo {
 

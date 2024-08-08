@@ -104,7 +104,7 @@ private:
   void do_stop(const data_t&);
   void do_scrap(const data_t&);
 
-  // void get_info(opmonlib::InfoCollector& ci, int level) override;
+  void generate_opmon_data() override;
 
   virtual void receive_trigger_complete_token(const dfmessages::TriggerDecisionToken&);
   void receive_trigger_decision(const dfmessages::TriggerDecision&);

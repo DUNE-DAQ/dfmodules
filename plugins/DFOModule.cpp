@@ -9,6 +9,8 @@
 #include "DFOModule.hpp"
 #include "dfmodules/CommonIssues.hpp"
 
+#include "dfmodules/opmon/DFOModule.pb.h"
+
 #include "appmodel/DFOModule.hpp"
 #include "confmodel/Connection.hpp"
 #include "appfwk/app/Nljs.hpp"
@@ -318,9 +320,9 @@ DFOModule::find_slot(const dfmessages::TriggerDecision& decision)
   return output;
 }
 
-// void
-// DFOModule::get_info(opmonlib::InfoCollector& ci, int level)
-// {
+void
+DFOModule::generate_opmon_data() 
+{
 
 //   for (auto& [name, app] : m_dataflow_availability) {
 //     opmonlib::InfoCollector tmp_ic;
@@ -328,28 +330,26 @@ DFOModule::find_slot(const dfmessages::TriggerDecision& decision)
 //     ci.add(name, tmp_ic);
 //   }
 
-//   datafloworchestratorinfo::Info info;
-//   info.tokens_received = m_received_tokens.exchange(0);
-//   info.decisions_sent = m_sent_decisions.exchange(0);
-//   info.decisions_received = m_received_decisions.exchange(0);
-//   info.waiting_for_decision = m_waiting_for_decision.exchange(0);
-//   info.deciding_destination = m_deciding_destination.exchange(0);
-//   info.forwarding_decision = m_forwarding_decision.exchange(0);
-//   info.waiting_for_token = m_waiting_for_token.exchange(0);
-//   info.processing_token = m_processing_token.exchange(0);
-//   ci.add(info);
+  opmon::DFOInfo info;
+  info.set_tokens_received( m_received_tokens.exchange(0) );
+  info.set_decisions_sent(m_sent_decisions.exchange(0));
+  info.set_decisions_received(m_received_decisions.exchange(0));
+  info.set_waiting_for_decision(m_waiting_for_decision.exchange(0));
+  info.set_deciding_destination(m_deciding_destination.exchange(0));
+  info.set_forwarding_decision(m_forwarding_decision.exchange(0));
+  info.set_waiting_for_token(m_waiting_for_token.exchange(0));
+  info.set_processing_token(m_processing_token.exchange(0));
+  publish( std::move(dfo_nfo) );
 
-//   std::lock_guard<std::mutex>	guard(m_trigger_mutex);
-//   for ( auto & [type, counts] : m_trigger_counters ) {
-//     opmonlib::InfoCollector tmp_ic;
-//     datafloworchestratorinfo::TriggerInfo i;
-//     i.received  = counts.received.exchange(0);
-//     i.completed = counts.completed.exchange(0);
-//     tmp_ic.add(i);
-//     auto name = dunedaq::trgdataformats::get_trigger_candidate_type_names()[type];
-//     ci.add(name, tmp_ic);
-//   }
-// }
+  std::lock_guard<std::mutex>	guard(m_trigger_mutex);
+  for ( auto & [type, counts] : m_trigger_counters ) {
+    opmon::TriggerInfo ti;
+    ti.set_received(counts.received.exchange(0));
+    ti.set_completed(counts.completed.exchange(0));
+    auto name = dunedaq::trgdataformats::get_trigger_candidate_type_names()[type];
+    publish( std::move(ti), {{"type", name}}
+   }
+}
 
 void
 DFOModule::receive_trigger_complete_token(const dfmessages::TriggerDecisionToken& token)
