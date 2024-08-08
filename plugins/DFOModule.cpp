@@ -324,12 +324,6 @@ void
 DFOModule::generate_opmon_data() 
 {
 
-//   for (auto& [name, app] : m_dataflow_availability) {
-//     opmonlib::InfoCollector tmp_ic;
-//     app.get_info(tmp_ic, level);
-//     ci.add(name, tmp_ic);
-//   }
-
   opmon::DFOInfo info;
   info.set_tokens_received( m_received_tokens.exchange(0) );
   info.set_decisions_sent(m_sent_decisions.exchange(0));
