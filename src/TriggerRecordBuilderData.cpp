@@ -112,6 +112,13 @@ TriggerRecordBuilderData::complete_assignment(daqdataformats::trigger_number_t t
   if (completion_time.count() > m_max_complete_time.load())
     m_max_complete_time.store(completion_time.count());
 
+  opmon::TRCompleteInfo i;
+  i.set_completion_time(completion_time.count());
+  i.set_tr_number( dec_ptr->decision.trigger_number );
+  i.set_run_number( dec_ptr->decision.run_number );
+  i.set_trigger_type( dec_ptr->decision.trigger_type );
+  publish( std::move(i), {}, opmonlib::to_level(opmonlib::EntryOpMonLevel::kEventDriven) );
+  
   return dec_ptr;
 }
 
@@ -162,14 +169,6 @@ TriggerRecordBuilderData::add_assignment(std::shared_ptr<AssignedTriggerDecision
 void
 TriggerRecordBuilderData::generate_opmon_data() 
 {
-//   dfapplicationinfo::Info info;
-  
-//   // fill metrics for complete TDs
-//   info.completed_trigger_records = m_complete_counter.exchange(0);
-//   info.waiting_time = m_complete_microsecond.exchange(0);
-//   info.min_completion_time = m_min_complete_time.exchange(std::numeric_limits<int64_t>::max());
-//   info.max_completion_time = m_max_complete_time.exchange(0);
-
   using metric_t = opmon::DFApplicationInfo;
   using const_metric_counter_t = std::invoke_result<decltype(&metric_t::min_time_since_assignment),
 						    metric_t>::type;
