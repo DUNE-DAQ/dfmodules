@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package dunedaq.dfmodules.opmon;
+
+message TRBInfo {
+
+  // status metrics
+  uint64 pending_trigger_decisions = 1;  // Present number of trigger decisions in the book
+  uint64 fragments_in_the_book = 2;      // Present number of fragments in the book
+  uint64 pending_fragments = 3;          // Fragments to be expected based on the TR in the book 
+
+  // error counters. These quantities are reset at start and not at regualar intervals
+  // hence they are about a whole run.
+  uint64 timed_out_trigger_records = 10;     // Number of timed out triggers 
+  uint64 unexpected_fragments = 11;          // Number of unexpected fragments 
+  uint64 unexpected_trigger_decisions = 12;  // Number of unexpected trigger decisions 
+  uint64 abandoned_trigger_records = 13;     // Number of trigger records that failed to send to writing 
+  uint64 lost_fragments = 14;                // Number of fragments that not stored in a file
+  uint64 invalid_requests = 15;              // Number of requests with unknown SourceID
+  uint64 duplicated_trigger_ids =16;         // Number of TR not created because redundant 
+
+  // operation metrics
+  uint64 received_trigger_decisions = 20;    // Number of valid trigger decisions received in the run
+  uint64 generated_trigger_records = 21;     // Number of trigger records produced 
+  uint64 generated_data_requests = 22;       // Number of data requests generated 
+  uint64 sleep_counter = 23;                 // Number times the loop goes to sleep
+  uint64 loop_counter = 24;                  // Number times the loop is executed 
+  uint64 data_waiting_time = 25;             // Time the TRs spend in the TRB buffer 
+  uint64 data_request_width = 26;            // total time window requested to readout
+  uint64 trigger_decision_width = 27;        // total time window requested from a trigger decision
+  uint64 received_trmon_requests = 28;       // Number of requests coming from DQM
+  uint64 sent_trmon = 29;                    // Number of TRs sent to DQM 
+  
+}
