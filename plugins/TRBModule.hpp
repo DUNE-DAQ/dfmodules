@@ -26,6 +26,8 @@
 #include "iomanager/Sender.hpp"
 #include "iomanager/Receiver.hpp"
 
+#include "dfmodules/opmon/TRBModule.pb.h"
+
 #include <chrono>
 #include <list>
 #include <map>
@@ -181,7 +183,8 @@ public:
   TRBModule& operator=(TRBModule&&) = delete; ///< TRBModule is not move-assignable
 
   void init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg) override;
-  // void get_info(opmonlib::InfoCollector& ci, int level) override;
+
+  void generate_opmon_data() override;
 
 protected:
   using trigger_decision_receiver_t = iomanager::ReceiverConcept<dfmessages::TriggerDecision>;
@@ -286,7 +289,7 @@ private:
   mutable std::atomic<metric_counter_type> m_trmon_sent_counter = { 0 };
 
   // time thresholds
-  using duration_type = std::chrono::milliseconds;
+  using duration_type = std::chrono::microseconds;
   duration_type m_old_trigger_threshold;
   duration_type m_trigger_timeout;
 };

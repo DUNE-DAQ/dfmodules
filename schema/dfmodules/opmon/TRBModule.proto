@@ -25,7 +25,7 @@ message TRBInfo {
   uint64 generated_data_requests = 22;       // Number of data requests generated 
   uint64 sleep_counter = 23;                 // Number times the loop goes to sleep
   uint64 loop_counter = 24;                  // Number times the loop is executed 
-  uint64 data_waiting_time = 25;             // Time the TRs spend in the TRB buffer 
+  uint64 data_waiting_time = 25;             // Time the TRs spend in the TRB buffer in microseconds
   uint64 data_request_width = 26;            // total time window requested to readout
   uint64 trigger_decision_width = 27;        // total time window requested from a trigger decision
   uint64 received_trmon_requests = 28;       // Number of requests coming from DQM
