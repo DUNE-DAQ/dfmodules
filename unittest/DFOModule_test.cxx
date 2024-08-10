@@ -16,6 +16,7 @@
 #include "iomanager/IOManager.hpp"
 #include "iomanager/Sender.hpp"
 #include "opmonlib/TestOpMonManager.hpp"
+#include "dfmodules/opmon/DFOModule.pb.h"
 
 #define BOOST_TEST_MODULE DFOModule_test // NOLINT
 
@@ -51,12 +52,23 @@ struct CfgFixture
     get_iomanager()->reset();
   }
 
+  auto get_dfo_info()	{	
+
+    opmgr.collect();
+    auto opmon_facility = opmgr.get_backend_facility();
+    auto list = opmon_facility->get_entries(std::regex(".*DFOInfo"));
+    BOOST_REQUIRE_EQUAL(list.size(), 1);
+    const auto & entry = list.front();
+    return opmonlib::from_entry<dfmodules::opmon::DFOInfo>( entry );
+  }
+  
   dunedaq::opmonlib::TestOpMonManager opmgr;
   std::shared_ptr<dunedaq::appfwk::ConfigurationManager> cfgMgr;
   std::shared_ptr<dunedaq::appfwk::ModuleConfiguration> modCfg;
 };
 
 BOOST_FIXTURE_TEST_SUITE(DFOModule_test, CfgFixture)
+
 
 void
 send_init_token(std::string connection_name = "trigdec_0")
@@ -148,20 +160,15 @@ BOOST_AUTO_TEST_CASE(Commands)
   dfo->execute_command("drain_dataflow", "RUNNING", null_json);
   dfo->execute_command("scrap", "CONFIGURED", null_json);
 
-  opmgr.collect();
-  auto opmon_facility = opmgr.get_backend_facility();
-  auto list = opmon_facility->get_entries(std::regex(".*DFOInfo"));
-  BOOST_REQUIRE_EQUAL(list.size(), 1);
-  const auto & entry = list.front();
-  const auto & payload = entry.data();
-  BOOST_REQUIRE_EQUAL(payload.find("tokens_received")->second.uint8_value(), 0);
-  BOOST_REQUIRE_EQUAL(payload.find("decisions_received")->second.uint8_value(), 0);
-  BOOST_REQUIRE_EQUAL(payload.find("decisions_sent")->second.uint8_value(), 0);
-  BOOST_REQUIRE_EQUAL(payload.find("forwarding_decision")->second.uint8_value(), 0);
-  BOOST_REQUIRE_EQUAL(payload.find("waiting_for_decision")->second.uint8_value(), 0);
-  BOOST_REQUIRE_EQUAL(payload.find("deciding_destination")->second.uint8_value(), 0);
-  BOOST_REQUIRE_EQUAL(payload.find("waiting_for_token")->second.uint8_value(), 0);
-  BOOST_REQUIRE_EQUAL(payload.find("processing_token")->second.uint8_value(), 0);
+  auto metric = get_dfo_info();
+  BOOST_REQUIRE_EQUAL(metric.tokens_received(), 0);
+  BOOST_REQUIRE_EQUAL(metric.decisions_received(), 0);
+  BOOST_REQUIRE_EQUAL(metric.decisions_sent(), 0);
+  BOOST_REQUIRE_EQUAL(metric.forwarding_decision(), 0);
+  BOOST_REQUIRE_EQUAL(metric.waiting_for_decision(), 0);
+  BOOST_REQUIRE_EQUAL(metric.deciding_destination(), 0);
+  BOOST_REQUIRE_EQUAL(metric.waiting_for_token(), 0);
+  BOOST_REQUIRE_EQUAL(metric.processing_token(), 0);
   
 }
 
@@ -191,56 +198,40 @@ BOOST_AUTO_TEST_CASE(DataFlow)
   send_token(9999, "trigdec_0", true);
   std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
-  opmgr.collect();
-  // Note: Counters are reset by calling collect!
-  auto opmon_facility = opmgr.get_backend_facility();
-  auto list = opmon_facility->get_entries(std::regex(".*DFOInfo"));
-  BOOST_REQUIRE_EQUAL(list.size(), 1);
-  auto entry = list.front();
-  auto payload = entry.data();
   
-  BOOST_REQUIRE_EQUAL(payload.find("tokens_received")->second.uint8_value(), 0);
+  
+  // Note: Counters are reset by calling get_dfo_info!
+  auto metric = get_dfo_info();
+  
+  BOOST_REQUIRE_EQUAL(metric.tokens_received(), 0);
 
   dfo->execute_command("start", "CONFIGURED", start_json);
   send_init_token();
 
   std::this_thread::sleep_for(std::chrono::milliseconds(150));
 
-  opmgr.collect();
-  list = opmon_facility->get_entries(std::regex(".*DFOInfo"));
-  BOOST_REQUIRE_EQUAL(list.size(), 1);
-  entry = list.front();
-  payload = entry.data();
-
-  BOOST_REQUIRE_EQUAL(payload.find("tokens_received")->second.uint8_value(), 0);
-  BOOST_REQUIRE_EQUAL(payload.find("decisions_received")->second.uint8_value(), 0);
-  BOOST_REQUIRE_EQUAL(payload.find("decisions_sent")->second.uint8_value(), 0);
+  metric = get_dfo_info();
+  BOOST_REQUIRE_EQUAL(metric.tokens_received(), 0);
+  BOOST_REQUIRE_EQUAL(metric.decisions_received(), 0);
+  BOOST_REQUIRE_EQUAL(metric.decisions_sent(), 0);
 
   send_trigdec(2);
   send_trigdec(3);
   std::this_thread::sleep_for(std::chrono::milliseconds(50));
   send_trigdec(4);
 
-  opmgr.collect();
-  list = opmon_facility->get_entries(std::regex(".*DFOInfo"));
-  BOOST_REQUIRE_EQUAL(list.size(), 1);
-  entry = list.front();
-  payload = entry.data();
-  BOOST_REQUIRE_EQUAL(payload.find("tokens_received")->second.uint8_value(), 0);
-  BOOST_REQUIRE_EQUAL(payload.find("decisions_received")->second.uint8_value(), 2);
-  BOOST_REQUIRE_EQUAL(payload.find("decisions_sent")->second.uint8_value(), 2);
+  metric = get_dfo_info();
+  BOOST_REQUIRE_EQUAL(metric.tokens_received(), 0);
+  BOOST_REQUIRE_EQUAL(metric.decisions_received(), 2);
+  BOOST_REQUIRE_EQUAL(metric.decisions_sent(), 2);
 
   BOOST_REQUIRE(busy_signal_recvd.load());
   std::this_thread::sleep_for(std::chrono::milliseconds(400));
 
-  opmgr.collect();
-  list = opmon_facility->get_entries(std::regex(".*DFOInfo"));
-  BOOST_REQUIRE_EQUAL(list.size(), 1);
-  entry = list.front();
-  payload = entry.data();
-  BOOST_REQUIRE_EQUAL(payload.find("tokens_received")->second.uint8_value(), 3);
-  BOOST_REQUIRE_EQUAL(payload.find("decisions_received")->second.uint8_value(), 1);
-  BOOST_REQUIRE_EQUAL(payload.find("decisions_sent")->second.uint8_value(), 1);
+  metric = get_dfo_info();
+  BOOST_REQUIRE_EQUAL(metric.tokens_received(), 3);
+  BOOST_REQUIRE_EQUAL(metric.decisions_received(), 1);
+  BOOST_REQUIRE_EQUAL(metric.decisions_sent(), 1);
   BOOST_REQUIRE(!busy_signal_recvd.load());
 
   dfo->execute_command("drain_dataflow", "RUNNING", null_json);
@@ -253,6 +244,7 @@ BOOST_AUTO_TEST_CASE(DataFlow)
 BOOST_AUTO_TEST_CASE(SendTrigDecFailed)
 {
   auto dfo = appfwk::make_module("DFOModule", "test");
+  opmgr.register_node("dfo", dfo);
   dfo->init(modCfg);
 
   auto conf_json = "{\"thresholds\": { \"free\": 1, \"busy\": 2 }, "
@@ -270,10 +262,11 @@ BOOST_AUTO_TEST_CASE(SendTrigDecFailed)
 
   send_trigdec(1);
   std::this_thread::sleep_for(std::chrono::milliseconds(150));
-  // auto info = get_dfo_info(dfo);
-  // BOOST_REQUIRE_EQUAL(info.tokens_received, 0);
-  // BOOST_REQUIRE_EQUAL(info.decisions_received, 1);
-  // BOOST_REQUIRE_EQUAL(info.decisions_sent, 0);
+
+  auto info = get_dfo_info();
+  BOOST_REQUIRE_EQUAL(info.tokens_received(), 0);
+  BOOST_REQUIRE_EQUAL(info.decisions_received(), 1);
+  BOOST_REQUIRE_EQUAL(info.decisions_sent(), 0);
 
   // FWIW, tell the DFO to retry the invalid connection
   send_token(1000, "invalid_connection");
