@@ -15,6 +15,7 @@
 #include "dfmodules/CommonIssues.hpp"
 #include "iomanager/IOManager.hpp"
 #include "iomanager/Sender.hpp"
+#include "opmonlib/TestOpMonManager.hpp"
 
 #define BOOST_TEST_MODULE DFOModule_test // NOLINT
 
@@ -44,7 +45,7 @@ struct CfgFixture
     std::string sessionName = "partition_name";
     cfgMgr = std::make_shared<dunedaq::appfwk::ConfigurationManager>(oksConfig, appName, sessionName);
     modCfg  = std::make_shared<dunedaq::appfwk::ModuleConfiguration>(cfgMgr);
-    dunedaq::opmonlib::OpMonManager opmgr(nullptr);
+    dunedaq::opmonlib::TestOpMonManager opmgr;
     get_iomanager()->configure(modCfg->queues(), modCfg->networkconnections(), false, std::chrono::milliseconds(100), opmgr);
   }
   ~CfgFixture() {
