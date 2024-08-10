@@ -58,20 +58,6 @@ struct CfgFixture
 
 BOOST_FIXTURE_TEST_SUITE(DFOModule_test, CfgFixture)
 
-// datafloworchestratorinfo::Info
-// get_dfo_info(std::shared_ptr<appfwk::DAQModule> dfo)
-// {
-//   opmonlib::InfoCollector ci;
-//   dfo->get_info(ci, 99);
-
-//   auto json = ci.get_collected_infos();
-//   auto info_json = json[opmonlib::JSONTags::properties][datafloworchestratorinfo::Info::info_type];
-//   datafloworchestratorinfo::Info info_obj;
-//   datafloworchestratorinfo::from_json(info_json[opmonlib::JSONTags::data], info_obj);
-
-//   return info_obj;
-// }
-
 void
 send_init_token(std::string connection_name = "trigdec_0")
 {
@@ -182,6 +168,7 @@ BOOST_AUTO_TEST_CASE(Commands)
 BOOST_AUTO_TEST_CASE(DataFlow)
 {
   auto dfo = appfwk::make_module("DFOModule", "test");
+  opmgr.register_node("dfo", dfo);
   dfo->init(modCfg);
 
   auto conf_json = "{\"thresholds\": { \"free\": 1, \"busy\": 2 }, "
@@ -204,38 +191,57 @@ BOOST_AUTO_TEST_CASE(DataFlow)
   send_token(9999, "trigdec_0", true);
   std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
-  // Note: Counters are reset each time get_dfo_info is called!
-  // auto info = get_dfo_info(dfo);
-  // BOOST_REQUIRE_EQUAL(info.tokens_received, 0);
+  opmgr.collect();
+  // Note: Counters are reset by calling collect!
+  auto opmon_facility = opmgr.get_backend_facility();
+  auto list = opmon_facility->get_entries(std::regex(".*DFOInfo"));
+  BOOST_REQUIRE_EQUAL(list.size(), 1);
+  auto entry = list.front();
+  auto payload = entry.data();
+  
+  BOOST_REQUIRE_EQUAL(payload.find("tokens_received")->second.uint8_value(), 0);
 
   dfo->execute_command("start", "CONFIGURED", start_json);
   send_init_token();
 
   std::this_thread::sleep_for(std::chrono::milliseconds(150));
 
-  // info = get_dfo_info(dfo);
-  // BOOST_REQUIRE_EQUAL(info.tokens_received, 0);
-  // BOOST_REQUIRE_EQUAL(info.decisions_received, 0);
-  // BOOST_REQUIRE_EQUAL(info.decisions_sent, 0);
+  opmgr.collect();
+  list = opmon_facility->get_entries(std::regex(".*DFOInfo"));
+  BOOST_REQUIRE_EQUAL(list.size(), 1);
+  entry = list.front();
+  payload = entry.data();
+
+  BOOST_REQUIRE_EQUAL(payload.find("tokens_received")->second.uint8_value(), 0);
+  BOOST_REQUIRE_EQUAL(payload.find("decisions_received")->second.uint8_value(), 0);
+  BOOST_REQUIRE_EQUAL(payload.find("decisions_sent")->second.uint8_value(), 0);
 
   send_trigdec(2);
   send_trigdec(3);
   std::this_thread::sleep_for(std::chrono::milliseconds(50));
   send_trigdec(4);
 
-  // info = get_dfo_info(dfo);
-  // BOOST_REQUIRE_EQUAL(info.tokens_received, 0);
-  // BOOST_REQUIRE_EQUAL(info.decisions_received, 2);
-  // BOOST_REQUIRE_EQUAL(info.decisions_sent, 2);
+  opmgr.collect();
+  list = opmon_facility->get_entries(std::regex(".*DFOInfo"));
+  BOOST_REQUIRE_EQUAL(list.size(), 1);
+  entry = list.front();
+  payload = entry.data();
+  BOOST_REQUIRE_EQUAL(payload.find("tokens_received")->second.uint8_value(), 0);
+  BOOST_REQUIRE_EQUAL(payload.find("decisions_received")->second.uint8_value(), 2);
+  BOOST_REQUIRE_EQUAL(payload.find("decisions_sent")->second.uint8_value(), 2);
 
   BOOST_REQUIRE(busy_signal_recvd.load());
   std::this_thread::sleep_for(std::chrono::milliseconds(400));
 
-  // info = get_dfo_info(dfo);
-  // BOOST_REQUIRE_EQUAL(info.tokens_received, 3);
-  // BOOST_REQUIRE_EQUAL(info.decisions_received, 1);
-  // BOOST_REQUIRE_EQUAL(info.decisions_sent, 1);
-  // BOOST_REQUIRE(!busy_signal_recvd.load());
+  opmgr.collect();
+  list = opmon_facility->get_entries(std::regex(".*DFOInfo"));
+  BOOST_REQUIRE_EQUAL(list.size(), 1);
+  entry = list.front();
+  payload = entry.data();
+  BOOST_REQUIRE_EQUAL(payload.find("tokens_received")->second.uint8_value(), 3);
+  BOOST_REQUIRE_EQUAL(payload.find("decisions_received")->second.uint8_value(), 1);
+  BOOST_REQUIRE_EQUAL(payload.find("decisions_sent")->second.uint8_value(), 1);
+  BOOST_REQUIRE(!busy_signal_recvd.load());
 
   dfo->execute_command("drain_dataflow", "RUNNING", null_json);
   dfo->execute_command("scrap", "CONFIGURED", null_json);
