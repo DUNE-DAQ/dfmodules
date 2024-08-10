@@ -45,13 +45,13 @@ struct CfgFixture
     std::string sessionName = "partition_name";
     cfgMgr = std::make_shared<dunedaq::appfwk::ConfigurationManager>(oksConfig, appName, sessionName);
     modCfg  = std::make_shared<dunedaq::appfwk::ModuleConfiguration>(cfgMgr);
-    dunedaq::opmonlib::TestOpMonManager opmgr;
     get_iomanager()->configure(modCfg->queues(), modCfg->networkconnections(), false, std::chrono::milliseconds(100), opmgr);
   }
   ~CfgFixture() {
     get_iomanager()->reset();
   }
 
+  dunedaq::opmonlib::TestOpMonManager opmgr;
   std::shared_ptr<dunedaq::appfwk::ConfigurationManager> cfgMgr;
   std::shared_ptr<dunedaq::appfwk::ModuleConfiguration> modCfg;
 };
@@ -149,6 +149,7 @@ BOOST_AUTO_TEST_CASE(Init)
 BOOST_AUTO_TEST_CASE(Commands)
 {
   auto dfo = appfwk::make_module("DFOModule", "test");
+  opmgr.register_node("dfo", dfo);
   dfo->init(modCfg);
 
   auto conf_json = "{\"thresholds\": { \"free\": 1, \"busy\": 2 }, "
@@ -161,8 +162,13 @@ BOOST_AUTO_TEST_CASE(Commands)
   dfo->execute_command("drain_dataflow", "RUNNING", null_json);
   dfo->execute_command("scrap", "CONFIGURED", null_json);
 
-  // auto info = get_dfo_info(dfo);
-  // BOOST_REQUIRE_EQUAL(info.tokens_received, 0);
+  opmgr.collect();
+  auto opmon_facility = opmgr.get_backend_facility();
+  auto list = opmon_facility->get_entries(std::regex(".*DFOInfo"));
+  BOOST_REQUIRE_EQUAL(list.size(), 1);
+  const auto & entry = list.front();
+  const auto & payload = entry.data();
+  BOOST_REQUIRE_EQUAL(payload.find("tokens_received")->second.uint8_value(), 0);
   // BOOST_REQUIRE_EQUAL(info.decisions_received, 0);
   // BOOST_REQUIRE_EQUAL(info.decisions_sent, 0);
   // BOOST_REQUIRE_EQUAL(info.forwarding_decision, 0);
