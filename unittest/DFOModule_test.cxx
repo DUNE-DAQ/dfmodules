@@ -169,13 +169,14 @@ BOOST_AUTO_TEST_CASE(Commands)
   const auto & entry = list.front();
   const auto & payload = entry.data();
   BOOST_REQUIRE_EQUAL(payload.find("tokens_received")->second.uint8_value(), 0);
-  // BOOST_REQUIRE_EQUAL(info.decisions_received, 0);
-  // BOOST_REQUIRE_EQUAL(info.decisions_sent, 0);
-  // BOOST_REQUIRE_EQUAL(info.forwarding_decision, 0);
-  // BOOST_REQUIRE_EQUAL(info.waiting_for_decision, 0);
-  // BOOST_REQUIRE_EQUAL(info.deciding_destination, 0);
-  // BOOST_REQUIRE_EQUAL(info.waiting_for_token, 0);
-  // BOOST_REQUIRE_EQUAL(info.processing_token, 0);
+  BOOST_REQUIRE_EQUAL(payload.find("decisions_received")->second.uint8_value(), 0);
+  BOOST_REQUIRE_EQUAL(payload.find("decisions_sent")->second.uint8_value(), 0);
+  BOOST_REQUIRE_EQUAL(payload.find("forwarding_decision")->second.uint8_value(), 0);
+  BOOST_REQUIRE_EQUAL(payload.find("waiting_for_decision")->second.uint8_value(), 0);
+  BOOST_REQUIRE_EQUAL(payload.find("deciding_destination")->second.uint8_value(), 0);
+  BOOST_REQUIRE_EQUAL(payload.find("waiting_for_token")->second.uint8_value(), 0);
+  BOOST_REQUIRE_EQUAL(payload.find("processing_token")->second.uint8_value(), 0);
+  
 }
 
 BOOST_AUTO_TEST_CASE(DataFlow)
