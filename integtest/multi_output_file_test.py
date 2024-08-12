@@ -134,7 +134,7 @@ confgen_arguments={"WIBEth_System (Rollover files)": conf_dict,
                   }
 
 # The commands to run in nanorc, as a list
-nanorc_command_list="integtest-partition boot conf start_run 101 wait 180 disable_triggers wait 2 stop_run wait 21 start_run 102 wait 120 disable_triggers wait 2 stop_run wait 21 scrap terminate".split()
+nanorc_command_list="boot conf start_run 101 wait 180 disable_triggers wait 2 stop_run wait 21 start_run 102 wait 120 disable_triggers wait 2 stop_run wait 21 scrap terminate".split()
 
 # The tests themselves
 

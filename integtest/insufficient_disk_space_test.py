@@ -122,13 +122,13 @@ confgen_arguments={"Base_System": conf_dict,
                   }
 # The commands to run in nanorc, as a list
 if gb_space < gb_limit:
-  nanorc_command_list="integtest-partition boot conf".split()
+  nanorc_command_list="boot conf".split()
   nanorc_command_list+="start_run 101 wait ".split() + [str(run_duration)] + "stop_run --wait 2 wait 2".split()
   nanorc_command_list+="start 102 wait 3 enable_triggers wait ".split() + [str(run_duration)] + "stop_run wait 2".split()
   nanorc_command_list+="start 103 wait 3 enable_triggers wait ".split() + [str(run_duration)] + "stop_run wait 2".split()
   nanorc_command_list+="scrap terminate".split()
 else:
-  nanorc_command_list=["integtest-partition", "boot", "terminate"]
+  nanorc_command_list=["boot", "terminate"]
 
 # The tests themselves
 

@@ -89,6 +89,8 @@ conf_dict["readout"]["use_fake_cards"] = True
 conf_dict["hsi"]["random_trigger_rate_hz"] = trigger_rate
 conf_dict["trigger"]["trigger_window_before_ticks"] = readout_window_time_before
 conf_dict["trigger"]["trigger_window_after_ticks"] = readout_window_time_after
+ttcm_conf = [{'signal': 1, 'tc_type_name': 'kTiming', 'time_before': readout_window_time_before, 'time_after': readout_window_time_after}]
+conf_dict["trigger"]["ttcm_input_map"] = ttcm_conf
 
 conf_dict["dataflow"]["token_count"] = token_count
 conf_dict["dataflow"]["apps"] = [] # Remove preconfigured dataflow0 app
@@ -101,18 +103,20 @@ for df_app in range(number_of_dataflow_apps):
 
 oversize_conf = copy.deepcopy(conf_dict)
 oversize_conf["trigger"]["trigger_window_before_ticks"] = readout_window_time_before * 2.5
+oversize_ttcm_conf = [{'signal': 1, 'tc_type_name': 'kTiming', 'time_before': readout_window_time_before * 2.5, 'time_after': readout_window_time_after}]
+oversize_conf["trigger"]["ttcm_input_map"] = oversize_ttcm_conf
 
 confgen_arguments={"TRSize_55PercentOfMaxFileSize": conf_dict,
                    "TRSize_125PercentOfMaxFileSize": oversize_conf,
                   }
 # The commands to run in nanorc, as a list
 if sufficient_disk_space:
-    nanorc_command_list="integtest-partition boot conf".split()
+    nanorc_command_list="boot conf".split()
     nanorc_command_list+="start_run --wait 10 101 wait ".split() + [str(run_duration)] + "stop_run --wait 2 wait 2".split()
     nanorc_command_list+="start 102 wait 10 enable_triggers wait ".split() + [str(run_duration)] + "stop_run wait 2".split()
     nanorc_command_list+="scrap terminate".split()
 else:
-    nanorc_command_list=["integtest-partition", "boot", "terminate"]
+    nanorc_command_list=["boot", "terminate"]
 
 # The tests themselves
 
