@@ -87,8 +87,12 @@
 
 <obj class="ConnectionService" id="connectionservice">
  <attr name="application_name" type="string" val="gunicorn"/>
- <attr name="commandline_parameters" type="string" val="--bind=0.0.0.0:15000 --workers=1 --worker-class=gthread --threads=2 --timeout=0 --pid=connectionservice_15000.pid connection-service.connection-flask:app"/>
- <attr name="threads" type="u16" val="1"/>
+  <attr name="commandline_parameters" type="string">
+    <data val="Process PID $$;"/>
+    <data val="trap &apos;pkill -INT -P $$&apos; EXIT;"/>
+    <data val="gunicorn -b 0.0.0.0:5000 --workers=1 --worker-class=gthread --threads=2 --timeout 5000000000 --log-level=debug connection-service.connection-flask:app"/>
+  </attr>
+  <attr name="threads" type="u16" val="1"/>
  <rel name="application_environment">
   <ref class="VariableSet" id="consvc_ssh"/>
  </rel>
@@ -127,12 +131,10 @@
   </obj>
 
   <obj class="FilenameParams" id="default">
-    <attr name="overall_prefix" type="string" val="swtest"/>
-    <attr name="writer_identifier" type="string" val="HDF5Write_test"/>
+    <attr name="file_type_prefix" type="enum" val="raw"/>
     <attr name="run_number_prefix" type="string" val="run"/>
     <attr name="digits_for_run_number" type="s32" val="6"/>
     <attr name="digits_for_file_index" type="s32" val="4"/>
-    <attr name="writer_identifier" type="string" val="dataflow0_datawriter_0"/>
     <attr name="digits_for_trigger_number" type="s32" val="6"/>
   </obj>
 
@@ -157,7 +159,7 @@
 <obj class="DetectorConfig" id="dummy-detector">
  <attr name="tpg_channel_map" type="string" val="PD2HDChannelMap"/>
  <attr name="clock_speed_hz" type="u32" val="62500000"/>
- <attr name="op_env" type="string" val="swtest"/>
+ <attr name="op_env" type="string" val="hdf5writetest"/>
 </obj>
 
 <obj class="FSMCommand" id="conf">
@@ -334,28 +336,24 @@
 </obj>
 
 	<obj class="RCApplication" id="df-controller">
-		<attr name="commandline_parameters" type="string" val="file:///home/gjc/DUNE/fddaq-v4.2.0-a9/listrev/controller.json ${PORT} my-controller partition_name"/>
 		<attr name="application_name" type="string" val="drunc-controller"/>
 		<rel name="runs_on" class="VirtualHost" id="controller"/>
 		<rel name="fsm" class="FSMconfiguration" id="fsmConf-1"/>
 		<rel name="broadcaster" class="RCBroadcaster" id="bcaster"/>
 	</obj>
 <obj class="RCApplication" id="my-controller-3-1">
- <attr name="commandline_parameters" type="string" val="file:///home/gjc/DUNE/fddaq-v4.2.0-a9/listrev/controller.json ${PORT} my-controller partition_name"/>
  <attr name="application_name" type="string" val="drunc-controller"/>
  <rel name="runs_on" class="VirtualHost" id="controller"/>
  <rel name="fsm" class="FSMconfiguration" id="fsmConf-1"/>
  <rel name="broadcaster" class="RCBroadcaster" id="bcaster"/>
 </obj>
 	<obj class="RCApplication" id="my-controller-5-1">
-		<attr name="commandline_parameters" type="string" val="file:///home/gjc/DUNE/fddaq-v4.2.0-a9/listrev/controller.json ${PORT} my-controller partition_name"/>
 		<attr name="application_name" type="string" val="drunc-controller"/>
 		<rel name="runs_on" class="VirtualHost" id="controller"/>
 		<rel name="fsm" class="FSMconfiguration" id="fsmConf-1"/>
 		<rel name="broadcaster" class="RCBroadcaster" id="bcaster"/>
 	</obj>
 	<obj class="RCApplication" id="my-controller-5-10">
-		<attr name="commandline_parameters" type="string" val="file:///home/gjc/DUNE/fddaq-v4.2.0-a9/listrev/controller.json ${PORT} my-controller partition_name"/>
 		<attr name="application_name" type="string" val="drunc-controller"/>
 		<rel name="runs_on" class="VirtualHost" id="controller"/>
 		<rel name="fsm" class="FSMconfiguration" id="fsmConf-1"/>

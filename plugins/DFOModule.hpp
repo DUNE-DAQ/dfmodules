@@ -92,7 +92,8 @@ protected:
   virtual std::shared_ptr<AssignedTriggerDecision> find_slot(const dfmessages::TriggerDecision& decision);
   // find_slot operates on a round-robin logic
 
-  using data_structure_t = std::map<std::string, TriggerRecordBuilderData>;
+  using trbd_ptr_t = std::shared_ptr<TriggerRecordBuilderData>;
+  using data_structure_t = std::map<std::string, trbd_ptr_t>;
   data_structure_t m_dataflow_availability;
   data_structure_t::iterator m_last_assignement_it;
   std::function<void(nlohmann::json&)> m_metadata_function;
@@ -104,7 +105,7 @@ private:
   void do_stop(const data_t&);
   void do_scrap(const data_t&);
 
-  void get_info(opmonlib::InfoCollector& ci, int level) override;
+  void generate_opmon_data() override;
 
   virtual void receive_dataflow_heartbeat(const dfmessages::DataflowHeartbeat&);
   void receive_trigger_decision(const dfmessages::TriggerDecision&);

@@ -147,7 +147,6 @@ BOOST_AUTO_TEST_SUITE(HDF5Write_test)
 BOOST_AUTO_TEST_CASE(WriteEventFiles)
 {
   std::string file_path(std::filesystem::temp_directory_path());
-  std::string file_prefix = "demo" + std::to_string(getpid()) + "_" + std::string(getenv("USER"));
 
   const int trigger_count = 5;
   const int apa_count = 3;
@@ -155,7 +154,7 @@ BOOST_AUTO_TEST_CASE(WriteEventFiles)
   const int fragment_size = 10 + sizeof(dunedaq::daqdataformats::FragmentHeader);
 
   // delete any pre-existing files so that we start with a clean slate
-  std::string delete_pattern = file_prefix + ".*\\.hdf5";
+  std::string delete_pattern = "hdf5writetest.*\\.hdf5";
   delete_files_matching_pattern(file_path, delete_pattern);
 
   // create the DataStore
@@ -167,12 +166,6 @@ BOOST_AUTO_TEST_CASE(WriteEventFiles)
   data_store_conf_obj.set_by_val<std::string>("directory_path", file_path);
   data_store_conf_obj.set_by_val<std::string>("mode", "one-event-per-file");
 
-  auto filename_params = data_store_conf->get_filename_params();
-  auto filename_params_obj = filename_params->config_object();
-  filename_params_obj.set_by_val<std::string>("overall_prefix", file_prefix);
-
-  data_store_conf_obj.set_obj("filename_params", &filename_params_obj);
-
   std::unique_ptr<DataStore> data_store_ptr;
   data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.modCfg);
 
@@ -183,7 +176,7 @@ BOOST_AUTO_TEST_CASE(WriteEventFiles)
   data_store_ptr.reset(); // explicit destruction
 
   // check that the expected number of files was created
-  std::string search_pattern = file_prefix + ".*\\.hdf5";
+  std::string search_pattern = "hdf5writetest.*\\.hdf5";
   std::vector<std::string> file_list = get_files_matching_pattern(file_path, search_pattern);
   BOOST_REQUIRE_EQUAL(file_list.size(), trigger_count);
 
@@ -196,7 +189,6 @@ BOOST_AUTO_TEST_CASE(WriteEventFiles)
 BOOST_AUTO_TEST_CASE(WriteOneFile)
 {
   std::string file_path(std::filesystem::temp_directory_path());
-  std::string file_prefix = "demo" + std::to_string(getpid()) + "_" + std::string(getenv("USER"));
 
   const int trigger_count = 5;
   const int apa_count = 3;
@@ -204,7 +196,7 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
   const int fragment_size = 10 + sizeof(dunedaq::daqdataformats::FragmentHeader);
 
   // delete any pre-existing files so that we start with a clean slate
-  std::string delete_pattern = file_prefix + ".*\\.hdf5";
+  std::string delete_pattern = "hdf5writetest.*\\.hdf5";
   delete_files_matching_pattern(file_path, delete_pattern);
 
   // create the DataStore
@@ -214,12 +206,6 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
 
   auto data_store_conf_obj = data_store_conf->config_object();
   data_store_conf_obj.set_by_val<std::string>("directory_path", file_path);
-
-  auto filename_params = data_store_conf->get_filename_params();
-  auto filename_params_obj = filename_params->config_object();
-  filename_params_obj.set_by_val<std::string>("overall_prefix", file_prefix);
-
-  data_store_conf_obj.set_obj("filename_params", &filename_params_obj);
 
   std::unique_ptr<DataStore> data_store_ptr;
   data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.modCfg);
@@ -231,7 +217,7 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
   data_store_ptr.reset(); // explicit destruction
 
   // check that the expected number of files was created
-  std::string search_pattern = file_prefix + ".*\\.hdf5";
+  std::string search_pattern = "hdf5writetest.*\\.hdf5";
   std::vector<std::string> file_list = get_files_matching_pattern(file_path, search_pattern);
   BOOST_REQUIRE_EQUAL(file_list.size(), 1);
 
@@ -244,7 +230,6 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
 BOOST_AUTO_TEST_CASE(CheckWritingSuffix)
 {
   std::string file_path(std::filesystem::temp_directory_path());
-  std::string file_prefix = "demo" + std::to_string(getpid()) + "_" + std::string(getenv("USER"));
 
   const int trigger_count = 5;
   const int apa_count = 3;
@@ -252,7 +237,7 @@ BOOST_AUTO_TEST_CASE(CheckWritingSuffix)
   const int fragment_size = 10 + sizeof(dunedaq::daqdataformats::FragmentHeader);
 
   // delete any pre-existing files so that we start with a clean slate
-  std::string delete_pattern = file_prefix + ".*\\.hdf5";
+  std::string delete_pattern = "hdf5writetest.*\\.hdf5";
   delete_files_matching_pattern(file_path, delete_pattern);
 
   // create the DataStore
@@ -263,12 +248,6 @@ BOOST_AUTO_TEST_CASE(CheckWritingSuffix)
   auto data_store_conf_obj = data_store_conf->config_object();
   data_store_conf_obj.set_by_val<std::string>("directory_path", file_path);
 
-  auto filename_params = data_store_conf->get_filename_params();
-  auto filename_params_obj = filename_params->config_object();
-  filename_params_obj.set_by_val<std::string>("overall_prefix", file_prefix);
-
-  data_store_conf_obj.set_obj("filename_params", &filename_params_obj);
-
   std::unique_ptr<DataStore> data_store_ptr;
   data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.modCfg);
   
@@ -277,7 +256,7 @@ BOOST_AUTO_TEST_CASE(CheckWritingSuffix)
     data_store_ptr->write(create_trigger_record(trigger_number, fragment_size, apa_count * link_count));
 
     // check that the .writing file is there
-    std::string search_pattern = file_prefix + ".*\\.writing";
+    std::string search_pattern = "hdf5writetest.*\\.writing";
     std::vector<std::string> file_list = get_files_matching_pattern(file_path, search_pattern);
     BOOST_REQUIRE_EQUAL(file_list.size(), 1);
   }
@@ -285,7 +264,7 @@ BOOST_AUTO_TEST_CASE(CheckWritingSuffix)
   data_store_ptr.reset(); // explicit destruction
 
   // check that the expected number of files was created
-  std::string search_pattern = file_prefix + ".*\\.writing";
+  std::string search_pattern = "hdf5writetest.*\\.writing";
   std::vector<std::string> file_list = get_files_matching_pattern(file_path, search_pattern);
   BOOST_REQUIRE_EQUAL(file_list.size(), 0);
 
@@ -298,7 +277,6 @@ BOOST_AUTO_TEST_CASE(CheckWritingSuffix)
 BOOST_AUTO_TEST_CASE(FileSizeLimitResultsInMultipleFiles)
 {
   std::string file_path(std::filesystem::temp_directory_path());
-  std::string file_prefix = "demo" + std::to_string(getpid()) + "_" + std::string(getenv("USER"));
 
   const int trigger_count = 15;
   const int apa_count = 5;
@@ -309,7 +287,7 @@ BOOST_AUTO_TEST_CASE(FileSizeLimitResultsInMultipleFiles)
   // So, 15 TRs would give 7,500,000 bytes total.
 
   // delete any pre-existing files so that we start with a clean slate
-  std::string delete_pattern = file_prefix + ".*\\.hdf5";
+  std::string delete_pattern = "hdf5writetest.*\\.hdf5";
   delete_files_matching_pattern(file_path, delete_pattern);
 
   // create the DataStore
@@ -321,12 +299,6 @@ BOOST_AUTO_TEST_CASE(FileSizeLimitResultsInMultipleFiles)
   data_store_conf_obj.set_by_val<std::string>("directory_path", file_path);
   data_store_conf_obj.set_by_val<int>("max_file_size", 3000000); // goal is 6 events per file
 
-  auto filename_params = data_store_conf->get_filename_params();
-  auto filename_params_obj = filename_params->config_object();
-  filename_params_obj.set_by_val<std::string>("overall_prefix", file_prefix);
-
-  data_store_conf_obj.set_obj("filename_params", &filename_params_obj);
-
   std::unique_ptr<DataStore> data_store_ptr;
   data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.modCfg);
   
@@ -337,7 +309,7 @@ BOOST_AUTO_TEST_CASE(FileSizeLimitResultsInMultipleFiles)
   data_store_ptr.reset(); // explicit destruction
 
   // check that the expected number of files was created
-  std::string search_pattern = file_prefix + ".*\\.hdf5";
+  std::string search_pattern = "hdf5writetest.*\\.hdf5";
   std::vector<std::string> file_list = get_files_matching_pattern(file_path, search_pattern);
   // 7,500,000 bytes stored in files of size 3,000,000 should result in three files.
   BOOST_REQUIRE_EQUAL(file_list.size(), 3);
@@ -351,7 +323,6 @@ BOOST_AUTO_TEST_CASE(FileSizeLimitResultsInMultipleFiles)
 BOOST_AUTO_TEST_CASE(SmallFileSizeLimitDataBlockListWrite)
 {
   std::string file_path(std::filesystem::temp_directory_path());
-  std::string file_prefix = "demo" + std::to_string(getpid()) + "_" + std::string(getenv("USER"));
 
   const int trigger_count = 5;
   const int apa_count = 5;
@@ -361,7 +332,7 @@ BOOST_AUTO_TEST_CASE(SmallFileSizeLimitDataBlockListWrite)
   // 5 APAs times 100000 bytes per fragment gives 500,000 bytes per TR
 
   // delete any pre-existing files so that we start with a clean slate
-  std::string delete_pattern = file_prefix + ".*\\.hdf5";
+  std::string delete_pattern = "hdf5writetest.*\\.hdf5";
   delete_files_matching_pattern(file_path, delete_pattern);
 
   // create the DataStore
@@ -373,12 +344,6 @@ BOOST_AUTO_TEST_CASE(SmallFileSizeLimitDataBlockListWrite)
   data_store_conf_obj.set_by_val<std::string>("directory_path", file_path);
   data_store_conf_obj.set_by_val<int>("max_file_size", 150000); // ~1.5 Fragment, ~0.3 TR
 
-  auto filename_params = data_store_conf->get_filename_params();
-  auto filename_params_obj = filename_params->config_object();
-  filename_params_obj.set_by_val<std::string>("overall_prefix", file_prefix);
-
-  data_store_conf_obj.set_obj("filename_params", &filename_params_obj);
-
   std::unique_ptr<DataStore> data_store_ptr;
   data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.modCfg);
 
@@ -389,7 +354,7 @@ BOOST_AUTO_TEST_CASE(SmallFileSizeLimitDataBlockListWrite)
   data_store_ptr.reset(); // explicit destruction
 
   // check that the expected number of files was created
-  std::string search_pattern = file_prefix + ".*\\.hdf5";
+  std::string search_pattern = "hdf5writetest.*\\.hdf5";
   std::vector<std::string> file_list = get_files_matching_pattern(file_path, search_pattern);
   // each TriggerRecord should be stored in its own file
   BOOST_REQUIRE_EQUAL(file_list.size(), 5);

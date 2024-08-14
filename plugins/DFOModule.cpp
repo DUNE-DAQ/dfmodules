@@ -8,7 +8,8 @@
 
 #include "DFOModule.hpp"
 #include "dfmodules/CommonIssues.hpp"
-#include "dfmodules/datafloworchestratorinfo/InfoNljs.hpp"
+
+#include "dfmodules/opmon/DFOModule.pb.h"
 
 #include "appfwk/app/Nljs.hpp"
 #include "appmodel/DFOModule.hpp"
@@ -162,7 +163,7 @@ DFOModule::do_stop(const data_t& /*args*/)
 
   std::list<std::shared_ptr<AssignedTriggerDecision>> remnants;
   for (auto& app : m_dataflow_availability) {
-    auto temp = app.second.flush();
+    auto temp = app.second->flush();
     for (auto& td : temp) {
       remnants.push_back(td);
     }
@@ -232,8 +233,9 @@ DFOModule::receive_trigger_decision(const dfmessages::TriggerDecision& decision)
                                         << " to connection " << assignment->connection_name;
       break;
     } else {
-      ers::error(TRBModuleAppUpdate(ERS_HERE, assignment->connection_name, "Could not send Trigger Decision"));
-      m_dataflow_availability[assignment->connection_name].set_in_error(true);
+      ers::error(
+        TRBModuleAppUpdate(ERS_HERE, assignment->connection_name, "Could not send Trigger Decision"));
+      m_dataflow_availability[assignment->connection_name]->set_in_error(true);
     }
 
   } while (m_running_status.load());
@@ -279,21 +281,21 @@ DFOModule::find_slot(const dfmessages::TriggerDecision& decision)
       candidate_it = m_dataflow_availability.begin();
 
     // get rid of the applications in error state
-    if (candidate_it->second.is_in_error()) {
+    if (candidate_it->second->is_in_error()) {
       continue;
     }
 
     // monitor
-    auto slots = candidate_it->second.used_slots();
+    auto slots = candidate_it->second->used_slots();
     if (slots < minimum) {
       minimum = slots;
       minimum_occupied = candidate_it;
     }
 
-    if (candidate_it->second.is_busy())
+    if (candidate_it->second->is_busy())
       continue;
 
-    output = candidate_it->second.make_assignment(decision);
+    output = candidate_it->second->make_assignment(decision);
     m_last_assignement_it = candidate_it;
   }
 
@@ -302,7 +304,7 @@ DFOModule::find_slot(const dfmessages::TriggerDecision& decision)
     // so we assign the decision to that with the lowest
     // number of assignments
     if (minimum_occupied != m_dataflow_availability.end()) {
-      output = minimum_occupied->second.make_assignment(decision);
+      output = minimum_occupied->second->make_assignment(decision);
       m_last_assignement_it = minimum_occupied;
       ers::warning(AssignedToBusyApp(ERS_HERE, decision.trigger_number, minimum_occupied->first, minimum));
     }
@@ -316,35 +318,27 @@ DFOModule::find_slot(const dfmessages::TriggerDecision& decision)
 }
 
 void
-DFOModule::get_info(opmonlib::InfoCollector& ci, int level)
+DFOModule::generate_opmon_data() 
 {
 
-  for (auto& [name, app] : m_dataflow_availability) {
-    opmonlib::InfoCollector tmp_ic;
-    app.get_info(tmp_ic, level);
-    ci.add(name, tmp_ic);
-  }
-
-  datafloworchestratorinfo::Info info;
-  info.heartbeats_received = m_received_heartbeats.exchange(0);
-  info.decisions_sent = m_sent_decisions.exchange(0);
-  info.decisions_received = m_received_decisions.exchange(0);
-  info.waiting_for_decision = m_waiting_for_decision.exchange(0);
-  info.deciding_destination = m_deciding_destination.exchange(0);
-  info.forwarding_decision = m_forwarding_decision.exchange(0);
-  info.waiting_for_heartbeat = m_waiting_for_heartbeat.exchange(0);
-  info.processing_heartbeat = m_processing_heartbeat.exchange(0);
-  ci.add(info);
+  opmon::DFOInfo info;
+  info.set_tokens_received( m_received_tokens.exchange(0) );
+  info.set_decisions_sent(m_sent_decisions.exchange(0));
+  info.set_decisions_received(m_received_decisions.exchange(0));
+  info.set_waiting_for_decision(m_waiting_for_decision.exchange(0));
+  info.set_deciding_destination(m_deciding_destination.exchange(0));
+  info.set_forwarding_decision(m_forwarding_decision.exchange(0));
+  info.set_waiting_for_token(m_waiting_for_token.exchange(0));
+  info.set_processing_token(m_processing_token.exchange(0));
+  publish( std::move(info) );
 
   std::lock_guard<std::mutex> guard(m_trigger_mutex);
   for (auto& [type, counts] : m_trigger_counters) {
-    opmonlib::InfoCollector tmp_ic;
-    datafloworchestratorinfo::TriggerInfo i;
-    i.received = counts.received.exchange(0);
-    i.completed = counts.completed.exchange(0);
-    tmp_ic.add(i);
+    opmon::TriggerInfo ti;
+    ti.set_received(counts.received.exchange(0));
+    ti.set_completed(counts.completed.exchange(0));
     auto name = dunedaq::trgdataformats::get_trigger_candidate_type_names()[type];
-    ci.add(name, tmp_ic);
+    publish( std::move(ti), {{"type", name}} );
   }
 }
 
@@ -399,7 +393,7 @@ DFOModule::receive_dataflow_heartbeat(const dfmessages::DataflowHeartbeat& heart
     app_it->second.set_in_error(false);
   }
 
-  if (!app_it->second.is_busy()) {
+  if (!app_it->second->is_busy()) {
     notify_trigger(false);
   }
 
@@ -414,7 +408,7 @@ bool
 DFOModule::is_busy() const
 {
   for (auto& dfapp : m_dataflow_availability) {
-    if (!dfapp.second.is_busy())
+    if (!dfapp.second->is_busy())
       return false;
   }
   return true;
@@ -424,7 +418,7 @@ bool
 DFOModule::is_empty() const
 {
   for (auto& dfapp : m_dataflow_availability) {
-    if (dfapp.second.used_slots() != 0)
+    if (dfapp.second->used_slots() != 0)
       return false;
   }
   return true;
@@ -435,7 +429,7 @@ DFOModule::used_slots() const
 {
   size_t total = 0;
   for (auto& dfapp : m_dataflow_availability) {
-    total += dfapp.second.used_slots();
+    total += dfapp.second->used_slots();
   }
   return total;
 }
@@ -505,7 +499,7 @@ DFOModule::dispatch(const std::shared_ptr<AssignedTriggerDecision>& assignment)
 void
 DFOModule::assign_trigger_decision(const std::shared_ptr<AssignedTriggerDecision>& assignment)
 {
-  m_dataflow_availability[assignment->connection_name].add_assignment(assignment);
+  m_dataflow_availability[assignment->connection_name]->add_assignment(assignment);
 }
 
 } // namespace dunedaq::dfmodules

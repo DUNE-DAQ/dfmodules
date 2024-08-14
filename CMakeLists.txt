@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.12)
-project(dfmodules VERSION 3.1.1)
+project(dfmodules VERSION 3.1.3)
 
 find_package(daq-cmake REQUIRED)
 daq_setup_environment()
@@ -18,13 +18,15 @@ find_package(triggeralgs REQUIRED)
 find_package(trigger REQUIRED)
 find_package(Boost COMPONENTS iostreams unit_test_framework REQUIRED)
 
-daq_codegen( info/*.jsonnet DEP_PKGS opmonlib TEMPLATES opmonlib/InfoStructs.hpp.j2 opmonlib/InfoNljs.hpp.j2 )
+
+daq_protobuf_codegen( opmon/*.proto )
 
 ##############################################################################
 daq_add_library( TriggerInhibitAgent.cpp TriggerRecordBuilderData.cpp TPBundleHandler.cpp
                  LINK_LIBRARIES 
                  opmonlib::opmonlib ers::ers HighFive appfwk::appfwk logging::logging stdc++fs dfmessages::dfmessages utilities::utilities trigger::trigger detdataformats::detdataformats trgdataformats::trgdataformats)
 
+      
 daq_add_plugin( HDF5DataStore      duneDataStore LINK_LIBRARIES logging::logging daqdataformats::daqdataformats hdf5libs::hdf5libs appfwk::appfwk stdc++fs)
 
 daq_add_plugin( FragmentAggregatorModule    duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager )

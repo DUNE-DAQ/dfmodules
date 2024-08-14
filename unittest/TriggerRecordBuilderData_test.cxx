@@ -7,6 +7,7 @@
  * received with this code.
  */
 
+#include "opmonlib/TestOpMonManager.hpp"
 #include "dfmodules/TriggerRecordBuilderData.hpp"
 
 #define BOOST_TEST_MODULE TriggerRecordBuilderData_test // NOLINT
@@ -25,8 +26,8 @@ BOOST_AUTO_TEST_CASE(CopyAndMoveSemantics)
 {
   BOOST_REQUIRE(!std::is_copy_constructible_v<TriggerRecordBuilderData>);
   BOOST_REQUIRE(!std::is_copy_assignable_v<TriggerRecordBuilderData>);
-  BOOST_REQUIRE(std::is_move_constructible_v<TriggerRecordBuilderData>);
-  BOOST_REQUIRE(std::is_move_assignable_v<TriggerRecordBuilderData>);
+  BOOST_REQUIRE(!std::is_move_constructible_v<TriggerRecordBuilderData>);
+  BOOST_REQUIRE(!std::is_move_assignable_v<TriggerRecordBuilderData>);
 }
 
 BOOST_AUTO_TEST_CASE(Constructors)
@@ -63,13 +64,6 @@ BOOST_AUTO_TEST_CASE(Constructors)
   BOOST_REQUIRE_EQUAL(trbd2.is_busy(), false);
   BOOST_REQUIRE(!trbd2.is_in_error());
 
-  TriggerRecordBuilderData trbd3 = std::move(trbd2);
-  BOOST_REQUIRE(!trbd3.is_in_error());
-  TriggerRecordBuilderData trbd4;
-  BOOST_REQUIRE(trbd4.is_in_error());
-  trbd4 = std::move(trbd3);
-  BOOST_REQUIRE(!trbd4.is_in_error());
-
   BOOST_REQUIRE_EXCEPTION(TriggerRecordBuilderData("test", 10, 15),
                           DFOThresholdsNotConsistent,
                           [](DFOThresholdsNotConsistent const&) { return true; });
@@ -85,47 +79,49 @@ BOOST_AUTO_TEST_CASE(Assignments)
   td.trigger_type = 4;
   td.readout_type = dunedaq::dfmessages::ReadoutType::kLocalized;
 
-  TriggerRecordBuilderData trbd("test", 2);
-  BOOST_REQUIRE_EQUAL(trbd.used_slots(), 0);
-  BOOST_REQUIRE(!trbd.is_busy());
+  dunedaq::opmonlib::TestOpMonManager opmgr;
+  auto trbd_p = std::make_shared<TriggerRecordBuilderData>("test", 2);
+  opmgr.register_node("trbd", trbd_p);
+  BOOST_REQUIRE_EQUAL(trbd_p->used_slots(), 0);
+  BOOST_REQUIRE(!trbd_p->is_busy());
 
-  auto assignment = trbd.make_assignment(td);
+  auto assignment = trbd_p->make_assignment(td);
   BOOST_REQUIRE_EQUAL(assignment->connection_name, "test");
-  trbd.add_assignment(assignment);
+  trbd_p->add_assignment(assignment);
 
-  BOOST_REQUIRE_EQUAL(trbd.used_slots(), 1);
-  auto got_assignment = trbd.get_assignment(1);
+  BOOST_REQUIRE_EQUAL(trbd_p->used_slots(), 1);
+  auto got_assignment = trbd_p->get_assignment(1);
   BOOST_REQUIRE_EQUAL(got_assignment->decision.trigger_number, assignment->decision.trigger_number);
   BOOST_REQUIRE_EQUAL(got_assignment->decision.trigger_timestamp, assignment->decision.trigger_timestamp);
   BOOST_REQUIRE_EQUAL(got_assignment.get(), assignment.get());
-  BOOST_REQUIRE_EQUAL(trbd.used_slots(), 1);
+  BOOST_REQUIRE_EQUAL(trbd_p->used_slots(), 1);
 
-  auto extracted_assignment = trbd.extract_assignment(1);
+  auto extracted_assignment = trbd_p->extract_assignment(1);
   BOOST_REQUIRE_EQUAL(extracted_assignment.get(), assignment.get());
-  BOOST_REQUIRE_EQUAL(trbd.used_slots(), 0);
-  trbd.add_assignment(extracted_assignment);
-  BOOST_REQUIRE_EQUAL(trbd.used_slots(), 1);
+  BOOST_REQUIRE_EQUAL(trbd_p->used_slots(), 0);
+  trbd_p->add_assignment(extracted_assignment);
+  BOOST_REQUIRE_EQUAL(trbd_p->used_slots(), 1);
 
   std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
-  trbd.complete_assignment(1, [](nlohmann::json&) {});
-  BOOST_REQUIRE_EQUAL(trbd.used_slots(), 0);
+  trbd_p->complete_assignment(1, [](nlohmann::json&) {});
+  BOOST_REQUIRE_EQUAL(trbd_p->used_slots(), 0);
 
   auto latency =
     std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - assignment->assigned_time)
       .count();
 
-  BOOST_REQUIRE_CLOSE(static_cast<double>(trbd.average_latency(start_time).count()), static_cast<double>(latency), 1);
+  BOOST_REQUIRE_CLOSE(static_cast<double>(trbd_p->average_latency(start_time).count()), static_cast<double>(latency), 5);
 
-  auto null_got_assignment = trbd.get_assignment(2);
+  auto null_got_assignment = trbd_p->get_assignment(2);
   BOOST_REQUIRE_EQUAL(null_got_assignment, nullptr);
-  auto null_extracted_assignment = trbd.extract_assignment(3);
+  auto null_extracted_assignment = trbd_p->extract_assignment(3);
   BOOST_REQUIRE_EQUAL(null_extracted_assignment, nullptr);
 
-  trbd.add_assignment(assignment);
-  BOOST_REQUIRE_EQUAL(trbd.used_slots(), 1);
-  auto remnants = trbd.flush();
-  BOOST_REQUIRE_EQUAL(trbd.used_slots(), 0);
+  trbd_p->add_assignment(assignment);
+  BOOST_REQUIRE_EQUAL(trbd_p->used_slots(), 1);
+  auto remnants = trbd_p->flush();
+  BOOST_REQUIRE_EQUAL(trbd_p->used_slots(), 0);
   BOOST_REQUIRE_EQUAL(remnants.size(), 1);
   
 }

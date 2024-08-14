@@ -8,7 +8,6 @@
 
 #include "FakeDataProdModule.hpp"
 #include "dfmodules/CommonIssues.hpp"
-#include "dfmodules/fakedataprodinfo/InfoNljs.hpp"
 
 #include "appmodel/FakeDataProdModule.hpp"
 #include "confmodel/Connection.hpp"
@@ -123,14 +122,14 @@ FakeDataProdModule::do_stop(const data_t& /*args*/)
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_stop() method";
 }
 
-void
-FakeDataProdModule::get_info(opmonlib::InfoCollector& ci, int /*level*/)
-{
-  fakedataprodinfo::Info info;
-  info.requests_received = m_received_requests;
-  info.fragments_sent = m_sent_fragments;
-  ci.add(info);
-}
+// void
+// FakeDataProdModule::get_info(opmonlib::InfoCollector& ci, int /*level*/)
+// {
+//   fakedataprodinfo::Info info;
+//   info.requests_received = m_received_requests;
+//   info.fragments_sent = m_sent_fragments;
+//   ci.add(info);
+// }
 
 void
 FakeDataProdModule::do_timesync(std::atomic<bool>& running_flag)
