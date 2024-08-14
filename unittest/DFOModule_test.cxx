@@ -10,7 +10,7 @@
 #include "DFOModule.hpp"
 
 #include "appfwk/app/Nljs.hpp"
-#include "dfmessages/TriggerDecisionToken.hpp"
+#include "dfmessages/DataflowHeartbeat.hpp"
 #include "dfmessages/TriggerInhibit.hpp"
 #include "dfmodules/CommonIssues.hpp"
 #include "dfmodules/datafloworchestratorinfo/InfoNljs.hpp"
@@ -71,28 +71,28 @@ get_dfo_info(std::shared_ptr<appfwk::DAQModule> dfo)
   return info_obj;
 }
 void
-send_init_token(std::string connection_name = "trigdec_0")
+send_init_heartbeat(std::string connection_name = "trigdec_0")
 {
-  dfmessages::TriggerDecisionToken token;
-  token.run_number = 0;
-  token.trigger_number = 0;
-  token.decision_destination = connection_name;
+  dfmessages::DataflowHeartbeat heartbeat;
+  heartbeat.run_number = 0;
+  heartbeat.trigger_number = 0;
+  heartbeat.decision_destination = connection_name;
 
-  TLOG() << "Sending Init TriggerDecisionToken to DFO";
-  get_iom_sender<dfmessages::TriggerDecisionToken>("token")->send(std::move(token), iomanager::Sender::s_block);
+  TLOG() << "Sending Init DataflowHeartbeat to DFO";
+  get_iom_sender<dfmessages::DataflowHeartbeat>("heartbeat")->send(std::move(heartbeat), iomanager::Sender::s_block);
 }
 void
-send_token(dfmessages::trigger_number_t trigger_number,
+send_heartbeat(dfmessages::trigger_number_t trigger_number,
            std::string connection_name = "trigdec_0",
            bool different_run = false)
 {
-  dfmessages::TriggerDecisionToken token;
-  token.run_number = different_run ? 2 : 1;
-  token.trigger_number = trigger_number;
-  token.decision_destination = connection_name;
+  dfmessages::DataflowHeartbeat heartbeat;
+  heartbeat.run_number = different_run ? 2 : 1;
+  heartbeat.trigger_number = trigger_number;
+  heartbeat.decision_destination = connection_name;
 
-  TLOG() << "Sending TriggerDecisionToken with trigger number " << trigger_number << " to DFO";
-  get_iom_sender<dfmessages::TriggerDecisionToken>("token")->send(std::move(token), iomanager::Sender::s_block);
+  TLOG() << "Sending DataflowHeartbeat with trigger number " << trigger_number << " to DFO";
+  get_iom_sender<dfmessages::DataflowHeartbeat>("heartbeat")->send(std::move(heartbeat), iomanager::Sender::s_block);
 }
 
 void
@@ -100,7 +100,7 @@ recv_trigdec(const dfmessages::TriggerDecision& decision)
 {
   TLOG() << "Received TriggerDecision with trigger number " << decision.trigger_number << " from DFO";
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
-  send_token(decision.trigger_number);
+  send_heartbeat(decision.trigger_number);
 }
 
 std::atomic<bool> busy_signal_recvd = false;
@@ -160,14 +160,14 @@ BOOST_AUTO_TEST_CASE(Commands)
   dfo->execute_command("scrap", "CONFIGURED", null_json);
 
   auto info = get_dfo_info(dfo);
-  BOOST_REQUIRE_EQUAL(info.tokens_received, 0);
+  BOOST_REQUIRE_EQUAL(info.heartbeats_received, 0);
   BOOST_REQUIRE_EQUAL(info.decisions_received, 0);
   BOOST_REQUIRE_EQUAL(info.decisions_sent, 0);
   BOOST_REQUIRE_EQUAL(info.forwarding_decision, 0);
   BOOST_REQUIRE_EQUAL(info.waiting_for_decision, 0);
   BOOST_REQUIRE_EQUAL(info.deciding_destination, 0);
-  BOOST_REQUIRE_EQUAL(info.waiting_for_token, 0);
-  BOOST_REQUIRE_EQUAL(info.processing_token, 0);
+  BOOST_REQUIRE_EQUAL(info.waiting_for_heartbeat, 0);
+  BOOST_REQUIRE_EQUAL(info.processing_heartbeat, 0);
 }
 
 BOOST_AUTO_TEST_CASE(DataFlow)
@@ -191,20 +191,20 @@ BOOST_AUTO_TEST_CASE(DataFlow)
   send_trigdec(1, true);
   std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
-  send_token(999, "trigdec_0", true);
-  send_token(9999, "trigdec_0", true);
+  send_heartbeat(999, "trigdec_0", true);
+  send_heartbeat(9999, "trigdec_0", true);
   std::this_thread::sleep_for(std::chrono::milliseconds(50));
   // Note: Counters are reset each time get_dfo_info is called!
   auto info = get_dfo_info(dfo);
-  BOOST_REQUIRE_EQUAL(info.tokens_received, 0);
+  BOOST_REQUIRE_EQUAL(info.heartbeats_received, 0);
 
   dfo->execute_command("start", "CONFIGURED", start_json);
-  send_init_token();
+  send_init_heartbeat();
 
   std::this_thread::sleep_for(std::chrono::milliseconds(150));
 
   info = get_dfo_info(dfo);
-  BOOST_REQUIRE_EQUAL(info.tokens_received, 0);
+  BOOST_REQUIRE_EQUAL(info.heartbeats_received, 0);
   BOOST_REQUIRE_EQUAL(info.decisions_received, 0);
   BOOST_REQUIRE_EQUAL(info.decisions_sent, 0);
 
@@ -214,7 +214,7 @@ BOOST_AUTO_TEST_CASE(DataFlow)
   send_trigdec(4);
 
   info = get_dfo_info(dfo);
-  BOOST_REQUIRE_EQUAL(info.tokens_received, 0);
+  BOOST_REQUIRE_EQUAL(info.heartbeats_received, 0);
   BOOST_REQUIRE_EQUAL(info.decisions_received, 2);
   BOOST_REQUIRE_EQUAL(info.decisions_sent, 2);
 
@@ -222,7 +222,7 @@ BOOST_AUTO_TEST_CASE(DataFlow)
   std::this_thread::sleep_for(std::chrono::milliseconds(400));
 
   info = get_dfo_info(dfo);
-  BOOST_REQUIRE_EQUAL(info.tokens_received, 3);
+  BOOST_REQUIRE_EQUAL(info.heartbeats_received, 3);
   BOOST_REQUIRE_EQUAL(info.decisions_received, 1);
   BOOST_REQUIRE_EQUAL(info.decisions_sent, 1);
   BOOST_REQUIRE(!busy_signal_recvd.load());
@@ -248,23 +248,23 @@ BOOST_AUTO_TEST_CASE(SendTrigDecFailed)
 
   dfo->execute_command("start", "CONFIGURED", start_json);
 
-  send_init_token("invalid_connection");
+  send_init_heartbeat("invalid_connection");
 
   std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
   send_trigdec(1);
   std::this_thread::sleep_for(std::chrono::milliseconds(150));
   auto info = get_dfo_info(dfo);
-  BOOST_REQUIRE_EQUAL(info.tokens_received, 0);
+  BOOST_REQUIRE_EQUAL(info.heartbeats_received, 0);
   BOOST_REQUIRE_EQUAL(info.decisions_received, 1);
   BOOST_REQUIRE_EQUAL(info.decisions_sent, 0);
 
   // FWIW, tell the DFO to retry the invalid connection
-  send_token(1000, "invalid_connection");
+  send_heartbeat(1000, "invalid_connection");
   std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
-  // Token for unknown dataflow app
-  send_token(1000);
+  // heartbeat for unknown dataflow app
+  send_heartbeat(1000);
   std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
   dfo->execute_command("drain_dataflow", "RUNNING", null_json);
