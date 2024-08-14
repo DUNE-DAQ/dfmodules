@@ -153,7 +153,8 @@ DataWriterModule::do_conf(const data_t&)
   try {
     m_data_writer = make_data_store(m_data_writer_conf->get_data_store_params()->get_type(),
                                     m_data_writer_conf->get_data_store_params()->UID(),
-                                    m_module_configuration);
+                                    m_module_configuration,
+				    get_name());
   } catch (const ers::Issue& excpt) {
     throw UnableToConfigure(ERS_HERE, get_name(), excpt);
   }

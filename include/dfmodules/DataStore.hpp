@@ -46,9 +46,10 @@
 #define DEFINE_DUNE_DATA_STORE(klass)                                                                                  \
   EXTERN_C_FUNC_DECLARE_START                                                                                          \
   std::unique_ptr<dunedaq::dfmodules::DataStore> make(const std::string& name,                                         \
-                                                      std::shared_ptr<dunedaq::appfwk::ModuleConfiguration> mcfg)      \
+                                                      std::shared_ptr<dunedaq::appfwk::ModuleConfiguration> mcfg,      \
+		  				      const std::string& mod_name)                                     \
   {                                                                                                                    \
-    return std::unique_ptr<dunedaq::dfmodules::DataStore>(new klass(name, mcfg));                                      \
+    return std::unique_ptr<dunedaq::dfmodules::DataStore>(new klass(name, mcfg, mod_name));                            \
   }                                                                                                                    \
   }
 
@@ -149,13 +150,14 @@ private:
 inline std::unique_ptr<DataStore>
 make_data_store(const std::string& type,
                 const std::string& name,
-                std::shared_ptr<dunedaq::appfwk::ModuleConfiguration> mcfg)
+                std::shared_ptr<dunedaq::appfwk::ModuleConfiguration> mcfg,
+		const std::string& mod_name)
 {
   static cet::BasicPluginFactory bpf("duneDataStore", "make"); // NOLINT
 
   std::unique_ptr<DataStore> ds;
   try {
-    ds = bpf.makePlugin<std::unique_ptr<DataStore>>(type, name, mcfg);
+    ds = bpf.makePlugin<std::unique_ptr<DataStore>>(type, name, mcfg, mod_name);
   } catch (const cet::exception& cexpt) {
     throw DataStoreCreationFailed(ERS_HERE, type, name, cexpt);
   }
