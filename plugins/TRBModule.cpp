@@ -252,39 +252,39 @@ TRBModule::setup_data_request_connections(const appmodel::ReadoutApplication* ro
 }
 
 void
-TRBModule::get_info(opmonlib::InfoCollector& ci, int /*level*/)
+TRBModule::generate_opmon_data()
 {
 
-  triggerrecordbuilderinfo::Info i;
+  opmon::TRBInfo i;
 
   // status metrics
-  i.pending_trigger_decisions = m_trigger_decisions_counter.load();
-  i.fragments_in_the_book = m_fragment_counter.load();
-  i.pending_fragments = m_pending_fragment_counter.load();
-
+  i.set_pending_trigger_decisions(m_trigger_decisions_counter.load());
+  i.set_fragments_in_the_book(m_fragment_counter.load());
+  i.set_pending_fragments(m_pending_fragment_counter.load());
+  
   // error counters
-  i.timed_out_trigger_records = m_timed_out_trigger_records.load();
-  i.abandoned_trigger_records = m_abandoned_trigger_records.load();
-  i.unexpected_fragments = m_unexpected_fragments.load();
-  i.unexpected_trigger_decisions = m_unexpected_trigger_decisions.load();
-  i.lost_fragments = m_lost_fragments.load();
-  i.invalid_requests = m_invalid_requests.load();
-  i.duplicated_trigger_ids = m_duplicated_trigger_ids.load();
+  i.set_timed_out_trigger_records(m_timed_out_trigger_records.load());
+  i.set_abandoned_trigger_records(m_abandoned_trigger_records.load());
+  i.set_unexpected_fragments(m_unexpected_fragments.load());
+  i.set_unexpected_trigger_decisions(m_unexpected_trigger_decisions.load());
+  i.set_lost_fragments(m_lost_fragments.load());
+  i.set_invalid_requests(m_invalid_requests.load());
+  i.set_duplicated_trigger_ids(m_duplicated_trigger_ids.load());
 
   // operation metrics
-  i.received_trigger_decisions = m_received_trigger_decisions.exchange(0);
-  i.generated_trigger_records = m_generated_trigger_records.exchange(0);
-  i.generated_data_requests = m_generated_data_requests.exchange(0);
-  i.sleep_counter = m_sleep_counter.exchange(0);
-  i.loop_counter = m_loop_counter.exchange(0);
-  i.data_waiting_time = m_data_waiting_time.exchange(0);
-  i.data_request_width = m_data_request_width.exchange(0);
-  i.trigger_decision_width = m_trigger_decision_width.exchange(0);
-  i.received_trmon_requests = m_trmon_request_counter.exchange(0);
-  i.sent_trmon = m_trmon_sent_counter.exchange(0);
+  i.set_received_trigger_decisions(m_received_trigger_decisions.exchange(0));
+  i.set_generated_trigger_records(m_generated_trigger_records.exchange(0));
+  i.set_generated_data_requests(m_generated_data_requests.exchange(0));
+  i.set_sleep_counter(m_sleep_counter.exchange(0));
+  i.set_loop_counter( m_loop_counter.exchange(0) );
+  i.set_data_waiting_time(m_data_waiting_time.exchange(0));
+  i.set_data_request_width(m_data_request_width.exchange(0));
+  i.set_trigger_decision_width(m_trigger_decision_width.exchange(0));
+  i.set_received_trmon_requests(m_trmon_request_counter.exchange(0));
+  i.set_sent_trmon(m_trmon_sent_counter.exchange(0));
 
-  ci.add(i);
-}
+  publish(std::move(i));
+ }
 
 void
 TRBModule::do_conf(const data_t&)

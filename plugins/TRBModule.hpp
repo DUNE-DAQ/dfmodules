@@ -9,8 +9,6 @@
 #ifndef DFMODULES_PLUGINS_TRIGGERRECORDBUILDER_HPP_
 #define DFMODULES_PLUGINS_TRIGGERRECORDBUILDER_HPP_
 
-#include "dfmodules/triggerrecordbuilderinfo/InfoNljs.hpp"
-
 #include "appmodel/TRBConf.hpp"
 #include "daqdataformats/Fragment.hpp"
 #include "daqdataformats/SourceID.hpp"
@@ -27,6 +25,8 @@
 #include "utilities/WorkerThread.hpp"
 #include "iomanager/Sender.hpp"
 #include "iomanager/Receiver.hpp"
+
+#include "dfmodules/opmon/TRBModule.pb.h"
 
 #include <chrono>
 #include <list>
@@ -183,7 +183,8 @@ public:
   TRBModule& operator=(TRBModule&&) = delete; ///< TRBModule is not move-assignable
 
   void init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg) override;
-  void get_info(opmonlib::InfoCollector& ci, int level) override;
+
+  void generate_opmon_data() override;
 
 protected:
   using trigger_decision_receiver_t = iomanager::ReceiverConcept<dfmessages::TriggerDecision>;
@@ -262,7 +263,7 @@ private:
   std::list<dfmessages::TRMonRequest> m_mon_requests;
 
   // book related metrics
-  using metric_counter_type = decltype(triggerrecordbuilderinfo::Info::pending_trigger_decisions);
+  using metric_counter_type = uint64_t; // decltype(triggerrecordbuilderinfo::Info::pending_trigger_decisions);
   mutable std::atomic<metric_counter_type> m_trigger_decisions_counter = { 0 }; // currently
   mutable std::atomic<metric_counter_type> m_fragment_counter = { 0 };          // currently
   mutable std::atomic<metric_counter_type> m_pending_fragment_counter = { 0 };  // currently
@@ -288,7 +289,7 @@ private:
   mutable std::atomic<metric_counter_type> m_trmon_sent_counter = { 0 };
 
   // time thresholds
-  using duration_type = std::chrono::milliseconds;
+  using duration_type = std::chrono::microseconds;
   duration_type m_old_trigger_threshold;
   duration_type m_trigger_timeout;
 };

@@ -68,7 +68,7 @@ private:
   void do_start(const data_t&);
   void do_stop(const data_t&);
 
-  void get_info(opmonlib::InfoCollector& ci, int level) override;
+  //  void get_info(opmonlib::InfoCollector& ci, int level) override;
 
   // Threading
   dunedaq::utilities::WorkerThread m_timesync_thread;

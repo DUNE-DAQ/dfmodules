@@ -8,7 +8,6 @@
 
 #include "DataWriterModule.hpp"
 #include "dfmodules/CommonIssues.hpp"
-#include "dfmodules/datawriterinfo/InfoNljs.hpp"
 
 #include "confmodel/Application.hpp"
 #include "confmodel/Session.hpp"
@@ -119,21 +118,22 @@ DataWriterModule::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
 
-void
-DataWriterModule::get_info(opmonlib::InfoCollector& ci, int /*level*/)
-{
-  datawriterinfo::Info dwi;
+// void
+// DataWriterModule::get_info(opmonlib::InfoCollector& ci, int /*level*/)
+// {
+//   datawriterinfo::Info dwi;
 
-  dwi.records_received = m_records_received_tot.load();
-  dwi.new_records_received = m_records_received.exchange(0);
-  dwi.records_written = m_records_written_tot.load();
-  dwi.new_records_written = m_records_written.exchange(0);
-  dwi.bytes_output = m_bytes_output_tot.load();
-  dwi.new_bytes_output = m_bytes_output.exchange(0);
-  dwi.writing_time = m_writing_ms.exchange(0);
+//   dwi.records_received = m_records_received_tot.load();
+//   dwi.new_records_received = m_records_received.exchange(0);
+//   dwi.records_written = m_records_written_tot.load();
+//   dwi.new_records_written = m_records_written.exchange(0);
+//   dwi.bytes_output = m_bytes_output_tot.load();
+//   dwi.new_bytes_output = m_bytes_output.exchange(0);
+//   dwi.writing_time = m_writing_ms.exchange(0);
 
-  ci.add(dwi);
-}
+//   ci.add(dwi);
+// }
+  
 void
 DataWriterModule::do_conf(const data_t&)
 {
