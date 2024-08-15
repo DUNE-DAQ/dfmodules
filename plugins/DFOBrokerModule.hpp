@@ -76,7 +76,7 @@ private:
 
   void do_enable_dfo(const data_t&);
 
-  void get_info(opmonlib::InfoCollector& ci, int level) override;
+  void generate_opmon_data() override;
 
   void receive_trigger_complete_token(const dfmessages::TriggerDecisionToken&);
   void receive_dfo_decision(const dfmessages::DFODecision&);

@@ -104,12 +104,12 @@
 
 <obj class="DFOModule" id="test">
  <rel name="inputs">
-  <ref class="NetworkConnection" id="token"/>
+  <ref class="NetworkConnection" id="heartbeat"/>
   <ref class="NetworkConnection" id="trigdec"/>
  </rel>
  <rel name="outputs">
   <ref class="NetworkConnection" id="triginh"/>
-  <ref class="NetworkConnection" id="trigdec_0"/>
+  <ref class="NetworkConnection" id="dfodec"/>
  </rel>
  <rel name="configuration" class="DFOConf" id="test"/>
 </obj>
@@ -280,10 +280,10 @@
  </attr>
 </obj>
 
-<obj class="NetworkConnection" id="token">
- <attr name="data_type" type="string" val="TriggerDecisionToken"/>
+<obj class="NetworkConnection" id="heartbeat">
+ <attr name="data_type" type="string" val="DataflowHeartbeat"/>
  <attr name="connection_type" type="enum" val="kSendRecv"/>
- <rel name="associated_service" class="Service" id="token"/>
+ <rel name="associated_service" class="Service" id="heartbeat"/>
 </obj>
 
 <obj class="NetworkConnection" id="trigdec">
@@ -292,10 +292,10 @@
  <rel name="associated_service" class="Service" id="trigdec"/>
 </obj>
 
-<obj class="NetworkConnection" id="trigdec_0">
- <attr name="data_type" type="string" val="TriggerDecision"/>
+<obj class="NetworkConnection" id="dfodec">
+ <attr name="data_type" type="string" val="DFODecision"/>
  <attr name="connection_type" type="enum" val="kSendRecv"/>
- <rel name="associated_service" class="Service" id="trigdec_0"/>
+ <rel name="associated_service" class="Service" id="dfodec"/>
 </obj>
 
 <obj class="NetworkConnection" id="triginh">
@@ -346,7 +346,7 @@
  <rel name="controller" class="RCApplication" id="my-controller"/>
 </obj>
 
-<obj class="Service" id="token">
+<obj class="Service" id="heartbeat">
  <attr name="protocol" type="string" val="tcp"/>
  <attr name="port" type="u16" val="5053"/>
  <attr name="eth_device_name" type="string" val="lo"/>
@@ -358,7 +358,7 @@
  <attr name="eth_device_name" type="string" val="lo"/>
 </obj>
 
-<obj class="Service" id="trigdec_0">
+<obj class="Service" id="dfodec">
  <attr name="protocol" type="string" val="tcp"/>
  <attr name="port" type="u16" val="5052"/>
  <attr name="eth_device_name" type="string" val="lo"/>

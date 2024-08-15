@@ -212,7 +212,7 @@ DFOBrokerModule::do_enable_dfo(const data_t& args)
 }
 
 void
-DFOBrokerModule::get_info(opmonlib::InfoCollector& ci, int level)
+DFOBrokerModule::generate_opmon_data()
 {
 }
 

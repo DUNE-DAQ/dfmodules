@@ -99,8 +99,8 @@ public:
   bool is_in_error() const { return m_in_error.load(); }
   void set_in_error(bool err) { m_in_error = err; }
 
-  std::vector<dfmessages::trigger_number_t> get_acks();
-  void update_ack_list(std::vector<dfmessages::trigger_number_t> completions);
+  std::vector<dfmessages::trigger_number_t> extract_completions_to_acknowledge();
+  void update_completions_to_acknowledge_list(std::vector<dfmessages::trigger_number_t> completions);
 
 private:
   std::atomic<size_t> m_busy_threshold{ 0 };
@@ -108,6 +108,7 @@ private:
   std::atomic<bool> m_is_busy{ false };
   std::list<std::shared_ptr<AssignedTriggerDecision>> m_assigned_trigger_decisions;
   std::set<dfmessages::trigger_number_t> completions_to_acknowledge;
+  mutable std::mutex m_completions_to_acknowledge_mutex;
   mutable std::mutex m_assigned_trigger_decisions_mutex;
 
   // TODO: Eric Flumerfelt <eflumerf@github.com> Dec-03-2021: Replace with circular buffer

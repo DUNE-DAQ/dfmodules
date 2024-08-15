@@ -115,6 +115,8 @@ private:
   void notify_trigger(bool busy) const;
   bool dispatch(const std::shared_ptr<AssignedTriggerDecision>& assignment);
   virtual void assign_trigger_decision(const std::shared_ptr<AssignedTriggerDecision>& assignment);
+  virtual std::vector<dfmessages::trigger_number_t> get_acknowledgements(
+    const std::shared_ptr<AssignedTriggerDecision>& assignment);
 
   // Configuration
   const appmodel::DFOConf* m_dfo_conf;

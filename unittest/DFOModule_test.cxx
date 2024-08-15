@@ -11,6 +11,7 @@
 
 #include "appfwk/app/Nljs.hpp"
 #include "dfmessages/DataflowHeartbeat.hpp"
+#include "dfmessages/DFODecision.hpp"
 #include "dfmessages/TriggerInhibit.hpp"
 #include "dfmodules/CommonIssues.hpp"
 #include "iomanager/IOManager.hpp"
@@ -71,11 +72,10 @@ BOOST_FIXTURE_TEST_SUITE(DFOModule_test, CfgFixture)
 
 
 void
-send_init_heartbeat(std::string connection_name = "trigdec_0")
+send_init_heartbeat(std::string connection_name = "dfodec")
 {
   dfmessages::DataflowHeartbeat heartbeat;
   heartbeat.run_number = 0;
-  heartbeat.trigger_number = 0;
   heartbeat.decision_destination = connection_name;
 
   TLOG() << "Sending Init DataflowHeartbeat to DFO";
@@ -83,24 +83,24 @@ send_init_heartbeat(std::string connection_name = "trigdec_0")
 }
 void
 send_heartbeat(dfmessages::trigger_number_t trigger_number,
-           std::string connection_name = "trigdec_0",
+           std::string connection_name = "dfodec",
            bool different_run = false)
 {
   dfmessages::DataflowHeartbeat heartbeat;
   heartbeat.run_number = different_run ? 2 : 1;
-  heartbeat.trigger_number = trigger_number;
   heartbeat.decision_destination = connection_name;
+  heartbeat.recent_completed_triggers = { trigger_number };
 
   TLOG() << "Sending DataflowHeartbeat with trigger number " << trigger_number << " to DFO";
   get_iom_sender<dfmessages::DataflowHeartbeat>("heartbeat")->send(std::move(heartbeat), iomanager::Sender::s_block);
 }
 
 void
-recv_trigdec(const dfmessages::TriggerDecision& decision)
+recv_dfodec(const dfmessages::DFODecision& decision)
 {
-  TLOG() << "Received TriggerDecision with trigger number " << decision.trigger_number << " from DFO";
+  TLOG() << "Received DFODecision with trigger number " << decision.trigger_decision.trigger_number << " from DFO" << decision.dfo_id;
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
-  send_heartbeat(decision.trigger_number);
+  send_heartbeat(decision.trigger_decision.trigger_number);
 }
 
 std::atomic<bool> busy_signal_recvd = false;
@@ -161,14 +161,14 @@ BOOST_AUTO_TEST_CASE(Commands)
   dfo->execute_command("scrap", "CONFIGURED", null_json);
 
   auto metric = get_dfo_info();
-  BOOST_REQUIRE_EQUAL(metric.tokens_received(), 0);
+  BOOST_REQUIRE_EQUAL(metric.heartbeats_received(), 0);
   BOOST_REQUIRE_EQUAL(metric.decisions_received(), 0);
   BOOST_REQUIRE_EQUAL(metric.decisions_sent(), 0);
   BOOST_REQUIRE_EQUAL(metric.forwarding_decision(), 0);
   BOOST_REQUIRE_EQUAL(metric.waiting_for_decision(), 0);
   BOOST_REQUIRE_EQUAL(metric.deciding_destination(), 0);
-  BOOST_REQUIRE_EQUAL(metric.waiting_for_token(), 0);
-  BOOST_REQUIRE_EQUAL(metric.processing_token(), 0);
+  BOOST_REQUIRE_EQUAL(metric.waiting_for_heartbeat(), 0);
+  BOOST_REQUIRE_EQUAL(metric.processing_heartbeat(), 0);
   
 }
 
@@ -186,22 +186,22 @@ BOOST_AUTO_TEST_CASE(DataFlow)
   dfo->execute_command("conf", "INITIAL", conf_json);
 
   auto iom = iomanager::IOManager::get();
-  auto dec_recv = iom->get_receiver<dfmessages::TriggerDecision>("trigdec_0");
-  dec_recv->add_callback(recv_trigdec);
+  auto dec_recv = iom->get_receiver<dfmessages::DFODecision>("dfodec");
+  dec_recv->add_callback(recv_dfodec);
   auto inh_recv = iom->get_receiver<dfmessages::TriggerInhibit>("triginh");
   inh_recv->add_callback(recv_triginh);
 
   send_trigdec(1, true);
   std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
-  send_heartbeat(999, "trigdec_0", true);
-  send_heartbeat(9999, "trigdec_0", true);
+  send_heartbeat(999, "dfodec", true);
+  send_heartbeat(9999, "dfodec", true);
   std::this_thread::sleep_for(std::chrono::milliseconds(50));
   
   // Note: Counters are reset by calling get_dfo_info!
   auto metric = get_dfo_info();
   
-  BOOST_REQUIRE_EQUAL(metric.tokens_received(), 0);
+  BOOST_REQUIRE_EQUAL(metric.heartbeats_received(), 0);
 
   dfo->execute_command("start", "CONFIGURED", start_json);
   send_init_heartbeat();
@@ -209,7 +209,7 @@ BOOST_AUTO_TEST_CASE(DataFlow)
   std::this_thread::sleep_for(std::chrono::milliseconds(150));
 
   metric = get_dfo_info();
-  BOOST_REQUIRE_EQUAL(metric.tokens_received(), 0);
+  BOOST_REQUIRE_EQUAL(metric.heartbeats_received(), 0);
   BOOST_REQUIRE_EQUAL(metric.decisions_received(), 0);
   BOOST_REQUIRE_EQUAL(metric.decisions_sent(), 0);
 
@@ -219,7 +219,7 @@ BOOST_AUTO_TEST_CASE(DataFlow)
   send_trigdec(4);
 
   metric = get_dfo_info();
-  BOOST_REQUIRE_EQUAL(metric.tokens_received(), 0);
+  BOOST_REQUIRE_EQUAL(metric.heartbeats_received(), 0);
   BOOST_REQUIRE_EQUAL(metric.decisions_received(), 2);
   BOOST_REQUIRE_EQUAL(metric.decisions_sent(), 2);
 
@@ -227,7 +227,7 @@ BOOST_AUTO_TEST_CASE(DataFlow)
   std::this_thread::sleep_for(std::chrono::milliseconds(400));
 
   metric = get_dfo_info();
-  BOOST_REQUIRE_EQUAL(metric.tokens_received(), 3);
+  BOOST_REQUIRE_EQUAL(metric.heartbeats_received(), 3);
   BOOST_REQUIRE_EQUAL(metric.decisions_received(), 1);
   BOOST_REQUIRE_EQUAL(metric.decisions_sent(), 1);
   BOOST_REQUIRE(!busy_signal_recvd.load());
@@ -262,7 +262,7 @@ BOOST_AUTO_TEST_CASE(SendTrigDecFailed)
   std::this_thread::sleep_for(std::chrono::milliseconds(150));
 
   auto info = get_dfo_info();
-  BOOST_REQUIRE_EQUAL(info.tokens_received(), 0);
+  BOOST_REQUIRE_EQUAL(info.heartbeats_received(), 0);
   BOOST_REQUIRE_EQUAL(info.decisions_received(), 1);
   BOOST_REQUIRE_EQUAL(info.decisions_sent(), 0);
 
