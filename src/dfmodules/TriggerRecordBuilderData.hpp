@@ -14,10 +14,11 @@
 
 #include "daqdataformats/Types.hpp"
 #include "dfmessages/TriggerDecision.hpp"
+#include "dfmodules/opmon/TRBuilderData.pb.h"
 
 #include "ers/Issue.hpp"
 #include "nlohmann/json.hpp"
-#include "opmonlib/InfoCollector.hpp"
+#include "opmonlib/MonitorableObject.hpp"
 
 #include <atomic>
 #include <chrono>
@@ -62,7 +63,7 @@ struct AssignedTriggerDecision
   {}
 };
 
-class TriggerRecordBuilderData
+class TriggerRecordBuilderData : public opmonlib::MonitorableObject
 {
 public:
   TriggerRecordBuilderData() = default;
@@ -70,10 +71,12 @@ public:
   TriggerRecordBuilderData(std::string connection_name, size_t busy_threshold, size_t free_threshold);
 
   TriggerRecordBuilderData(TriggerRecordBuilderData const&) = delete;
-  TriggerRecordBuilderData(TriggerRecordBuilderData&&);
+  TriggerRecordBuilderData(TriggerRecordBuilderData&&) = delete;
   TriggerRecordBuilderData& operator=(TriggerRecordBuilderData const&) = delete;
-  TriggerRecordBuilderData& operator=(TriggerRecordBuilderData&&);
+  TriggerRecordBuilderData& operator=(TriggerRecordBuilderData&&) = delete;
 
+  ~TriggerRecordBuilderData() = default;
+  
   bool is_busy() const { return m_in_error || m_is_busy; }
   size_t used_slots() const { return m_assigned_trigger_decisions.size(); }
 
@@ -89,7 +92,7 @@ public:
     std::function<void(nlohmann::json&)> metadata_fun = nullptr);
   std::list<std::shared_ptr<AssignedTriggerDecision>> flush();
 
-  void get_info(opmonlib::InfoCollector& ci, int level);
+  void generate_opmon_data() override;
 
   std::chrono::microseconds average_latency(std::chrono::steady_clock::time_point since) const;
 
@@ -113,8 +116,12 @@ private:
   std::string m_connection_name{ "" };
 
   // monitoring
-  std::atomic<uint64_t> m_complete_counter{ 0 }, m_complete_microsecond{ 0 };
-  std::atomic<int64_t> m_min_complete_time{ std::numeric_limits<int64_t>::max() }, m_max_complete_time{ 0 };
+  using metric_t = dunedaq::dfmodules::opmon::DFApplicationInfo;
+  using const_time_counter_t = std::invoke_result<decltype(&metric_t::min_time_since_assignment),
+						  metric_t>::type;
+  using time_counter_t = std::remove_const<const_time_counter_t>::type;
+  std::atomic<uint32_t> m_complete_counter{ 0 };
+  std::atomic<time_counter_t> m_min_complete_time{ std::numeric_limits<time_counter_t>::max() }, m_max_complete_time{ 0 };  // in us
   double m_last_average_time{0.};
 };
 } // namespace dfmodules
