@@ -13,6 +13,7 @@
 
 #include "appfwk/app/Nljs.hpp"
 #include "appmodel/DFOModule.hpp"
+#include "confmodel/Application.hpp"
 #include "confmodel/Connection.hpp"
 #include "iomanager/IOManager.hpp"
 #include "logging/Logging.hpp"
@@ -94,6 +95,7 @@ DFOModule::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
   }
 
   m_dfo_conf = mdal->get_configuration();
+  m_dfo_id = mcfg->configuration_manager()->application()->UID();
   // these are just tests to check if the connections are ok
   iom->get_receiver<dfmessages::DataflowHeartbeat>(m_heartbeat_connection);
   iom->get_receiver<dfmessages::TriggerDecision>(m_td_connection);
@@ -478,7 +480,7 @@ DFOModule::dispatch(const std::shared_ptr<AssignedTriggerDecision>& assignment)
   do {
 
     try {
-      auto decision_copy = dfmessages::DFODecision(get_name(), assignment->decision, get_acknowledgements(assignment));
+      auto decision_copy = dfmessages::DFODecision(m_dfo_id, assignment->decision, get_acknowledgements(assignment));
       iom->get_sender<dfmessages::DFODecision>(assignment->connection_name)
         ->send(std::move(decision_copy), m_queue_timeout);
       wasSentSuccessfully = true;

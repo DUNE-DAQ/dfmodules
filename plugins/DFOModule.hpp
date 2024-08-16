@@ -120,6 +120,7 @@ private:
 
   // Configuration
   const appmodel::DFOConf* m_dfo_conf;
+  std::string m_dfo_id;
   std::chrono::milliseconds m_queue_timeout;
   std::chrono::microseconds m_stop_timeout;
   dunedaq::daqdataformats::run_number_t m_run_number;

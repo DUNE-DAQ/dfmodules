@@ -10,11 +10,11 @@
 #include "dfmodules/CommonIssues.hpp"
 
 #include "appfwk/app/Nljs.hpp"
+#include "appmodel/DFOApplication.hpp"
 #include "appmodel/DFOBrokerModule.hpp"
+#include "confmodel/Application.hpp"
 #include "confmodel/Connection.hpp"
 #include "confmodel/Session.hpp"
-#include "confmodel/Application.hpp"
-#include "appmodel/DFOApplication.hpp"
 #include "iomanager/IOManager.hpp"
 #include "logging/Logging.hpp"
 
@@ -110,8 +110,8 @@ DFOBrokerModule::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
   for (auto& app : session->get_all_applications()) {
     auto dfoapp = app->cast<appmodel::DFOApplication>();
     if (dfoapp != nullptr) {
-      //if (!dfoapp->disabled(*session)) {
-        m_dfo_information[dfoapp->UID()] = {};
+      // if (!dfoapp->disabled(*session)) {
+      m_dfo_information[dfoapp->UID()] = {};
       //}
     }
   }
@@ -130,6 +130,19 @@ DFOBrokerModule::do_conf(const data_t&)
   m_td_timeout = std::chrono::milliseconds(m_dfobroker_conf->get_td_timeout_ms());
   m_stop_timeout = std::chrono::milliseconds(m_dfobroker_conf->get_stop_timeout_ms());
 
+  auto initial_active_dfo = m_dfobroker_conf->get_initial_active_dfo();
+  if (initial_active_dfo != nullptr) {
+    auto enabled_dfo_id = initial_active_dfo->UID();
+
+    std::lock_guard<std::mutex> lk(m_dfo_info_mutex);
+    for (auto& dfo_pair : m_dfo_information) {
+      if (dfo_pair.first == enabled_dfo_id) {
+        dfo_pair.second.dfo_is_active = true;
+      } else {
+        dfo_pair.second.dfo_is_active = false;
+      }
+    }
+  }
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method, there are "
                                       << m_dfo_information.size() << " DFO apps defined";
 }
@@ -287,15 +300,14 @@ DFOBrokerModule::send_heartbeat(bool skip_time_check)
 {
   std::lock_guard<std::mutex> lk(m_send_heartbeat_mutex);
   auto begin_time = std::chrono::steady_clock::now();
-  
-  if (!skip_time_check)
-  {
+
+  if (!skip_time_check) {
     if (std::chrono::duration_cast<std::chrono::milliseconds>(begin_time - m_last_heartbeat_sent) <
         m_send_heartbeat_interval) {
       return;
     }
   }
-  m_last_heartbeat_sent = begin_time;
+  TLOG(TLVL_DISPATCH_TO_TRB) << get_name() << ": Sending Heartbeat to DFO";
 
   dfmessages::DataflowHeartbeat theHeartbeat;
   theHeartbeat.run_number = m_run_number;
@@ -303,8 +315,14 @@ DFOBrokerModule::send_heartbeat(bool skip_time_check)
   theHeartbeat.outstanding_decisions = get_outstanding_decisions();
   theHeartbeat.decision_destination = m_dfod_connection;
 
-  get_iom_sender<dfmessages::DataflowHeartbeat>(m_heartbeat_connection)
-    ->send(std::move(theHeartbeat), m_send_heartbeat_timeout);
+  try {
+    get_iom_sender<dfmessages::DataflowHeartbeat>(m_heartbeat_connection)
+      ->send(std::move(theHeartbeat), m_send_heartbeat_timeout);
+    m_last_heartbeat_sent = begin_time;
+  } catch (iomanager::TimeoutExpired const& ex) {
+    ers::warning(ex);
+    TLOG(TLVL_DISPATCH_TO_TRB) << get_name() << ": Timeout from IOManager send call, will retry later";
+  }
 }
 
 void
