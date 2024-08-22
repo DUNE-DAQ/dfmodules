@@ -9,16 +9,6 @@ message TRBInfo {
   uint64 fragments_in_the_book = 2;      // Present number of fragments in the book
   uint64 pending_fragments = 3;          // Fragments to be expected based on the TR in the book 
 
-  // error counters. These quantities are reset at start and not at regualar intervals
-  // hence they are about a whole run.
-  uint64 timed_out_trigger_records = 10;     // Number of timed out triggers 
-  uint64 unexpected_fragments = 11;          // Number of unexpected fragments 
-  uint64 unexpected_trigger_decisions = 12;  // Number of unexpected trigger decisions 
-  uint64 abandoned_trigger_records = 13;     // Number of trigger records that failed to send to writing 
-  uint64 lost_fragments = 14;                // Number of fragments that not stored in a file
-  uint64 invalid_requests = 15;              // Number of requests with unknown SourceID
-  uint64 duplicated_trigger_ids =16;         // Number of TR not created because redundant 
-
   // operation metrics
   uint64 received_trigger_decisions = 20;    // Number of valid trigger decisions received in the run
   uint64 generated_trigger_records = 21;     // Number of trigger records produced 
@@ -31,4 +21,18 @@ message TRBInfo {
   uint64 received_trmon_requests = 28;       // Number of requests coming from DQM
   uint64 sent_trmon = 29;                    // Number of TRs sent to DQM 
   
+}
+
+message TRBErrors {
+
+  // error counters. These quantities are reset at start and not at regualar intervals
+  // hence they are about a whole run.
+  uint64 timed_out_trigger_records = 1;     // Number of timed out triggers 
+  uint64 unexpected_fragments = 2;          // Number of unexpected fragments 
+  uint64 unexpected_trigger_decisions = 3;  // Number of unexpected trigger decisions 
+  uint64 abandoned_trigger_records = 4;     // Number of trigger records that failed to send to writing 
+  uint64 lost_fragments = 5;                // Number of fragments that not stored in a file
+  uint64 invalid_requests = 6;              // Number of requests with unknown SourceID
+  uint64 duplicated_trigger_ids = 7;        // Number of TR not created because redundant 
+
 }
