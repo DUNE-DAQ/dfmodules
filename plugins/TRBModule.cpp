@@ -261,15 +261,6 @@ TRBModule::generate_opmon_data()
   i.set_pending_trigger_decisions(m_trigger_decisions_counter.load());
   i.set_fragments_in_the_book(m_fragment_counter.load());
   i.set_pending_fragments(m_pending_fragment_counter.load());
-  
-  // error counters
-  i.set_timed_out_trigger_records(m_timed_out_trigger_records.load());
-  i.set_abandoned_trigger_records(m_abandoned_trigger_records.load());
-  i.set_unexpected_fragments(m_unexpected_fragments.load());
-  i.set_unexpected_trigger_decisions(m_unexpected_trigger_decisions.load());
-  i.set_lost_fragments(m_lost_fragments.load());
-  i.set_invalid_requests(m_invalid_requests.load());
-  i.set_duplicated_trigger_ids(m_duplicated_trigger_ids.load());
 
   // operation metrics
   i.set_received_trigger_decisions(m_received_trigger_decisions.exchange(0));
@@ -284,6 +275,19 @@ TRBModule::generate_opmon_data()
   i.set_sent_trmon(m_trmon_sent_counter.exchange(0));
 
   publish(std::move(i));
+
+  opmon::TRBErrors err;
+  // error counters
+  err.set_timed_out_trigger_records(m_timed_out_trigger_records.load());
+  err.set_abandoned_trigger_records(m_abandoned_trigger_records.load());
+  err.set_unexpected_fragments(m_unexpected_fragments.load());
+  err.set_unexpected_trigger_decisions(m_unexpected_trigger_decisions.load());
+  err.set_lost_fragments(m_lost_fragments.load());
+  err.set_invalid_requests(m_invalid_requests.load());
+  err.set_duplicated_trigger_ids(m_duplicated_trigger_ids.load());
+
+  publish(std::move(err));
+  
  }
 
 void
