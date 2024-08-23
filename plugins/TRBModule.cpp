@@ -295,7 +295,7 @@ TRBModule::do_conf(const data_t&)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
 
-  m_trigger_timeout = duration_type(m_trb_conf->get_trigger_record_timeout_ms());
+  m_trigger_timeout = std::chrono::milliseconds(m_trb_conf->get_trigger_record_timeout_ms());
 
   m_loop_sleep = m_queue_timeout = std::chrono::milliseconds(m_trb_conf->get_queues_timeout());
 
