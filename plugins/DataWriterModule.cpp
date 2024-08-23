@@ -8,6 +8,7 @@
 
 #include "DataWriterModule.hpp"
 #include "dfmodules/CommonIssues.hpp"
+#include "dfmodules/opmon/DataWriter.pb.h"
 
 #include "confmodel/Application.hpp"
 #include "confmodel/Session.hpp"
@@ -118,21 +119,21 @@ DataWriterModule::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
 
-// void
-// DataWriterModule::get_info(opmonlib::InfoCollector& ci, int /*level*/)
-// {
-//   datawriterinfo::Info dwi;
+void
+DataWriterModule::generate_opmon_data() {
 
-//   dwi.records_received = m_records_received_tot.load();
+  opmon::DataWriterInfo dwi;
+
+  dwi.set_records_received(m_records_received_tot.load());
 //   dwi.new_records_received = m_records_received.exchange(0);
-//   dwi.records_written = m_records_written_tot.load();
-//   dwi.new_records_written = m_records_written.exchange(0);
-//   dwi.bytes_output = m_bytes_output_tot.load();
-//   dwi.new_bytes_output = m_bytes_output.exchange(0);
-//   dwi.writing_time = m_writing_ms.exchange(0);
+  dwi.set_records_written(m_records_written_tot.load());
+  dwi.set_new_records_written(m_records_written.exchange(0));
+//   dwi.bytes_output = m_bytes_output_tot.load();  MR: byte writing to be delegated to DataStorage
+//   dwi.new_bytes_output = m_bytes_output.exchange(0);  
+  dwi.set_writing_time_us(m_writing_us.exchange(0));
 
-//   ci.add(dwi);
-// }
+  publish(std::move(dwi));
+}
   
 void
 DataWriterModule::do_conf(const data_t&)
@@ -333,8 +334,8 @@ DataWriterModule::receive_trigger_record(std::unique_ptr<daqdataformats::Trigger
       } while (should_retry && m_running.load());
 
       std::chrono::steady_clock::time_point end_time = std::chrono::steady_clock::now();
-      std::chrono::milliseconds writing_time = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
-      m_writing_ms += writing_time.count();
+      auto writing_time = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+      m_writing_us += writing_time.count();
     } //  if m_data_storage_is_enabled
   }
   
