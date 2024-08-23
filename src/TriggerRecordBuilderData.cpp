@@ -195,10 +195,12 @@ TriggerRecordBuilderData::generate_opmon_data()
   if ( completed_trigger_records > 0 ) {
     m_last_average_time = 1e-6*0.5*(m_min_complete_time.exchange(0) + m_max_complete_time.exchange(0)); // in seconds     
   }
-  
-  // prediction rate metrics
-  info.set_capacity_rate( 0.5*(m_busy_threshold.load()+m_free_threshold.load())/m_last_average_time );
 
+  if ( m_last_average_time > 0. ) {
+    // prediction rate metrics
+    info.set_capacity_rate( 0.5*(m_busy_threshold.load()+m_free_threshold.load())/m_last_average_time );
+  }
+  
   publish(std::move(info));
   
 }
