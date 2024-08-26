@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package dunedaq.dfmodules.opmon;
+
+message TPStreamWriterInfo {
+
+  uint64 tpset_received = 1;  // incremental
+  uint64 tpset_written  = 2;  // incremental
+  
+}
+
