@@ -155,10 +155,10 @@ BOOST_AUTO_TEST_CASE(Commands)
   auto start_json = "{\"run\": 1}"_json;
   auto null_json = "{}"_json;
 
-  dfo->execute_command("conf", "INITIAL", conf_json);
-  dfo->execute_command("start", "CONFIGURED", start_json);
-  dfo->execute_command("drain_dataflow", "RUNNING", null_json);
-  dfo->execute_command("scrap", "CONFIGURED", null_json);
+  dfo->execute_command("conf", conf_json);
+  dfo->execute_command("start", start_json);
+  dfo->execute_command("drain_dataflow", null_json);
+  dfo->execute_command("scrap", null_json);
 
   auto metric = get_dfo_info();
   BOOST_REQUIRE_EQUAL(metric.heartbeats_received(), 0);
@@ -183,7 +183,7 @@ BOOST_AUTO_TEST_CASE(DataFlow)
   auto start_json = "{\"run\": 1}"_json;
   auto null_json = "{}"_json;
 
-  dfo->execute_command("conf", "INITIAL", conf_json);
+  dfo->execute_command("conf", conf_json);
 
   auto iom = iomanager::IOManager::get();
   auto dec_recv = iom->get_receiver<dfmessages::DFODecision>("dfodec");
@@ -203,7 +203,7 @@ BOOST_AUTO_TEST_CASE(DataFlow)
   
   BOOST_REQUIRE_EQUAL(metric.heartbeats_received(), 0);
 
-  dfo->execute_command("start", "CONFIGURED", start_json);
+  dfo->execute_command("start", start_json);
   send_init_heartbeat();
 
   std::this_thread::sleep_for(std::chrono::milliseconds(150));
@@ -232,8 +232,8 @@ BOOST_AUTO_TEST_CASE(DataFlow)
   BOOST_REQUIRE_EQUAL(metric.decisions_sent(), 1);
   BOOST_REQUIRE(!busy_signal_recvd.load());
 
-  dfo->execute_command("drain_dataflow", "RUNNING", null_json);
-  dfo->execute_command("scrap", "CONFIGURED", null_json);
+  dfo->execute_command("drain_dataflow", null_json);
+  dfo->execute_command("scrap", null_json);
 
   dec_recv->remove_callback();
   inh_recv->remove_callback();
@@ -250,9 +250,9 @@ BOOST_AUTO_TEST_CASE(SendTrigDecFailed)
   auto start_json = "{\"run\": 1}"_json;
   auto null_json = "{}"_json;
 
-  dfo->execute_command("conf", "INITIAL", conf_json);
+  dfo->execute_command("conf", conf_json);
 
-  dfo->execute_command("start", "CONFIGURED", start_json);
+  dfo->execute_command("start", start_json);
 
   send_init_heartbeat("invalid_connection");
 
@@ -274,8 +274,8 @@ BOOST_AUTO_TEST_CASE(SendTrigDecFailed)
   send_heartbeat(1000);
   std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
-  dfo->execute_command("drain_dataflow", "RUNNING", null_json);
-  dfo->execute_command("scrap", "CONFIGURED", null_json);
+  dfo->execute_command("drain_dataflow", null_json);
+  dfo->execute_command("scrap", null_json);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
