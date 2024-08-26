@@ -166,8 +166,7 @@ BOOST_AUTO_TEST_CASE(WriteEventFiles)
   data_store_conf_obj.set_by_val<std::string>("directory_path", file_path);
   data_store_conf_obj.set_by_val<std::string>("mode", "one-event-per-file");
 
-  std::unique_ptr<DataStore> data_store_ptr;
-  data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.modCfg);
+  auto data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.modCfg);
 
   // write several events, each with several fragments
   for (int trigger_number = 1; trigger_number <= trigger_count; ++trigger_number)
@@ -207,8 +206,7 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
   auto data_store_conf_obj = data_store_conf->config_object();
   data_store_conf_obj.set_by_val<std::string>("directory_path", file_path);
 
-  std::unique_ptr<DataStore> data_store_ptr;
-  data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.modCfg);
+  auto data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.modCfg);
     
   // write several events, each with several fragments
   for (int trigger_number = 1; trigger_number <= trigger_count; ++trigger_number)
@@ -248,8 +246,7 @@ BOOST_AUTO_TEST_CASE(CheckWritingSuffix)
   auto data_store_conf_obj = data_store_conf->config_object();
   data_store_conf_obj.set_by_val<std::string>("directory_path", file_path);
 
-  std::unique_ptr<DataStore> data_store_ptr;
-  data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.modCfg);
+  auto data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.modCfg);
   
   // write several events, each with several fragments
   for (int trigger_number = 1; trigger_number <= trigger_count; ++trigger_number) {
@@ -299,8 +296,7 @@ BOOST_AUTO_TEST_CASE(FileSizeLimitResultsInMultipleFiles)
   data_store_conf_obj.set_by_val<std::string>("directory_path", file_path);
   data_store_conf_obj.set_by_val<int>("max_file_size", 3000000); // goal is 6 events per file
 
-  std::unique_ptr<DataStore> data_store_ptr;
-  data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.modCfg);
+  auto data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.modCfg);
   
   // write several events, each with several fragments
   for (int trigger_number = 1; trigger_number <= trigger_count; ++trigger_number)
@@ -344,8 +340,7 @@ BOOST_AUTO_TEST_CASE(SmallFileSizeLimitDataBlockListWrite)
   data_store_conf_obj.set_by_val<std::string>("directory_path", file_path);
   data_store_conf_obj.set_by_val<int>("max_file_size", 150000); // ~1.5 Fragment, ~0.3 TR
 
-  std::unique_ptr<DataStore> data_store_ptr;
-  data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.modCfg);
+  auto data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.modCfg);
 
   // write several events, each with several fragments
   for (int trigger_number = 1; trigger_number <= trigger_count; ++trigger_number)

@@ -16,6 +16,7 @@
 #define DFMODULES_INCLUDE_DFMODULES_DATASTORE_HPP_
 
 #include "appfwk/ModuleConfiguration.hpp"
+#include "opmonlib/MonitorableObject.hpp"
 #include "cetlib/BasicPluginFactory.h"
 #include "cetlib/compiler_macros.h"
 #include "daqdataformats/TimeSlice.hpp"
@@ -45,10 +46,10 @@
 // NOLINTNEXTLINE(build/define_used)
 #define DEFINE_DUNE_DATA_STORE(klass)                                                                                  \
   EXTERN_C_FUNC_DECLARE_START                                                                                          \
-  std::unique_ptr<dunedaq::dfmodules::DataStore> make(const std::string& name,                                         \
-                                                      std::shared_ptr<dunedaq::appfwk::ModuleConfiguration> mcfg)      \
+  std::shared_ptr<dunedaq::dfmodules::DataStore> make(const std::string& name,                                         \
+                                                      std::shared_ptr<dunedaq::appfwk::ModuleConfiguration> mcfg) \
   {                                                                                                                    \
-    return std::unique_ptr<dunedaq::dfmodules::DataStore>(new klass(name, mcfg));                                      \
+    return std::shared_ptr<dunedaq::dfmodules::DataStore>(new klass(name, mcfg));                                      \
   }                                                                                                                    \
   }
 
@@ -92,7 +93,7 @@ namespace dfmodules {
 /**
  * @brief comment
  */
-class DataStore : public utilities::NamedObject
+class DataStore : public utilities::NamedObject, public opmonlib::MonitorableObject
 {
 public:
   /**
@@ -100,7 +101,7 @@ public:
    * @param name Name of the DataStore instance
    */
   explicit DataStore(const std::string& name)
-    : utilities::NamedObject(name)
+    : utilities::NamedObject(name), MonitorableObject()
   {
   }
 
@@ -146,16 +147,16 @@ private:
  * @param json configuration for the DataStore
  * @return unique_ptr to created DataStore instance
  */
-inline std::unique_ptr<DataStore>
+inline std::shared_ptr<DataStore>
 make_data_store(const std::string& type,
                 const std::string& name,
                 std::shared_ptr<dunedaq::appfwk::ModuleConfiguration> mcfg)
 {
   static cet::BasicPluginFactory bpf("duneDataStore", "make"); // NOLINT
 
-  std::unique_ptr<DataStore> ds;
+  std::shared_ptr<DataStore> ds;
   try {
-    ds = bpf.makePlugin<std::unique_ptr<DataStore>>(type, name, mcfg);
+    ds = bpf.makePlugin<std::shared_ptr<DataStore>>(type, name, mcfg);
   } catch (const cet::exception& cexpt) {
     throw DataStoreCreationFailed(ERS_HERE, type, name, cexpt);
   }

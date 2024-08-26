@@ -71,7 +71,7 @@ private:
   std::shared_ptr<source_t> m_tpset_source;
 
   // Worker(s)
-  std::unique_ptr<DataStore> m_data_writer;
+  std::shared_ptr<DataStore> m_data_writer;
 
   // Metrics
   std::atomic<uint64_t> m_tpset_received = { 0 };         // NOLINT(build/unsigned)
