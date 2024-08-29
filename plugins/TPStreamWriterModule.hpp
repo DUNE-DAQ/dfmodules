@@ -74,8 +74,9 @@ private:
   std::shared_ptr<DataStore> m_data_writer;
 
   // Metrics
-  std::atomic<uint64_t> m_tpset_received = { 0 };         // NOLINT(build/unsigned)
-  std::atomic<uint64_t> m_tpset_written  = { 0 };         // NOLINT(build/unsigned)
+  std::atomic<uint64_t> m_tpset_received = { 0 };      // NOLINT(build/unsigned)
+  std::atomic<uint64_t> m_tp_received  = { 0 };        // NOLINT(build/unsigned)
+  std::atomic<uint64_t> m_tp_written  = { 0 };         // NOLINT(build/unsigned)
 
 };
 } // namespace dfmodules

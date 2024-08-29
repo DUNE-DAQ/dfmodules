@@ -5,7 +5,8 @@ package dunedaq.dfmodules.opmon;
 message TPStreamWriterInfo {
 
   uint64 tpset_received = 1;  // incremental
-  uint64 tpset_written  = 2;  // incremental
-  
+  uint64 tp_received  = 10;   // incremental
+  uint64 tp_written   = 11;   // incremental
+
 }
 

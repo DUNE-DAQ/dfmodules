@@ -71,7 +71,8 @@ TPStreamWriterModule::generate_opmon_data() {
   opmon::TPStreamWriterInfo info;
 
   info.set_tpset_received(m_tpset_received.exchange(0));
-  info.set_tpset_written(m_tpset_written.exchange(0));
+  info.set_tp_received( m_tp_received.exchange(0) );
+  info.set_tp_written(m_tp_written.exchange(0));
 
   publish(std::move(info));
 }
@@ -172,6 +173,7 @@ TPStreamWriterModule::do_work(std::atomic<bool>& running_flag)
       tpset = m_tpset_source->receive(m_queue_timeout);
       ++n_tpset_received;
       ++m_tpset_received;
+      m_tp_received += tpset.objects.size();
     } catch (iomanager::TimeoutExpired&) {
       continue;
     }
@@ -207,7 +209,12 @@ TPStreamWriterModule::do_work(std::atomic<bool>& running_flag)
         should_retry = false;
         try {
           m_data_writer->write(*timeslice_ptr);
-	  ++m_tpset_written;
+	  size_t n_tp = 0;
+	  const auto & frags = timeslice_ptr -> get_fragments_ref();
+	  for ( const auto & f_ptr :  frags ) {
+	    n_tp += f_ptr -> get_data_size()/sizeof(trgdataformats::TriggerPrimitive);
+	  }
+	  m_tp_written += n_tp;
         } catch (const RetryableDataStoreProblem& excpt) {
           should_retry = true;
           ers::error(DataWritingProblem(ERS_HERE,
