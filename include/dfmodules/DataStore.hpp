@@ -136,8 +136,8 @@ public:
 private:
   DataStore(const DataStore&) = delete;
   DataStore& operator=(const DataStore&) = delete;
-  DataStore(DataStore&&) = default;
-  DataStore& operator=(DataStore&&) = default;
+  DataStore(DataStore&&) = delete;
+  DataStore& operator=(DataStore&&) = delete;
 };
 
 /**

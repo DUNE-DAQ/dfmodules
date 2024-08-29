@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package dunedaq.dfmodules.opmon;
+
+message DataStoreInfo {
+
+  uint64 bytes_output = 1;
+  uint64 new_bytes_output = 2;
+  uint64 object_written = 10;
+  uint64 new_object_written = 11;
+  
+}
