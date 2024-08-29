@@ -76,7 +76,6 @@ private:
   // Metrics
   std::atomic<uint64_t> m_tpset_received = { 0 };         // NOLINT(build/unsigned)
   std::atomic<uint64_t> m_tpset_written  = { 0 };         // NOLINT(build/unsigned)
-  //  std::atomic<uint64_t> m_bytes_output   = { 0 };         // NOLINT(build/unsigned)
 
 };
 } // namespace dfmodules

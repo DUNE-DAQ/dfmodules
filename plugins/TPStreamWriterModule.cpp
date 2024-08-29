@@ -72,7 +72,6 @@ TPStreamWriterModule::generate_opmon_data() {
 
   info.set_tpset_received(m_tpset_received.exchange(0));
   info.set_tpset_written(m_tpset_written.exchange(0));
-//   info.bytes_output = m_bytes_output.exchange(0);
 
   publish(std::move(info));
 }
@@ -209,7 +208,6 @@ TPStreamWriterModule::do_work(std::atomic<bool>& running_flag)
         try {
           m_data_writer->write(*timeslice_ptr);
 	  ++m_tpset_written;
-	  //	  m_bytes_output += timeslice_ptr->get_total_size_bytes();
         } catch (const RetryableDataStoreProblem& excpt) {
           should_retry = true;
           ers::error(DataWritingProblem(ERS_HERE,
