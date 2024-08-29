@@ -9,6 +9,8 @@
 #include "DFOBrokerModule.hpp"
 #include "dfmodules/CommonIssues.hpp"
 
+#include "dfmodules/opmon/DFOBrokerModule.pb.h"
+
 #include "appfwk/app/Nljs.hpp"
 #include "appmodel/DFOApplication.hpp"
 #include "appmodel/DFOBrokerModule.hpp"
@@ -227,6 +229,14 @@ DFOBrokerModule::do_enable_dfo(const data_t& args)
 void
 DFOBrokerModule::generate_opmon_data()
 {
+  opmon::DFOBrokerInfo info;
+  info.set_heartbeats_sent(m_sent_heartbeats.exchange(0));
+  info.set_decisions_sent(m_sent_decisions.exchange(0));
+  info.set_decisions_received(m_received_decisions.exchange(0));
+  info.set_tokens_received(m_received_tokens.exchange(0));
+  info.set_pending_trs(m_pending_trs.load());
+  publish(std::move(info));
+
 }
 
 void
@@ -248,6 +258,9 @@ DFOBrokerModule::receive_trigger_complete_token(const dfmessages::TriggerDecisio
     return;
   }
 
+
+  ++m_received_tokens;
+  --m_pending_trs;
   {
     std::lock_guard<std::mutex> lk(m_dfo_info_mutex);
     for (auto& dfo_pair : m_dfo_information) {
@@ -279,6 +292,8 @@ DFOBrokerModule::receive_dfo_decision(const dfmessages::DFODecision& decision)
     return;
   }
 
+    ++m_pending_trs;
+  ++m_received_decisions;
   {
     std::lock_guard<std::mutex> lk(m_dfo_info_mutex);
     for (auto& ack : decision.acknowledged_completions) {
@@ -290,6 +305,7 @@ DFOBrokerModule::receive_dfo_decision(const dfmessages::DFODecision& decision)
       dfmessages::TriggerDecision decision_copy = dfmessages::TriggerDecision(decision.trigger_decision);
       auto sender = get_iom_sender<dfmessages::TriggerDecision>(m_td_connection);
       sender->send(std::move(decision_copy), m_td_timeout);
+      ++m_sent_decisions;
     }
   }
   send_heartbeat(true);
@@ -319,6 +335,7 @@ DFOBrokerModule::send_heartbeat(bool skip_time_check)
     get_iom_sender<dfmessages::DataflowHeartbeat>(m_heartbeat_connection)
       ->send(std::move(theHeartbeat), m_send_heartbeat_timeout);
     m_last_heartbeat_sent = begin_time;
+    ++m_sent_heartbeats;
   } catch (iomanager::TimeoutExpired const& ex) {
     ers::warning(ex);
     TLOG(TLVL_DISPATCH_TO_TRB) << get_name() << ": Timeout from IOManager send call, will retry later";

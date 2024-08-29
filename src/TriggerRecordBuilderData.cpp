@@ -62,6 +62,19 @@ TriggerRecordBuilderData::get_assignment(daqdataformats::trigger_number_t trigge
   return nullptr;
 }
 
+bool
+TriggerRecordBuilderData::has_assignment(daqdataformats::trigger_number_t trigger_number) const
+{
+  auto lk = std::lock_guard<std::mutex>(m_assigned_trigger_decisions_mutex);
+  for (auto ptr : m_assigned_trigger_decisions) {
+    if (ptr->decision.trigger_number == trigger_number) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 std::shared_ptr<AssignedTriggerDecision>
 TriggerRecordBuilderData::extract_assignment(daqdataformats::trigger_number_t trigger_number)
 {

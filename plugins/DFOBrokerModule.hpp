@@ -117,9 +117,13 @@ private:
   mutable std::mutex m_send_heartbeat_mutex;
   mutable std::mutex m_dfo_info_mutex;
 
-  // Struct for statistic
-
   // Statistics
+  std::atomic<uint64_t> m_sent_heartbeats;
+  std::atomic<uint64_t> m_sent_decisions;
+  std::atomic<uint64_t> m_received_decisions;
+  std::atomic<uint64_t> m_received_tokens;
+  std::atomic<uint64_t> m_pending_trs;
+
 };
 } // namespace dfmodules
 } // namespace dunedaq

@@ -91,6 +91,7 @@ public:
     daqdataformats::trigger_number_t trigger_number,
     std::function<void(nlohmann::json&)> metadata_fun = nullptr);
   std::list<std::shared_ptr<AssignedTriggerDecision>> flush();
+  bool has_assignment(daqdataformats::trigger_number_t trigger_number) const;
 
   void generate_opmon_data() override;
 

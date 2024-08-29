@@ -15,9 +15,9 @@
 #include "appmodel/DFOModule.hpp"
 #include "confmodel/Application.hpp"
 #include "confmodel/Connection.hpp"
+#include "dfmessages/DFODecision.hpp"
 #include "iomanager/IOManager.hpp"
 #include "logging/Logging.hpp"
-#include "dfmessages/DFODecision.hpp"
 
 #include <chrono>
 #include <cstdlib>
@@ -43,7 +43,7 @@ enum
   TLVL_TRIGDEC_RECEIVED = 21,
   TLVL_NOTIFY_TRIGGER = 22,
   TLVL_DISPATCH_TO_TRB = 23,
-  TLVL_TDheartbeat_RECEIVED = 24
+  TLVL_HEARTBEAT_RECEIVED = 24
 };
 
 namespace dunedaq::dfmodules {
@@ -110,6 +110,7 @@ DFOModule::do_conf(const data_t&)
 
   m_queue_timeout = std::chrono::milliseconds(m_dfo_conf->get_general_queue_timeout_ms());
   m_stop_timeout = std::chrono::microseconds(m_dfo_conf->get_stop_timeout_ms());
+  m_busy_interval = std::chrono::milliseconds(m_dfo_conf->get_busy_interval_ms());
   m_busy_threshold = m_dfo_conf->get_busy_threshold();
   m_free_threshold = m_dfo_conf->get_free_threshold();
 
@@ -236,8 +237,7 @@ DFOModule::receive_trigger_decision(const dfmessages::TriggerDecision& decision)
                                         << " to connection " << assignment->connection_name;
       break;
     } else {
-      ers::error(
-        TRBModuleAppUpdate(ERS_HERE, assignment->connection_name, "Could not send Trigger Decision"));
+      ers::error(TRBModuleAppUpdate(ERS_HERE, assignment->connection_name, "Could not send Trigger Decision"));
       m_dataflow_availability[assignment->connection_name]->set_in_error(true);
     }
 
@@ -321,11 +321,11 @@ DFOModule::find_slot(const dfmessages::TriggerDecision& decision)
 }
 
 void
-DFOModule::generate_opmon_data() 
+DFOModule::generate_opmon_data()
 {
 
   opmon::DFOInfo info;
-  info.set_heartbeats_received( m_received_heartbeats.exchange(0) );
+  info.set_heartbeats_received(m_received_heartbeats.exchange(0));
   info.set_decisions_sent(m_sent_decisions.exchange(0));
   info.set_decisions_received(m_received_decisions.exchange(0));
   info.set_waiting_for_decision(m_waiting_for_decision.exchange(0));
@@ -333,7 +333,8 @@ DFOModule::generate_opmon_data()
   info.set_forwarding_decision(m_forwarding_decision.exchange(0));
   info.set_waiting_for_heartbeat(m_waiting_for_heartbeat.exchange(0));
   info.set_processing_heartbeat(m_processing_heartbeat.exchange(0));
-  publish( std::move(info) );
+  info.set_heartbeat_updates(m_heartbeat_updates.exchange(0));
+  publish(std::move(info));
 
   std::lock_guard<std::mutex> guard(m_trigger_mutex);
   for (auto& [type, counts] : m_trigger_counters) {
@@ -341,7 +342,7 @@ DFOModule::generate_opmon_data()
     ti.set_received(counts.received.exchange(0));
     ti.set_completed(counts.completed.exchange(0));
     auto name = dunedaq::trgdataformats::get_trigger_candidate_type_names()[type];
-    publish( std::move(ti), {{"type", name}} );
+    publish(std::move(ti), { { "type", name } });
   }
 }
 
@@ -350,15 +351,17 @@ DFOModule::receive_dataflow_heartbeat(const dfmessages::DataflowHeartbeat& heart
 {
   if (m_dataflow_availability.count(heartbeat.decision_destination) == 0) {
     TLOG_DEBUG(TLVL_CONFIG) << "Creating dataflow availability struct for uid " << heartbeat.decision_destination;
-    m_dataflow_availability[heartbeat.decision_destination] = std::make_shared<TriggerRecordBuilderData>(heartbeat.decision_destination, m_busy_threshold, m_free_threshold);
+    m_dataflow_availability[heartbeat.decision_destination] =
+      std::make_shared<TriggerRecordBuilderData>(heartbeat.decision_destination, m_busy_threshold, m_free_threshold);
   } else {
     TLOG() << TRBModuleAppUpdate(ERS_HERE, heartbeat.decision_destination, "Has reconnected");
     auto app_it = m_dataflow_availability.find(heartbeat.decision_destination);
     app_it->second->set_in_error(false);
   }
 
-  TLOG_DEBUG(TLVL_TDheartbeat_RECEIVED) << get_name() << " Received DataflowHeartbeat for run " << heartbeat.run_number
-                                        << " (current run is " << m_run_number << ") from " << heartbeat.decision_destination;
+  TLOG_DEBUG(TLVL_HEARTBEAT_RECEIVED) << get_name() << " Received DataflowHeartbeat for run " << heartbeat.run_number
+                                        << " (current run is " << m_run_number << ") from "
+                                        << heartbeat.decision_destination;
   // add a check to see if the application data found
   if (heartbeat.run_number != m_run_number) {
     std::ostringstream oss_source;
@@ -367,8 +370,8 @@ DFOModule::receive_dataflow_heartbeat(const dfmessages::DataflowHeartbeat& heart
     if (heartbeat.recent_completed_triggers.size() > 0) {
       last_trigger = *heartbeat.recent_completed_triggers.rbegin();
     }
-    ers::error(DFOModuleRunNumberMismatch(
-      ERS_HERE, heartbeat.run_number, m_run_number, oss_source.str(), last_trigger));
+    ers::error(
+      DFOModuleRunNumberMismatch(ERS_HERE, heartbeat.run_number, m_run_number, oss_source.str(), last_trigger));
     return;
   }
 
@@ -382,16 +385,35 @@ DFOModule::receive_dataflow_heartbeat(const dfmessages::DataflowHeartbeat& heart
   ++m_received_heartbeats;
   auto callback_start = std::chrono::steady_clock::now();
 
-  try {
-    app_it->second->update_completions_to_acknowledge_list(heartbeat.recent_completed_triggers);
-    for (auto& tn : heartbeat.recent_completed_triggers) {
+  app_it->second->update_completions_to_acknowledge_list(heartbeat.recent_completed_triggers);
+  for (auto& tn : heartbeat.recent_completed_triggers) {
+    if (app_it->second->has_assignment(tn)) {
       auto dec_ptr = app_it->second->complete_assignment(tn, m_metadata_function);
       auto trigger_types = unpack_types(dec_ptr->decision.trigger_type);
       for (const auto t : trigger_types)
         ++get_trigger_counter(t).completed;
+    } else {
+      bool wrong_trb = false;
+      for (auto& app_check : m_dataflow_availability) {
+        if (app_check.second->has_assignment(tn)) {
+          TLOG_DEBUG(TLVL_HEARTBEAT_RECEIVED) << get_name() << " This DFO assigned trigger number " << tn << " to "
+                                                << app_check.first
+                 << ", but it was fulfilled by " << app_it->first;
+
+          wrong_trb = true;
+          ++m_heartbeat_updates;
+          auto dec_ptr = app_check.second->complete_assignment(tn, m_metadata_function);
+          auto trigger_types = unpack_types(dec_ptr->decision.trigger_type);
+          for (const auto t : trigger_types)
+            ++get_trigger_counter(t).completed;
+        }
+      }
+
+      if (!wrong_trb) {
+        TLOG_DEBUG(TLVL_HEARTBEAT_RECEIVED) << get_name() << " Recently-completed trigger number " << tn
+                                              << " was not found, either missed TD if inactive, or already completed.";
+      }
     }
-  } catch (AssignedTriggerDecisionNotFound const& err) {
-    ers::error(err);
   }
 
   if (app_it->second->is_in_error()) {
@@ -443,15 +465,16 @@ DFOModule::used_slots() const
 void
 DFOModule::notify_trigger(bool busy) const
 {
-
-  if (busy == m_last_notified_busy.load())
+  auto start_time = std::chrono::steady_clock::now();
+  if (busy == m_last_notified_busy.load() && 
+      std::chrono::duration_cast<std::chrono::milliseconds>(start_time - m_last_notified_busy_time) < m_busy_interval)
     return;
 
   bool wasSentSuccessfully = false;
 
   do {
     try {
-      dfmessages::TriggerInhibit message{ busy, m_run_number };
+      dfmessages::TriggerInhibit message{ busy, m_run_number, m_dfo_id };
       m_busy_sender->send(std::move(message), m_queue_timeout);
       wasSentSuccessfully = true;
       TLOG_DEBUG(TLVL_NOTIFY_TRIGGER) << get_name() << " Sent BUSY status " << busy << " to trigger in run "
@@ -465,6 +488,7 @@ DFOModule::notify_trigger(bool busy) const
   } while (!wasSentSuccessfully && m_running_status.load());
 
   m_last_notified_busy.store(busy);
+  m_last_notified_busy_time = start_time;
 }
 
 bool
@@ -487,7 +511,8 @@ DFOModule::dispatch(const std::shared_ptr<AssignedTriggerDecision>& assignment)
       ++m_sent_decisions;
       TLOG_DEBUG(TLVL_DISPATCH_TO_TRB) << get_name() << " Sent DFODecision for trigger_number "
                                        << decision_copy.trigger_decision.trigger_number << " to TRB at connection "
-                                       << assignment->connection_name << " for run number " << decision_copy.trigger_decision.run_number;
+                                       << assignment->connection_name << " for run number "
+                                       << decision_copy.trigger_decision.run_number;
     } catch (const ers::Issue& excpt) {
       std::ostringstream oss_warn;
       oss_warn << "Send to connection \"" << assignment->connection_name << "\" failed";

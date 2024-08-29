@@ -35,6 +35,7 @@ daq_add_plugin( DFOModule  duneDAQModule LINK_LIBRARIES dfmodules iomanager::iom
 daq_add_plugin( DFOBrokerModule duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager )
 daq_add_plugin( TRBModule  duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager )
 daq_add_plugin( FakeDataProdModule          duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager)
+daq_add_plugin( FakeDFOClientModule duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager )
 daq_add_plugin( TPStreamWriterModule        duneDAQModule LINK_LIBRARIES dfmodules hdf5libs::hdf5libs trigger::trigger Boost::iostreams )
 
 ##############################################################################

@@ -150,14 +150,20 @@ BOOST_AUTO_TEST_CASE(Commands)
   opmgr.register_node("dfo", dfo);
   dfo->init(modCfg);
 
+  BOOST_REQUIRE(dfo != nullptr);
+
   auto conf_json = "{\"thresholds\": { \"free\": 1, \"busy\": 2 }, "
                    "\"general_queue_timeout\": 100, \"td_send_retries\": 5}"_json;
   auto start_json = "{\"run\": 1}"_json;
   auto null_json = "{}"_json;
 
+  BOOST_REQUIRE(dfo->has_command("conf"));
   dfo->execute_command("conf", conf_json);
+  BOOST_REQUIRE(dfo->has_command("start"));
   dfo->execute_command("start", start_json);
+  BOOST_REQUIRE(dfo->has_command("drain_dataflow"));
   dfo->execute_command("drain_dataflow", null_json);
+  BOOST_REQUIRE(dfo->has_command("scrap"));
   dfo->execute_command("scrap", null_json);
 
   auto metric = get_dfo_info();
