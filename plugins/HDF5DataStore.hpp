@@ -14,6 +14,7 @@
 
 #include "HDF5FileUtils.hpp"
 #include "dfmodules/DataStore.hpp"
+#include "dfmodules/opmon/DataStore.pb.h"
 
 #include "hdf5libs/HDF5RawDataFile.hpp"
 
@@ -200,6 +201,10 @@ public:
     // write the data block
     m_file_handle->write(tr);
     m_recorded_size = m_file_handle->get_recorded_size();
+
+    m_new_bytes += tr_size;
+    ++m_new_objects;
+
   }
 
   /**
@@ -246,6 +251,9 @@ public:
     // write the data block
     m_file_handle->write(ts);
     m_recorded_size = m_file_handle->get_recorded_size();
+
+    m_new_bytes += ts_size;
+    ++m_new_objects;
   }
 
   /**
@@ -308,6 +316,19 @@ public:
     }
   }
 
+
+protected:
+  void generate_opmon_data() override {
+
+    opmon::HDF5DataStoreInfo info;
+
+    info.set_new_bytes_output( m_new_bytes.exchange(0) );
+    info.set_new_written_object( m_new_objects.exchange(0) );
+    info.set_bytes_in_file( m_recorded_size.load() );
+    info.set_written_files( m_file_index.load() ) ;
+    publish( std::move(info), {{"path", m_path}} );
+  }
+  
 private:
   HDF5DataStore(const HDF5DataStore&) = delete;
   HDF5DataStore& operator=(const HDF5DataStore&) = delete;
@@ -324,11 +345,15 @@ private:
   std::string m_writer_identifier;
 
   // Total number of generated files
-  size_t m_file_index;
+  std::atomic<size_t> m_file_index;
 
   // Total size of data being written
-  size_t m_recorded_size;
+  std::atomic<size_t> m_recorded_size;
 
+  // incremental written data
+  std::atomic<uint64_t> m_new_bytes;
+  std::atomic<uint64_t> m_new_objects;
+  
   // Configuration
   const appmodel::DataStoreConf* m_config_params;
   std::string m_operation_mode;

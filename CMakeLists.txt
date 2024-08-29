@@ -27,7 +27,7 @@ daq_add_library( TriggerInhibitAgent.cpp TriggerRecordBuilderData.cpp TPBundleHa
                  opmonlib::opmonlib ers::ers HighFive appfwk::appfwk logging::logging stdc++fs dfmessages::dfmessages utilities::utilities trigger::trigger detdataformats::detdataformats trgdataformats::trgdataformats)
 
       
-daq_add_plugin( HDF5DataStore      duneDataStore LINK_LIBRARIES logging::logging daqdataformats::daqdataformats hdf5libs::hdf5libs appfwk::appfwk stdc++fs)
+daq_add_plugin( HDF5DataStore     duneDataStore LINK_LIBRARIES dfmodules hdf5libs::hdf5libs stdc++fs)
 
 daq_add_plugin( FragmentAggregatorModule    duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager )
 daq_add_plugin( DataWriterModule            duneDAQModule LINK_LIBRARIES dfmodules hdf5libs::hdf5libs iomanager::iomanager )

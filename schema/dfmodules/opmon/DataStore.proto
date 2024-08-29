@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package dunedaq.dfmodules.opmon;
+
+message HDF5DataStoreInfo {
+
+  uint64 new_bytes_output = 1;   // regardless of the file
+  uint64 bytes_in_file = 2; // bytes written in the current file
+  uint32 written_files = 3; // written files in the current run
+  uint64 new_written_object = 10;  // object not as in files, but as in call for write
+  
+}

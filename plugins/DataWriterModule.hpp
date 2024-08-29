@@ -84,7 +84,7 @@ private:
   dunedaq::utilities::WorkerThread m_thread;
   void do_work(std::atomic<bool>&);
 
-  std::unique_ptr<DataStore> m_data_writer;
+  std::shared_ptr<DataStore> m_data_writer;
 
   // Metrics
   std::atomic<uint64_t> m_records_received = { 0 };     // NOLINT(build/unsigned)
