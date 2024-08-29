@@ -320,7 +320,7 @@ public:
 protected:
   void generate_opmon_data() override {
 
-    opmon::DataStoreInfo info;
+    opmon::HDF5DataStoreInfo info;
 
     info.set_new_bytes_output( m_new_bytes.exchange(0) );
     info.set_new_written_object( m_new_objects.exchange(0) );

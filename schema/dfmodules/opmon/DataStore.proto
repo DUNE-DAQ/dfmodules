@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package dunedaq.dfmodules.opmon;
 
-message DataStoreInfo {
+message HDF5DataStoreInfo {
 
   uint64 new_bytes_output = 1;   // regardless of the file
   uint64 bytes_in_file = 2; // bytes written in the current file
