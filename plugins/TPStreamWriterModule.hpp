@@ -44,7 +44,7 @@ public:
   TPStreamWriterModule& operator=(TPStreamWriterModule&&) = delete;      ///< TPStreamWriterModule is not move-assignable
 
   void init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg) override;
-  //  void get_info(opmonlib::InfoCollector& ci, int level) override;
+  void generate_opmon_data() override;
 
 private:
   // Commands
@@ -71,12 +71,12 @@ private:
   std::shared_ptr<source_t> m_tpset_source;
 
   // Worker(s)
-  std::unique_ptr<DataStore> m_data_writer;
+  std::shared_ptr<DataStore> m_data_writer;
 
   // Metrics
-  std::atomic<uint64_t> m_tpset_received = { 0 };         // NOLINT(build/unsigned)
-  std::atomic<uint64_t> m_tpset_written  = { 0 };         // NOLINT(build/unsigned)
-  std::atomic<uint64_t> m_bytes_output   = { 0 };         // NOLINT(build/unsigned)
+  std::atomic<uint64_t> m_tpset_received = { 0 };      // NOLINT(build/unsigned)
+  std::atomic<uint64_t> m_tp_received  = { 0 };        // NOLINT(build/unsigned)
+  std::atomic<uint64_t> m_tp_written  = { 0 };         // NOLINT(build/unsigned)
 
 };
 } // namespace dfmodules

@@ -9,6 +9,7 @@
 #include "TPStreamWriterModule.hpp"
 #include "dfmodules/CommonIssues.hpp"
 #include "dfmodules/TPBundleHandler.hpp"
+#include "dfmodules/opmon/TPStreamWriter.pb.h"
 
 #include "appmodel/DataStoreConf.hpp"
 #include "appmodel/TPStreamWriterModule.hpp"
@@ -65,17 +66,16 @@ TPStreamWriterModule::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
 
-// void
-// TPStreamWriterModule::get_info(opmonlib::InfoCollector& ci, int /*level*/)
-// {
-//   tpstreamwriterinfo::Info info;
+void
+TPStreamWriterModule::generate_opmon_data() {
+  opmon::TPStreamWriterInfo info;
 
-//   info.tpset_received = m_tpset_received.exchange(0);
-//   info.tpset_written = m_tpset_written.exchange(0);
-//   info.bytes_output = m_bytes_output.exchange(0);
+  info.set_tpset_received(m_tpset_received.exchange(0));
+  info.set_tp_received( m_tp_received.exchange(0) );
+  info.set_tp_written(m_tp_written.exchange(0));
 
-//   ci.add(info);
-// }
+  publish(std::move(info));
+}
 
 void
 TPStreamWriterModule::do_conf(const data_t& )
@@ -88,6 +88,7 @@ TPStreamWriterModule::do_conf(const data_t& )
     m_data_writer = make_data_store(m_tp_writer_conf->get_data_store_params()->get_type(),
                                     m_tp_writer_conf->get_data_store_params()->UID(),
                                     m_module_configuration);
+    register_node("data_writer", m_data_writer);
   } catch (const ers::Issue& excpt) {
     throw UnableToConfigure(ERS_HERE, get_name(), excpt);
   }
@@ -172,6 +173,7 @@ TPStreamWriterModule::do_work(std::atomic<bool>& running_flag)
       tpset = m_tpset_source->receive(m_queue_timeout);
       ++n_tpset_received;
       ++m_tpset_received;
+      m_tp_received += tpset.objects.size();
     } catch (iomanager::TimeoutExpired&) {
       continue;
     }
@@ -207,8 +209,12 @@ TPStreamWriterModule::do_work(std::atomic<bool>& running_flag)
         should_retry = false;
         try {
           m_data_writer->write(*timeslice_ptr);
-	  ++m_tpset_written;
-	  m_bytes_output += timeslice_ptr->get_total_size_bytes();
+	  size_t n_tp = 0;
+	  const auto & frags = timeslice_ptr -> get_fragments_ref();
+	  for ( const auto & f_ptr :  frags ) {
+	    n_tp += f_ptr -> get_data_size()/sizeof(trgdataformats::TriggerPrimitive);
+	  }
+	  m_tp_written += n_tp;
         } catch (const RetryableDataStoreProblem& excpt) {
           should_retry = true;
           ers::error(DataWritingProblem(ERS_HERE,
