@@ -239,7 +239,7 @@ TRBModule::setup_data_request_connections(const appmodel::ReadoutApplication* ro
       m_map_sourceid_connections[trig_sid] = get_iom_sender<dfmessages::DataRequest>(faNetUid);
     }
   }
-
+  /*
   trig_sid.id = roapp->get_ta_source_id();
   // ID == 0 should disable TAs
   if (trig_sid.id != 0) {
@@ -248,6 +248,7 @@ TRBModule::setup_data_request_connections(const appmodel::ReadoutApplication* ro
       m_map_sourceid_connections[trig_sid] = get_iom_sender<dfmessages::DataRequest>(faNetUid);
     }
   }
+  */
   lk.unlock();
 }
 
