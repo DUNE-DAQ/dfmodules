@@ -7,15 +7,16 @@
  * received with this code.
  */
 
-#include "dfmodules/DataStore.hpp"
 #include "appfwk/ModuleConfiguration.hpp"
+#include "dfmodules/DataStore.hpp"
 
-#include "appmodel/DataWriterModule.hpp"
+#include "appmodel/DataStoreConf.hpp"
 #include "appmodel/DataWriterConf.hpp"
+#include "appmodel/DataWriterModule.hpp"
 #include "appmodel/FilenameParams.hpp"
 #include "confmodel/DetectorConfig.hpp"
 #include "confmodel/Session.hpp"
-#include "appmodel/DataStoreConf.hpp"
+#include "confmodel/StorageDevice.hpp"
 #include "detdataformats/DetID.hpp"
 
 #define BOOST_TEST_MODULE HDF5Write_test // NOLINT
@@ -161,10 +162,12 @@ BOOST_AUTO_TEST_CASE(WriteEventFiles)
   CfgFixture cfg("test-session-3-1");
   auto data_writer_conf = cfg.modCfg->module<dunedaq::appmodel::DataWriterModule>("dwm-01")->get_configuration();
   auto data_store_conf = data_writer_conf->get_data_store_params();
-
   auto data_store_conf_obj = data_store_conf->config_object();
-  data_store_conf_obj.set_by_val<std::string>("directory_path", file_path);
   data_store_conf_obj.set_by_val<std::string>("mode", "one-event-per-file");
+
+  auto storage_device_conf = data_store_conf->get_storage();
+  auto storage_device_conf_obj = storage_device_conf->config_object();
+  storage_device_conf_obj.set_by_val<std::string>("data_path", file_path);
 
   auto data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.modCfg);
 
@@ -202,12 +205,13 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
   CfgFixture cfg("test-session-3-1");
   auto data_writer_conf = cfg.modCfg->module<dunedaq::appmodel::DataWriterModule>("dwm-01")->get_configuration();
   auto data_store_conf = data_writer_conf->get_data_store_params();
+  auto storage_device_conf = data_store_conf->get_storage();
 
-  auto data_store_conf_obj = data_store_conf->config_object();
-  data_store_conf_obj.set_by_val<std::string>("directory_path", file_path);
+  auto storage_device_conf_obj = storage_device_conf->config_object();
+  storage_device_conf_obj.set_by_val<std::string>("data_path", file_path);
 
   auto data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.modCfg);
-    
+
   // write several events, each with several fragments
   for (int trigger_number = 1; trigger_number <= trigger_count; ++trigger_number)
     data_store_ptr->write(create_trigger_record(trigger_number, fragment_size, apa_count * link_count));
@@ -242,12 +246,13 @@ BOOST_AUTO_TEST_CASE(CheckWritingSuffix)
   CfgFixture cfg("test-session-3-1");
   auto data_writer_conf = cfg.modCfg->module<dunedaq::appmodel::DataWriterModule>("dwm-01")->get_configuration();
   auto data_store_conf = data_writer_conf->get_data_store_params();
+  auto storage_device_conf = data_store_conf->get_storage();
 
-  auto data_store_conf_obj = data_store_conf->config_object();
-  data_store_conf_obj.set_by_val<std::string>("directory_path", file_path);
+  auto storage_device_conf_obj = storage_device_conf->config_object();
+  storage_device_conf_obj.set_by_val<std::string>("data_path", file_path);
 
   auto data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.modCfg);
-  
+
   // write several events, each with several fragments
   for (int trigger_number = 1; trigger_number <= trigger_count; ++trigger_number) {
     data_store_ptr->write(create_trigger_record(trigger_number, fragment_size, apa_count * link_count));
@@ -293,11 +298,14 @@ BOOST_AUTO_TEST_CASE(FileSizeLimitResultsInMultipleFiles)
   auto data_store_conf = data_writer_conf->get_data_store_params();
 
   auto data_store_conf_obj = data_store_conf->config_object();
-  data_store_conf_obj.set_by_val<std::string>("directory_path", file_path);
   data_store_conf_obj.set_by_val<int>("max_file_size", 3000000); // goal is 6 events per file
 
+  auto storage_device_conf = data_store_conf->get_storage();
+  auto storage_device_conf_obj = storage_device_conf->config_object();
+  storage_device_conf_obj.set_by_val<std::string>("data_path", file_path);
+
   auto data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.modCfg);
-  
+
   // write several events, each with several fragments
   for (int trigger_number = 1; trigger_number <= trigger_count; ++trigger_number)
     data_store_ptr->write(create_trigger_record(trigger_number, fragment_size, apa_count * link_count));
@@ -335,10 +343,12 @@ BOOST_AUTO_TEST_CASE(SmallFileSizeLimitDataBlockListWrite)
   CfgFixture cfg("test-session-5-1");
   auto data_writer_conf = cfg.modCfg->module<dunedaq::appmodel::DataWriterModule>("dwm-01")->get_configuration();
   auto data_store_conf = data_writer_conf->get_data_store_params();
-
   auto data_store_conf_obj = data_store_conf->config_object();
-  data_store_conf_obj.set_by_val<std::string>("directory_path", file_path);
   data_store_conf_obj.set_by_val<int>("max_file_size", 150000); // ~1.5 Fragment, ~0.3 TR
+
+  auto storage_device_conf = data_store_conf->get_storage();
+  auto storage_device_conf_obj = storage_device_conf->config_object();
+  storage_device_conf_obj.set_by_val<std::string>("data_path", file_path);
 
   auto data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.modCfg);
 
@@ -358,6 +368,59 @@ BOOST_AUTO_TEST_CASE(SmallFileSizeLimitDataBlockListWrite)
   file_list = delete_files_matching_pattern(file_path, delete_pattern);
   delete_files_matching_pattern(file_path, "HardwareMap.*\\.txt");
   BOOST_REQUIRE_EQUAL(file_list.size(), 5);
+}
+
+BOOST_AUTO_TEST_CASE(DiskQuota)
+{
+  std::string file_path(std::filesystem::temp_directory_path());
+
+  const int trigger_count = 2;
+  const int apa_count = 5;
+  const int link_count = 1;
+  const int fragment_size = 100000;
+
+  // 5 APAs times 100000 bytes per fragment gives 500,000 bytes per TR
+
+  // delete any pre-existing files so that we start with a clean slate
+  std::string delete_pattern = "hdf5writetest.*\\.hdf5";
+  delete_files_matching_pattern(file_path, delete_pattern);
+
+  // create the DataStore
+  CfgFixture cfg("test-session-5-1");
+  auto data_writer_conf = cfg.modCfg->module<dunedaq::appmodel::DataWriterModule>("dwm-01")->get_configuration();
+  auto data_store_conf = data_writer_conf->get_data_store_params();
+  auto data_store_conf_obj = data_store_conf->config_object();
+
+  auto storage_device_conf = data_store_conf->get_storage();
+  auto storage_device_conf_obj = storage_device_conf->config_object();
+  storage_device_conf_obj.set_by_val<std::string>("data_path", file_path);
+  storage_device_conf_obj.set_by_val<float>("quota", 0.00055); 
+
+  auto data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.modCfg);
+
+  // write several events, each with several fragments
+  data_store_ptr->write(create_trigger_record(1, fragment_size, apa_count * link_count));
+
+  for (int trigger_number = 2; trigger_number <= trigger_count; ++trigger_number)
+    BOOST_REQUIRE_EXCEPTION(
+      data_store_ptr->write(create_trigger_record(trigger_number, fragment_size, apa_count * link_count)),
+      RetryableDataStoreProblem,
+      [&](RetryableDataStoreProblem const& rdsp) {
+        return std::string(rdsp.cause()->get_class_name()) == "dfmodules::InsufficientDiskSpace";
+      });
+
+  data_store_ptr.reset(); // explicit destruction
+
+  // check that the expected number of files was created
+  std::string search_pattern = "hdf5writetest.*\\.hdf5";
+  std::vector<std::string> file_list = get_files_matching_pattern(file_path, search_pattern);
+  // each TriggerRecord should be stored in its own file
+  BOOST_REQUIRE_EQUAL(file_list.size(), 1);
+
+  // clean up the files that were created
+  file_list = delete_files_matching_pattern(file_path, delete_pattern);
+  delete_files_matching_pattern(file_path, "HardwareMap.*\\.txt");
+  BOOST_REQUIRE_EQUAL(file_list.size(), 1);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
