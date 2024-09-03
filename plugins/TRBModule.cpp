@@ -232,23 +232,12 @@ TRBModule::setup_data_request_connections(const appmodel::ReadoutApplication* ro
   trig_sid.subsystem = daqdataformats::SourceID::Subsystem::kTrigger;
   trig_sid.id = roapp->get_tp_source_id();
 
-  // ID == 0 should disable TPs
-  if (trig_sid.id != 0) {
+  if (roapp->get_tp_generation_enabled()) {
     auto it_req = m_map_sourceid_connections.find(trig_sid);
     if (it_req == m_map_sourceid_connections.end() || it_req->second == nullptr) {
       m_map_sourceid_connections[trig_sid] = get_iom_sender<dfmessages::DataRequest>(faNetUid);
     }
   }
-  /*
-  trig_sid.id = roapp->get_ta_source_id();
-  // ID == 0 should disable TAs
-  if (trig_sid.id != 0) {
-    auto it_req = m_map_sourceid_connections.find(trig_sid);
-    if (it_req == m_map_sourceid_connections.end() || it_req->second == nullptr) {
-      m_map_sourceid_connections[trig_sid] = get_iom_sender<dfmessages::DataRequest>(faNetUid);
-    }
-  }
-  */
   lk.unlock();
 }
 
