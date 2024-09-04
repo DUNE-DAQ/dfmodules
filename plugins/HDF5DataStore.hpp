@@ -113,11 +113,12 @@ public:
    * @param name, path, filename, operationMode
    *
    */
-  explicit HDF5DataStore(std::string const& name, std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
+  explicit HDF5DataStore(std::string const& name, std::shared_ptr<appfwk::ModuleConfiguration> mcfg, std::string const& writer_name)
     : DataStore(name)
     , m_basic_name_of_open_file("")
     , m_open_flags_of_open_file(0)
     , m_run_number(0)
+    , m_writer_identifier(writer_name)
   {
     TLOG_DEBUG(TLVL_BASIC) << get_name();
 
@@ -125,7 +126,6 @@ public:
     m_file_layout_params = m_config_params->get_file_layout_params();
     m_session = mcfg->configuration_manager()->session();
     m_operational_environment = mcfg->configuration_manager()->session()->get_detector_configuration()->get_op_env();
-    m_writer_identifier = name;
 
     m_operation_mode = m_config_params->get_mode();
     m_path = m_config_params->get_directory_path();
