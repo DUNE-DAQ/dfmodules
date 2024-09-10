@@ -135,7 +135,6 @@ public:
       m_path = m_config_params->get_storage()->get_mount_point() + m_path;
     }
 
-    m_quota_gb = m_config_params->get_storage()->get_quota();
     m_max_file_size = m_config_params->get_max_file_size();
     m_disable_unique_suffix = m_config_params->get_disable_unique_filename_suffix();
     m_free_space_safety_factor_for_write = m_config_params->get_free_space_safety_factor();
@@ -145,7 +144,6 @@ public:
 
     m_file_index = 0;
     m_recorded_size = 0;
-    m_previously_recorded_size = 0;
 
     if (m_operation_mode != "one-event-per-file"
         //&& m_operation_mode != "one-fragment-per-file"
@@ -153,8 +151,9 @@ public:
 
       throw InvalidOperationMode(ERS_HERE, get_name(), m_operation_mode);
     }
+
     TLOG() << "HDF5DataStore Configured with openv " << m_operational_environment << ", path " << m_path
-           << ", quota=" << m_quota_gb << "GB, operation_mode " << m_operation_mode;
+            << ", operation_mode " << m_operation_mode;
     // 05-Apr-2022, KAB: added warning message when the output destination
     // is not a valid directory.
     struct statvfs vfs_results;
@@ -359,7 +358,6 @@ private:
 
   // Total size of data being written
   std::atomic<size_t> m_recorded_size;
-  std::atomic<size_t> m_previously_recorded_size;
 
   // incremental written data
   std::atomic<uint64_t> m_new_bytes;
@@ -372,7 +370,6 @@ private:
   size_t m_max_file_size;
   bool m_disable_unique_suffix;
   float m_free_space_safety_factor_for_write;
-  float m_quota_gb;
 
   // std::unique_ptr<HDF5KeyTranslator> m_key_translator_ptr;
 
@@ -417,7 +414,6 @@ private:
   {
     if ((m_recorded_size + size_of_next_write) > m_max_file_size && m_recorded_size > 0) {
       ++m_file_index;
-      m_previously_recorded_size += m_recorded_size;
       m_recorded_size = 0;
     }
   }
@@ -500,13 +496,6 @@ private:
       return 0;
     }
     size_t free_bytes = vfs_results.f_bsize * vfs_results.f_bavail;
-    if (m_quota_gb >= 0) {
-      int64_t quota_bytes = static_cast<int64_t>(m_quota_gb * 1024 * 1024 * 1024) - m_recorded_size - m_previously_recorded_size;
-      if (quota_bytes < 0)
-        quota_bytes = 0;
-
-      return free_bytes < static_cast<size_t>(quota_bytes) ? free_bytes : static_cast<size_t>(quota_bytes);
-    }
     return free_bytes;
   }
 };

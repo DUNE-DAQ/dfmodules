@@ -133,7 +133,6 @@
 
   <obj class="StorageDevice" id="default">
     <attr name="data_path" type="string" val="/"/>
-    <attr name="quota" type="s32" val="-1"/>
   </obj>
   
   <obj class="FilenameParams" id="default">
