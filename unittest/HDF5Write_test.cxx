@@ -169,7 +169,7 @@ BOOST_AUTO_TEST_CASE(WriteEventFiles)
   auto storage_device_conf_obj = storage_device_conf->config_object();
   storage_device_conf_obj.set_by_val<std::string>("data_path", file_path);
 
-  auto data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.modCfg);
+  auto data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.modCfg, "dwm-01");
 
   // write several events, each with several fragments
   for (int trigger_number = 1; trigger_number <= trigger_count; ++trigger_number)
@@ -210,8 +210,8 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
   auto storage_device_conf_obj = storage_device_conf->config_object();
   storage_device_conf_obj.set_by_val<std::string>("data_path", file_path);
 
-  auto data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.modCfg);
-
+  auto data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.modCfg, "dwm-01");
+  
   // write several events, each with several fragments
   for (int trigger_number = 1; trigger_number <= trigger_count; ++trigger_number)
     data_store_ptr->write(create_trigger_record(trigger_number, fragment_size, apa_count * link_count));
@@ -251,8 +251,8 @@ BOOST_AUTO_TEST_CASE(CheckWritingSuffix)
   auto storage_device_conf_obj = storage_device_conf->config_object();
   storage_device_conf_obj.set_by_val<std::string>("data_path", file_path);
 
-  auto data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.modCfg);
-
+  auto data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.modCfg, "dwm-01");
+  
   // write several events, each with several fragments
   for (int trigger_number = 1; trigger_number <= trigger_count; ++trigger_number) {
     data_store_ptr->write(create_trigger_record(trigger_number, fragment_size, apa_count * link_count));
@@ -304,8 +304,8 @@ BOOST_AUTO_TEST_CASE(FileSizeLimitResultsInMultipleFiles)
   auto storage_device_conf_obj = storage_device_conf->config_object();
   storage_device_conf_obj.set_by_val<std::string>("data_path", file_path);
 
-  auto data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.modCfg);
-
+  auto data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.modCfg, "dwm-01");
+  
   // write several events, each with several fragments
   for (int trigger_number = 1; trigger_number <= trigger_count; ++trigger_number)
     data_store_ptr->write(create_trigger_record(trigger_number, fragment_size, apa_count * link_count));
@@ -350,7 +350,7 @@ BOOST_AUTO_TEST_CASE(SmallFileSizeLimitDataBlockListWrite)
   auto storage_device_conf_obj = storage_device_conf->config_object();
   storage_device_conf_obj.set_by_val<std::string>("data_path", file_path);
 
-  auto data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.modCfg);
+  auto data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.modCfg,"dwm-01");
 
   // write several events, each with several fragments
   for (int trigger_number = 1; trigger_number <= trigger_count; ++trigger_number)

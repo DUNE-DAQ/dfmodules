@@ -61,6 +61,7 @@ TPStreamWriterModule::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
   assert(mdal->get_inputs().size() == 1);
   m_module_configuration = mcfg;
   m_tpset_source = iomanager::IOManager::get()->get_receiver<trigger::TPSet>(mdal->get_inputs()[0]->UID());
+  m_writer_identifier = mdal->get_writer_identifier();
   m_tp_writer_conf = mdal->get_configuration();
   m_source_id = mdal->get_source_id();
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
@@ -87,7 +88,7 @@ TPStreamWriterModule::do_conf(const data_t& )
   try {
     m_data_writer = make_data_store(m_tp_writer_conf->get_data_store_params()->get_type(),
                                     m_tp_writer_conf->get_data_store_params()->UID(),
-                                    m_module_configuration);
+                                    m_module_configuration, m_writer_identifier);
     register_node("data_writer", m_data_writer);
   } catch (const ers::Issue& excpt) {
     throw UnableToConfigure(ERS_HERE, get_name(), excpt);

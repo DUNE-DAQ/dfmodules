@@ -69,6 +69,7 @@
     <file path="schema/confmodel/dunedaq.schema.xml"/>
     <file path="schema/appmodel/application.schema.xml"/>
     <file path="schema/appmodel/fdmodules.schema.xml"/>
+    <file path="schema/appmodel/trigger.schema.xml"/>
   </include>
 
   <comments>
@@ -975,15 +976,24 @@
     <attr name="preallocation" type="bool" val="1"/>
   </obj>
 
+  <obj class="AVXThresholdProcessor" id="tpg-threshold-proc">
+    <attr name="plane0" type="u16" val="100"/>
+    <attr name="plane1" type="u16" val="100"/>
+    <attr name="plane2" type="u16" val="100"/>
+  </obj>
+
+  <obj class="AVXFrugalPedestalSubtractProcessor" id="tpg-pedsub-proc">
+    <attr name="accum_limit" type="u8" val="10"/>
+  </obj>
+  
   <obj class="RawDataProcessor" id="def-wib-processor">
     <attr name="queue_sizes" type="u32" val="10000"/>
     <attr name="thread_names_prefix" type="string" val="postproc-"/>
-    <attr name="mask_processing" type="bool" val="0"/>
-    <attr name="max_ticks_tot" type="u32" val="10000"/>
-    <attr name="tpg_enabled" type="bool" val="1"/>
-    <attr name="algorithm" type="string" val="SimpleThreshold"/>
-    <attr name="threshold" type="u16" val="1900"/>
     <attr name="channel_map" type="string" val="PD2HDChannelMap"/>
+    <rel name="processing_steps">
+      <ref class="AVXFrugalPedestalSubtractProcessor" id="tpg-pedsub-proc"/>
+      <ref class="AVXThresholdProcessor" id="tpg-threshold-proc"/>
+    </rel>
   </obj>
 
 </oks-data>
