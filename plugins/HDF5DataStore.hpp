@@ -129,7 +129,12 @@ public:
     m_operational_environment = mcfg->configuration_manager()->session()->get_detector_configuration()->get_op_env();
 
     m_operation_mode = m_config_params->get_mode();
-    m_path = m_config_params->get_storage()->get_data_path();
+    m_path = m_config_params->get_directory_path();
+
+    if (m_path != ".") {
+      m_path = m_config_params->get_storage()->get_mount_point() + m_path;
+    }
+
     m_quota_gb = m_config_params->get_storage()->get_quota();
     m_max_file_size = m_config_params->get_max_file_size();
     m_disable_unique_suffix = m_config_params->get_disable_unique_filename_suffix();
@@ -378,7 +383,8 @@ private:
                             daqdataformats::run_number_t run_number)
   {
     std::ostringstream work_oss;
-    work_oss << m_config_params->get_storage()->get_data_path();
+
+    work_oss << m_path;
     if (work_oss.str().length() > 0) {
       work_oss << "/";
     }

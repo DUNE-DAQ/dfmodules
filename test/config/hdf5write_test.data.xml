@@ -121,6 +121,7 @@
 
   <obj class="DataStoreConf" id="default">
     <attr name="type" type="string" val="HDF5DataStore"/>
+    <attr name="directory_path" type="string" val="."/>
     <attr name="mode" type="enum" val="all-per-file"/>
     <attr name="max_file_size" type="u64" val="4294967296"/>
     <attr name="disable_unique_filename_suffix" type="bool" val="0"/>
@@ -131,7 +132,7 @@
   </obj>
 
   <obj class="StorageDevice" id="default">
-    <attr name="data_path" type="string" val="."/>
+    <attr name="data_path" type="string" val="/"/>
     <attr name="quota" type="s32" val="-1"/>
   </obj>
   

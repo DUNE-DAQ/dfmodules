@@ -163,11 +163,8 @@ BOOST_AUTO_TEST_CASE(WriteEventFiles)
   auto data_writer_conf = cfg.modCfg->module<dunedaq::appmodel::DataWriterModule>("dwm-01")->get_configuration();
   auto data_store_conf = data_writer_conf->get_data_store_params();
   auto data_store_conf_obj = data_store_conf->config_object();
+  data_store_conf_obj.set_by_val<std::string>("directory_path", file_path);
   data_store_conf_obj.set_by_val<std::string>("mode", "one-event-per-file");
-
-  auto storage_device_conf = data_store_conf->get_storage();
-  auto storage_device_conf_obj = storage_device_conf->config_object();
-  storage_device_conf_obj.set_by_val<std::string>("data_path", file_path);
 
   auto data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.modCfg, "dwm-01");
 
@@ -205,10 +202,9 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
   CfgFixture cfg("test-session-3-1");
   auto data_writer_conf = cfg.modCfg->module<dunedaq::appmodel::DataWriterModule>("dwm-01")->get_configuration();
   auto data_store_conf = data_writer_conf->get_data_store_params();
-  auto storage_device_conf = data_store_conf->get_storage();
 
-  auto storage_device_conf_obj = storage_device_conf->config_object();
-  storage_device_conf_obj.set_by_val<std::string>("data_path", file_path);
+  auto data_store_conf_obj = data_store_conf->config_object();
+  data_store_conf_obj.set_by_val<std::string>("directory_path", file_path);
 
   auto data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.modCfg, "dwm-01");
   
@@ -246,10 +242,9 @@ BOOST_AUTO_TEST_CASE(CheckWritingSuffix)
   CfgFixture cfg("test-session-3-1");
   auto data_writer_conf = cfg.modCfg->module<dunedaq::appmodel::DataWriterModule>("dwm-01")->get_configuration();
   auto data_store_conf = data_writer_conf->get_data_store_params();
-  auto storage_device_conf = data_store_conf->get_storage();
 
-  auto storage_device_conf_obj = storage_device_conf->config_object();
-  storage_device_conf_obj.set_by_val<std::string>("data_path", file_path);
+  auto data_store_conf_obj = data_store_conf->config_object();
+  data_store_conf_obj.set_by_val<std::string>("directory_path", file_path);
 
   auto data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.modCfg, "dwm-01");
   
@@ -298,11 +293,8 @@ BOOST_AUTO_TEST_CASE(FileSizeLimitResultsInMultipleFiles)
   auto data_store_conf = data_writer_conf->get_data_store_params();
 
   auto data_store_conf_obj = data_store_conf->config_object();
+  data_store_conf_obj.set_by_val<std::string>("directory_path", file_path);
   data_store_conf_obj.set_by_val<int>("max_file_size", 3000000); // goal is 6 events per file
-
-  auto storage_device_conf = data_store_conf->get_storage();
-  auto storage_device_conf_obj = storage_device_conf->config_object();
-  storage_device_conf_obj.set_by_val<std::string>("data_path", file_path);
 
   auto data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.modCfg, "dwm-01");
   
@@ -344,11 +336,8 @@ BOOST_AUTO_TEST_CASE(SmallFileSizeLimitDataBlockListWrite)
   auto data_writer_conf = cfg.modCfg->module<dunedaq::appmodel::DataWriterModule>("dwm-01")->get_configuration();
   auto data_store_conf = data_writer_conf->get_data_store_params();
   auto data_store_conf_obj = data_store_conf->config_object();
+  data_store_conf_obj.set_by_val<std::string>("directory_path", file_path);
   data_store_conf_obj.set_by_val<int>("max_file_size", 150000); // ~1.5 Fragment, ~0.3 TR
-
-  auto storage_device_conf = data_store_conf->get_storage();
-  auto storage_device_conf_obj = storage_device_conf->config_object();
-  storage_device_conf_obj.set_by_val<std::string>("data_path", file_path);
 
   auto data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.modCfg,"dwm-01");
 
@@ -390,13 +379,13 @@ BOOST_AUTO_TEST_CASE(DiskQuota)
   auto data_writer_conf = cfg.modCfg->module<dunedaq::appmodel::DataWriterModule>("dwm-01")->get_configuration();
   auto data_store_conf = data_writer_conf->get_data_store_params();
   auto data_store_conf_obj = data_store_conf->config_object();
+  data_store_conf_obj.set_by_val<std::string>("directory_path", file_path);
 
   auto storage_device_conf = data_store_conf->get_storage();
   auto storage_device_conf_obj = storage_device_conf->config_object();
-  storage_device_conf_obj.set_by_val<std::string>("data_path", file_path);
   storage_device_conf_obj.set_by_val<float>("quota", 0.00055); 
 
-  auto data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.modCfg);
+  auto data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.modCfg, "dwm-01");
 
   // write several events, each with several fragments
   data_store_ptr->write(create_trigger_record(1, fragment_size, apa_count * link_count));
