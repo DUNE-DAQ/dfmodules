@@ -114,13 +114,11 @@ TRBModule::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
   }
 
   const confmodel::Session* session = mcfg->configuration_manager()->session();
-  for (auto& app : session->get_all_applications()) {
+  for (auto& app : session->get_enabled_applications()) {
     auto roapp = app->cast<appmodel::ReadoutApplication>();
     auto smartapp = app->cast<appmodel::SmartDaqApplication>();
     if (roapp != nullptr) {
-      if (!roapp->disabled(*session)) {
         setup_data_request_connections(roapp);
-      }
     } else if (smartapp != nullptr) {
       auto source_id_check = smartapp->get_source_id();
       if (source_id_check != nullptr) {
