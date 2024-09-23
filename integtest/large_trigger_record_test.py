@@ -68,7 +68,19 @@ hsi_frag_params = {
     "min_size_bytes": 72,
     "max_size_bytes": 100,
 }
-ignored_logfile_problems = {}
+ignored_logfile_problems = {
+    "-controller": [
+        "Propagating take_control to children",
+        "There is no broadcasting service",
+        "Could not understand the BroadcastHandler technology you want to use",
+        "Worker with pid \\d+ was terminated due to signal 1",
+    ],
+    "local-connection-server": [
+        "errorlog: -",
+        "Worker with pid \\d+ was terminated due to signal 1",
+    ],
+    "log_.*_largerecord_": ["connect: Connection refused"],
+}
 
 # Determine if the conditions are right for these tests
 sufficient_disk_space = True
@@ -122,7 +134,7 @@ conf_dict.config_substitutions.append(
         updates={"max_file_size": 2 * 1024 * 1024 * 1024},
     )
 )
-oversize_conf = copy.deepcopy(conf_dict) # Copy before setting the readout window
+oversize_conf = copy.deepcopy(conf_dict)  # Copy before setting the readout window
 conf_dict.config_substitutions.append(
     data_classes.config_substitution(
         obj_class="TimingTriggerOffsetMap",
@@ -171,15 +183,15 @@ confgen_arguments = {
 # The commands to run in nanorc, as a list
 if sufficient_disk_space:
     nanorc_command_list = (
-    "boot conf wait 5".split()
-    + "start 101 wait 1 enable-triggers wait ".split()
-    + [str(run_duration)]
-    + "disable-triggers wait 2 drain-dataflow wait 2 stop-trigger-sources stop ".split()
-    + "start 102 wait 1 enable-triggers wait ".split()
-    + [str(run_duration)]
-    + "disable-triggers wait 2 drain-dataflow wait 2 stop-trigger-sources stop ".split()
-    + " scrap terminate".split()
-)
+        "boot conf wait 5".split()
+        + "start 101 wait 1 enable-triggers wait ".split()
+        + [str(run_duration)]
+        + "disable-triggers wait 2 drain-dataflow wait 2 stop-trigger-sources stop ".split()
+        + "start 102 wait 1 enable-triggers wait ".split()
+        + [str(run_duration)]
+        + "disable-triggers wait 2 drain-dataflow wait 2 stop-trigger-sources stop ".split()
+        + " scrap terminate".split()
+    )
 else:
     nanorc_command_list = ["boot", "terminate"]
 
@@ -235,11 +247,11 @@ def test_data_files(run_nanorc):
     local_expected_event_count = expected_event_count
     local_event_count_tolerance = expected_event_count_tolerance
     fragment_check_list = [triggercandidate_frag_params, hsi_frag_params]
-    if (
-        "trigger_window_before_ticks" in run_nanorc.confgen_config["trigger"].keys()
-        and run_nanorc.confgen_config["trigger"]["trigger_window_before_ticks"]
-        > 15000000
-    ):
+    current_test = os.environ.get("PYTEST_CURRENT_TEST")
+    match_obj = re.search(r".*\[(.+)\].*", current_test)
+    if match_obj:
+        current_test = match_obj.group(1)
+    if current_test == "TRSize_125PercentOfMaxFileSize":
         fragment_check_list.append(wibeth_frag_125pct_params)
     else:
         fragment_check_list.append(wibeth_frag_55pct_params)

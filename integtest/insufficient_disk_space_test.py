@@ -90,7 +90,6 @@ hsi_frag_params = {
     "min_size_bytes": 72,
     "max_size_bytes": 100,
 }
-ignored_logfile_problems = {}
 required_logfile_problems = {
     "dataflow": [
         "A problem was encountered when writing TriggerRecord number",
@@ -99,6 +98,19 @@ required_logfile_problems = {
     ],
     "trigger": [r"Trigger is inhibited in run \d+"],
     "dfo": [r"TriggerDecision \d+ didn't complete within timeout in run \d+"],
+}
+ignored_logfile_problems = {
+    "-controller": [
+        "Propagating take_control to children",
+        "There is no broadcasting service",
+        "Could not understand the BroadcastHandler technology you want to use",
+        "Worker with pid \\d+ was terminated due to signal 1",
+    ],
+    "local-connection-server": [
+        "errorlog: -",
+        "Worker with pid \\d+ was terminated due to signal 1",
+    ],
+    "log_.*_insufficient_": ["connect: Connection refused"],
 }
 
 # The next three variable declarations *must* be present as globals in the test
@@ -164,18 +176,18 @@ confgen_arguments = {
 # The commands to run in nanorc, as a list
 if gb_space < gb_limit:
     nanorc_command_list = (
-    "boot conf wait 5".split()
-    + "start 101 wait 1 enable-triggers wait ".split()
-    + [str(run_duration)]
-    + "disable-triggers wait 2 drain-dataflow wait 2 stop-trigger-sources stop ".split()
-    + "start 102 wait 1 enable-triggers wait ".split()
-    + [str(run_duration)]
-    + "disable-triggers wait 2 drain-dataflow wait 2 stop-trigger-sources stop ".split()
-    + "start 103 wait 1 enable-triggers wait ".split()
-    + [str(run_duration)]
-    + "disable-triggers wait 2 drain-dataflow wait 2 stop-trigger-sources stop ".split()
-    + " scrap terminate".split()
-)
+        "boot conf wait 5".split()
+        + "start 101 wait 1 enable-triggers wait ".split()
+        + [str(run_duration)]
+        + "disable-triggers wait 2 drain-dataflow wait 2 stop-trigger-sources stop ".split()
+        + "start 102 wait 1 enable-triggers wait ".split()
+        + [str(run_duration)]
+        + "disable-triggers wait 2 drain-dataflow wait 2 stop-trigger-sources stop ".split()
+        + "start 103 wait 1 enable-triggers wait ".split()
+        + [str(run_duration)]
+        + "disable-triggers wait 2 drain-dataflow wait 2 stop-trigger-sources stop ".split()
+        + " scrap terminate".split()
+    )
 else:
     nanorc_command_list = ["boot", "terminate"]
 

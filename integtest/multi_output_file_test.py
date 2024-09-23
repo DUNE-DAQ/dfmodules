@@ -99,7 +99,17 @@ hsi_frag_params = {
     "max_size_bytes": 128,
 }
 ignored_logfile_problems = {
-    "trigger": ["zipped_tpset_q: Unable to push within timeout period"]
+    "-controller": [
+        "Propagating take_control to children",
+        "There is no broadcasting service",
+        "Could not understand the BroadcastHandler technology you want to use",
+        "Worker with pid \\d+ was terminated due to signal 1",
+    ],
+    "local-connection-server": [
+        "errorlog: -",
+        "Worker with pid \\d+ was terminated due to signal 1",
+    ],
+    "log_.*_multioutput_": ["connect: Connection refused"],
 }
 
 # The next three variable declarations *must* be present as globals in the test
@@ -241,10 +251,7 @@ def test_log_files(run_nanorc):
 def test_data_files(run_nanorc):
     local_file_count = expected_number_of_data_files
     fragment_check_list = [triggercandidate_frag_params, hsi_frag_params]
-    if (
-        "enable_tpg" in run_nanorc.confgen_config["readout"].keys()
-        and run_nanorc.confgen_config["readout"]["enable_tpg"]
-    ):
+    if run_nanorc.confgen_config.tpg_enabled:
         local_file_count = 4  # 5
         # fragment_check_list.append(wib1_frag_multi_trig_params) # ProtoWIB
         # fragment_check_list.append(wib2_frag_multi_trig_params) # DuneWIB

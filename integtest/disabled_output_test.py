@@ -104,7 +104,19 @@ hsi_frag_params = {
     "min_size_bytes": 72,
     "max_size_bytes": 100,
 }
-ignored_logfile_problems = {}
+ignored_logfile_problems = {
+    "-controller": [
+        "Propagating take_control to children",
+        "There is no broadcasting service",
+        "Could not understand the BroadcastHandler technology you want to use",
+        "Worker with pid \\d+ was terminated due to signal 1",
+    ],
+    "local-connection-server": [
+        "errorlog: -",
+        "Worker with pid \\d+ was terminated due to signal 1",
+    ],
+    "log_.*_disabled_": ["connect: Connection refused"],
+}
 
 # The next three variable declarations *must* be present as globals in the test
 # file. They're read by the "fixtures" in conftest.py to determine how
@@ -167,7 +179,9 @@ swtpg_conf.config_substitutions.append(
         updates={"prescale": 25},
     )
 )
-swtpg_conf.frame_file = "asset://?checksum=dd156b4895f1b06a06b6ff38e37bd798"  # WIBEth All Zeros
+swtpg_conf.frame_file = (
+    "asset://?checksum=dd156b4895f1b06a06b6ff38e37bd798"  # WIBEth All Zeros
+)
 
 confgen_arguments = {
     "WIBEth_System": conf_dict,
@@ -226,10 +240,7 @@ def test_data_files(run_nanorc):
     local_expected_event_count = expected_event_count
     local_event_count_tolerance = expected_event_count_tolerance
     fragment_check_list = [triggercandidate_frag_params, hsi_frag_params]
-    if (
-        "enable_tpg" in run_nanorc.confgen_config["readout"].keys()
-        and run_nanorc.confgen_config["readout"]["enable_tpg"]
-    ):
+    if run_nanorc.confgen_config.tpg_enabled:
         local_expected_event_count += (
             250 * number_of_data_producers * run_duration / 100
         )
