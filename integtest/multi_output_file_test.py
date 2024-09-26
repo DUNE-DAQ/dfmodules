@@ -18,38 +18,7 @@ data_rate_slowdown_factor = 1
 # Default values for validation parameters
 expected_number_of_data_files = 4
 check_for_logfile_errors = True
-wib1_frag_hsi_trig_params = {
-    "fragment_type_description": "WIB",
-    "fragment_type": "ProtoWIB",
-    "hdf5_source_subsystem": "Detector_Readout",
-    "expected_fragment_count": (number_of_data_producers * number_of_readout_apps),
-    "min_size_bytes": 37192,
-    "max_size_bytes": 186136,
-}
-wib1_frag_multi_trig_params = {
-    "fragment_type_description": "WIB",
-    "fragment_type": "ProtoWIB",
-    "hdf5_source_subsystem": "Detector_Readout",
-    "expected_fragment_count": (number_of_data_producers * number_of_readout_apps),
-    "min_size_bytes": 72,
-    "max_size_bytes": 270000,
-}
-wib2_frag_hsi_trig_params = {
-    "fragment_type_description": "WIB",
-    "fragment_type": "WIB",
-    "hdf5_source_subsystem": "Detector_Readout",
-    "expected_fragment_count": (number_of_data_producers * number_of_readout_apps),
-    "min_size_bytes": 29808,
-    "max_size_bytes": 30280,
-}
-wib2_frag_multi_trig_params = {
-    "fragment_type_description": "WIB",
-    "fragment_type": "WIB",
-    "hdf5_source_subsystem": "Detector_Readout",
-    "expected_fragment_count": (number_of_data_producers * number_of_readout_apps),
-    "min_size_bytes": 72,
-    "max_size_bytes": 54000,
-}
+
 wibeth_frag_hsi_trig_params = {
     "fragment_type_description": "WIBEth",
     "fragment_type": "WIBEth",
@@ -78,7 +47,7 @@ triggeractivity_frag_params = {
     "fragment_type_description": "Trigger Activity",
     "fragment_type": "Trigger_Activity",
     "hdf5_source_subsystem": "Trigger",
-    "expected_fragment_count": number_of_readout_apps,
+    "expected_fragment_count": 1,
     "min_size_bytes": 72,
     "max_size_bytes": 520,
 }
@@ -86,7 +55,7 @@ triggertp_frag_params = {
     "fragment_type_description": "Trigger with TPs",
     "fragment_type": "Trigger_Primitive",
     "hdf5_source_subsystem": "Trigger",
-    "expected_fragment_count": (2 * number_of_readout_apps),
+    "expected_fragment_count": (3 * number_of_readout_apps),
     "min_size_bytes": 72,
     "max_size_bytes": 16000,
 }
@@ -94,7 +63,7 @@ hsi_frag_params = {
     "fragment_type_description": "HSI",
     "fragment_type": "Hardware_Signal",
     "hdf5_source_subsystem": "HW_Signals_Interface",
-    "expected_fragment_count": 1,
+    "expected_fragment_count": 0,
     "min_size_bytes": 72,
     "max_size_bytes": 128,
 }
@@ -149,7 +118,6 @@ conf_dict.config_substitutions.append(
 conf_dict.config_substitutions.append(
     data_classes.config_substitution(
         obj_class="TimingTriggerOffsetMap",
-        obj_id="ttcm-off-0",
         updates={
             "time_before": 52000,
             "time_after": 1000,
@@ -180,6 +148,12 @@ conf_dict.config_substitutions.append(
     )
 )
 
+conf_dict.config_substitutions.append(
+    data_classes.config_substitution(
+        obj_class="DFOConf", updates={"busy_threshold": 5, "free_threshold": 2}
+    )
+)
+
 
 swtpg_conf = copy.deepcopy(conf_dict)
 swtpg_conf.tpg_enabled = True
@@ -193,7 +167,14 @@ multiout_conf.config_substitutions.append(
     data_classes.config_substitution(
         obj_class="DataStoreConf",
         obj_id="default",
-        updates={"max_file_size":  4 * 1024 * 1024 * 1024},
+        updates={"max_file_size": 4 * 1024 * 1024 * 1024},
+    )
+)
+multiout_conf.config_substitutions.append(
+    data_classes.config_substitution(
+        obj_class="QueueDescriptor",
+        obj_id="trigger-records",
+        updates={"queue_type": "kFollyMPMCQueue"},
     )
 )
 
