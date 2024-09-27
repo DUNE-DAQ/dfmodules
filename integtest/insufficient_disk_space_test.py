@@ -126,7 +126,7 @@ conf_dict.op_env = "integtest"
 conf_dict.session = "insufficient"
 conf_dict.tpg_enabled = False
 conf_dict.n_df_apps = number_of_dataflow_apps
-conf_dict.hsi_enabled = True  # FakeHSI must be enabled to set trigger window width!
+conf_dict.fake_hsi_enabled = True  # FakeHSI must be enabled to set trigger window width!
 
 conf_dict.config_substitutions.append(
     data_classes.config_substitution(
