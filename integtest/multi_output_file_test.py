@@ -93,6 +93,7 @@ conf_dict.dro_map_config.n_apps = number_of_readout_apps
 conf_dict.op_env = "integtest"
 conf_dict.session = "multioutput"
 conf_dict.tpg_enabled = False
+conf_dict.hsi_enabled = True  # FakeHSI must be enabled to set trigger window width!
 
 conf_dict.config_substitutions.append(
     data_classes.config_substitution(
@@ -109,24 +110,14 @@ conf_dict.config_substitutions.append(
 
 conf_dict.config_substitutions.append(
     data_classes.config_substitution(
-        obj_class="RandomTCMakerConf",
-        updates={"trigger_interval_ticks": 62500000 / 10.0},
+        obj_class="FakeHSIEventGeneratorConf",
+        updates={"trigger_rate": 10.0},
     )
 )
 
-
 conf_dict.config_substitutions.append(
     data_classes.config_substitution(
-        obj_class="TimingTriggerOffsetMap",
-        updates={
-            "time_before": 52000,
-            "time_after": 1000,
-        },
-    )
-)
-conf_dict.config_substitutions.append(
-    data_classes.config_substitution(
-        obj_class="TCReadoutMap",
+        obj_class="HSISignalWindow",
         updates={
             "time_before": 52000,
             "time_after": 1000,

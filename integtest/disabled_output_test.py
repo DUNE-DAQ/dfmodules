@@ -16,8 +16,6 @@ number_of_data_producers = 2
 run_duration = 20  # seconds
 trigger_rate = 1.0  # Hz
 data_rate_slowdown_factor = 1
-readout_window_time_before = 1000
-readout_window_time_after = 1001
 
 # Default values for validation parameters
 expected_number_of_data_files = 2
@@ -147,26 +145,6 @@ conf_dict.config_substitutions.append(
 conf_dict.config_substitutions.append(
     data_classes.config_substitution(
         obj_class="LatencyBuffer", updates={"size": 200000}
-    )
-)
-
-conf_dict.config_substitutions.append(
-    data_classes.config_substitution(
-        obj_class="TimingTriggerOffsetMap",
-        obj_id="ttcm-off-0",
-        updates={
-            "time_before": readout_window_time_before,
-            "time_after": readout_window_time_after,
-        },
-    )
-)
-conf_dict.config_substitutions.append(
-    data_classes.config_substitution(
-        obj_class="TCReadoutMap",
-        updates={
-            "time_before": readout_window_time_before,
-            "time_after": readout_window_time_after,
-        },
     )
 )
 
