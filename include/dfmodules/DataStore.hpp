@@ -80,6 +80,17 @@ ERS_DECLARE_ISSUE(dfmodules,
 
 /**
  * @brief An ERS Issue for DataStore problems in which it is
+ * reasonable to skip any warning or error message.
+ * @cond Doxygen doesn't like ERS macros LCOV_EXCL_START
+ */
+ERS_DECLARE_ISSUE(dfmodules,
+                  IgnorableDataStoreProblem,
+                  "Module " << mod_name << ": A problem was encountered when " << description,
+                  ((std::string)mod_name)((std::string)description))
+/// @endcond LCOV_EXCL_STOP
+
+/**
+ * @brief An ERS Issue for DataStore problems in which it is
  * not clear whether retrying the operation might succeed or not.
  * @cond Doxygen doesn't like ERS macros LCOV_EXCL_START
  */
@@ -124,7 +135,8 @@ public:
    * This allows DataStore instances to make any preparations that will be
    * beneficial in advance of the first data blocks being written or read.
    */
-  virtual void prepare_for_run(daqdataformats::run_number_t run_number) = 0;
+  virtual void prepare_for_run(daqdataformats::run_number_t run_number,
+                               bool run_is_for_test_purposes) = 0;
 
   /**
    * @brief Informs the DataStore that writes or reads of data blocks associated
