@@ -19,6 +19,7 @@
 #include "hdf5libs/HDF5RawDataFile.hpp"
 
 #include "appmodel/DataStoreConf.hpp"
+#include "confmodel/StorageDevice.hpp"
 #include "appmodel/FilenameParams.hpp"
 #include "confmodel/DetectorConfig.hpp"
 #include "confmodel/Session.hpp"
@@ -129,6 +130,11 @@ public:
 
     m_operation_mode = m_config_params->get_mode();
     m_path = m_config_params->get_directory_path();
+
+    if (m_path != ".") {
+      m_path = m_config_params->get_storage()->get_mount_point() + m_path;
+    }
+
     m_max_file_size = m_config_params->get_max_file_size();
     m_disable_unique_suffix = m_config_params->get_disable_unique_filename_suffix();
     m_free_space_safety_factor_for_write = m_config_params->get_free_space_safety_factor();
@@ -146,6 +152,8 @@ public:
       throw InvalidOperationMode(ERS_HERE, get_name(), m_operation_mode);
     }
 
+    TLOG() << "HDF5DataStore Configured with openv " << m_operational_environment << ", path " << m_path
+            << ", operation_mode " << m_operation_mode;
     // 05-Apr-2022, KAB: added warning message when the output destination
     // is not a valid directory.
     struct statvfs vfs_results;
@@ -177,6 +185,7 @@ public:
                                   current_free_space,
                                   (m_free_space_safety_factor_for_write * tr_size),
                                   msg_oss.str());
+      ers::error(issue);
       std::string msg =
         "writing a trigger record to file" + (m_file_handle ? " " + m_file_handle->get_file_name() : "");
       throw RetryableDataStoreProblem(ERS_HERE, get_name(), msg, issue);
@@ -371,7 +380,8 @@ private:
                             daqdataformats::run_number_t run_number)
   {
     std::ostringstream work_oss;
-    work_oss << m_config_params->get_directory_path();
+
+    work_oss << m_path;
     if (work_oss.str().length() > 0) {
       work_oss << "/";
     }
@@ -485,7 +495,8 @@ private:
     if (retval != 0) {
       return 0;
     }
-    return vfs_results.f_bsize * vfs_results.f_bavail;
+    size_t free_bytes = vfs_results.f_bsize * vfs_results.f_bavail;
+    return free_bytes;
   }
 };
 

@@ -7,15 +7,16 @@
  * received with this code.
  */
 
-#include "dfmodules/DataStore.hpp"
 #include "appfwk/ModuleConfiguration.hpp"
+#include "dfmodules/DataStore.hpp"
 
-#include "appmodel/DataWriterModule.hpp"
+#include "appmodel/DataStoreConf.hpp"
 #include "appmodel/DataWriterConf.hpp"
+#include "appmodel/DataWriterModule.hpp"
 #include "appmodel/FilenameParams.hpp"
 #include "confmodel/DetectorConfig.hpp"
 #include "confmodel/Session.hpp"
-#include "appmodel/DataStoreConf.hpp"
+#include "confmodel/StorageDevice.hpp"
 #include "detdataformats/DetID.hpp"
 
 #define BOOST_TEST_MODULE HDF5Write_test // NOLINT
@@ -161,7 +162,6 @@ BOOST_AUTO_TEST_CASE(WriteEventFiles)
   CfgFixture cfg("test-session-3-1");
   auto data_writer_conf = cfg.modCfg->module<dunedaq::appmodel::DataWriterModule>("dwm-01")->get_configuration();
   auto data_store_conf = data_writer_conf->get_data_store_params();
-
   auto data_store_conf_obj = data_store_conf->config_object();
   data_store_conf_obj.set_by_val<std::string>("directory_path", file_path);
   data_store_conf_obj.set_by_val<std::string>("mode", "one-event-per-file");
@@ -207,7 +207,7 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
   data_store_conf_obj.set_by_val<std::string>("directory_path", file_path);
 
   auto data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.modCfg, "dwm-01");
-    
+  
   // write several events, each with several fragments
   for (int trigger_number = 1; trigger_number <= trigger_count; ++trigger_number)
     data_store_ptr->write(create_trigger_record(trigger_number, fragment_size, apa_count * link_count));
@@ -335,7 +335,6 @@ BOOST_AUTO_TEST_CASE(SmallFileSizeLimitDataBlockListWrite)
   CfgFixture cfg("test-session-5-1");
   auto data_writer_conf = cfg.modCfg->module<dunedaq::appmodel::DataWriterModule>("dwm-01")->get_configuration();
   auto data_store_conf = data_writer_conf->get_data_store_params();
-
   auto data_store_conf_obj = data_store_conf->config_object();
   data_store_conf_obj.set_by_val<std::string>("directory_path", file_path);
   data_store_conf_obj.set_by_val<int>("max_file_size", 150000); // ~1.5 Fragment, ~0.3 TR
