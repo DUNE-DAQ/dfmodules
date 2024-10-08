@@ -212,7 +212,7 @@ DataWriterModule::do_start(const data_t& payload)
     }
     
     try {
-      m_data_writer->prepare_for_run(m_run_number);
+      m_data_writer->prepare_for_run(m_run_number, (start_params.production_vs_test == "TEST"));
     } catch (const ers::Issue& excpt) {
       throw UnableToStart(ERS_HERE, get_name(), m_run_number, excpt);
     }

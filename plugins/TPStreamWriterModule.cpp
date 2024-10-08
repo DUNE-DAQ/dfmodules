@@ -114,7 +114,7 @@ TPStreamWriterModule::do_start(const nlohmann::json& payload)
   // exception and abort the run start.  And, it seems sensible to avoid starting
   // threads, etc. if we throw an exception.
   try {
-    m_data_writer->prepare_for_run(m_run_number);
+    m_data_writer->prepare_for_run(m_run_number, (start_params.production_vs_test == "TEST"));
   } catch (const ers::Issue& excpt) {
     throw UnableToStart(ERS_HERE, get_name(), m_run_number, excpt);
   }
