@@ -402,7 +402,7 @@
 		<rel name="controller" class="RCApplication" id="my-controller-5-10"/>
 	</obj>
 
-<obj class="Session" id="test-session-3-1">
+<obj class="System" id="test-system-3-1">
  <attr name="use_connectivity_server" type="bool" val="0"/>
  <attr name="connectivity_service_interval_ms" type="u32" val="2000"/>
  <attr name="data_request_timeout_ms" type="u32" val="1000"/>
@@ -414,7 +414,7 @@
  <rel name="segment" class="Segment" id="generated-segment-3-1"/>
  <rel name="detector_configuration" class="DetectorConfig" id="dummy-detector"/>
 </obj>
-  <obj class="Session" id="test-session-5-1">
+  <obj class="System" id="test-system-5-1">
     <attr name="use_connectivity_server" type="bool" val="0"/>
     <attr name="connectivity_service_interval_ms" type="u32" val="2000"/>
     <attr name="data_request_timeout_ms" type="u32" val="1000"/>
@@ -426,7 +426,7 @@
     <rel name="segment" class="Segment" id="generated-segment-5-1"/>
     <rel name="detector_configuration" class="DetectorConfig" id="dummy-detector"/>
   </obj>
-  <obj class="Session" id="test-session-5-10">
+  <obj class="System" id="test-system-5-10">
     <attr name="use_connectivity_server" type="bool" val="0"/>
     <attr name="connectivity_service_interval_ms" type="u32" val="2000"/>
     <attr name="data_request_timeout_ms" type="u32" val="1000"/>
@@ -486,7 +486,7 @@
 
 <obj class="Variable" id="DUNEDAQ_PARTITION">
  <attr name="name" type="string" val="DUNEDAQ_PARTITION"/>
- <attr name="value" type="string" val="lrSession"/>
+ <attr name="value" type="string" val="lrSystem"/>
 </obj>
 
 <obj class="Variable" id="INFO_SVC">
@@ -501,7 +501,7 @@
 
 <obj class="Variable" id="TRACE_FILE">
  <attr name="name" type="string" val="TRACE_FILE"/>
- <attr name="value" type="string" val="/tmp/trace_buffer_{host}_lrSession"/>
+ <attr name="value" type="string" val="/tmp/trace_buffer_{host}_lrSystem"/>
 </obj>
 
 <obj class="VariableSet" id="common-env">
