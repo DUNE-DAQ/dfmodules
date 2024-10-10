@@ -10,7 +10,6 @@
 #include "dfmodules/CommonIssues.hpp"
 
 #include "appmodel/FragmentAggregatorModule.hpp"
-#include "appfwk/app/Nljs.hpp"
 #include "confmodel/Connection.hpp"
 #include "confmodel/QueueWithSourceId.hpp"
 #include "dfmessages/Fragment_serialization.hpp"
