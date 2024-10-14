@@ -13,7 +13,6 @@
 
 #include "appmodel/DFOModule.hpp"
 #include "confmodel/Connection.hpp"
-#include "appfwk/app/Nljs.hpp"
 #include "iomanager/IOManager.hpp"
 #include "logging/Logging.hpp"
 
