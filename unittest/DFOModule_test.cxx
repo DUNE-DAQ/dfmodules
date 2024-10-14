@@ -43,8 +43,8 @@ struct CfgFixture
   CfgFixture()
   {   std::string oksConfig = "oksconflibs:test/config/datafloworchestrator_test.data.xml";
     std::string appName = "TestApp";
-    std::string sessionName = "partition_name";
-    cfgMgr = std::make_shared<dunedaq::appfwk::ConfigurationManager>(oksConfig, appName, sessionName);
+    std::string systemName = "partition_name";
+    cfgMgr = std::make_shared<dunedaq::appfwk::ConfigurationManager>(oksConfig, appName, systemName);
     modCfg  = std::make_shared<dunedaq::appfwk::ModuleConfiguration>(cfgMgr);
     get_iomanager()->configure(modCfg->queues(), modCfg->networkconnections(), false, std::chrono::milliseconds(100), opmgr);
   }

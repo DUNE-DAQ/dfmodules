@@ -11,7 +11,7 @@ Usage:
 
 Options:
     -h, --help : prints out usage information
-    -s <DAQ session number (formerly known as partition number), default=1)>
+    -s <DAQ system number (formerly known as partition number), default=1)>
     -f <zero-based index of the first test to be run, default=0>
     -l <zero-based index of the last test to be run, default=999>
     -n <number of times to run each individual test, default=1>
@@ -30,7 +30,7 @@ Options:
 TEMP=`getopt -o hs:f:l:n:N: --long help,stop-on-failure -- "$@"`
 eval set -- "$TEMP"
 
-let session_number=1
+let system_number=1
 let first_test_index=0
 let last_test_index=999
 let individual_run_count=1
@@ -44,7 +44,7 @@ while true; do
             exit 0
             ;;
         -s)
-            let session_number=$2
+            let system_number=$2
             shift 2
             ;;
         -f)
@@ -91,11 +91,11 @@ while [[ ${overall_loop_count} -lt ${overall_run_count} ]]; do
       while [[ ${individual_loop_count} -lt ${individual_run_count} ]]; do
         echo "===== Running ${TEST_NAME}" >> ${ITGRUNNER_LOG_FILE}
         if [[ -e "./${TEST_NAME}" ]]; then
-          pytest -s ./${TEST_NAME} --nanorc-option partition-number ${session_number} | tee -a ${ITGRUNNER_LOG_FILE}
+          pytest -s ./${TEST_NAME} --nanorc-option partition-number ${system_number} | tee -a ${ITGRUNNER_LOG_FILE}
         elif [[ -e "${DBT_AREA_ROOT}/sourcecode/dfmodules/integtest/${TEST_NAME}" ]]; then
-          pytest -s ${DBT_AREA_ROOT}/sourcecode/dfmodules/integtest/${TEST_NAME} --nanorc-option partition-number ${session_number} | tee -a ${ITGRUNNER_LOG_FILE}
+          pytest -s ${DBT_AREA_ROOT}/sourcecode/dfmodules/integtest/${TEST_NAME} --nanorc-option partition-number ${system_number} | tee -a ${ITGRUNNER_LOG_FILE}
         else
-          pytest -s ${DFMODULES_SHARE}/integtest/${TEST_NAME} --nanorc-option partition-number ${session_number} | tee -a ${ITGRUNNER_LOG_FILE}
+          pytest -s ${DFMODULES_SHARE}/integtest/${TEST_NAME} --nanorc-option partition-number ${system_number} | tee -a ${ITGRUNNER_LOG_FILE}
         fi
         let pytest_return_code=${PIPESTATUS[0]}
 

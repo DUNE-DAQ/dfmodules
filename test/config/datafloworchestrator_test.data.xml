@@ -370,7 +370,7 @@
  <attr name="eth_device_name" type="string" val="lo"/>
 </obj>
 
-<obj class="Session" id="partition_name">
+<obj class="System" id="partition_name">
  <attr name="use_connectivity_server" type="bool" val="0"/>
  <attr name="connectivity_service_interval_ms" type="u32" val="2000"/>
  <attr name="data_request_timeout_ms" type="u32" val="1000"/>
@@ -430,7 +430,7 @@
 
 <obj class="Variable" id="DUNEDAQ_PARTITION">
  <attr name="name" type="string" val="DUNEDAQ_PARTITION"/>
- <attr name="value" type="string" val="lrSession"/>
+ <attr name="value" type="string" val="lrSystem"/>
 </obj>
 
 <obj class="Variable" id="INFO_SVC">
@@ -445,7 +445,7 @@
 
 <obj class="Variable" id="TRACE_FILE">
  <attr name="name" type="string" val="TRACE_FILE"/>
- <attr name="value" type="string" val="/tmp/trace_buffer_{host}_lrSession"/>
+ <attr name="value" type="string" val="/tmp/trace_buffer_{host}_lrSystem"/>
 </obj>
 
 <obj class="VariableSet" id="common-env">
