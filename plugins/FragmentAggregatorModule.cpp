@@ -55,6 +55,10 @@ FragmentAggregatorModule::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg
       	    m_producer_conn_ids[qid->get_source_id()] = cr->UID();
     }
   }
+
+  // this is just to get the data request receiver registered early (before Start)
+  auto iom = iomanager::IOManager::get();
+  iom->get_receiver<dfmessages::DataRequest>(m_data_req_input);
 }
 
 // void
@@ -138,6 +142,11 @@ FragmentAggregatorModule::process_fragment(std::unique_ptr<daqdataformats::Fragm
     }
   }
   try {
+    TLOG_DEBUG(27) << get_name() << " Sending fragment for trigger/sequence_number "
+                   << fragment->get_trigger_number() << "."
+                   << fragment->get_sequence_number() << " and SourceID "
+                   << fragment->get_element_id() << " to "
+                   << trb_identifier;
     auto sender = get_iom_sender<std::unique_ptr<daqdataformats::Fragment>>(trb_identifier);
     sender->send(std::move(fragment), iomanager::Sender::s_no_block);
   } catch (const ers::Issue& excpt) {
