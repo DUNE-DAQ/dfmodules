@@ -55,6 +55,10 @@ FragmentAggregatorModule::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg
       	    m_producer_conn_ids[qid->get_source_id()] = cr->UID();
     }
   }
+
+  // this is just to get the data request receiver registered early (before Start)
+  auto iom = iomanager::IOManager::get();
+  iom->get_receiver<dfmessages::DataRequest>(m_data_req_input);
 }
 
 // void
