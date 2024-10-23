@@ -63,7 +63,7 @@
 
 <oks-data>
 
-<info name="" type="" num-of-items="60" oks-format="data" oks-version="862f2957270" created-by="gjc" created-on="thinkpad" creation-time="20231116T105446" last-modified-by="eflumerf" last-modified-on="ironvirt9.IRONDOMAIN.local" last-modification-time="20241023T204135"/>
+<info name="" type="" num-of-items="62" oks-format="data" oks-version="862f2957270" created-by="gjc" created-on="thinkpad" creation-time="20231116T105446" last-modified-by="eflumerf" last-modified-on="ironvirt9.IRONDOMAIN.local" last-modification-time="20241023T210032"/>
 
 <include>
  <file path="schema/confmodel/dunedaq.schema.xml"/>
@@ -302,6 +302,16 @@
  <attr name="recv_timeout_ms" type="u32" val="10"/>
  <attr name="connection_type" type="enum" val="kSendRecv"/>
  <rel name="associated_service" class="Service" id="triginh"/>
+</obj>
+
+<obj class="OpMonConf" id="slow-all-monitoring">
+ <attr name="level" type="u32" val="4294967295"/>
+ <attr name="interval_s" type="u32" val="10"/>
+</obj>
+
+<obj class="OpMonURI" id="local-opmon-uri">
+ <attr name="path" type="string" val="./info.json"/>
+ <attr name="type" type="enum" val="file"/>
 </obj>
 
 <obj class="PhysicalHost" id="localhost">
