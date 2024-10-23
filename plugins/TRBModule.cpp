@@ -9,7 +9,6 @@
 #include "TRBModule.hpp"
 #include "dfmodules/CommonIssues.hpp"
 
-#include "appfwk/app/Nljs.hpp"
 #include "appmodel/NetworkConnectionDescriptor.hpp"
 #include "appmodel/NetworkConnectionRule.hpp"
 #include "appmodel/ReadoutApplication.hpp"
