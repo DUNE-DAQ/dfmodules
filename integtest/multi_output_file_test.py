@@ -69,9 +69,6 @@ hsi_frag_params = {
 }
 ignored_logfile_problems = {
     "-controller": [
-        "Propagating take_control to children",
-        "There is no broadcasting service",
-        "Could not understand the BroadcastHandler technology you want to use",
         "Worker with pid \\d+ was terminated due to signal 1",
     ],
     "local-connection-server": [

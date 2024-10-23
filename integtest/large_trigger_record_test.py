@@ -32,7 +32,7 @@ minimum_total_disk_space_gb = 33  # 50% more than what we need
 minimum_free_disk_space_gb = 28  # 25% more than what we need
 
 # Default values for validation parameters
-expected_number_of_data_files = 4
+expected_number_of_data_files = 2
 check_for_logfile_errors = True
 expected_event_count = 1
 expected_event_count_tolerance = 1
@@ -60,19 +60,8 @@ triggercandidate_frag_params = {
     "min_size_bytes": 72,
     "max_size_bytes": 280,
 }
-hsi_frag_params = {
-    "fragment_type_description": "HSI",
-    "fragment_type": "Hardware_Signal",
-    "hdf5_source_subsystem": "HW_Signals_Interface",
-    "expected_fragment_count": 1,
-    "min_size_bytes": 72,
-    "max_size_bytes": 100,
-}
 ignored_logfile_problems = {
     "-controller": [
-        "Propagating take_control to children",
-        "There is no broadcasting service",
-        "Could not understand the BroadcastHandler technology you want to use",
         "Worker with pid \\d+ was terminated due to signal 1",
     ],
     "local-connection-server": [
@@ -112,7 +101,6 @@ conf_dict.op_env = "integtest"
 conf_dict.session = "largerecord"
 conf_dict.tpg_enabled = False
 conf_dict.n_df_apps = number_of_dataflow_apps
-conf_dict.fake_hsi_enabled = True  # FakeHSI must be enabled to set trigger window width!
 
 conf_dict.config_substitutions.append(
     data_classes.config_substitution(
@@ -125,7 +113,7 @@ conf_dict.config_substitutions.append(
 conf_dict.config_substitutions.append(
     data_classes.config_substitution(
         obj_class="RandomTCMakerConf",
-        updates={"trigger_interval_ticks": 62500000 / trigger_rate},
+        updates={"trigger_rate_hz": trigger_rate},
     )
 )
 conf_dict.config_substitutions.append(
@@ -136,16 +124,7 @@ conf_dict.config_substitutions.append(
     )
 )
 oversize_conf = copy.deepcopy(conf_dict)  # Copy before setting the readout window
-conf_dict.config_substitutions.append(
-    data_classes.config_substitution(
-        obj_class="TimingTriggerOffsetMap",
-        obj_id="ttcm-off-0",
-        updates={
-            "time_before": readout_window_time_before,
-            "time_after": readout_window_time_after,
-        },
-    )
-)
+
 conf_dict.config_substitutions.append(
     data_classes.config_substitution(
         obj_class="TCReadoutMap",
@@ -157,16 +136,6 @@ conf_dict.config_substitutions.append(
 )
 
 # Now set the readout window for the over-size case
-oversize_conf.config_substitutions.append(
-    data_classes.config_substitution(
-        obj_class="TimingTriggerOffsetMap",
-        obj_id="ttcm-off-0",
-        updates={
-            "time_before": 2.5 * readout_window_time_before,
-            "time_after": readout_window_time_after,
-        },
-    )
-)
 oversize_conf.config_substitutions.append(
     data_classes.config_substitution(
         obj_class="TCReadoutMap",
@@ -247,7 +216,7 @@ def test_data_files(run_nanorc):
 
     local_expected_event_count = expected_event_count
     local_event_count_tolerance = expected_event_count_tolerance
-    fragment_check_list = [triggercandidate_frag_params, hsi_frag_params]
+    fragment_check_list = [triggercandidate_frag_params]
     current_test = os.environ.get("PYTEST_CURRENT_TEST")
     match_obj = re.search(r".*\[(.+)\].*", current_test)
     if match_obj:
@@ -260,20 +229,24 @@ def test_data_files(run_nanorc):
     # Run some tests on the output data file
     assert len(run_nanorc.data_files) == expected_number_of_data_files
 
+    all_ok = True
+
     for idx in range(len(run_nanorc.data_files)):
         data_file = data_file_checks.DataFile(run_nanorc.data_files[idx])
-        assert data_file_checks.sanity_check(data_file)
-        assert data_file_checks.check_file_attributes(data_file)
-        assert data_file_checks.check_event_count(
+        all_ok &= data_file_checks.sanity_check(data_file)
+        all_ok &= data_file_checks.check_file_attributes(data_file)
+        all_ok &= data_file_checks.check_event_count(
             data_file, local_expected_event_count, local_event_count_tolerance
         )
         for jdx in range(len(fragment_check_list)):
-            assert data_file_checks.check_fragment_count(
+            all_ok &= data_file_checks.check_fragment_count(
                 data_file, fragment_check_list[jdx]
             )
-            assert data_file_checks.check_fragment_sizes(
+            all_ok &= data_file_checks.check_fragment_sizes(
                 data_file, fragment_check_list[jdx]
             )
+
+    assert all_ok
 
 
 def test_cleanup(run_nanorc):
