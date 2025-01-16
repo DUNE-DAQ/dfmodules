@@ -395,7 +395,7 @@ private:
   size_t m_max_file_size;
   bool m_disable_unique_suffix;
   float m_free_space_safety_factor_for_write;
-  uint8_t m_compression_level;
+  unsigned m_compression_level;
 
   // std::unique_ptr<HDF5KeyTranslator> m_key_translator_ptr;
 
