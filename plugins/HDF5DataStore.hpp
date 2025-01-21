@@ -431,6 +431,7 @@ private:
   bool increment_file_index_if_needed(size_t size_of_next_write)
   {
     if ((m_recorded_size + size_of_next_write) > m_max_file_size && m_recorded_size > 0) {
+      TLOG() << "Incrementing file index because m_recorded_size is " << m_recorded_size << " and next write is " << size_of_next_write;
       ++m_file_index;
       m_recorded_size = 0;
       return true;
