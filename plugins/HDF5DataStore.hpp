@@ -213,6 +213,7 @@ public:
     // write the record
     m_file_handle->write(tr);
     m_recorded_size = m_file_handle->get_recorded_size();
+    m_total_file_size = m_file_handle->get_total_file_size();
 
     m_new_bytes += tr_size;
     ++m_new_objects;
@@ -379,6 +380,9 @@ private:
   // Total size of data being written
   std::atomic<size_t> m_recorded_size;
 
+  // Total size of the file, including raw data, metadata, and free space
+  std::atomic<size_t> m_total_file_size;
+
   // Record number for the record that is currently being written out
   // This is only useful for long-readout windows, in which there may
   // be multiple calls to write()
@@ -430,7 +434,7 @@ private:
 
   bool increment_file_index_if_needed(size_t size_of_next_write)
   {
-    if ((m_recorded_size + size_of_next_write) > m_max_file_size && m_recorded_size > 0) {
+    if ((m_total_file_size + size_of_next_write) > m_max_file_size && m_recorded_size > 0) {
       ++m_file_index;
       m_recorded_size = 0;
       return true;
