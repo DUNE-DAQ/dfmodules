@@ -71,7 +71,7 @@ DFOModule::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
 
   for (auto con : mdal->get_inputs()) {
     if (con->get_data_type() == datatype_to_string<dfmessages::DataflowHeartbeat>()) {
-      m_heartbeat_connections.push_back( con->UID());
+      m_heartbeat_connections.push_back(con->UID());
     }
     if (con->get_data_type() == datatype_to_string<dfmessages::TriggerDecision>()) {
       m_td_connection = con->UID();
@@ -80,6 +80,9 @@ DFOModule::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
   for (auto con : mdal->get_outputs()) {
     if (con->get_data_type() == datatype_to_string<dfmessages::TriggerInhibit>()) {
       m_busy_sender = iom->get_sender<dfmessages::TriggerInhibit>(con->UID());
+    }
+    if (con->get_data_type() == datatype_to_string<dfmessages::TriggerDecision>()) {
+      m_trb_conn_ids.push_back(con->UID());
     }
   }
 
@@ -135,7 +138,25 @@ DFOModule::do_start(const data_t& payload)
 
   m_last_heartbeat_received = m_last_td_received = std::chrono::steady_clock::now();
 
+  // 19-Dec-2024, KAB: check that TriggerDecision senders are ready to send. This is done
+  // so that the IOManager infrastructure fetches the necessary connection details from
+  // the ConnectivityService at 'start' time, instead of the first time that the sender
+  // is used to send a message.  This avoids delays in the sending of the first TD in
+  // the first data-taking run in a DAQ session. Such delays can lead to undesirable
+  // system behavior like trigger inhibits.
   auto iom = iomanager::IOManager::get();
+  if (m_busy_sender != nullptr) {
+    bool is_ready = m_busy_sender->is_ready_for_sending(std::chrono::milliseconds(100));
+    TLOG_DEBUG(0) << "The sender for TriggerInhibit messages " << (is_ready ? "is" : "is not") << " ready.";
+  }
+  for (auto trb_conn : m_trb_conn_ids) {
+    auto sender = iom->get_sender<dfmessages::DFODecision>(trb_conn);
+    if (sender != nullptr) {
+      bool is_ready = sender->is_ready_for_sending(std::chrono::milliseconds(100));
+      TLOG_DEBUG(0) << "The DFODecision sender for " << trb_conn << " " << (is_ready ? "is" : "is not") << " ready.";
+    }
+  }
+
   for (auto& hb_conn : m_heartbeat_connections) {
     iom->add_callback<dfmessages::DataflowHeartbeat>(
       hb_conn, std::bind(&DFOModule::receive_dataflow_heartbeat, this, std::placeholders::_1));
@@ -181,7 +202,7 @@ DFOModule::do_stop(const data_t& /*args*/)
     ers::error(IncompleteTriggerDecision(ERS_HERE, r->decision.trigger_number, m_run_number));
   }
 
-  std::lock_guard<std::mutex> guard(m_trigger_mutex);
+  std::lock_guard<std::mutex> guard(m_trigger_counters_mutex);
   m_trigger_counters.clear();
 
   TLOG() << get_name() << " successfully stopped";
@@ -225,7 +246,7 @@ DFOModule::receive_trigger_decision(const dfmessages::TriggerDecision& decision)
     if (assignment == nullptr) { // this can happen if all application are in error state
       ers::error(UnableToAssign(ERS_HERE, decision.trigger_number));
       usleep(500);
-      notify_trigger(is_busy());
+      notify_trigger_if_needed();
       continue;
     }
 
@@ -247,7 +268,7 @@ DFOModule::receive_trigger_decision(const dfmessages::TriggerDecision& decision)
 
   } while (m_running_status.load());
 
-  notify_trigger(is_busy());
+  notify_trigger_if_needed();
 
   m_waiting_for_decision +=
     std::chrono::duration_cast<std::chrono::microseconds>(decision_received - m_last_td_received).count();
@@ -344,7 +365,7 @@ DFOModule::generate_opmon_data()
 
   publish(std::move(info));
 
-  std::lock_guard<std::mutex> guard(m_trigger_mutex);
+  std::lock_guard<std::mutex> guard(m_trigger_counters_mutex);
   for (auto& [type, counts] : m_trigger_counters) {
     opmon::TriggerInfo ti;
     ti.set_received(counts.received.exchange(0));
@@ -379,8 +400,8 @@ DFOModule::receive_dataflow_heartbeat(const dfmessages::DataflowHeartbeat& heart
     if (heartbeat.recent_completed_triggers.size() > 0) {
       last_trigger = *heartbeat.recent_completed_triggers.rbegin();
     }
-    TLOG(TLVL_HEARTBEAT_RECEIVED) <<
-      DFOModuleRunNumberMismatch(ERS_HERE, heartbeat.run_number, m_run_number, oss_source.str(), last_trigger);
+    TLOG(TLVL_HEARTBEAT_RECEIVED) << DFOModuleRunNumberMismatch(
+      ERS_HERE, heartbeat.run_number, m_run_number, oss_source.str(), last_trigger);
     return;
   }
 
@@ -431,9 +452,7 @@ DFOModule::receive_dataflow_heartbeat(const dfmessages::DataflowHeartbeat& heart
     app_it->second->set_in_error(false);
   }
 
-  if (!app_it->second->is_busy()) {
-    notify_trigger(false);
-  }
+  notify_trigger_if_needed();
 
   m_waiting_for_heartbeat +=
     std::chrono::duration_cast<std::chrono::microseconds>(callback_start - m_last_heartbeat_received).count();
@@ -473,9 +492,17 @@ DFOModule::used_slots() const
 }
 
 void
-DFOModule::notify_trigger(bool busy) const
+DFOModule::notify_trigger_if_needed() const
 {
   auto start_time = std::chrono::steady_clock::now();
+  // 19-Dec-2024, KAB, ELF, MaR: combined the is_busy() and notify_trigger() calls in
+  // a single method (notify_trigger_if_needed), and protected the contents of the new
+  // method with a mutex, to avoid a race condition in which a given is_busy() result
+  // is determined, but by the time that the value is sent to the MLT, the busy state
+  // has changed.
+  std::lock_guard<std::mutex> guard(m_notify_trigger_mutex);
+
+  bool busy = is_busy();
   if (busy == m_last_notified_busy.load() &&
       std::chrono::duration_cast<std::chrono::milliseconds>(start_time - m_last_notified_busy_time) < m_busy_interval)
     return;

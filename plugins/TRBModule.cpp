@@ -206,6 +206,23 @@ TRBModule::do_start(const data_t& args)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_start() method";
 
+  // 19-Dec-2024, KAB: check that DataRequest senders are ready to send. This is done so
+  // that the IOManager infrastructure fetches the necessary connection details from
+  // the ConnectivityService at 'start' time, instead of the first time that the sender
+  // is used to send a message.  This avoids delays in the sending of the first request in
+  // the first data-taking run in a DAQ session. Such delays can lead to undesirable
+  // system behavior like trigger inhibits.
+  {
+    std::unique_lock<std::mutex> lk(m_map_sourceid_connections_mutex);
+    for (const auto& sid_sender : m_map_sourceid_connections) {
+      std::shared_ptr<data_req_sender_t> sender = sid_sender.second;
+      if (sender != nullptr) {
+        bool is_ready = sender->is_ready_for_sending(std::chrono::milliseconds(100));
+        TLOG_DEBUG(0) << "The DataRequest sender for " << sid_sender.first << " " << (is_ready ? "is" : "is not") << " ready.";
+      }
+    }
+  }
+
   m_run_number.reset(new const daqdataformats::run_number_t(args.at("run").get<daqdataformats::run_number_t>()));
 
   // Register the callback to receive monitoring requests

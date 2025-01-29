@@ -112,7 +112,7 @@ private:
   virtual bool is_busy() const;
   bool is_empty() const;
   size_t used_slots() const;
-  void notify_trigger(bool busy) const;
+  void notify_trigger_if_needed() const;
   bool dispatch(const std::shared_ptr<AssignedTriggerDecision>& assignment);
   virtual void assign_trigger_decision(const std::shared_ptr<AssignedTriggerDecision>& assignment);
   virtual std::vector<dfmessages::trigger_number_t> get_acknowledgements(
@@ -132,6 +132,7 @@ private:
   size_t m_td_send_retries;
   size_t m_busy_threshold;
   size_t m_free_threshold;
+  std::vector<std::string> m_trb_conn_ids;
 
   // Coordination
   std::atomic<bool> m_running_status{ false };
@@ -140,6 +141,7 @@ private:
   std::chrono::milliseconds m_busy_interval;
   std::chrono::steady_clock::time_point m_last_heartbeat_received;
   std::chrono::steady_clock::time_point m_last_td_received;
+  mutable std::mutex m_notify_trigger_mutex;
 
   // Struct for statistic
   struct TriggerData {
@@ -169,12 +171,12 @@ private:
   std::atomic<uint64_t> m_processing_heartbeat{ 0 };     // NOLINT (build/unsigned)
   std::atomic<uint64_t> m_heartbeat_updates{ 0 };     // NOLINT (build/unsigned)
   std::map<dunedaq::trgdataformats::TriggerCandidateData::Type, TriggerData> m_trigger_counters;
-  std::mutex m_trigger_mutex;  // used to safely handle the map above
+  std::mutex m_trigger_counters_mutex;  // used to safely handle the map above
   TriggerData & get_trigger_counter(trgdataformats::TriggerCandidateData::Type type) {
     auto it = m_trigger_counters.find(type);
     if (it != m_trigger_counters.end()) return it->second;
     
-    std::lock_guard<std::mutex> guard(m_trigger_mutex);
+    std::lock_guard<std::mutex> guard(m_trigger_counters_mutex);
     return m_trigger_counters[type];
   }
   
