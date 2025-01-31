@@ -2,6 +2,7 @@ import pytest
 import os
 import copy
 
+import integrationtest.data_file_checks as data_file_checks
 import integrationtest.log_file_checks as log_file_checks
 import integrationtest.data_classes as data_classes
 
@@ -18,9 +19,11 @@ ignored_logfile_problems = {
         "Worker with pid \\d+ was terminated due to signal",
         "Connection '.*' not found on the application registry",
     ],
-    "local-connection-server": [
+    "connectivity-service": [
         "errorlog: -",
-        "Worker with pid \\d+ was terminated due to signal",
+    ],
+    "local-connection-server": [
+        "was sent SIGHUP!",
     ],
     "log_.*": ["connect: Connection refused"],
 }
@@ -47,8 +50,10 @@ nanorc_command_list = (
     + "disable-triggers wait 2 drain-dataflow wait 2 stop-trigger-sources stop wait 2".split()
     + "start --run-number 102 wait 1 enable-triggers wait ".split()
     + [str(run_duration)]
+    + "enable-dfo --dfo-name dfo-02 wait ".split()
+    + [str(run_duration)]
     + "disable-triggers wait 2 drain-dataflow wait 2 stop-trigger-sources stop wait 2".split()
-    + "start --run-number 103 wait 1 enable-triggers wait ".split()
+    + "start --run-number 103 wait 1 enable-dfo --dfo-name dfo-02 enable-triggers wait ".split()
     + [str(run_duration)]
     + "disable-triggers wait 2 drain-dataflow wait 2 stop-trigger-sources stop wait 2".split()
     + "scrap wait 5 terminate".split()
