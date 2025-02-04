@@ -1,0 +1,348 @@
+<mxfile host="Electron" modified="2024-05-02T14:39:04.910Z" agent="5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/20.2.3 Chrome/102.0.5005.167 Electron/19.0.11 Safari/537.36" etag="nFWG3p_tmsnbsX8chDg7" compressed="false" version="20.2.3" type="device" pages="3">
+  <diagram id="kgpKYQtTHZ0yAKxKKP6v" name="Page-1">
+    <mxGraphModel dx="982" dy="580" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="3nuBFxr9cyL0pnOWT2aG-1" value="DF" style="shape=umlLifeline;perimeter=lifelinePerimeter;container=1;collapsible=0;recursiveResize=0;rounded=0;shadow=0;strokeWidth=1;" parent="1" vertex="1">
+          <mxGeometry x="120" y="80" width="100" height="300" as="geometry" />
+        </mxCell>
+        <mxCell id="3nuBFxr9cyL0pnOWT2aG-2" value="" style="points=[];perimeter=orthogonalPerimeter;rounded=0;shadow=0;strokeWidth=1;" parent="3nuBFxr9cyL0pnOWT2aG-1" vertex="1">
+          <mxGeometry x="45" y="70" width="10" height="10" as="geometry" />
+        </mxCell>
+        <mxCell id="3nuBFxr9cyL0pnOWT2aG-3" value="conf" style="verticalAlign=bottom;startArrow=oval;endArrow=block;startSize=8;shadow=0;strokeWidth=1;" parent="3nuBFxr9cyL0pnOWT2aG-1" target="3nuBFxr9cyL0pnOWT2aG-2" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="-15" y="70" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="3nuBFxr9cyL0pnOWT2aG-4" value="" style="points=[];perimeter=orthogonalPerimeter;rounded=0;shadow=0;strokeWidth=1;" parent="3nuBFxr9cyL0pnOWT2aG-1" vertex="1">
+          <mxGeometry x="45" y="120" width="10" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="3nuBFxr9cyL0pnOWT2aG-5" value="DFO" style="shape=umlLifeline;perimeter=lifelinePerimeter;container=1;collapsible=0;recursiveResize=0;rounded=0;shadow=0;strokeWidth=1;" parent="1" vertex="1">
+          <mxGeometry x="300" y="80" width="100" height="300" as="geometry" />
+        </mxCell>
+        <mxCell id="7SfHQ7mxPiW63zHmCRR4-4" value="" style="points=[];perimeter=orthogonalPerimeter;rounded=0;shadow=0;strokeWidth=1;" vertex="1" parent="3nuBFxr9cyL0pnOWT2aG-5">
+          <mxGeometry x="45" y="100" width="10" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="7SfHQ7mxPiW63zHmCRR4-6" value="" style="points=[];perimeter=orthogonalPerimeter;rounded=0;shadow=0;strokeWidth=1;" vertex="1" parent="3nuBFxr9cyL0pnOWT2aG-5">
+          <mxGeometry x="45" y="200" width="10" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="3nuBFxr9cyL0pnOWT2aG-8" value="null token" style="verticalAlign=bottom;endArrow=block;entryX=0;entryY=0;shadow=0;strokeWidth=1;" parent="1" source="3nuBFxr9cyL0pnOWT2aG-2" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="275" y="160" as="sourcePoint" />
+            <mxPoint x="345" y="160.0000000000001" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="3nuBFxr9cyL0pnOWT2aG-9" value="Trigger Decision" style="verticalAlign=bottom;endArrow=block;entryX=1;entryY=0;shadow=0;strokeWidth=1;" parent="1" target="3nuBFxr9cyL0pnOWT2aG-4" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="345" y="200" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="3nuBFxr9cyL0pnOWT2aG-10" value="token" style="verticalAlign=bottom;endArrow=open;dashed=1;endSize=8;exitX=1;exitY=0.95;shadow=0;strokeWidth=1;" parent="1" source="3nuBFxr9cyL0pnOWT2aG-4" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="345" y="275.9999999999999" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="7SfHQ7mxPiW63zHmCRR4-1" value="MLT" style="shape=umlLifeline;perimeter=lifelinePerimeter;container=1;collapsible=0;recursiveResize=0;rounded=0;shadow=0;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="480" y="80" width="100" height="300" as="geometry" />
+        </mxCell>
+        <mxCell id="7SfHQ7mxPiW63zHmCRR4-3" value="Trigger Decision" style="verticalAlign=bottom;endArrow=block;shadow=0;strokeWidth=1;entryX=0.919;entryY=-0.002;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1" source="7SfHQ7mxPiW63zHmCRR4-1" target="7SfHQ7mxPiW63zHmCRR4-4">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="360" y="190" as="sourcePoint" />
+            <mxPoint x="360" y="180" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="7SfHQ7mxPiW63zHmCRR4-5" value="inhibit if busy" style="verticalAlign=bottom;endArrow=block;entryX=0.5;entryY=0.433;shadow=0;strokeWidth=1;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1" target="7SfHQ7mxPiW63zHmCRR4-1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="350" y="210" as="sourcePoint" />
+            <mxPoint x="520" y="210.0000000000001" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="7SfHQ7mxPiW63zHmCRR4-7" value="clear inhibit" style="verticalAlign=bottom;endArrow=open;dashed=1;endSize=8;exitX=1;exitY=0.95;shadow=0;strokeWidth=1;entryX=0.517;entryY=0.728;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1" target="7SfHQ7mxPiW63zHmCRR4-1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="520" y="299.9999999999999" as="targetPoint" />
+            <mxPoint x="350" y="299.9999999999999" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="wE087Vi_d1435Rs-AG_3-1" value="In the current protocol, DF announces presence to DFO with empty token at conf. DFO is configured with thresholds for busy/free which it applies to all DF apps." style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="120" y="430" width="450" height="70" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="2C2OBdQGxXX2H8uRnxiS" name="Page-2">
+    <mxGraphModel dx="1422" dy="839" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="UADztFAyau3wmX6-UN1S-1" value="DF" style="shape=umlLifeline;perimeter=lifelinePerimeter;container=1;collapsible=0;recursiveResize=0;rounded=0;shadow=0;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="120" y="80" width="100" height="300" as="geometry" />
+        </mxCell>
+        <mxCell id="UADztFAyau3wmX6-UN1S-4" value="" style="points=[];perimeter=orthogonalPerimeter;rounded=0;shadow=0;strokeWidth=1;" vertex="1" parent="UADztFAyau3wmX6-UN1S-1">
+          <mxGeometry x="45" y="120" width="10" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="6KdZJteEX_bHudaQw2Ob-1" value="heartbeat" style="verticalAlign=bottom;endArrow=block;entryX=0;entryY=0;shadow=0;strokeWidth=1;" edge="1" parent="UADztFAyau3wmX6-UN1S-1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="55" y="199.31" as="sourcePoint" />
+            <mxPoint x="225.00000000000023" y="199.31000000000012" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="6KdZJteEX_bHudaQw2Ob-2" value="heartbeat" style="verticalAlign=bottom;endArrow=block;entryX=0;entryY=0;shadow=0;strokeWidth=1;" edge="1" parent="UADztFAyau3wmX6-UN1S-1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="55" y="280" as="sourcePoint" />
+            <mxPoint x="225.00000000000023" y="280.0000000000001" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="UADztFAyau3wmX6-UN1S-5" value="DFO" style="shape=umlLifeline;perimeter=lifelinePerimeter;container=1;collapsible=0;recursiveResize=0;rounded=0;shadow=0;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="300" y="80" width="100" height="300" as="geometry" />
+        </mxCell>
+        <mxCell id="UADztFAyau3wmX6-UN1S-6" value="" style="points=[];perimeter=orthogonalPerimeter;rounded=0;shadow=0;strokeWidth=1;" vertex="1" parent="UADztFAyau3wmX6-UN1S-5">
+          <mxGeometry x="45" y="100" width="10" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="UADztFAyau3wmX6-UN1S-7" value="" style="points=[];perimeter=orthogonalPerimeter;rounded=0;shadow=0;strokeWidth=1;" vertex="1" parent="UADztFAyau3wmX6-UN1S-5">
+          <mxGeometry x="45" y="200" width="10" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="UADztFAyau3wmX6-UN1S-8" value="heartbeat" style="verticalAlign=bottom;endArrow=block;entryX=0;entryY=0;shadow=0;strokeWidth=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="175" y="160" as="sourcePoint" />
+            <mxPoint x="345" y="160.0000000000001" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="UADztFAyau3wmX6-UN1S-9" value="Trigger Decision" style="verticalAlign=bottom;endArrow=block;entryX=1;entryY=0;shadow=0;strokeWidth=1;" edge="1" parent="1" target="UADztFAyau3wmX6-UN1S-4">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="345" y="200" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="UADztFAyau3wmX6-UN1S-11" value="MLT" style="shape=umlLifeline;perimeter=lifelinePerimeter;container=1;collapsible=0;recursiveResize=0;rounded=0;shadow=0;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="480" y="80" width="100" height="300" as="geometry" />
+        </mxCell>
+        <mxCell id="UADztFAyau3wmX6-UN1S-12" value="Trigger Decision" style="verticalAlign=bottom;endArrow=block;shadow=0;strokeWidth=1;entryX=0.919;entryY=-0.002;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1" source="UADztFAyau3wmX6-UN1S-11" target="UADztFAyau3wmX6-UN1S-6">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="360" y="190" as="sourcePoint" />
+            <mxPoint x="360" y="180" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="UADztFAyau3wmX6-UN1S-13" value="inhibit if busy" style="verticalAlign=bottom;endArrow=block;entryX=0.5;entryY=0.433;shadow=0;strokeWidth=1;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1" target="UADztFAyau3wmX6-UN1S-11">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="350" y="210" as="sourcePoint" />
+            <mxPoint x="520" y="210.0000000000001" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="UADztFAyau3wmX6-UN1S-14" value="clear inhibit" style="verticalAlign=bottom;endArrow=open;dashed=1;endSize=8;exitX=1;exitY=0.95;shadow=0;strokeWidth=1;entryX=0.517;entryY=0.728;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1" target="UADztFAyau3wmX6-UN1S-11">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="520" y="299.9999999999999" as="targetPoint" />
+            <mxPoint x="350" y="299.9999999999999" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="6KdZJteEX_bHudaQw2Ob-3" value="The first part of the proposal is to replace token messages with a periodic heartbeat containing the current work that the DF app is responsible for. This message may need to be synthesized between TRB and DataWriter modules, or sent individually from each. The DFO would use this information to track the current occupancy of each DF application (group)." style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="120" y="440" width="510" height="100" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="04VURJVY2Jcoy27tPiF7" name="Page-3">
+    <mxGraphModel dx="1422" dy="839" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="Ok_oPfVutxxGbshZokRG-1" value="DF" style="shape=umlLifeline;perimeter=lifelinePerimeter;container=1;collapsible=0;recursiveResize=0;rounded=0;shadow=0;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="120" y="80" width="100" height="440" as="geometry" />
+        </mxCell>
+        <mxCell id="Ok_oPfVutxxGbshZokRG-2" value="" style="points=[];perimeter=orthogonalPerimeter;rounded=0;shadow=0;strokeWidth=1;" vertex="1" parent="Ok_oPfVutxxGbshZokRG-1">
+          <mxGeometry x="45" y="120" width="10" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="Ok_oPfVutxxGbshZokRG-3" value="heartbeat" style="verticalAlign=bottom;endArrow=block;entryX=0;entryY=0;shadow=0;strokeWidth=1;" edge="1" parent="Ok_oPfVutxxGbshZokRG-1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="55" y="199.31" as="sourcePoint" />
+            <mxPoint x="225.00000000000023" y="199.31000000000012" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Ok_oPfVutxxGbshZokRG-4" value="heartbeat" style="verticalAlign=bottom;endArrow=block;entryX=0;entryY=0;shadow=0;strokeWidth=1;" edge="1" parent="Ok_oPfVutxxGbshZokRG-1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="55" y="280" as="sourcePoint" />
+            <mxPoint x="225.00000000000023" y="280.0000000000001" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Ok_oPfVutxxGbshZokRG-21" value="heartbeat" style="verticalAlign=bottom;endArrow=block;shadow=0;strokeWidth=1;" edge="1" parent="Ok_oPfVutxxGbshZokRG-1" target="Ok_oPfVutxxGbshZokRG-15">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="55" y="280" as="sourcePoint" />
+            <mxPoint x="225.00000000000023" y="280" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Ok_oPfVutxxGbshZokRG-24" value="" style="html=1;verticalAlign=bottom;startArrow=oval;startFill=1;endArrow=block;startSize=8;rounded=0;" edge="1" parent="Ok_oPfVutxxGbshZokRG-1">
+          <mxGeometry width="60" relative="1" as="geometry">
+            <mxPoint x="-40" y="60" as="sourcePoint" />
+            <mxPoint x="45.00000000000023" y="60" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Ok_oPfVutxxGbshZokRG-25" value="activate DFO2" style="html=1;verticalAlign=bottom;startArrow=oval;startFill=1;endArrow=block;startSize=8;rounded=0;" edge="1" parent="Ok_oPfVutxxGbshZokRG-1" target="Ok_oPfVutxxGbshZokRG-15">
+          <mxGeometry width="60" relative="1" as="geometry">
+            <mxPoint x="-40" y="300" as="sourcePoint" />
+            <mxPoint x="229.50000000000023" y="300" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Ok_oPfVutxxGbshZokRG-32" value="" style="html=1;verticalAlign=bottom;startArrow=oval;startFill=1;endArrow=block;startSize=8;rounded=0;" edge="1" parent="Ok_oPfVutxxGbshZokRG-1">
+          <mxGeometry width="60" relative="1" as="geometry">
+            <mxPoint x="-40" y="300" as="sourcePoint" />
+            <mxPoint x="50" y="300" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Ok_oPfVutxxGbshZokRG-5" value="DFO1" style="shape=umlLifeline;perimeter=lifelinePerimeter;container=1;collapsible=0;recursiveResize=0;rounded=0;shadow=0;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="300" y="80" width="100" height="440" as="geometry" />
+        </mxCell>
+        <mxCell id="Ok_oPfVutxxGbshZokRG-6" value="" style="points=[];perimeter=orthogonalPerimeter;rounded=0;shadow=0;strokeWidth=1;" vertex="1" parent="Ok_oPfVutxxGbshZokRG-5">
+          <mxGeometry x="45" y="100" width="10" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="Ok_oPfVutxxGbshZokRG-7" value="" style="points=[];perimeter=orthogonalPerimeter;rounded=0;shadow=0;strokeWidth=1;" vertex="1" parent="Ok_oPfVutxxGbshZokRG-5">
+          <mxGeometry x="45" y="200" width="10" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="Ok_oPfVutxxGbshZokRG-41" value="TD notification" style="verticalAlign=bottom;endArrow=open;dashed=1;endSize=8;exitX=1;exitY=0.95;shadow=0;strokeWidth=1;" edge="1" parent="Ok_oPfVutxxGbshZokRG-5">
+          <mxGeometry x="-0.0421" relative="1" as="geometry">
+            <mxPoint x="399.5" y="350" as="targetPoint" />
+            <mxPoint x="55.00000000000023" y="350" as="sourcePoint" />
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Ok_oPfVutxxGbshZokRG-8" value="heartbeat" style="verticalAlign=bottom;endArrow=block;entryX=0;entryY=0;shadow=0;strokeWidth=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="175" y="160" as="sourcePoint" />
+            <mxPoint x="345.0000000000002" y="160.0000000000001" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Ok_oPfVutxxGbshZokRG-9" value="Trigger Decision" style="verticalAlign=bottom;endArrow=block;entryX=1;entryY=0;shadow=0;strokeWidth=1;" edge="1" parent="1" target="Ok_oPfVutxxGbshZokRG-2">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="345.0000000000002" y="200" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Ok_oPfVutxxGbshZokRG-10" value="MLT" style="shape=umlLifeline;perimeter=lifelinePerimeter;container=1;collapsible=0;recursiveResize=0;rounded=0;shadow=0;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="480" y="80" width="100" height="440" as="geometry" />
+        </mxCell>
+        <mxCell id="Ok_oPfVutxxGbshZokRG-38" value="Trigger Decision" style="verticalAlign=bottom;endArrow=block;shadow=0;strokeWidth=1;" edge="1" parent="Ok_oPfVutxxGbshZokRG-10" target="Ok_oPfVutxxGbshZokRG-39">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="215.00000000000023" y="370" as="sourcePoint" />
+            <mxPoint x="39.690000000000055" y="370" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Ok_oPfVutxxGbshZokRG-11" value="Trigger Decision" style="verticalAlign=bottom;endArrow=block;shadow=0;strokeWidth=1;entryX=0.919;entryY=-0.002;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1" source="Ok_oPfVutxxGbshZokRG-10" target="Ok_oPfVutxxGbshZokRG-6">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="360" y="190" as="sourcePoint" />
+            <mxPoint x="360" y="180" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Ok_oPfVutxxGbshZokRG-12" value="inhibit if busy" style="verticalAlign=bottom;endArrow=block;shadow=0;strokeWidth=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="350.0000000000002" y="220" as="sourcePoint" />
+            <mxPoint x="529.5000000000002" y="220" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Ok_oPfVutxxGbshZokRG-13" value="clear inhibit" style="verticalAlign=bottom;endArrow=open;dashed=1;endSize=8;exitX=1;exitY=0.95;shadow=0;strokeWidth=1;" edge="1" parent="1" target="Ok_oPfVutxxGbshZokRG-10">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="520" y="299.9999999999999" as="targetPoint" />
+            <mxPoint x="350.0000000000002" y="300" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Ok_oPfVutxxGbshZokRG-14" value="The second part of the proposal would be to change the heartbeat to a broadcast message received by all DFO instances in the session, and have the MLT broadcast its TriggerDecisions to all DFOs as well. An &quot;activate DFO&quot; command sent by Run Control would select the current DFO, and it would then have all relevant information for assigning outstanding Trigger Decisions." style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="140" y="520" width="510" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="Ok_oPfVutxxGbshZokRG-15" value="DFO2" style="shape=umlLifeline;perimeter=lifelinePerimeter;container=1;collapsible=0;recursiveResize=0;rounded=0;shadow=0;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="650" y="80" width="100" height="440" as="geometry" />
+        </mxCell>
+        <mxCell id="Ok_oPfVutxxGbshZokRG-16" value="" style="points=[];perimeter=orthogonalPerimeter;rounded=0;shadow=0;strokeWidth=1;" vertex="1" parent="Ok_oPfVutxxGbshZokRG-15">
+          <mxGeometry x="45" y="100" width="10" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="Ok_oPfVutxxGbshZokRG-17" value="" style="points=[];perimeter=orthogonalPerimeter;rounded=0;shadow=0;strokeWidth=1;" vertex="1" parent="Ok_oPfVutxxGbshZokRG-15">
+          <mxGeometry x="45" y="200" width="10" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="Ok_oPfVutxxGbshZokRG-18" value="Trigger Decision" style="verticalAlign=bottom;endArrow=block;shadow=0;strokeWidth=1;" edge="1" parent="1" target="Ok_oPfVutxxGbshZokRG-15">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="530" y="180" as="sourcePoint" />
+            <mxPoint x="364.19000000000005" y="189.94000000000005" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Ok_oPfVutxxGbshZokRG-19" value="heartbeat" style="verticalAlign=bottom;endArrow=block;shadow=0;strokeWidth=1;" edge="1" parent="1" target="Ok_oPfVutxxGbshZokRG-15">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="180" y="160" as="sourcePoint" />
+            <mxPoint x="355.0000000000002" y="170.0000000000001" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Ok_oPfVutxxGbshZokRG-20" value="heartbeat" style="verticalAlign=bottom;endArrow=block;shadow=0;strokeWidth=1;" edge="1" parent="1" target="Ok_oPfVutxxGbshZokRG-15">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="180" y="280" as="sourcePoint" />
+            <mxPoint x="355.0000000000002" y="289.3100000000002" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Ok_oPfVutxxGbshZokRG-23" value="activate DFO1" style="html=1;verticalAlign=bottom;startArrow=oval;startFill=1;endArrow=block;startSize=8;rounded=0;" edge="1" parent="1" target="Ok_oPfVutxxGbshZokRG-15">
+          <mxGeometry width="60" relative="1" as="geometry">
+            <mxPoint x="80" y="140" as="sourcePoint" />
+            <mxPoint x="310" y="150" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Ok_oPfVutxxGbshZokRG-27" value="" style="points=[];perimeter=orthogonalPerimeter;rounded=0;shadow=0;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="345" y="404.06" width="10" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="Ok_oPfVutxxGbshZokRG-28" value="Trigger Decision" style="verticalAlign=bottom;endArrow=block;shadow=0;strokeWidth=1;entryX=0.919;entryY=-0.002;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1" target="Ok_oPfVutxxGbshZokRG-27">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="529.5000000000002" y="404.00000000000006" as="sourcePoint" />
+            <mxPoint x="360" y="404.06" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Ok_oPfVutxxGbshZokRG-30" value="" style="points=[];perimeter=orthogonalPerimeter;rounded=0;shadow=0;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="695" y="404.06" width="10" height="45.94" as="geometry" />
+        </mxCell>
+        <mxCell id="Ok_oPfVutxxGbshZokRG-31" value="Trigger Decision" style="verticalAlign=bottom;endArrow=block;shadow=0;strokeWidth=1;exitX=0.5;exitY=0.263;exitDx=0;exitDy=0;exitPerimeter=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="530.0000000000002" y="404.00000000000006" as="sourcePoint" />
+            <mxPoint x="699.5" y="404.00000000000006" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Ok_oPfVutxxGbshZokRG-33" value="" style="html=1;verticalAlign=bottom;startArrow=oval;startFill=1;endArrow=block;startSize=8;rounded=0;" edge="1" parent="1" target="Ok_oPfVutxxGbshZokRG-5">
+          <mxGeometry width="60" relative="1" as="geometry">
+            <mxPoint x="80" y="380" as="sourcePoint" />
+            <mxPoint x="180" y="390" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Ok_oPfVutxxGbshZokRG-34" value="" style="html=1;verticalAlign=bottom;startArrow=oval;startFill=1;endArrow=block;startSize=8;rounded=0;" edge="1" parent="1">
+          <mxGeometry width="60" relative="1" as="geometry">
+            <mxPoint x="80" y="380" as="sourcePoint" />
+            <mxPoint x="520" y="380" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Ok_oPfVutxxGbshZokRG-35" value="" style="html=1;verticalAlign=bottom;startArrow=oval;startFill=1;endArrow=block;startSize=8;rounded=0;" edge="1" parent="1">
+          <mxGeometry width="60" relative="1" as="geometry">
+            <mxPoint x="80" y="140" as="sourcePoint" />
+            <mxPoint x="350" y="140" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Ok_oPfVutxxGbshZokRG-36" value="" style="html=1;verticalAlign=bottom;startArrow=oval;startFill=1;endArrow=block;startSize=8;rounded=0;" edge="1" parent="1">
+          <mxGeometry width="60" relative="1" as="geometry">
+            <mxPoint x="80" y="140" as="sourcePoint" />
+            <mxPoint x="530" y="140" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Ok_oPfVutxxGbshZokRG-37" value="Trigger Decision" style="verticalAlign=bottom;endArrow=block;shadow=0;strokeWidth=1;entryX=0.919;entryY=-0.002;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="345.0000000000002" y="434.06" as="sourcePoint" />
+            <mxPoint x="169.69000000000005" y="434.06" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Ok_oPfVutxxGbshZokRG-39" value="" style="points=[];perimeter=orthogonalPerimeter;rounded=0;shadow=0;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="165" y="450" width="10" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="Ok_oPfVutxxGbshZokRG-40" value="TD notification" style="verticalAlign=bottom;endArrow=open;dashed=1;endSize=8;exitX=1;exitY=0.95;shadow=0;strokeWidth=1;" edge="1" parent="1">
+          <mxGeometry x="-0.0421" relative="1" as="geometry">
+            <mxPoint x="699.5" y="200" as="targetPoint" />
+            <mxPoint x="355.0000000000002" y="200" as="sourcePoint" />
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Ok_oPfVutxxGbshZokRG-42" value="TD notification" style="verticalAlign=bottom;endArrow=open;dashed=1;endSize=8;shadow=0;strokeWidth=1;" edge="1" parent="1">
+          <mxGeometry x="-0.0421" relative="1" as="geometry">
+            <mxPoint x="349.8103448275863" y="468" as="targetPoint" />
+            <mxPoint x="690" y="468" as="sourcePoint" />
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
