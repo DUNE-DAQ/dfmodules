@@ -301,7 +301,8 @@ DFOBrokerModule::receive_dfo_decision(const dfmessages::DFODecision& decision)
       m_dfo_information[decision.dfo_id].recent_completions.erase(ack);
     }
 
-    if (m_dfo_information[decision.dfo_id].dfo_is_active) {
+    // Reject duplicate trigger_number if recently received
+    if (m_dfo_information[decision.dfo_id].dfo_is_active && !m_outstanding_decisions.count(decision.trigger_decision.trigger_number)) {
       m_outstanding_decisions.insert(decision.trigger_decision.trigger_number);
       dfmessages::TriggerDecision decision_copy = dfmessages::TriggerDecision(decision.trigger_decision);
       auto sender = get_iom_sender<dfmessages::TriggerDecision>(m_td_connection);
