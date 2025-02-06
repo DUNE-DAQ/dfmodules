@@ -215,6 +215,7 @@ DFOBrokerModule::do_enable_dfo(const data_t& args)
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_enable_dfo() method";
   auto enabled_dfo_id = args.value<std::string>("dfo", "");
 
+  TLOG() << get_name() << ": Setting enabled DFO to " << enabled_dfo_id << "(current=" << get_active_dfo() << ")";
   std::lock_guard<std::mutex> lk(m_dfo_info_mutex);
   for (auto& dfo_pair : m_dfo_information) {
     if (dfo_pair.first == enabled_dfo_id) {
@@ -353,6 +354,26 @@ DFOBrokerModule::heartbeat_thread_proc(std::atomic<bool>& running)
     std::this_thread::sleep_for(m_send_heartbeat_interval / 25);
   }
   send_heartbeat(true); // Always send heartbeat at end
+}
+
+std::string
+DFOBrokerModule::get_active_dfo()
+{
+  std::lock_guard<std::mutex> lk(m_dfo_info_mutex);
+  std::string active_dfo = "";
+
+  for (auto& dfo_pair : m_dfo_information)
+  {
+    if (dfo_pair.second.dfo_is_active) {
+      if (active_dfo != "") {
+        ers::error(DFOBrokerMultipleDFOsActive(ERS_HERE, active_dfo, dfo_pair.first));
+      }
+      active_dfo += dfo_pair.first;
+    }
+  }
+
+  return active_dfo;
+
 }
 
 bool

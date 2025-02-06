@@ -43,6 +43,10 @@ ERS_DECLARE_ISSUE(dfmodules,
                   DFOBrokerDFONotFound,
                   "DFOBroker received message for unknown DFO: recvd (" << dfo_id << ")",
                   ((std::string)dfo_id)) // NOLINT(build/unsigned)
+ERS_DECLARE_ISSUE(dfmodules,
+                  DFOBrokerMultipleDFOsActive,
+                  "DFOBroker has multiple enabled DFOs: existing " << enabled_dfos << " is joined by " << dfo_id,
+                  ((std::string)enabled_dfos)((std::string)dfo_id)) // NOLINT(build/unsigned)
 // Re-enable coverage checking LCOV_EXCL_STOP
 
 namespace dfmodules {
@@ -84,6 +88,7 @@ private:
   void heartbeat_thread_proc(std::atomic<bool>& running);
 
   bool dfo_is_active(std::string const& dfo_id);
+  std::string get_active_dfo();
   std::vector<dfmessages::trigger_number_t> get_recent_completions();
   std::vector<dfmessages::trigger_number_t> get_outstanding_decisions();
 
