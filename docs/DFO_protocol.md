@@ -24,7 +24,7 @@ The advantage of this change is that now multiple DFOs can listen to the broadca
 
 ### DFO hand-off (enable_dfo command)
 
-Each DFO in the system always operates as if it is "enahbled". For DFO applications that are not enabled, it integrates conflicting information received in DataflowHeartbeat messages into its current picture of the running system [code](https://github.com/DUNE-DAQ/dfmodules/blob/8b5160dc40c646a8abc8a54f792bafe9509bfcf0/plugins/DFOModule.cpp#L431). The DFOBrokerModule in the Dataflow application keeps track of the DFOs it has received DFODecision messages from, and maintains a per-DFO list of recently-completed trigger records that are awaiting acknowledgement by that DFO. (The DFODecision message contains these acknowledgements, as well as a fresh TriggerDecision).
+Each DFO in the system always operates as if it is "enahbled". For DFO applications that are not enabled, it integrates conflicting information received in DataflowHeartbeat messages into its current picture of the running system [(code)](https://github.com/DUNE-DAQ/dfmodules/blob/8b5160dc40c646a8abc8a54f792bafe9509bfcf0/plugins/DFOModule.cpp#L431). The DFOBrokerModule in the Dataflow application keeps track of the DFOs it has received DFODecision messages from, and maintains a per-DFO list of recently-completed trigger records that are awaiting acknowledgement by that DFO. (The DFODecision message contains these acknowledgements, as well as a fresh TriggerDecision).
 
 The MLT application uses its sense of "active" DFO only to determine which TriggerInhibit messages to honor. It does not change its inhibit state when the active DFO changes, but the DFO has been updated to send TriggerInhibit messages at regular intervals in addition to when the inhibit state changes. For a hand-off from DFO A to DFO B, the following action matrix applies:
 
@@ -35,7 +35,7 @@ The MLT application uses its sense of "active" DFO only to determine which Trigg
 
 While this makes it obvious that the busy_interval should be set to a fairly short time (default is 1000 ms), it should also be noted that since all DFOs are acting upon the same set of inputs, it is expected that they will be in the same inhibit state.
 
-The DF Application uses its sense of "active" DFO to determine which TriggerDecisions to forward to the TRBModule. Once a TriggerDecision has been accepted, the DFOBrokerModule will reject further TriggerDecisions with that trigger number (code)[citation_needed]. There is a mutex lock on the DFO information structure within the DFOBrokerModule, so a change in the active DFO will only happen between processing DFODecisions.
+The DF Application uses its sense of "active" DFO to determine which TriggerDecisions to forward to the TRBModule. Once a TriggerDecision has been accepted, the DFOBrokerModule will reject further TriggerDecisions with that trigger number [(code)](https://github.com/DUNE-DAQ/dfmodules/blob/e8a743c7f6b5d613c13d9f9495ae82b53e9d047e/plugins/DFOBrokerModule.cpp#L304). There is a mutex lock on the DFO information structure within the DFOBrokerModule, so a change in the active DFO will only happen between processing DFODecisions.
 
 ## Configuration Notes
 
