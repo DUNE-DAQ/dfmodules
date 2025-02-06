@@ -67,3 +67,9 @@ The MLT application is unchanged, with the exception that it is now has a config
 Note how the DFOBroker now receives messages from the DataWriter and dispatches TriggerDecisions to the TRBModule. It is responsible for sending the periodic DataflowHeartbeat messages to the DFO.
 
 ![image](DFO_Protocol_dfo.png)
+
+## Regression Tests
+
+* `dfmodules/integtest/dfo_test.py`: A simple test using FakeDFOClientModule, which sets up a 3 FakeDFOClient, 2 DFO system and tests switching the active DFO between the two. FakeDFOClientModule pairs with DFOBrokerModule and pretends to be a TRBModule/DataWriterModule pair with no data in the system. Basic checkout of MLT->DFO->DFOBroker path.
+* `daqsystemtest/integtest/multiple_dfo_test.py`: A version of `minimal_system_quick_test.py` with 3 DFO applications. Run 101 is normal, run 102 changes the DFO before enable-triggers, run 103 changes the DFO again half-way through the run time, and run 104 is again normal (but using DFO-03, since the active DFO is unaffected by stop/start).
+* `daqsystemtest/integtest/3ru_3df_3dfo_multirun_test.py`: The same scenario as above, but using `3ru_3df_multirun_test.py` as the base, so it is acting on a much more complicated setup.
