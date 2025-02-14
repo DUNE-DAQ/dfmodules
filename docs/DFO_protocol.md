@@ -16,11 +16,11 @@ In the original design, the DFO received tokens from the Dataflow applications, 
 
 ![image](DFO_Protocol_New_Simple.png)
 
-The idea behind the new DFO protocol is that the control messages now are broadcasts (Pub/Sub) rather than one-to-one. The Dataflow application sends a periodic heartbeat message which contains information about the number of TriggerRecords currently being built and written.
+The idea behind the new DFO protocol is that the control messages now are broadcasts (Pub/Sub) rather than one-to-one. The Dataflow application sends a periodic [heartbeat message](https://github.com/DUNE-DAQ/dfmessages/blob/develop/docs/dfmessages.png) which contains information about the number of TriggerRecords currently being built and written.
 
 ![image](DFO_Protocol_New.png)
 
-The advantage of this change is that now multiple DFOs can listen to the broadcast heartbeat and TriggerDecision messages, and create their own "DFODecision" messages in response to a complete view of the system. One DFO application is designated as the "active" DFO, and the Dataflow and MLT application ignore messages from inactive DFOs. Run control has an "enable_dfo" message, which when sent to these processes changes the DFO ID that they accept information from. (No change is needed on the DFO side, since they always operate as if they are active.) Heartbeat messages are used by non-active DFOs to update their view of the running system in case different decisions were reached (i.e. a TriggerRecord was assigned to a different Dataflow application by an inactive DFO than by the active DFO).
+The advantage of this change is that now multiple DFOs can listen to the broadcast heartbeat and TriggerDecision messages, and create their own ["DFODecision"](https://github.com/DUNE-DAQ/dfmessages/blob/develop/docs/dfmessages.png) messages in response to a complete view of the system. One DFO application is designated as the "active" DFO, and the Dataflow and MLT application ignore messages from inactive DFOs. Run control has an "enable_dfo" message, which when sent to these processes changes the DFO ID that they accept information from. (No change is needed on the DFO side, since they always operate as if they are active.) Heartbeat messages are used by non-active DFOs to update their view of the running system in case different decisions were reached (i.e. a TriggerRecord was assigned to a different Dataflow application by an inactive DFO than by the active DFO). These updates are logged via a TLOG_DEBUG message and tracked via the [heartbeat_updates](https://github.com/DUNE-DAQ/dfmodules/blob/8c279aa181fbdc60235d72a7e425888b96122e63/schema/dfmodules/opmon/DFOModule.proto#L13) OpMon metric.
 
 ### DFO hand-off (enable_dfo command)
 
@@ -30,10 +30,10 @@ The MLT application uses its sense of "active" DFO only to determine which Trigg
 
 | DFO B Status | DFO A Inhibited | DFO A Not Inhibited |
 | --- | --- | -- |
-| DFO B Inhibited | MLT remains Inhibited | DFO B will send inhibit message upon receiving TriggerDecision after busy_interval |
-| DFO B Not Inhibited | DFO B will sent inhibit (clear) message after busy_interval (triggered by receive_dataflow_heartbeat) | MLT remains uninhibited |
+| DFO B Inhibited | MLT remains Inhibited | DFO B will send inhibit message upon receiving TriggerDecision after `busy_interval` |
+| DFO B Not Inhibited | DFO B will sent inhibit (clear) message after `busy_interval` (triggered by receive_dataflow_heartbeat) | MLT remains uninhibited |
 
-While this makes it obvious that the busy_interval should be set to a fairly short time (default is 1000 ms), it should also be noted that since all DFOs are acting upon the same set of inputs, it is expected that they will be in the same inhibit state.
+While this makes it obvious that the `busy_interval` should be set to a fairly short time (default is 1000 ms), it should also be noted that since all DFOs are acting upon the same set of inputs, it is expected that they will be in the same inhibit state. The `busy_interval` parameter indicates the minimum interval before the DFO will send an inhibit message to the MLT with a duplicate status. The DFO always sends an inhibit message when its inhibit state changes.
 
 The DF Application uses its sense of "active" DFO to determine which TriggerDecisions to forward to the TRBModule. Once a TriggerDecision has been accepted, the DFOBrokerModule will reject further TriggerDecisions with that trigger number [(code)](https://github.com/DUNE-DAQ/dfmodules/blob/e8a743c7f6b5d613c13d9f9495ae82b53e9d047e/plugins/DFOBrokerModule.cpp#L304). There is a mutex lock on the DFO information structure within the DFOBrokerModule, so a change in the active DFO will only happen between processing DFODecisions.
 
