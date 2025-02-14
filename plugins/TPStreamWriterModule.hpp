@@ -19,6 +19,7 @@
 #include "daqdataformats/TimeSlice.hpp"
 #include "trigger/TPSet.hpp"
 #include "utilities/WorkerThread.hpp"
+#include "logging/Logging.hpp" // NOTE: if ISSUES ARE DECLARED BEFORE include logging/Logging.hpp, TLOG_DEBUG<<issue wont work.
 
 #include <memory>
 #include <string>
