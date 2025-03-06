@@ -23,7 +23,7 @@
 #include "iomanager/Sender.hpp"
 
 #include "appfwk/DAQModule.hpp"
-#include "logging/Logging.hpp"
+#include "logging/Logging.hpp" // NOTE: if ISSUES ARE DECLARED BEFORE include logging/Logging.hpp, TLOG_DEBUG<<issue wont work.
 
 #include <map>
 #include <memory>
@@ -86,7 +86,7 @@ public:
   DFOModule(DFOModule&&) = delete;            ///< DFOModule is not move-constructible
   DFOModule& operator=(DFOModule&&) = delete; ///< DFOModule is not move-assignable
 
-  void init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg) override;
+  void init(std::shared_ptr<appfwk::ConfigurationManager> mcfg) override;
 
 protected:
   virtual std::shared_ptr<AssignedTriggerDecision> find_slot(const dfmessages::TriggerDecision& decision);
