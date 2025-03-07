@@ -141,7 +141,7 @@ TriggerRecordBuilderData::complete_assignment(daqdataformats::trigger_number_t t
 
   ++m_complete_counter;
   auto completion_time =
-    std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - dec_ptr->assigned_time);
+    std::chrono::duration_cast<std::chrono::microseconds>(now - dec_ptr->assigned_time);
   if (completion_time.count() < m_min_complete_time.load())
     m_min_complete_time.store(completion_time.count());
   if (completion_time.count() > m_max_complete_time.load())

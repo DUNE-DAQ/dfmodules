@@ -104,11 +104,13 @@ BOOST_AUTO_TEST_CASE(Assignments)
 
   std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
-  trbd_p->complete_assignment(1, [](nlohmann::json&) {});
+  std::chrono::steady_clock::time_point complete_time;
+  trbd_p->complete_assignment(1,
+                              [&complete_time](nlohmann::json&) { complete_time = std::chrono::steady_clock::now(); });
   BOOST_REQUIRE_EQUAL(trbd_p->used_slots(), 0);
 
   auto latency =
-    std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - assignment->assigned_time)
+    std::chrono::duration_cast<std::chrono::microseconds>(complete_time - assignment->assigned_time)
       .count();
 
   BOOST_REQUIRE_CLOSE(
