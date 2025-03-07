@@ -60,11 +60,11 @@ DFOBrokerModule::DFOBrokerModule(const std::string& name)
 }
 
 void
-DFOBrokerModule::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
+DFOBrokerModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcfg)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
 
-  auto mdal = mcfg->module<appmodel::DFOBrokerModule>(get_name());
+  auto mdal = mcfg->get_dal<appmodel::DFOBrokerModule>(get_name());
   if (!mdal) {
     throw appfwk::CommandFailed(ERS_HERE, "init", get_name(), "Unable to retrieve configuration object");
   }
@@ -107,7 +107,7 @@ DFOBrokerModule::init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg)
   iom->get_receiver<dfmessages::DFODecision>(m_dfod_connection);
   iom->get_sender<dfmessages::DataflowHeartbeat>(m_heartbeat_connection); // Should be pub/sub, so this is a bind
 
-  const confmodel::Session* session = mcfg->configuration_manager()->session();
+  const confmodel::Session* session = mcfg->session();
   for (auto& app : session->get_all_applications()) {
     auto dfoapp = app->cast<appmodel::DFOApplication>();
     if (dfoapp != nullptr) {

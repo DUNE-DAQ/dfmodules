@@ -69,7 +69,7 @@ public:
   DFOBrokerModule(DFOBrokerModule&&) = delete;                 ///< DFOBrokerModule is not move-constructible
   DFOBrokerModule& operator=(DFOBrokerModule&&) = delete;      ///< DFOBrokerModule is not move-assignable
 
-  void init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg) override;
+  void init(std::shared_ptr<appfwk::ConfigurationManager> mcfg) override;
 
 private:
   // Commands

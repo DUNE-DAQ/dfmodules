@@ -54,7 +54,7 @@ public:
   FakeDFOClientModule(FakeDFOClientModule&&) = delete;                 ///< FakeDFOClientModule is not move-constructible
   FakeDFOClientModule& operator=(FakeDFOClientModule&&) = delete;      ///< FakeDFOClientModule is not move-assignable
 
-  void init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg) override;
+  void init(std::shared_ptr<appfwk::ConfigurationManager> mcfg) override;
 
 private:
   // Commands

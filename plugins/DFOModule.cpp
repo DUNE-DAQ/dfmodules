@@ -97,7 +97,7 @@ DFOModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcfg)
   }
 
   m_dfo_conf = mdal->get_configuration();
-  m_dfo_id = mcfg->configuration_manager()->application()->UID();
+  m_dfo_id = mcfg->application()->UID();
   // these are just tests to check if the connections are ok
   for (auto& hb_conn : m_heartbeat_connections) {
     iom->get_receiver<dfmessages::DataflowHeartbeat>(hb_conn);
