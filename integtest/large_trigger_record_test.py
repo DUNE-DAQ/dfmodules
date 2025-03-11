@@ -154,10 +154,10 @@ confgen_arguments = {
 if sufficient_disk_space:
     nanorc_command_list = (
         "boot conf wait 5".split()
-        + "start 101 wait 1 enable-triggers wait ".split()
+        + "start 101 wait 1 enable-dfo enable-triggers wait ".split()
         + [str(run_duration)]
         + "disable-triggers wait 2 drain-dataflow wait 2 stop-trigger-sources stop ".split()
-        + "start 102 wait 1 enable-triggers wait ".split()
+        + "start 102 wait 1 enable-dfo enable-triggers wait ".split()
         + [str(run_duration)]
         + "disable-triggers wait 2 drain-dataflow wait 2 stop-trigger-sources stop ".split()
         + " scrap terminate".split()
