@@ -131,20 +131,6 @@ DFOBrokerModule::do_conf(const data_t&)
   m_td_timeout = std::chrono::milliseconds(m_dfobroker_conf->get_td_timeout_ms());
   m_stop_timeout = std::chrono::milliseconds(m_dfobroker_conf->get_stop_timeout_ms());
 
-  auto initial_active_dfo = m_dfobroker_conf->get_initial_active_dfo();
-  if (initial_active_dfo != nullptr) {
-    auto enabled_dfo_id = initial_active_dfo->UID();
-
-    std::lock_guard<std::mutex> lk(m_dfo_info_mutex);
-    for (auto& dfo_pair : m_dfo_information) {
-      if (dfo_pair.first == enabled_dfo_id) {
-        TLOG_DEBUG(TLVL_CONFIG) << get_name() << ": Enabling DFO " << initial_active_dfo->UID();
-        dfo_pair.second.dfo_is_active = true;
-      } else {
-        dfo_pair.second.dfo_is_active = false;
-      }
-    }
-  }
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method, there are "
                                       << m_dfo_information.size() << " DFO apps defined";
 }
