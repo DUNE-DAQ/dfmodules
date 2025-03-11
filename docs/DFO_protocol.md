@@ -61,12 +61,18 @@ With these configuration changes, and updates to DFApplication and DFOApplicatio
 ![image](DFO_Protocol_session.png)
 
 ![image](DFO_Protocol_mlt.png)
-The MLT application is unchanged, with the exception that it is now has a configuration parameter to set the "initally-active" DFO.
+The MLT application is unchanged.
 
 ![image](DFO_Protocol_df.png)
 Note how the DFOBroker now receives messages from the DataWriter and dispatches TriggerDecisions to the TRBModule. It is responsible for sending the periodic DataflowHeartbeat messages to the DFO.
 
 ![image](DFO_Protocol_dfo.png)
+
+## Run-time Notes
+
+A new command has been added to the run control, `enable-dfo`. This sends the message to the DF and MLT applications that sets/updates the name of the DFO that they will act on. (For the MLT, Inhibit messages from other DFOs are ignored, and for the DF app, DFO Decision messages from other DFOs are not forwarded to the TRB, but are used to track acknowledged trigger completions.)
+**The `enable-dfo` command must be sent for the system to work!**
+`enable-dfo` takes an optional parameter, `--dfo-name`, which is checked against the active Session to ensure that the requested DFO is present and enabled. If `--dfo-name` is not specified, the command will enable MLT/DF processing for the first enabled DFO in the Session's application list.
 
 ## Regression Tests
 
