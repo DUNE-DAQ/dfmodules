@@ -3,7 +3,7 @@ syntax = "proto3";
 package dunedaq.dfmodules.opmon;
 
 
-// regular metric published byt the DFO
+// regular metric published byt the DFO Broker Module
 message DFOBrokerInfo {
 
   // counters 
@@ -13,4 +13,6 @@ message DFOBrokerInfo {
   uint64 tokens_received = 4;
 
   uint64 pending_trs = 5;
+
+  string active_dfo = 6;
 }
