@@ -201,7 +201,7 @@ DFOBrokerModule::do_enable_dfo(const data_t& args)
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_enable_dfo() method";
   auto enabled_dfo_id = args.value<std::string>("dfo", "");
 
-  TLOG() << get_name() << ": Setting enabled DFO to " << enabled_dfo_id << "(current=" << get_active_dfo() << ")";
+  TLOG() << get_name() << ": Setting enabled DFO to " << enabled_dfo_id << " (current=" << get_active_dfo() << ")";
   std::lock_guard<std::mutex> lk(m_dfo_info_mutex);
   for (auto& dfo_pair : m_dfo_information) {
     if (dfo_pair.first == enabled_dfo_id) {
@@ -222,6 +222,7 @@ DFOBrokerModule::generate_opmon_data()
   info.set_decisions_received(m_received_decisions.exchange(0));
   info.set_tokens_received(m_received_tokens.exchange(0));
   info.set_pending_trs(m_pending_trs.load());
+  info.set_active_dfo(get_active_dfo());
   publish(std::move(info));
 }
 
