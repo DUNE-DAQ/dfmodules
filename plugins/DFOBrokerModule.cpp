@@ -216,14 +216,17 @@ DFOBrokerModule::do_enable_dfo(const data_t& args)
   auto enabled_dfo_id = args.value<std::string>("dfo", "");
 
   TLOG() << get_name() << ": Setting enabled DFO to " << enabled_dfo_id << " (current=" << get_active_dfo() << ")";
-  std::lock_guard<std::mutex> lk(m_dfo_info_mutex);
-  for (auto& dfo_pair : m_dfo_information) {
-    if (dfo_pair.first == enabled_dfo_id) {
-      dfo_pair.second.dfo_is_active = true;
-    } else {
-      dfo_pair.second.dfo_is_active = false;
+  {
+    std::lock_guard<std::mutex> lk(m_dfo_info_mutex);
+    for (auto& dfo_pair : m_dfo_information) {
+      if (dfo_pair.first == enabled_dfo_id) {
+        dfo_pair.second.dfo_is_active = true;
+      } else {
+        dfo_pair.second.dfo_is_active = false;
+      }
     }
   }
+  generate_opmon_data();
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_enable_dfo() method";
 }
 
