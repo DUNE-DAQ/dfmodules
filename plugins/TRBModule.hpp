@@ -1,5 +1,5 @@
 /**
- * @file TriggerRecordBuilder.hpp
+ * @file TRBModule.hpp
  *
  * This is part of the DUNE DAQ Software Suite, copyright 2020.
  * Licensing/copyright details are in the COPYING file that you should have
@@ -9,12 +9,13 @@
 #ifndef DFMODULES_PLUGINS_TRIGGERRECORDBUILDER_HPP_
 #define DFMODULES_PLUGINS_TRIGGERRECORDBUILDER_HPP_
 
-#include "dfmodules/triggerrecordbuilderinfo/InfoNljs.hpp"
-
+#include "appmodel/TRBConf.hpp"
 #include "daqdataformats/Fragment.hpp"
 #include "daqdataformats/SourceID.hpp"
 #include "daqdataformats/TriggerRecord.hpp"
 #include "daqdataformats/Types.hpp"
+#include "appmodel/ReadoutApplication.hpp"
+#include "appmodel/SmartDaqApplication.hpp"
 #include "dfmessages/DataRequest.hpp"
 #include "dfmessages/TRMonRequest.hpp"
 #include "dfmessages/TriggerDecision.hpp"
@@ -24,6 +25,9 @@
 #include "utilities/WorkerThread.hpp"
 #include "iomanager/Sender.hpp"
 #include "iomanager/Receiver.hpp"
+#include "logging/Logging.hpp" // NOTE: if ISSUES ARE DECLARED BEFORE include logging/Logging.hpp, TLOG_DEBUG<<issue wont work.
+
+#include "dfmodules/opmon/TRBModule.pb.h"
 
 #include <chrono>
 #include <list>
@@ -159,28 +163,29 @@ ERS_DECLARE_ISSUE(dfmodules,           ///< Namespace
 namespace dfmodules {
 
 /**
- * @brief TriggerRecordBuilder is the Module that collects Trigger
+ * @brief TRBModule is the Module that collects Trigger
  TriggersDecisions, sends the corresponding data requests and collects Fragment
  to form a complete Trigger Record. The TR then sent out possibly to a write
  module
 */
-class TriggerRecordBuilder : public dunedaq::appfwk::DAQModule
+class TRBModule : public dunedaq::appfwk::DAQModule
 {
 public:
   /**
-   * @brief TriggerRecordBuilder Constructor
-   * @param name Instance name for this TriggerRecordBuilder instance
+   * @brief TRBModule Constructor
+   * @param name Instance name for this TRBModule instance
    */
-  explicit TriggerRecordBuilder(const std::string& name);
+  explicit TRBModule(const std::string& name);
 
-  TriggerRecordBuilder(const TriggerRecordBuilder&) = delete; ///< TriggerRecordBuilder is not copy-constructible
-  TriggerRecordBuilder& operator=(const TriggerRecordBuilder&) =
-    delete;                                                         ///< TriggerRecordBuilder is not copy-assignable
-  TriggerRecordBuilder(TriggerRecordBuilder&&) = delete;            ///< TriggerRecordBuilder is not move-constructible
-  TriggerRecordBuilder& operator=(TriggerRecordBuilder&&) = delete; ///< TriggerRecordBuilder is not move-assignable
+  TRBModule(const TRBModule&) = delete; ///< TRBModule is not copy-constructible
+  TRBModule& operator=(const TRBModule&) =
+    delete;                                                         ///< TRBModule is not copy-assignable
+  TRBModule(TRBModule&&) = delete;            ///< TRBModule is not move-constructible
+  TRBModule& operator=(TRBModule&&) = delete; ///< TRBModule is not move-assignable
 
-  void init(const data_t&) override;
-  void get_info(opmonlib::InfoCollector& ci, int level) override;
+  void init(std::shared_ptr<appfwk::ConfigurationManager> mcfg) override;
+
+  void generate_opmon_data() override;
 
 protected:
   using trigger_decision_receiver_t = iomanager::ReceiverConcept<dfmessages::TriggerDecision>;
@@ -226,6 +231,7 @@ private:
   void do_work(std::atomic<bool>&);
 
   // Configuration
+  const appmodel::TRBConf* m_trb_conf;
   std::chrono::milliseconds m_queue_timeout;
   std::chrono::milliseconds m_loop_sleep;
   std::string m_reply_connection;
@@ -236,7 +242,6 @@ private:
   std::shared_ptr<fragment_receiver_t> m_fragment_input;
 
   // Output connections
-  std::map<std::string, std::string> m_producer_conn_ref_map;
   std::shared_ptr<trigger_record_sender_t> m_trigger_record_output;
   mutable std::mutex m_map_sourceid_connections_mutex;
   std::map<daqdataformats::SourceID, std::shared_ptr<data_req_sender_t>> m_map_sourceid_connections; ///< Mappinng between SourceID and connections
@@ -257,7 +262,7 @@ private:
   std::list<dfmessages::TRMonRequest> m_mon_requests;
 
   // book related metrics
-  using metric_counter_type = decltype(triggerrecordbuilderinfo::Info::pending_trigger_decisions);
+  using metric_counter_type = uint64_t; // decltype(triggerrecordbuilderinfo::Info::pending_trigger_decisions);
   mutable std::atomic<metric_counter_type> m_trigger_decisions_counter = { 0 }; // currently
   mutable std::atomic<metric_counter_type> m_fragment_counter = { 0 };          // currently
   mutable std::atomic<metric_counter_type> m_pending_fragment_counter = { 0 };  // currently
@@ -283,7 +288,7 @@ private:
   mutable std::atomic<metric_counter_type> m_trmon_sent_counter = { 0 };
 
   // time thresholds
-  using duration_type = std::chrono::milliseconds;
+  using duration_type = std::chrono::microseconds;
   duration_type m_old_trigger_threshold;
   duration_type m_trigger_timeout;
 };

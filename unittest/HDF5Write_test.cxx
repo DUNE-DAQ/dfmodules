@@ -8,13 +8,14 @@
  */
 
 #include "dfmodules/DataStore.hpp"
-#include "dfmodules/hdf5datastore/Nljs.hpp"
-#include "dfmodules/hdf5datastore/Structs.hpp"
 
+#include "appmodel/DataWriterModule.hpp"
+#include "appmodel/DataWriterConf.hpp"
+#include "appmodel/FilenameParams.hpp"
+#include "confmodel/DetectorConfig.hpp"
+#include "confmodel/Session.hpp"
+#include "appmodel/DataStoreConf.hpp"
 #include "detdataformats/DetID.hpp"
-#include "hdf5libs/hdf5filelayout/Nljs.hpp"
-#include "hdf5libs/hdf5filelayout/Structs.hpp"
-#include "hdf5libs/hdf5rawdatafile/Structs.hpp"
 
 #define BOOST_TEST_MODULE HDF5Write_test // NOLINT
 
@@ -58,25 +59,6 @@ delete_files_matching_pattern(const std::string& path, const std::string& patter
     }
   }
   return file_list;
-}
-
-dunedaq::hdf5libs::hdf5filelayout::FileLayoutParams
-create_file_layout_params()
-{
-  dunedaq::hdf5libs::hdf5filelayout::PathParams params1;
-  params1.detector_group_type = "Detector_Readout";
-  params1.detector_group_name = "TPC";
-  params1.element_name_prefix = "Link";
-  params1.digits_for_element_number = 10;
-
-  dunedaq::hdf5libs::hdf5filelayout::PathParamList param_list;
-  param_list.push_back(params1);
-
-  dunedaq::hdf5libs::hdf5filelayout::FileLayoutParams layout_params;
-  layout_params.digits_for_record_number = 5;
-  layout_params.path_param_list = param_list;
-
-  return layout_params;
 }
 
 dunedaq::daqdataformats::TriggerRecord
@@ -137,56 +119,51 @@ create_trigger_record(int trig_num, int fragment_size, int element_count)
   return tr;
 }
 
-dunedaq::hdf5libs::hdf5rawdatafile::SrcIDGeoIDMap
-make_srcgeoid_map(int app_count, int link_count, int det_id = 3)
+struct CfgFixture
 {
-  dunedaq::hdf5libs::hdf5rawdatafile::SrcIDGeoIDMap map;
-
-  int sid = 0;
-  for (int app = 0; app < app_count; ++app) {
-    for (int link = 0; link < link_count; ++link) {
-      map.emplace_back() = {static_cast<dunedaq::hdf5libs::hdf5rawdatafile::Size>(sid),
-                            dunedaq::hdf5libs::hdf5rawdatafile::GeoID({det_id, app, sid / 2, sid % 2})};
-      ++sid;
-    }
+  CfgFixture(std::string sessionName)
+  {
+    TLOG_DEBUG(4) << "Creating CfgFixture";
+    setenv("DUNEDAQ_SESSION", sessionName.c_str(), 1);
+    std::string oksConfig = "oksconflibs:test/config/hdf5write_test.data.xml";
+    std::string appName = "TestApp";
+    cfgMgr = std::make_shared<dunedaq::appfwk::ConfigurationManager>(oksConfig, appName, sessionName);
+    TLOG_DEBUG(4) << "Done with CfgFixture";
   }
 
-  return map;
-}
+  const dunedaq::confmodel::DetectorConfig* get_detector_config()
+  {
+    return cfgMgr->session()->get_detector_configuration();
+  }
+
+  std::shared_ptr<dunedaq::appfwk::ConfigurationManager> cfgMgr;
+};
+
 BOOST_AUTO_TEST_SUITE(HDF5Write_test)
 
 BOOST_AUTO_TEST_CASE(WriteEventFiles)
 {
   std::string file_path(std::filesystem::temp_directory_path());
-  std::string file_prefix = "demo" + std::to_string(getpid()) + "_" + std::string(getenv("USER"));
 
   const int trigger_count = 5;
   const int apa_count = 3;
   const int link_count = 1;
   const int fragment_size = 10 + sizeof(dunedaq::daqdataformats::FragmentHeader);
 
-  // Make a hardware map
-  auto srcid_geoid_map = make_srcgeoid_map(apa_count, link_count);
-
   // delete any pre-existing files so that we start with a clean slate
-  std::string delete_pattern = file_prefix + ".*\\.hdf5";
+  std::string delete_pattern = "hdf5writetest.*\\.hdf5";
   delete_files_matching_pattern(file_path, delete_pattern);
 
   // create the DataStore
-  hdf5datastore::ConfParams config_params;
-  config_params.name = "tempWriter";
-  config_params.directory_path = file_path;
-  config_params.mode = "one-event-per-file";
-  config_params.filename_parameters.overall_prefix = file_prefix;
-  config_params.filename_parameters.writer_identifier = "HDF5Write_test";
-  config_params.file_layout_parameters = create_file_layout_params();
-  config_params.srcid_geoid_map = srcid_geoid_map;
+  CfgFixture cfg("test-session-3-1");
+  auto data_writer_conf = cfg.cfgMgr->get_dal<dunedaq::appmodel::DataWriterModule>("dwm-01")->get_configuration();
+  auto data_store_conf = data_writer_conf->get_data_store_params();
 
-  hdf5datastore::data_t hdf5ds_json;
-  hdf5datastore::to_json(hdf5ds_json, config_params);
+  auto data_store_conf_obj = data_store_conf->config_object();
+  data_store_conf_obj.set_by_val<std::string>("directory_path", file_path);
+  data_store_conf_obj.set_by_val<std::string>("mode", "one-event-per-file");
 
-  std::unique_ptr<DataStore> data_store_ptr;
-  data_store_ptr = make_data_store(hdf5ds_json);
+  auto data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.cfgMgr, "dwm-01");
 
   // write several events, each with several fragments
   for (int trigger_number = 1; trigger_number <= trigger_count; ++trigger_number)
@@ -195,7 +172,7 @@ BOOST_AUTO_TEST_CASE(WriteEventFiles)
   data_store_ptr.reset(); // explicit destruction
 
   // check that the expected number of files was created
-  std::string search_pattern = file_prefix + ".*\\.hdf5";
+  std::string search_pattern = "hdf5writetest.*\\.hdf5";
   std::vector<std::string> file_list = get_files_matching_pattern(file_path, search_pattern);
   BOOST_REQUIRE_EQUAL(file_list.size(), trigger_count);
 
@@ -208,37 +185,26 @@ BOOST_AUTO_TEST_CASE(WriteEventFiles)
 BOOST_AUTO_TEST_CASE(WriteOneFile)
 {
   std::string file_path(std::filesystem::temp_directory_path());
-  std::string file_prefix = "demo" + std::to_string(getpid()) + "_" + std::string(getenv("USER"));
 
   const int trigger_count = 5;
   const int apa_count = 3;
   const int link_count = 1;
   const int fragment_size = 10 + sizeof(dunedaq::daqdataformats::FragmentHeader);
 
-  // Make a hardware map
-  auto srcid_geoid_map = make_srcgeoid_map(apa_count, link_count);
-
   // delete any pre-existing files so that we start with a clean slate
-  std::string delete_pattern = file_prefix + ".*\\.hdf5";
+  std::string delete_pattern = "hdf5writetest.*\\.hdf5";
   delete_files_matching_pattern(file_path, delete_pattern);
 
   // create the DataStore
-  hdf5datastore::ConfParams config_params;
-  config_params.name = "tempWriter";
-  config_params.directory_path = file_path;
-  config_params.mode = "all-per-file";
-  config_params.max_file_size_bytes = 100000000; // much larger than what we expect, so no second file;
-  config_params.filename_parameters.overall_prefix = file_prefix;
-  config_params.filename_parameters.writer_identifier = "HDF5Write_test";
-  config_params.file_layout_parameters = create_file_layout_params();
-  config_params.srcid_geoid_map = srcid_geoid_map;
+  CfgFixture cfg("test-session-3-1");
+  auto data_writer_conf = cfg.cfgMgr->get_dal<dunedaq::appmodel::DataWriterModule>("dwm-01")->get_configuration();
+  auto data_store_conf = data_writer_conf->get_data_store_params();
 
-  hdf5datastore::data_t hdf5ds_json;
-  hdf5datastore::to_json(hdf5ds_json, config_params);
+  auto data_store_conf_obj = data_store_conf->config_object();
+  data_store_conf_obj.set_by_val<std::string>("directory_path", file_path);
 
-  std::unique_ptr<DataStore> data_store_ptr;
-  data_store_ptr = make_data_store(hdf5ds_json);
-
+  auto data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.cfgMgr, "dwm-01");
+    
   // write several events, each with several fragments
   for (int trigger_number = 1; trigger_number <= trigger_count; ++trigger_number)
     data_store_ptr->write(create_trigger_record(trigger_number, fragment_size, apa_count * link_count));
@@ -246,7 +212,7 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
   data_store_ptr.reset(); // explicit destruction
 
   // check that the expected number of files was created
-  std::string search_pattern = file_prefix + ".*\\.hdf5";
+  std::string search_pattern = "hdf5writetest.*\\.hdf5";
   std::vector<std::string> file_list = get_files_matching_pattern(file_path, search_pattern);
   BOOST_REQUIRE_EQUAL(file_list.size(), 1);
 
@@ -259,43 +225,32 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
 BOOST_AUTO_TEST_CASE(CheckWritingSuffix)
 {
   std::string file_path(std::filesystem::temp_directory_path());
-  std::string file_prefix = "demo" + std::to_string(getpid()) + "_" + std::string(getenv("USER"));
 
   const int trigger_count = 5;
   const int apa_count = 3;
   const int link_count = 1;
   const int fragment_size = 10 + sizeof(dunedaq::daqdataformats::FragmentHeader);
 
-  // Make a hardware map
-  auto srcid_geoid_map = make_srcgeoid_map(apa_count, link_count);
-
   // delete any pre-existing files so that we start with a clean slate
-  std::string delete_pattern = file_prefix + ".*\\.hdf5";
+  std::string delete_pattern = "hdf5writetest.*\\.hdf5";
   delete_files_matching_pattern(file_path, delete_pattern);
 
   // create the DataStore
-  hdf5datastore::ConfParams config_params;
-  config_params.name = "tempWriter";
-  config_params.directory_path = file_path;
-  config_params.mode = "all-per-file";
-  config_params.max_file_size_bytes = 100000000; // much larger than what we expect, so no second file;
-  config_params.filename_parameters.overall_prefix = file_prefix;
-  config_params.filename_parameters.writer_identifier = "HDF5Write_test";
-  config_params.file_layout_parameters = create_file_layout_params();
-  config_params.srcid_geoid_map = srcid_geoid_map;
+  CfgFixture cfg("test-session-3-1");
+  auto data_writer_conf = cfg.cfgMgr->get_dal<dunedaq::appmodel::DataWriterModule>("dwm-01")->get_configuration();
+  auto data_store_conf = data_writer_conf->get_data_store_params();
 
-  hdf5datastore::data_t hdf5ds_json;
-  hdf5datastore::to_json(hdf5ds_json, config_params);
+  auto data_store_conf_obj = data_store_conf->config_object();
+  data_store_conf_obj.set_by_val<std::string>("directory_path", file_path);
 
-  std::unique_ptr<DataStore> data_store_ptr;
-  data_store_ptr = make_data_store(hdf5ds_json);
-
+  auto data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.cfgMgr, "dwm-01");
+  
   // write several events, each with several fragments
   for (int trigger_number = 1; trigger_number <= trigger_count; ++trigger_number) {
     data_store_ptr->write(create_trigger_record(trigger_number, fragment_size, apa_count * link_count));
 
     // check that the .writing file is there
-    std::string search_pattern = file_prefix + ".*\\.writing";
+    std::string search_pattern = "hdf5writetest.*\\.writing";
     std::vector<std::string> file_list = get_files_matching_pattern(file_path, search_pattern);
     BOOST_REQUIRE_EQUAL(file_list.size(), 1);
   }
@@ -303,7 +258,7 @@ BOOST_AUTO_TEST_CASE(CheckWritingSuffix)
   data_store_ptr.reset(); // explicit destruction
 
   // check that the expected number of files was created
-  std::string search_pattern = file_prefix + ".*\\.writing";
+  std::string search_pattern = "hdf5writetest.*\\.writing";
   std::vector<std::string> file_list = get_files_matching_pattern(file_path, search_pattern);
   BOOST_REQUIRE_EQUAL(file_list.size(), 0);
 
@@ -316,40 +271,30 @@ BOOST_AUTO_TEST_CASE(CheckWritingSuffix)
 BOOST_AUTO_TEST_CASE(FileSizeLimitResultsInMultipleFiles)
 {
   std::string file_path(std::filesystem::temp_directory_path());
-  std::string file_prefix = "demo" + std::to_string(getpid()) + "_" + std::string(getenv("USER"));
 
   const int trigger_count = 15;
   const int apa_count = 5;
   const int link_count = 10;
   const int fragment_size = 10000;
 
-  // Make a hardware map
-  auto srcid_geoid_map = make_srcgeoid_map(apa_count, link_count);
-
   // 5 APAs times 10 links times 10000 bytes per fragment gives 500,000 bytes per TR
   // So, 15 TRs would give 7,500,000 bytes total.
 
   // delete any pre-existing files so that we start with a clean slate
-  std::string delete_pattern = file_prefix + ".*\\.hdf5";
+  std::string delete_pattern = "hdf5writetest.*\\.hdf5";
   delete_files_matching_pattern(file_path, delete_pattern);
 
   // create the DataStore
-  hdf5datastore::ConfParams config_params;
-  config_params.name = "tempWriter";
-  config_params.directory_path = file_path;
-  config_params.mode = "all-per-file";
-  config_params.max_file_size_bytes = 3000000; // goal is 6 events per file
-  config_params.filename_parameters.overall_prefix = file_prefix;
-  config_params.filename_parameters.writer_identifier = "HDF5Write_test";
-  config_params.file_layout_parameters = create_file_layout_params();
-  config_params.srcid_geoid_map = srcid_geoid_map;
+  CfgFixture cfg("test-session-5-10");
+  auto data_writer_conf = cfg.cfgMgr->get_dal<dunedaq::appmodel::DataWriterModule>("dwm-01")->get_configuration();
+  auto data_store_conf = data_writer_conf->get_data_store_params();
 
-  hdf5datastore::data_t hdf5ds_json;
-  hdf5datastore::to_json(hdf5ds_json, config_params);
+  auto data_store_conf_obj = data_store_conf->config_object();
+  data_store_conf_obj.set_by_val<std::string>("directory_path", file_path);
+  data_store_conf_obj.set_by_val<int>("max_file_size", 3000000); // goal is 6 events per file
 
-  std::unique_ptr<DataStore> data_store_ptr;
-  data_store_ptr = make_data_store(hdf5ds_json);
-
+  auto data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.cfgMgr, "dwm-01");
+  
   // write several events, each with several fragments
   for (int trigger_number = 1; trigger_number <= trigger_count; ++trigger_number)
     data_store_ptr->write(create_trigger_record(trigger_number, fragment_size, apa_count * link_count));
@@ -357,7 +302,7 @@ BOOST_AUTO_TEST_CASE(FileSizeLimitResultsInMultipleFiles)
   data_store_ptr.reset(); // explicit destruction
 
   // check that the expected number of files was created
-  std::string search_pattern = file_prefix + ".*\\.hdf5";
+  std::string search_pattern = "hdf5writetest.*\\.hdf5";
   std::vector<std::string> file_list = get_files_matching_pattern(file_path, search_pattern);
   // 7,500,000 bytes stored in files of size 3,000,000 should result in three files.
   BOOST_REQUIRE_EQUAL(file_list.size(), 3);
@@ -371,38 +316,28 @@ BOOST_AUTO_TEST_CASE(FileSizeLimitResultsInMultipleFiles)
 BOOST_AUTO_TEST_CASE(SmallFileSizeLimitDataBlockListWrite)
 {
   std::string file_path(std::filesystem::temp_directory_path());
-  std::string file_prefix = "demo" + std::to_string(getpid()) + "_" + std::string(getenv("USER"));
 
   const int trigger_count = 5;
   const int apa_count = 5;
   const int link_count = 1;
   const int fragment_size = 100000;
 
-  // Make a hardware map
-  auto srcid_geoid_map = make_srcgeoid_map(apa_count, link_count);
-
   // 5 APAs times 100000 bytes per fragment gives 500,000 bytes per TR
 
   // delete any pre-existing files so that we start with a clean slate
-  std::string delete_pattern = file_prefix + ".*\\.hdf5";
+  std::string delete_pattern = "hdf5writetest.*\\.hdf5";
   delete_files_matching_pattern(file_path, delete_pattern);
 
   // create the DataStore
-  hdf5datastore::ConfParams config_params;
-  config_params.name = "tempWriter";
-  config_params.directory_path = file_path;
-  config_params.mode = "all-per-file";
-  config_params.max_file_size_bytes = 150000; // ~1.5 Fragment, ~0.3 TR
-  config_params.filename_parameters.overall_prefix = file_prefix;
-  config_params.filename_parameters.writer_identifier = "HDF5Write_test";
-  config_params.file_layout_parameters = create_file_layout_params();
-  config_params.srcid_geoid_map = srcid_geoid_map;
+  CfgFixture cfg("test-session-5-1");
+  auto data_writer_conf = cfg.cfgMgr->get_dal<dunedaq::appmodel::DataWriterModule>("dwm-01")->get_configuration();
+  auto data_store_conf = data_writer_conf->get_data_store_params();
 
-  hdf5datastore::data_t hdf5ds_json;
-  hdf5datastore::to_json(hdf5ds_json, config_params);
+  auto data_store_conf_obj = data_store_conf->config_object();
+  data_store_conf_obj.set_by_val<std::string>("directory_path", file_path);
+  data_store_conf_obj.set_by_val<int>("max_file_size", 150000); // ~1.5 Fragment, ~0.3 TR
 
-  std::unique_ptr<DataStore> data_store_ptr;
-  data_store_ptr = make_data_store(hdf5ds_json);
+  auto data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.cfgMgr,"dwm-01");
 
   // write several events, each with several fragments
   for (int trigger_number = 1; trigger_number <= trigger_count; ++trigger_number)
@@ -411,7 +346,7 @@ BOOST_AUTO_TEST_CASE(SmallFileSizeLimitDataBlockListWrite)
   data_store_ptr.reset(); // explicit destruction
 
   // check that the expected number of files was created
-  std::string search_pattern = file_prefix + ".*\\.hdf5";
+  std::string search_pattern = "hdf5writetest.*\\.hdf5";
   std::vector<std::string> file_list = get_files_matching_pattern(file_path, search_pattern);
   // each TriggerRecord should be stored in its own file
   BOOST_REQUIRE_EQUAL(file_list.size(), 5);

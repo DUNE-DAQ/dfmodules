@@ -1,5 +1,5 @@
 /**
- * @file DataWriter.hpp
+ * @file DataWriterModule.hpp
  *
  * This is part of the DUNE DAQ Software Suite, copyright 2020.
  * Licensing/copyright details are in the COPYING file that you should have
@@ -12,11 +12,13 @@
 #include "dfmodules/DataStore.hpp"
 
 #include "appfwk/DAQModule.hpp"
+#include "appmodel/DataWriterConf.hpp"
 #include "daqdataformats/TriggerRecord.hpp"
 #include "dfmessages/TriggerDecisionToken.hpp"
 #include "iomanager/Receiver.hpp"
 #include "iomanager/Sender.hpp"
 #include "utilities/WorkerThread.hpp"
+#include "logging/Logging.hpp" // NOTE: if ISSUES ARE DECLARED BEFORE include logging/Logging.hpp, TLOG_DEBUG<<issue wont work.
 
 #include <chrono>
 #include <map>
@@ -28,24 +30,24 @@ namespace dunedaq {
 namespace dfmodules {
 
 /**
- * @brief DataWriter is a shell for what we might write for the MiniDAQApp.
+ * @brief DataWriterModule is a shell for what we might write for the MiniDAQApp.
  */
-class DataWriter : public dunedaq::appfwk::DAQModule
+class DataWriterModule : public dunedaq::appfwk::DAQModule
 {
 public:
   /**
-   * @brief DataWriter Constructor
-   * @param name Instance name for this DataWriter instance
+   * @brief DataWriterModule Constructor
+   * @param name Instance name for this DataWriterModule instance
    */
-  explicit DataWriter(const std::string& name);
+  explicit DataWriterModule(const std::string& name);
 
-  DataWriter(const DataWriter&) = delete;            ///< DataWriter is not copy-constructible
-  DataWriter& operator=(const DataWriter&) = delete; ///< DataWriter is not copy-assignable
-  DataWriter(DataWriter&&) = delete;                 ///< DataWriter is not move-constructible
-  DataWriter& operator=(DataWriter&&) = delete;      ///< DataWriter is not move-assignable
+  DataWriterModule(const DataWriterModule&) = delete;            ///< DataWriterModule is not copy-constructible
+  DataWriterModule& operator=(const DataWriterModule&) = delete; ///< DataWriterModule is not copy-assignable
+  DataWriterModule(DataWriterModule&&) = delete;                 ///< DataWriterModule is not move-constructible
+  DataWriterModule& operator=(DataWriterModule&&) = delete;      ///< DataWriterModule is not move-assignable
 
-  void init(const data_t&) override;
-  void get_info(opmonlib::InfoCollector& ci, int level) override;
+  void init(std::shared_ptr<appfwk::ConfigurationManager> mcfg) override;
+  void generate_opmon_data() override;
 
 private:
   // Commands
@@ -59,6 +61,10 @@ private:
   std::atomic<bool> m_running = false;
 
   // Configuration
+  std::shared_ptr<appfwk::ConfigurationManager> m_module_configuration;
+  const appmodel::DataWriterConf* m_data_writer_conf;
+  std::string m_writer_identifier;
+
   // size_t m_sleep_msec_while_running;
   std::chrono::milliseconds m_queue_timeout;
   bool m_data_storage_is_enabled;
@@ -81,7 +87,7 @@ private:
   dunedaq::utilities::WorkerThread m_thread;
   void do_work(std::atomic<bool>&);
 
-  std::unique_ptr<DataStore> m_data_writer;
+  std::shared_ptr<DataStore> m_data_writer;
 
   // Metrics
   std::atomic<uint64_t> m_records_received = { 0 };     // NOLINT(build/unsigned)
@@ -90,7 +96,7 @@ private:
   std::atomic<uint64_t> m_records_written_tot = { 0 };  // NOLINT(build/unsigned)
   std::atomic<uint64_t> m_bytes_output = { 0 };         // NOLINT(build/unsigned)
   std::atomic<uint64_t> m_bytes_output_tot = { 0 };     // NOLINT(build/unsigned)
-  std::atomic<uint64_t> m_writing_ms = { 0 };           // NOLINT(build/unsigned)
+  std::atomic<uint64_t> m_writing_us = { 0 };           // NOLINT(build/unsigned)
 
   
   // Other
@@ -105,7 +111,7 @@ private:
 } // namespace dfmodules
 
 ERS_DECLARE_ISSUE_BASE(dfmodules,
-                       InvalidDataWriter,
+                       InvalidDataWriterModule,
                        appfwk::GeneralDAQModuleIssue,
                        "A valid dataWriter instance is not available so it will not be possible to write data. A "
                        "likely cause for this is a skipped or missed Configure transition.",

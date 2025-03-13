@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package dunedaq.dfmodules.opmon;
+
+message DataWriterInfo {
+
+  uint64 records_received = 1;
+  uint64 records_written  = 2;
+  uint64 new_records_written  = 3;
+  uint64 writing_time_us = 10;  // in us 
+  
+}
+

@@ -1,5 +1,5 @@
 /**
- * @file FakeDataProd.hpp
+ * @file FakeDataProdModule.hpp
  *
  * This is part of the DUNE DAQ Software Suite, copyright 2020.
  * Licensing/copyright details are in the COPYING file that you should have
@@ -12,8 +12,10 @@
 #include "daqdataformats/Fragment.hpp"
 #include "dfmessages/DataRequest.hpp"
 
+#include "appmodel/FakeDataProdConf.hpp"
 #include "appfwk/DAQModule.hpp"
 #include "utilities/WorkerThread.hpp"
+#include "logging/Logging.hpp" // NOTE: if ISSUES ARE DECLARED BEFORE include logging/Logging.hpp, TLOG_DEBUG<<issue wont work.
 
 #include <memory>
 #include <string>
@@ -43,23 +45,23 @@ ERS_DECLARE_ISSUE_BASE(dfmodules,
 namespace dfmodules {
 
 /**
- * @brief FakeDataProd is simply an example
+ * @brief FakeDataProdModule is simply an example
  */
-class FakeDataProd : public dunedaq::appfwk::DAQModule
+class FakeDataProdModule : public dunedaq::appfwk::DAQModule
 {
 public:
   /**
-   * @brief FakeDataProd Constructor
-   * @param name Instance name for this FakeDataProd instance
+   * @brief FakeDataProdModule Constructor
+   * @param name Instance name for this FakeDataProdModule instance
    */
-  explicit FakeDataProd(const std::string& name);
+  explicit FakeDataProdModule(const std::string& name);
 
-  FakeDataProd(const FakeDataProd&) = delete;            ///< FakeDataProd is not copy-constructible
-  FakeDataProd& operator=(const FakeDataProd&) = delete; ///< FakeDataProd is not copy-assignable
-  FakeDataProd(FakeDataProd&&) = delete;                 ///< FakeDataProd is not move-constructible
-  FakeDataProd& operator=(FakeDataProd&&) = delete;      ///< FakeDataProd is not move-assignable
+  FakeDataProdModule(const FakeDataProdModule&) = delete;            ///< FakeDataProdModule is not copy-constructible
+  FakeDataProdModule& operator=(const FakeDataProdModule&) = delete; ///< FakeDataProdModule is not copy-assignable
+  FakeDataProdModule(FakeDataProdModule&&) = delete;                 ///< FakeDataProdModule is not move-constructible
+  FakeDataProdModule& operator=(FakeDataProdModule&&) = delete;      ///< FakeDataProdModule is not move-assignable
 
-  void init(const data_t&) override;
+  void init(std::shared_ptr<appfwk::ConfigurationManager> mcfg) override;
 
 private:
   // Commands
@@ -67,7 +69,7 @@ private:
   void do_start(const data_t&);
   void do_stop(const data_t&);
 
-  void get_info(opmonlib::InfoCollector& ci, int level) override;
+  //  void get_info(opmonlib::InfoCollector& ci, int level) override;
 
   // Threading
   dunedaq::utilities::WorkerThread m_timesync_thread;
@@ -75,6 +77,7 @@ private:
   void do_timesync(std::atomic<bool>&);
 
   // Configuration
+  const appmodel::FakeDataProdConf* m_fake_data_prod_conf;
   // size_t m_sleep_msec_while_running;
   std::chrono::milliseconds m_queue_timeout;
   dunedaq::daqdataformats::run_number_t m_run_number;

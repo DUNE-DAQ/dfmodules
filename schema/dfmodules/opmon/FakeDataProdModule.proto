@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package dunedaq.dfmodules.opmon;
+
+message FakeDataProdInfo {
+
+  uint64 requests_received = 1;
+  uint64 fragments_sent    = 2;
+
+}

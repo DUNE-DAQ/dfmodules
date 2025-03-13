@@ -14,16 +14,17 @@
 
 #include "HDF5FileUtils.hpp"
 #include "dfmodules/DataStore.hpp"
-#include "dfmodules/hdf5datastore/Nljs.hpp"
-#include "dfmodules/hdf5datastore/Structs.hpp"
+#include "dfmodules/opmon/DataStore.pb.h"
 
 #include "hdf5libs/HDF5RawDataFile.hpp"
-#include "hdf5libs/hdf5filelayout/Nljs.hpp"
-#include "hdf5libs/hdf5filelayout/Structs.hpp"
-#include "hdf5libs/hdf5rawdatafile/Structs.hpp"
+
+#include "appmodel/DataStoreConf.hpp"
+#include "appmodel/FilenameParams.hpp"
+#include "confmodel/DetectorConfig.hpp"
+#include "confmodel/Session.hpp"
 
 #include "appfwk/DAQModule.hpp"
-#include "logging/Logging.hpp"
+#include "logging/Logging.hpp" // NOTE: if ISSUES ARE DECLARED BEFORE include logging/Logging.hpp, TLOG_DEBUG<<issue wont work.
 
 #include "boost/date_time/posix_time/posix_time.hpp"
 #include "boost/lexical_cast.hpp"
@@ -112,29 +113,35 @@ public:
    * @param name, path, filename, operationMode
    *
    */
-  explicit HDF5DataStore(const nlohmann::json& conf)
-    : DataStore(conf.value("name", "data_store"))
+  explicit HDF5DataStore(std::string const& name,
+                         std::shared_ptr<appfwk::ConfigurationManager> mcfg,
+                         std::string const& writer_name)
+    : DataStore(name)
     , m_basic_name_of_open_file("")
     , m_open_flags_of_open_file(0)
     , m_run_number(0)
+    , m_writer_identifier(writer_name)
   {
-    TLOG_DEBUG(TLVL_BASIC) << get_name() << ": Configuration: " << conf;
+    TLOG_DEBUG(TLVL_BASIC) << get_name();
 
-    m_config_params = conf.get<hdf5datastore::ConfParams>();
-    m_file_layout_params = m_config_params.file_layout_parameters;
-    m_hardware_map = m_config_params.srcid_geoid_map;
+    m_config_params = mcfg->get_dal<appmodel::DataStoreConf>(name);
+    m_file_layout_params = m_config_params->get_file_layout_params();
+    m_session = mcfg->session();
+    m_operational_environment = mcfg->session()->get_detector_configuration()->get_op_env();
+    m_offline_data_stream = mcfg->session()->get_detector_configuration()->get_offline_data_stream();
 
-    m_operation_mode = m_config_params.mode;
-    m_path = m_config_params.directory_path;
-    m_max_file_size = m_config_params.max_file_size_bytes;
-    m_disable_unique_suffix = m_config_params.disable_unique_filename_suffix;
-    m_free_space_safety_factor_for_write = m_config_params.free_space_safety_factor_for_write;
+    m_operation_mode = m_config_params->get_mode();
+    m_path = m_config_params->get_directory_path();
+    m_max_file_size = m_config_params->get_max_file_size();
+    m_disable_unique_suffix = m_config_params->get_disable_unique_filename_suffix();
+    m_free_space_safety_factor_for_write = m_config_params->get_free_space_safety_factor();
     if (m_free_space_safety_factor_for_write < 1.1) {
       m_free_space_safety_factor_for_write = 1.1;
     }
 
     m_file_index = 0;
     m_recorded_size = 0;
+    m_current_record_number = std::numeric_limits<size_t>::max();
 
     if (m_operation_mode != "one-event-per-file"
         //&& m_operation_mode != "one-fragment-per-file"
@@ -162,7 +169,7 @@ public:
   virtual void write(const daqdataformats::TriggerRecord& tr)
   {
 
-    // check if there is sufficient space for this data block
+    // check if there is sufficient space for this record
     size_t current_free_space = get_free_space(m_path);
     size_t tr_size = tr.get_total_size_bytes();
     if (current_free_space < (m_free_space_safety_factor_for_write * tr_size)) {
@@ -174,16 +181,24 @@ public:
                                   current_free_space,
                                   (m_free_space_safety_factor_for_write * tr_size),
                                   msg_oss.str());
-      std::string msg = "writing a trigger record to file" + (m_file_handle ? " " + m_file_handle->get_file_name() : "");
+      std::string msg =
+        "writing a trigger record to file" + (m_file_handle ? " " + m_file_handle->get_file_name() : "");
       throw RetryableDataStoreProblem(ERS_HERE, get_name(), msg, issue);
     }
 
-    // check if a new file should be opened for this data block
-    increment_file_index_if_needed(tr_size);
+    // check if a new file should be opened for this record
+    if (! increment_file_index_if_needed(tr_size)) {
+      if (m_operation_mode == "one-event-per-file") {
+        if (m_current_record_number != std::numeric_limits<size_t>::max() &&
+            tr.get_header_ref().get_trigger_number() != m_current_record_number) {
+          ++m_file_index;
+        }
+      }
+    }
+    m_current_record_number = tr.get_header_ref().get_trigger_number();
 
     // determine the filename from Storage Key + configuration parameters
-    std::string full_filename =
-      get_file_name(tr.get_header_ref().get_trigger_number(), tr.get_header_ref().get_run_number());
+    std::string full_filename = get_file_name(tr.get_header_ref().get_run_number());
 
     try {
       open_file_if_needed(full_filename, HighFive::File::OpenOrCreate);
@@ -194,9 +209,12 @@ public:
       throw FileOperationProblem(ERS_HERE, get_name(), full_filename);
     }
 
-    // write the data block
+    // write the record
     m_file_handle->write(tr);
     m_recorded_size = m_file_handle->get_recorded_size();
+
+    m_new_bytes += tr_size;
+    ++m_new_objects;
   }
 
   /**
@@ -209,7 +227,7 @@ public:
   virtual void write(const daqdataformats::TimeSlice& ts)
   {
 
-    // check if there is sufficient space for this data block
+    // check if there is sufficient space for this record
     size_t current_free_space = get_free_space(m_path);
     size_t ts_size = ts.get_total_size_bytes();
     if (current_free_space < (m_free_space_safety_factor_for_write * ts_size)) {
@@ -225,11 +243,19 @@ public:
       throw RetryableDataStoreProblem(ERS_HERE, get_name(), msg, issue);
     }
 
-    // check if a new file should be opened for this data block
-    increment_file_index_if_needed(ts_size);
+    // check if a new file should be opened for this record
+    if (! increment_file_index_if_needed(ts_size)) {
+      if (m_operation_mode == "one-event-per-file") {
+        if (m_current_record_number != std::numeric_limits<size_t>::max() &&
+            ts.get_header().timeslice_number != m_current_record_number) {
+          ++m_file_index;
+        }
+      }
+    }
+    m_current_record_number = ts.get_header().timeslice_number;
 
     // determine the filename from Storage Key + configuration parameters
-    std::string full_filename = get_file_name(ts.get_header().timeslice_number, ts.get_header().run_number);
+    std::string full_filename = get_file_name(ts.get_header().run_number);
 
     try {
       open_file_if_needed(full_filename, HighFive::File::OpenOrCreate);
@@ -240,13 +266,21 @@ public:
       throw FileOperationProblem(ERS_HERE, get_name(), full_filename);
     }
 
-    // write the data block
-    m_file_handle->write(ts);
-    m_recorded_size = m_file_handle->get_recorded_size();
+    // write the record
+    try {
+      m_file_handle->write(ts);
+      m_recorded_size = m_file_handle->get_recorded_size();
+    } catch (hdf5libs::TimeSliceAlreadyExists const& excpt) {
+      std::string msg = "writing a time slice to file " + m_file_handle->get_file_name();
+      throw IgnorableDataStoreProblem(ERS_HERE, get_name(), msg, excpt);
+    }
+
+    m_new_bytes += ts_size;
+    ++m_new_objects;
   }
 
   /**
-   * @brief Informs the HDF5DataStore that writes or reads of data blocks
+   * @brief Informs the HDF5DataStore that writes or reads of records
    * associated with the specified run number will soon be requested.
    * This allows the DataStore to test that the output file path is valid
    * and any other checks that are useful in advance of the first data
@@ -254,9 +288,11 @@ public:
    *
    * This method may throw an exception if it finds a problem.
    */
-  void prepare_for_run(daqdataformats::run_number_t run_number)
+  void prepare_for_run(daqdataformats::run_number_t run_number,
+                       bool run_is_for_test_purposes)
   {
     m_run_number = run_number;
+    m_run_is_for_test_purposes = run_is_for_test_purposes;
 
     struct statvfs vfs_results;
     TLOG_DEBUG(TLVL_BASIC) << get_name() << ": Preparing to get the statvfs results for path: \"" << m_path << "\"";
@@ -278,10 +314,11 @@ public:
 
     m_file_index = 0;
     m_recorded_size = 0;
+    m_current_record_number = std::numeric_limits<size_t>::max();
   }
 
   /**
-   * @brief Informs the HD5DataStore that writes or reads of data blocks
+   * @brief Informs the HD5DataStore that writes or reads of records
    * associated with the specified run number have finished, for now.
    * This allows the DataStore to close open files and do any other
    * cleanup or shutdown operations that are useful once the writes or
@@ -305,6 +342,19 @@ public:
     }
   }
 
+protected:
+  void generate_opmon_data() override
+  {
+
+    opmon::HDF5DataStoreInfo info;
+
+    info.set_new_bytes_output(m_new_bytes.exchange(0));
+    info.set_new_written_object(m_new_objects.exchange(0));
+    info.set_bytes_in_file(m_recorded_size.load());
+    info.set_written_files(m_file_index.load());
+    publish(std::move(info), { { "path", m_path } });
+  }
+
 private:
   HDF5DataStore(const HDF5DataStore&) = delete;
   HDF5DataStore& operator=(const HDF5DataStore&) = delete;
@@ -312,20 +362,33 @@ private:
   HDF5DataStore& operator=(HDF5DataStore&&) = delete;
 
   std::unique_ptr<hdf5libs::HDF5RawDataFile> m_file_handle;
-  hdf5libs::hdf5filelayout::FileLayoutParams m_file_layout_params;
+  const appmodel::HDF5FileLayoutParams* m_file_layout_params;
   std::string m_basic_name_of_open_file;
   unsigned m_open_flags_of_open_file;
   daqdataformats::run_number_t m_run_number;
-  hdf5libs::hdf5rawdatafile::SrcIDGeoIDMap m_hardware_map;
+  bool m_run_is_for_test_purposes;
+  const confmodel::Session* m_session;
+  std::string m_operational_environment;
+  std::string m_offline_data_stream;
+  std::string m_writer_identifier;
 
   // Total number of generated files
-  size_t m_file_index;
+  std::atomic<size_t> m_file_index;
 
   // Total size of data being written
-  size_t m_recorded_size;
+  std::atomic<size_t> m_recorded_size;
+
+  // Record number for the record that is currently being written out
+  // This is only useful for long-readout windows, in which there may
+  // be multiple calls to write()
+  size_t m_current_record_number;
+
+  // incremental written data
+  std::atomic<uint64_t> m_new_bytes;
+  std::atomic<uint64_t> m_new_objects;
 
   // Configuration
-  hdf5datastore::ConfParams m_config_params;
+  const appmodel::DataStoreConf* m_config_params;
   std::string m_operation_mode;
   std::string m_path;
   size_t m_max_file_size;
@@ -337,44 +400,40 @@ private:
   /**
    * @brief Translates the specified input parameters into the appropriate filename.
    */
-  std::string get_file_name(uint64_t record_number, // NOLINT(build/unsigned)
-                            daqdataformats::run_number_t run_number)
+  std::string get_file_name(daqdataformats::run_number_t run_number)
   {
     std::ostringstream work_oss;
-    work_oss << m_config_params.directory_path;
+    work_oss << m_config_params->get_directory_path();
     if (work_oss.str().length() > 0) {
       work_oss << "/";
     }
-    work_oss << m_config_params.filename_parameters.overall_prefix;
+    work_oss << m_operational_environment + "_" + m_config_params->get_filename_params()->get_file_type_prefix();
     if (work_oss.str().length() > 0) {
       work_oss << "_";
     }
 
-    work_oss << m_config_params.filename_parameters.run_number_prefix;
-    work_oss << std::setw(m_config_params.filename_parameters.digits_for_run_number) << std::setfill('0') << run_number;
+    work_oss << m_config_params->get_filename_params()->get_run_number_prefix();
+    work_oss << std::setw(m_config_params->get_filename_params()->get_digits_for_run_number()) << std::setfill('0')
+             << run_number;
     work_oss << "_";
-    if (m_config_params.mode == "one-event-per-file") {
 
-      work_oss << m_config_params.filename_parameters.trigger_number_prefix;
-      work_oss << std::setw(m_config_params.filename_parameters.digits_for_trigger_number) << std::setfill('0')
-               << record_number;
-    } else if (m_config_params.mode == "all-per-file") {
+    work_oss << m_config_params->get_filename_params()->get_file_index_prefix();
+    work_oss << std::setw(m_config_params->get_filename_params()->get_digits_for_file_index()) << std::setfill('0')
+             << m_file_index;
 
-      work_oss << m_config_params.filename_parameters.file_index_prefix;
-      work_oss << std::setw(m_config_params.filename_parameters.digits_for_file_index) << std::setfill('0')
-               << m_file_index;
-    }
-    work_oss << "_" << m_config_params.filename_parameters.writer_identifier;
+    work_oss << "_" << m_writer_identifier;
     work_oss << ".hdf5";
     return work_oss.str();
   }
 
-  void increment_file_index_if_needed(size_t size_of_next_write)
+  bool increment_file_index_if_needed(size_t size_of_next_write)
   {
     if ((m_recorded_size + size_of_next_write) > m_max_file_size && m_recorded_size > 0) {
       ++m_file_index;
       m_recorded_size = 0;
+      return true;
     }
+    return false;
   }
 
   void open_file_if_needed(const std::string& file_name, unsigned open_flags = HighFive::File::ReadOnly)
@@ -416,14 +475,15 @@ private:
       m_basic_name_of_open_file = file_name;
       m_open_flags_of_open_file = open_flags;
       try {
-        m_file_handle.reset(new hdf5libs::HDF5RawDataFile(unique_filename,
-                                                          m_run_number,
-                                                          m_file_index,
-                                                          m_config_params.filename_parameters.writer_identifier,
-                                                          m_file_layout_params,
-                                                          m_hardware_map,
-                                                          ".writing",
-                                                          open_flags));
+        m_file_handle.reset(
+          new hdf5libs::HDF5RawDataFile(unique_filename,
+                                        m_run_number,
+                                        m_file_index,
+                                        m_writer_identifier,
+                                        m_file_layout_params,
+                                        hdf5libs::HDF5SourceIDHandler::make_source_id_geo_id_map(m_session),
+                                        ".writing",
+                                        open_flags));
       } catch (std::exception const& excpt) {
         throw FileOperationProblem(ERS_HERE, get_name(), unique_filename, excpt);
       } catch (...) { // NOLINT(runtime/exceptions)
@@ -438,7 +498,9 @@ private:
 
         // write attributes that aren't being handled by the HDF5RawDataFile right now
         // m_file_handle->write_attribute("data_format_version",(int)m_key_translator_ptr->get_current_version());
-        m_file_handle->write_attribute("operational_environment", (std::string)m_config_params.operational_environment);
+        m_file_handle->write_attribute("operational_environment", (std::string)m_operational_environment);
+        m_file_handle->write_attribute("offline_data_stream", (std::string)m_offline_data_stream);
+        m_file_handle->write_attribute("run_was_for_test_purposes", (std::string)(m_run_is_for_test_purposes ? "true" : "false"));
       }
     } else {
       TLOG_DEBUG(TLVL_BASIC) << get_name() << ": Pointer file to  " << m_basic_name_of_open_file

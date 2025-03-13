@@ -17,6 +17,7 @@
 #include "trgdataformats/TriggerPrimitive.hpp"
 #include "ers/Issue.hpp"
 #include "trigger/TPSet.hpp"
+#include "logging/Logging.hpp" // NOTE: if ISSUES ARE DECLARED BEFORE include logging/Logging.hpp, TLOG_DEBUG<<issue wont work.
 
 #include <chrono>
 #include <map>
@@ -40,6 +41,12 @@ ERS_DECLARE_ISSUE(dfmodules,
                     << tpset_source_id << ", start_time=" << tpset_start_time
                     << " to bundle, because another TPSet with these values already exists",
                   ((size_t)tpset_source_id)((daqdataformats::timestamp_t)tpset_start_time))
+ERS_DECLARE_ISSUE(dfmodules,
+                  TardyTPSetReceived,
+                  "Received a TPSet with a timestamp that is too early compared to ones that have already "
+                  << "been processed, sourceid=" << tpset_source_id << ", start_time=" << tpset_start_time
+                  << ", the calculated timeslice_id is " << tsid,
+                  ((size_t)tpset_source_id)((daqdataformats::timestamp_t)tpset_start_time)((int64_t)tsid))
 // Re-enable coverage checking LCOV_EXCL_STOP
 
 namespace dfmodules {
@@ -87,6 +94,11 @@ public:
     return m_update_time;
   }
 
+  void update_slice_number(int delta)
+  {
+    m_slice_number += delta;
+  }
+
 private:
   daqdataformats::timestamp_t m_begin_time;
   daqdataformats::timestamp_t m_end_time;
@@ -109,6 +121,7 @@ public:
     , m_run_number(run_number)
     , m_cooling_off_time(cooling_off_time)
     , m_slice_index_offset(0)
+    , m_one_or_more_time_slices_have_aged_out(false)
   {
   }
 
@@ -121,6 +134,8 @@ public:
 
   std::vector<std::unique_ptr<daqdataformats::TimeSlice>> get_properly_aged_timeslices();
 
+  std::vector<std::unique_ptr<daqdataformats::TimeSlice>> get_all_remaining_timeslices();
+
 private:
   daqdataformats::timestamp_t m_slice_interval;
   daqdataformats::run_number_t m_run_number;
@@ -128,6 +143,7 @@ private:
   size_t m_slice_index_offset;
   std::map<daqdataformats::timestamp_t, TimeSliceAccumulator> m_timeslice_accumulators;
   mutable std::mutex m_accumulator_map_mutex;
+  bool m_one_or_more_time_slices_have_aged_out;
 };
 } // namespace dfmodules
 } // namespace dunedaq

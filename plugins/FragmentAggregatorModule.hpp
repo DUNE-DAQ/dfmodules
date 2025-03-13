@@ -1,5 +1,5 @@
 /**
- * @file FragmentAggregator.hpp Module to dispatch data requests within an application, aggregate and send fragments
+ * @file FragmentAggregatorModule.hpp Module to dispatch data requests within an application, aggregate and send fragments
  * using the IOMManager
  *
  * This is part of the DUNE DAQ , copyright 2020.
@@ -15,6 +15,7 @@
 #include "dfmessages/DataRequest.hpp"
 
 #include "appfwk/DAQModule.hpp"
+#include "logging/Logging.hpp" // NOTE: if ISSUES ARE DECLARED BEFORE include logging/Logging.hpp, TLOG_DEBUG<<issue wont work.
 
 #include "iomanager/Receiver.hpp"
 #include "iomanager/Sender.hpp"
@@ -40,18 +41,18 @@ ERS_DECLARE_ISSUE(dfmodules,                  ///< Namespace
 
 namespace dfmodules {
 
-class FragmentAggregator : public dunedaq::appfwk::DAQModule
+class FragmentAggregatorModule : public dunedaq::appfwk::DAQModule
 {
 public:
-  explicit FragmentAggregator(const std::string& name);
+  explicit FragmentAggregatorModule(const std::string& name);
 
-  FragmentAggregator(const FragmentAggregator&) = delete;
-  FragmentAggregator& operator=(const FragmentAggregator&) = delete;
-  FragmentAggregator(FragmentAggregator&&) = delete;
-  FragmentAggregator& operator=(FragmentAggregator&&) = delete;
+  FragmentAggregatorModule(const FragmentAggregatorModule&) = delete;
+  FragmentAggregatorModule& operator=(const FragmentAggregatorModule&) = delete;
+  FragmentAggregatorModule(FragmentAggregatorModule&&) = delete;
+  FragmentAggregatorModule& operator=(FragmentAggregatorModule&&) = delete;
 
-  void init(const nlohmann::json& obj) override;
-  void get_info(opmonlib::InfoCollector& ci, int level) override;
+  void init(std::shared_ptr<appfwk::ConfigurationManager> mcfg) override;
+  //  void get_info(opmonlib::InfoCollector& ci, int level) override;
 
 private:
   // Commands
@@ -61,10 +62,11 @@ private:
   void process_data_request(dfmessages::DataRequest&);
   void process_fragment(std::unique_ptr<daqdataformats::Fragment>&);
 
-  // Input Connection namess
+  // Input and Output Connection namess
   std::string m_data_req_input;
   std::string m_fragment_input;
-  std::map<std::string, std::string> m_producer_conn_ref_map;
+  std::map<int, std::string> m_producer_conn_ids;
+  std::vector<std::string> m_trb_conn_ids;
 
   // Stats
   std::atomic<int> m_packets_processed{ 0 };
