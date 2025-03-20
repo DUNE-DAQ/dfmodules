@@ -191,9 +191,9 @@ public:
     // check if a new file should be opened for this record
     size_t size_of_next_write = tr_size;
     if (m_compression_level != 0 && m_recorded_size != 0) {
-      // Use floor division for a conservative estimate of the next write size
-      int compression_factor = m_uncompressed_raw_data_size / m_recorded_size;
-      // Use floor division for a conservative estimate
+      // Without compression, the uncompressed raw data size is approximately the total file size, so it
+      // serves as an approximation of what would have been written without compression
+      float compression_factor = (float) m_file_handle->get_uncompressed_raw_data_size() / m_file_handle->get_total_file_size();
       size_of_next_write = tr_size / compression_factor;
     }
     if (! increment_file_index_if_needed(size_of_next_write)) {
@@ -257,9 +257,9 @@ public:
     // check if a new file should be opened for this record
     size_t size_of_next_write = ts_size;
     if (m_compression_level != 0 && m_recorded_size != 0) {
-      //float compression_factor = ts_size / m_recorded_size;
-      int compression_factor = m_uncompressed_raw_data_size / m_recorded_size;
-      // Use floor division for a conservative estimate
+      // Without compression, the uncompressed raw data size is approximately the total file size, so it
+      // serves as an approximation of what would have been written without compression
+      float compression_factor = (float) m_file_handle->get_uncompressed_raw_data_size() / m_file_handle->get_total_file_size();
       size_of_next_write = ts_size / compression_factor;
     }
     if (! increment_file_index_if_needed(size_of_next_write)) {
@@ -289,6 +289,7 @@ public:
       m_file_handle->write(ts);
       m_recorded_size = m_file_handle->get_recorded_size();
       m_uncompressed_raw_data_size = m_file_handle->get_uncompressed_raw_data_size();
+      m_total_file_size = m_file_handle->get_total_file_size();
     } catch (hdf5libs::TimeSliceAlreadyExists const& excpt) {
       std::string msg = "writing a time slice to file " + m_file_handle->get_file_name();
       throw IgnorableDataStoreProblem(ERS_HERE, get_name(), msg, excpt);
