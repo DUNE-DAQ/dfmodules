@@ -25,6 +25,7 @@
 #include "utilities/WorkerThread.hpp"
 #include "iomanager/Sender.hpp"
 #include "iomanager/Receiver.hpp"
+#include "logging/Logging.hpp" // NOTE: if ISSUES ARE DECLARED BEFORE include logging/Logging.hpp, TLOG_DEBUG<<issue wont work.
 
 #include "dfmodules/opmon/TRBModule.pb.h"
 
@@ -182,7 +183,7 @@ public:
   TRBModule(TRBModule&&) = delete;            ///< TRBModule is not move-constructible
   TRBModule& operator=(TRBModule&&) = delete; ///< TRBModule is not move-assignable
 
-  void init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg) override;
+  void init(std::shared_ptr<appfwk::ConfigurationManager> mcfg) override;
 
   void generate_opmon_data() override;
 

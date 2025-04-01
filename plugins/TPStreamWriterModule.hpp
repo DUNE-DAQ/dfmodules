@@ -19,6 +19,7 @@
 #include "daqdataformats/TimeSlice.hpp"
 #include "trigger/TPSet.hpp"
 #include "utilities/WorkerThread.hpp"
+#include "logging/Logging.hpp" // NOTE: if ISSUES ARE DECLARED BEFORE include logging/Logging.hpp, TLOG_DEBUG<<issue wont work.
 
 #include <memory>
 #include <string>
@@ -43,7 +44,7 @@ public:
   TPStreamWriterModule(TPStreamWriterModule&&) = delete;                 ///< TPStreamWriterModule is not move-constructible
   TPStreamWriterModule& operator=(TPStreamWriterModule&&) = delete;      ///< TPStreamWriterModule is not move-assignable
 
-  void init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg) override;
+  void init(std::shared_ptr<appfwk::ConfigurationManager> mcfg) override;
   void generate_opmon_data() override;
 
 private:
@@ -59,7 +60,7 @@ private:
 
   // Configuration
 
-  std::shared_ptr<appfwk::ModuleConfiguration> m_module_configuration;
+  std::shared_ptr<appfwk::ConfigurationManager> m_module_configuration;
   const appmodel::TPStreamWriterConf* m_tp_writer_conf;
   std::chrono::milliseconds m_queue_timeout;
   size_t m_accumulation_interval_ticks;

@@ -15,6 +15,7 @@
 #include "appmodel/FakeDataProdConf.hpp"
 #include "appfwk/DAQModule.hpp"
 #include "utilities/WorkerThread.hpp"
+#include "logging/Logging.hpp" // NOTE: if ISSUES ARE DECLARED BEFORE include logging/Logging.hpp, TLOG_DEBUG<<issue wont work.
 
 #include <memory>
 #include <string>
@@ -60,7 +61,7 @@ public:
   FakeDataProdModule(FakeDataProdModule&&) = delete;                 ///< FakeDataProdModule is not move-constructible
   FakeDataProdModule& operator=(FakeDataProdModule&&) = delete;      ///< FakeDataProdModule is not move-assignable
 
-  void init(std::shared_ptr<appfwk::ModuleConfiguration> mcfg) override;
+  void init(std::shared_ptr<appfwk::ConfigurationManager> mcfg) override;
 
 private:
   // Commands
