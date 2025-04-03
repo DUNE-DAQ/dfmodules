@@ -224,8 +224,9 @@ public:
     m_uncompressed_raw_data_size = m_file_handle->get_uncompressed_raw_data_size();
     m_total_file_size = m_file_handle->get_total_file_size();
 
-    m_new_bytes += tr_size;
+    m_new_bytes = m_total_file_size - m_previous_file_size;
     ++m_new_objects;
+    m_previous_file_size.store(m_total_file_size.load());
   }
 
   /**
@@ -295,8 +296,9 @@ public:
       throw IgnorableDataStoreProblem(ERS_HERE, get_name(), msg, excpt);
     }
 
-    m_new_bytes += ts_size;
+    m_new_bytes += m_total_file_size - m_previous_file_size;
     ++m_new_objects;
+    m_previous_file_size.store(m_total_file_size.load());
   }
 
   /**
@@ -371,7 +373,7 @@ protected:
 
     info.set_new_bytes_output(m_new_bytes.exchange(0));
     info.set_new_written_object(m_new_objects.exchange(0));
-    info.set_bytes_in_file(m_recorded_size.load());
+    info.set_bytes_in_file(m_total_file_size.load());
     info.set_written_files(m_file_index.load());
     publish(std::move(info), { { "path", m_path } });
   }
@@ -396,11 +398,14 @@ private:
   // Total number of generated files
   std::atomic<size_t> m_file_index;
 
-  // Total size of data being written
+  // Size of data being written, excluding metadata
   std::atomic<size_t> m_recorded_size;
 
-  // Total size of data being written
+  // Theoretical, "uncompressed" size of data being written, excluding metadata
   std::atomic<size_t> m_uncompressed_raw_data_size;
+
+  // Used for tracking the "delta" of the current write
+  std::atomic<size_t> m_previous_file_size = 0;
 
   // Total size of the file, including raw data, metadata, and free space
   std::atomic<size_t> m_total_file_size;
