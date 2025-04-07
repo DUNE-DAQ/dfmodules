@@ -224,7 +224,7 @@ public:
     m_uncompressed_raw_data_size = m_file_handle->get_uncompressed_raw_data_size();
     m_total_file_size = m_file_handle->get_total_file_size();
 
-    m_new_bytes = m_total_file_size - m_previous_file_size;
+    m_new_bytes += m_total_file_size - m_previous_file_size;
     ++m_new_objects;
     m_previous_file_size.store(m_total_file_size.load());
   }
@@ -465,6 +465,7 @@ private:
       ++m_file_index;
       m_recorded_size = 0;
       m_uncompressed_raw_data_size = 0;
+      m_previous_file_size.store(0);
       return true;
     }
     return false;
