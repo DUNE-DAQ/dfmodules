@@ -138,9 +138,11 @@ public:
     if (m_free_space_safety_factor_for_write < 1.1) {
       m_free_space_safety_factor_for_write = 1.1;
     }
+    m_compression_level = m_config_params->get_compression_level();
 
     m_file_index = 0;
     m_recorded_size = 0;
+    m_uncompressed_raw_data_size = 0;
     m_current_record_number = std::numeric_limits<size_t>::max();
 
     if (m_operation_mode != "one-event-per-file"
@@ -187,7 +189,14 @@ public:
     }
 
     // check if a new file should be opened for this record
-    if (! increment_file_index_if_needed(tr_size)) {
+    size_t size_of_next_write = tr_size;
+    if (m_compression_level != 0 && m_recorded_size != 0) {
+      // Without compression, the uncompressed raw data size is approximately the total file size, so it
+      // serves as an approximation of what would have been written without compression
+      float compression_factor = (float) m_file_handle->get_uncompressed_raw_data_size() / m_file_handle->get_total_file_size();
+      size_of_next_write = tr_size / compression_factor;
+    }
+    if (! increment_file_index_if_needed(size_of_next_write)) {
       if (m_operation_mode == "one-event-per-file") {
         if (m_current_record_number != std::numeric_limits<size_t>::max() &&
             tr.get_header_ref().get_trigger_number() != m_current_record_number) {
@@ -212,9 +221,12 @@ public:
     // write the record
     m_file_handle->write(tr);
     m_recorded_size = m_file_handle->get_recorded_size();
+    m_uncompressed_raw_data_size = m_file_handle->get_uncompressed_raw_data_size();
+    m_total_file_size = m_file_handle->get_total_file_size();
 
-    m_new_bytes += tr_size;
+    m_new_bytes += m_total_file_size - m_previous_file_size;
     ++m_new_objects;
+    m_previous_file_size.store(m_total_file_size.load());
   }
 
   /**
@@ -244,7 +256,14 @@ public:
     }
 
     // check if a new file should be opened for this record
-    if (! increment_file_index_if_needed(ts_size)) {
+    size_t size_of_next_write = ts_size;
+    if (m_compression_level != 0 && m_recorded_size != 0) {
+      // Without compression, the uncompressed raw data size is approximately the total file size, so it
+      // serves as an approximation of what would have been written without compression
+      float compression_factor = (float) m_file_handle->get_uncompressed_raw_data_size() / m_file_handle->get_total_file_size();
+      size_of_next_write = ts_size / compression_factor;
+    }
+    if (! increment_file_index_if_needed(size_of_next_write)) {
       if (m_operation_mode == "one-event-per-file") {
         if (m_current_record_number != std::numeric_limits<size_t>::max() &&
             ts.get_header().timeslice_number != m_current_record_number) {
@@ -270,13 +289,16 @@ public:
     try {
       m_file_handle->write(ts);
       m_recorded_size = m_file_handle->get_recorded_size();
+      m_uncompressed_raw_data_size = m_file_handle->get_uncompressed_raw_data_size();
+      m_total_file_size = m_file_handle->get_total_file_size();
     } catch (hdf5libs::TimeSliceAlreadyExists const& excpt) {
       std::string msg = "writing a time slice to file " + m_file_handle->get_file_name();
       throw IgnorableDataStoreProblem(ERS_HERE, get_name(), msg, excpt);
     }
 
-    m_new_bytes += ts_size;
+    m_new_bytes += m_total_file_size - m_previous_file_size;
     ++m_new_objects;
+    m_previous_file_size.store(m_total_file_size.load());
   }
 
   /**
@@ -314,6 +336,7 @@ public:
 
     m_file_index = 0;
     m_recorded_size = 0;
+    m_uncompressed_raw_data_size = 0;
     m_current_record_number = std::numeric_limits<size_t>::max();
   }
 
@@ -350,7 +373,7 @@ protected:
 
     info.set_new_bytes_output(m_new_bytes.exchange(0));
     info.set_new_written_object(m_new_objects.exchange(0));
-    info.set_bytes_in_file(m_recorded_size.load());
+    info.set_bytes_in_file(m_total_file_size.load());
     info.set_written_files(m_file_index.load());
     publish(std::move(info), { { "path", m_path } });
   }
@@ -375,8 +398,17 @@ private:
   // Total number of generated files
   std::atomic<size_t> m_file_index;
 
-  // Total size of data being written
+  // Size of data being written, excluding metadata
   std::atomic<size_t> m_recorded_size;
+
+  // Theoretical, "uncompressed" size of data being written, excluding metadata
+  std::atomic<size_t> m_uncompressed_raw_data_size;
+
+  // Used for tracking the "delta" of the current write
+  std::atomic<size_t> m_previous_file_size = 0;
+
+  // Total size of the file, including raw data, metadata, and free space
+  std::atomic<size_t> m_total_file_size;
 
   // Record number for the record that is currently being written out
   // This is only useful for long-readout windows, in which there may
@@ -394,6 +426,7 @@ private:
   size_t m_max_file_size;
   bool m_disable_unique_suffix;
   float m_free_space_safety_factor_for_write;
+  unsigned m_compression_level;
 
   // std::unique_ptr<HDF5KeyTranslator> m_key_translator_ptr;
 
@@ -428,9 +461,11 @@ private:
 
   bool increment_file_index_if_needed(size_t size_of_next_write)
   {
-    if ((m_recorded_size + size_of_next_write) > m_max_file_size && m_recorded_size > 0) {
+    if ((m_total_file_size + size_of_next_write) > m_max_file_size && m_recorded_size > 0) {
       ++m_file_index;
       m_recorded_size = 0;
+      m_uncompressed_raw_data_size = 0;
+      m_previous_file_size.store(0);
       return true;
     }
     return false;
@@ -482,6 +517,7 @@ private:
                                         m_writer_identifier,
                                         m_file_layout_params,
                                         hdf5libs::HDF5SourceIDHandler::make_source_id_geo_id_map(m_session),
+                                        m_compression_level,
                                         ".writing",
                                         open_flags));
       } catch (std::exception const& excpt) {
