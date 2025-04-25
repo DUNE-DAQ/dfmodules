@@ -16,66 +16,67 @@ number_of_readout_apps = 3
 data_rate_slowdown_factor = 1
 
 # Default values for validation parameters
-expected_number_of_data_files = 4
 check_for_logfile_errors = True
 
-wibeth_frag_hsi_trig_params = {
+wibeth_frag_params = {
     "fragment_type_description": "WIBEth",
     "fragment_type": "WIBEth",
-    "hdf5_source_subsystem": "Detector_Readout",
     "expected_fragment_count": (number_of_data_producers * number_of_readout_apps),
-    "min_size_bytes": 187272,
+    "min_size_bytes": 7272,
     "max_size_bytes": 194472,
 }
-wibeth_frag_multi_trig_params = {
-    "fragment_type_description": "WIBEth",
-    "fragment_type": "WIBEth",
-    "hdf5_source_subsystem": "Detector_Readout",
-    "expected_fragment_count": (number_of_data_producers * number_of_readout_apps),
-    "min_size_bytes": 72,
-    "max_size_bytes": 194472,
+wibeth_tpset_params = {
+    "fragment_type_description": "TP Stream",
+    "fragment_type": "Trigger_Primitive",
+    "expected_fragment_count": number_of_readout_apps * 3,
+    "frag_counts_by_record_ordinal": {"first": {"min_count": 1, "max_count": number_of_readout_apps * 3},
+                                      "default": {"min_count": number_of_readout_apps * 3, "max_count": number_of_readout_apps * 3} },
+    "min_size_bytes": 0,  # not checked
+    "max_size_bytes": 0,  # not checked
+    "debug_mask": 0x0,
 }
+# sizes: 128 is for one TC with zero TAs inside it (72+56)
+#        208 is for one TC with one TA inside it (72+56+80)
+#        264 is for two TCs with one TA in one of them (72+56+80+56)
 triggercandidate_frag_params = {
     "fragment_type_description": "Trigger Candidate",
     "fragment_type": "Trigger_Candidate",
-    "hdf5_source_subsystem": "Trigger",
     "expected_fragment_count": 1,
-    "min_size_bytes": 72,
-    "max_size_bytes": 280,
+    "min_size_bytes": 128,
+    "max_size_bytes": 264,
 }
+# sizes:  72 is for an empty TA fragment
+#        632 is for three TAs with one TP in each of them (72+5*(88+24))
 triggeractivity_frag_params = {
     "fragment_type_description": "Trigger Activity",
     "fragment_type": "Trigger_Activity",
-    "hdf5_source_subsystem": "Trigger",
     "expected_fragment_count": 1,
     "min_size_bytes": 72,
-    "max_size_bytes": 520,
+    "max_size_bytes": 632,
 }
-triggertp_frag_params = {
-    "fragment_type_description": "Trigger with TPs",
+# sizes:  72 is for an empty TP fragment
+#       1032 is for a fragment with 40 TPs in it (72+(40*24))
+triggerprimitive_frag_params = {
+    "fragment_type_description": "Trigger Primitive",
     "fragment_type": "Trigger_Primitive",
-    "hdf5_source_subsystem": "Trigger",
     "expected_fragment_count": (3 * number_of_readout_apps),
     "min_size_bytes": 72,
-    "max_size_bytes": 16000,
+    "max_size_bytes": 1032,
 }
 hsi_frag_params = {
     "fragment_type_description": "HSI",
     "fragment_type": "Hardware_Signal",
-    "hdf5_source_subsystem": "HW_Signals_Interface",
     "expected_fragment_count": 1,
     "min_size_bytes": 72,
-    "max_size_bytes": 128,
+    "max_size_bytes": 100,
 }
 ignored_logfile_problems = {
     "-controller": [
         "Worker with pid \\d+ was terminated due to signal 1",
     ],
-    "local-connection-server": [
+    "connectivity-service": [
         "errorlog: -",
-        "Worker with pid \\d+ was terminated due to signal 1",
     ],
-    "log_.*_multioutput_": ["connect: Connection refused"],
 }
 
 # The next three variable declarations *must* be present as globals in the test
@@ -84,111 +85,95 @@ ignored_logfile_problems = {
 
 object_databases = ["config/daqsystemtest/integrationtest-objects.data.xml"]
 
-conf_dict = data_classes.drunc_config()
-conf_dict.dro_map_config.n_streams = number_of_data_producers
-conf_dict.dro_map_config.n_apps = number_of_readout_apps
-conf_dict.op_env = "integtest"
-conf_dict.session = "multioutput"
-conf_dict.tpg_enabled = False
-conf_dict.fake_hsi_enabled = True  # FakeHSI must be enabled to set trigger window width!
+wibtpg_conf = data_classes.drunc_config()
+wibtpg_conf.dro_map_config.n_streams = number_of_data_producers
+wibtpg_conf.dro_map_config.n_apps = number_of_readout_apps
+wibtpg_conf.op_env = "integtest"
+wibtpg_conf.session = "multioutput"
+wibtpg_conf.tpg_enabled = True
+wibtpg_conf.fake_hsi_enabled = True
+wibtpg_conf.frame_file = (
+    "asset://?checksum=dd156b4895f1b06a06b6ff38e37bd798"  # WIBEth All Zeros
+)
 
-conf_dict.config_substitutions.append(
+wibtpg_conf.config_substitutions.append(
     data_classes.config_substitution(
-        obj_id=conf_dict.session,
+        obj_id=wibtpg_conf.session,
         obj_class="Session",
         updates={"data_rate_slowdown_factor": data_rate_slowdown_factor},
     )
 )
-conf_dict.config_substitutions.append(
+wibtpg_conf.config_substitutions.append(
     data_classes.config_substitution(
         obj_class="LatencyBuffer", updates={"size": 200000}
     )
 )
 
-conf_dict.config_substitutions.append(
+wibtpg_conf.config_substitutions.append(
     data_classes.config_substitution(
         obj_class="FakeHSIEventGeneratorConf",
         updates={"trigger_rate": 10.0},
     )
 )
 
-conf_dict.config_substitutions.append(
+wibtpg_conf.config_substitutions.append(
     data_classes.config_substitution(
         obj_class="HSISignalWindow",
+        updates={
+            "time_before": 1000,
+            "time_after": 500,
+        },
+    )
+)
+wibtpg_conf.config_substitutions.append(
+    data_classes.config_substitution(
+        obj_class="TCReadoutMap",
+        obj_id = "def-hsi-tc-map",
         updates={
             "time_before": 52000,
             "time_after": 1000,
         },
     )
 )
-conf_dict.config_substitutions.append(
+wibtpg_conf.config_substitutions.append(
     data_classes.config_substitution(
         obj_class="DataStoreConf",
         obj_id="default",
-        updates={"max_file_size": 1074000000},
+        updates={"max_file_size": 725000000},
     )
 )
-conf_dict.config_substitutions.append(
-    data_classes.config_substitution(
-        obj_class="TAMakerPrescaleAlgorithm",
-        obj_id="dummy-ta-maker",
-        updates={"prescale": 25},
-    )
-)
-
-conf_dict.config_substitutions.append(
-    data_classes.config_substitution(
-        obj_class="DFOConf", updates={"busy_threshold": 5, "free_threshold": 2}
-    )
-)
-
-
-swtpg_conf = copy.deepcopy(conf_dict)
-swtpg_conf.tpg_enabled = True
-swtpg_conf.frame_file = (
-    "asset://?checksum=dd156b4895f1b06a06b6ff38e37bd798"  # WIBEth All Zeros
-)
-
-multiout_conf = copy.deepcopy(conf_dict)
-multiout_conf.n_data_writers = 2
-multiout_conf.config_substitutions.append(
+wibtpg_conf.config_substitutions.append(
     data_classes.config_substitution(
         obj_class="DataStoreConf",
-        obj_id="default",
-        updates={"max_file_size": 4 * 1024 * 1024 * 1024},
+        obj_id="default_tp_store_conf",
+        updates={"max_file_size": 275000000},
     )
 )
-multiout_conf.config_substitutions.append(
+wibtpg_conf.config_substitutions.append(
     data_classes.config_substitution(
-        obj_class="QueueDescriptor",
-        obj_id="trigger-records",
-        updates={"queue_type": "kFollyMPMCQueue"},
+        obj_class="StreamEmulationParameters",
+        obj_id="stream-emu",
+        updates={"TP_rate_per_channel": 5},
     )
 )
 
-
-multiout_tpg_conf = copy.deepcopy(multiout_conf)
-multiout_tpg_conf.tpg_enabled = True
-multiout_tpg_conf.frame_file = (
-    "asset://?checksum=dd156b4895f1b06a06b6ff38e37bd798"  # WIBEth All Zeros
+wibtpg_conf.config_substitutions.append(
+    data_classes.config_substitution(
+        obj_class="DFOConf", updates={"busy_threshold": 10, "free_threshold": 7}
+    )
 )
+
 
 confgen_arguments = {
-    "WIBEth_System (Rollover files)": conf_dict,
-    "Software_TPG_System (Rollover files)": swtpg_conf,
-    "WIBEth_System (Multiple outputs)": multiout_conf,
-    "Software_TPG_System (Multiple outputs)": multiout_tpg_conf,
+    "WIBEth_TPG_System": wibtpg_conf,
 }
 
 # The commands to run in nanorc, as a list
-run_duration = 120
 nanorc_command_list = (
     "boot conf wait 5".split()
-    + "start 101 wait 1 enable-triggers wait ".split()
-    + [str(run_duration)]
+    + "start --run-number 101 wait 1 enable-triggers wait 178".split()
     + "disable-triggers wait 2 drain-dataflow wait 2 stop-trigger-sources stop ".split()
-    + "start 102 wait 1 enable-triggers wait ".split()
-    + [str(run_duration)]
+    + "start --run-number 102 wait 1 enable-triggers wait 128".split()
     + "disable-triggers wait 2 drain-dataflow wait 2 stop-trigger-sources stop ".split()
     + " scrap terminate".split()
 )
@@ -218,40 +203,53 @@ def test_log_files(run_nanorc):
 
 
 def test_data_files(run_nanorc):
-    local_file_count = expected_number_of_data_files
-    fragment_check_list = [triggercandidate_frag_params, hsi_frag_params]
-    if run_nanorc.confgen_config.tpg_enabled:
-        local_file_count = 4  # 5
-        # fragment_check_list.append(wib1_frag_multi_trig_params) # ProtoWIB
-        # fragment_check_list.append(wib2_frag_multi_trig_params) # DuneWIB
-        fragment_check_list.append(wibeth_frag_multi_trig_params)  # WIBEth
-        fragment_check_list.append(triggertp_frag_params)
-        fragment_check_list.append(triggeractivity_frag_params)
-    else:
-        # fragment_check_list.append(wib1_frag_hsi_trig_params) # ProtoWIB
-        # fragment_check_list.append(wib2_frag_hsi_trig_params) # DuneWIB
-        fragment_check_list.append(wibeth_frag_hsi_trig_params)  # WIBEth
+    fragment_check_list = [triggercandidate_frag_params, hsi_frag_params, wibeth_frag_params]
+    fragment_check_list.append(triggerprimitive_frag_params)
+    fragment_check_list.append(triggeractivity_frag_params)
 
     # Run some tests on the output data file
-    assert len(run_nanorc.data_files) == local_file_count
+    assert len(run_nanorc.data_files) == 6  # three for each run
 
+    all_ok = True
     for idx in range(len(run_nanorc.data_files)):
         data_file = data_file_checks.DataFile(run_nanorc.data_files[idx])
-        assert data_file_checks.sanity_check(data_file)
-        assert data_file_checks.check_file_attributes(data_file)
+        all_ok &= data_file_checks.sanity_check(data_file)
+        all_ok &= data_file_checks.check_file_attributes(data_file)
         for jdx in range(len(fragment_check_list)):
-            assert data_file_checks.check_fragment_count(
+            all_ok &= data_file_checks.check_fragment_count(
                 data_file, fragment_check_list[jdx]
             )
-            assert data_file_checks.check_fragment_sizes(
+            all_ok &= data_file_checks.check_fragment_sizes(
                 data_file, fragment_check_list[jdx]
             )
+    assert all_ok
+
+
+def test_tpstream_files(run_nanorc):
+    tpstream_files = run_nanorc.tpset_files
+    fragment_check_list = [wibeth_tpset_params]  # WIBEth
+
+    assert len(tpstream_files) == 6  # three for each run
+
+    all_ok = True
+    for idx in range(len(tpstream_files)):
+        data_file = data_file_checks.DataFile(tpstream_files[idx])
+        all_ok &= data_file_checks.check_file_attributes(data_file)
+        for jdx in range(len(fragment_check_list)):
+            all_ok &= data_file_checks.check_fragment_count(
+                data_file, fragment_check_list[jdx]
+            )
+    assert all_ok
 
 
 def test_cleanup(run_nanorc):
     pathlist_string = ""
     filelist_string = ""
     for data_file in run_nanorc.data_files:
+        filelist_string += " " + str(data_file)
+        if str(data_file.parent) not in pathlist_string:
+            pathlist_string += " " + str(data_file.parent)
+    for data_file in run_nanorc.tpset_files:
         filelist_string += " " + str(data_file)
         if str(data_file.parent) not in pathlist_string:
             pathlist_string += " " + str(data_file.parent)
