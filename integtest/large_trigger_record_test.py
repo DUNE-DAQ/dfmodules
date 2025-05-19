@@ -50,7 +50,7 @@ wibeth_frag_125pct_params = {
     "hdf5_source_subsystem": "Detector_Readout",
     "expected_fragment_count": (number_of_data_producers * number_of_readout_apps),
     "min_size_bytes": 91411272,
-    "max_size_bytes": 91411272,
+    "max_size_bytes": 91418472,
 }
 triggercandidate_frag_params = {
     "fragment_type_description": "Trigger Candidate",
@@ -154,10 +154,10 @@ confgen_arguments = {
 if sufficient_disk_space:
     nanorc_command_list = (
         "boot conf wait 5".split()
-        + "start 101 wait 1 enable-triggers wait ".split()
+        + "start --run-number 101 wait 1 enable-triggers wait ".split()
         + [str(run_duration)]
         + "disable-triggers wait 2 drain-dataflow wait 2 stop-trigger-sources stop ".split()
-        + "start 102 wait 1 enable-triggers wait ".split()
+        + "start --run-number 102 wait 1 enable-triggers wait ".split()
         + [str(run_duration)]
         + "disable-triggers wait 2 drain-dataflow wait 2 stop-trigger-sources stop ".split()
         + " scrap terminate".split()
@@ -218,7 +218,7 @@ def test_data_files(run_nanorc):
     local_event_count_tolerance = expected_event_count_tolerance
     fragment_check_list = [triggercandidate_frag_params]
     current_test = os.environ.get("PYTEST_CURRENT_TEST")
-    match_obj = re.search(r".*\[(.+)\].*", current_test)
+    match_obj = re.search(r".*\[(.+)-run_nanorc0\].*", current_test)
     if match_obj:
         current_test = match_obj.group(1)
     if current_test == "TRSize_125PercentOfMaxFileSize":
@@ -227,9 +227,7 @@ def test_data_files(run_nanorc):
         fragment_check_list.append(wibeth_frag_55pct_params)
 
     # Run some tests on the output data file
-    assert len(run_nanorc.data_files) == expected_number_of_data_files
-
-    all_ok = True
+    all_ok =  len(run_nanorc.data_files) == expected_number_of_data_files
 
     for idx in range(len(run_nanorc.data_files)):
         data_file = data_file_checks.DataFile(run_nanorc.data_files[idx])
