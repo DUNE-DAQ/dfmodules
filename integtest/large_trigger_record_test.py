@@ -50,7 +50,7 @@ wibeth_frag_125pct_params = {
     "hdf5_source_subsystem": "Detector_Readout",
     "expected_fragment_count": (number_of_data_producers * number_of_readout_apps),
     "min_size_bytes": 91411272,
-    "max_size_bytes": 91418472,
+    "max_size_bytes": 91411272,
 }
 triggercandidate_frag_params = {
     "fragment_type_description": "Trigger Candidate",
@@ -175,7 +175,7 @@ def test_nanorc_success(run_nanorc):
         )
 
     current_test = os.environ.get("PYTEST_CURRENT_TEST")
-    match_obj = re.search(r".*\[(.+)\].*", current_test)
+    match_obj = re.search(r".*\[(.+)\-run_nanorc0].*", current_test)
     if match_obj:
         current_test = match_obj.group(1)
     banner_line = re.sub(".", "=", current_test)
