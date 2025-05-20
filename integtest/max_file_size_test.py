@@ -255,12 +255,12 @@ def test_cleanup(run_nanorc):
             pathlist_string += " " + str(data_file.parent)
 
     if pathlist_string and filelist_string:
-        print("============================================")
-        print("Listing the hdf5 files before deleting them:")
-        print("============================================")
+        print("============================================", flush=True)
+        print("Listing the hdf5 files before deleting them:", flush=True)
+        print("============================================", flush=True)
 
         os.system(f"df -h {pathlist_string}")
-        print("--------------------")
+        print("--------------------", flush=True)
         os.system(f"ls -alF {filelist_string}")
 
         for data_file in run_nanorc.data_files:
@@ -268,6 +268,6 @@ def test_cleanup(run_nanorc):
         for data_file in run_nanorc.tpset_files:
             data_file.unlink()
 
-        print("--------------------")
+        print("--------------------", flush=True)
         os.system(f"df -h {pathlist_string}")
-        print("============================================")
+        print("============================================", flush=True)
