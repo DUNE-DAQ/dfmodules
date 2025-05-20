@@ -176,7 +176,7 @@ conf_dict.config_substitutions.append(
     data_classes.config_substitution(
         obj_class="DataStoreConf",
         obj_id="default_tp_store_conf",
-        updates={"max_file_size": 100000000},
+        updates={"max_file_size": 80000000},
     )
 )
 conf_dict.config_substitutions.append(
@@ -257,9 +257,12 @@ def test_data_files(run_nanorc):
     fragment_check_list.append(triggeractivity_frag_params)
 
     # Run some tests on the output data file
-    assert len(run_nanorc.data_files) == 10  # three for each run
+    all_ok = len(run_nanorc.data_files) == 10  # three for each run - Fix this, KAB, 20-May
+    if all_ok:
+        print("\N{WHITE HEAVY CHECK MARK} The correct number of raw data files was found (10)")
+    else:
+        print(f"\N{POLICE CARS REVOLVING LIGHT} An incorrect number of raw data files was found, expected 10, found {len(run_nanorc.data_files)} \N{POLICE CARS REVOLVING LIGHT}")
 
-    all_ok = True
     for idx in range(len(run_nanorc.data_files)):
         data_file = data_file_checks.DataFile(run_nanorc.data_files[idx])
         all_ok &= data_file_checks.sanity_check(data_file)
@@ -278,9 +281,12 @@ def test_tpstream_files(run_nanorc):
     tpstream_files = run_nanorc.tpset_files
     fragment_check_list = [daphne_tpset_params]
 
-    assert len(tpstream_files) == 6  # three for each run
+    all_ok = len(tpstream_files) == 6  # three for each run
+    if all_ok:
+        print("\N{WHITE HEAVY CHECK MARK} The correct number of TP-stream data files was found (6)")
+    else:
+        print(f"\N{POLICE CARS REVOLVING LIGHT} An incorrect number of TP-stream data files was found, expected 6, found {len(tpstream_files)} \N{POLICE CARS REVOLVING LIGHT}")
 
-    all_ok = True
     for idx in range(len(tpstream_files)):
         data_file = data_file_checks.DataFile(tpstream_files[idx])
         all_ok &= data_file_checks.check_file_attributes(data_file)
