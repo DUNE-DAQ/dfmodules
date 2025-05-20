@@ -10,6 +10,10 @@ import integrationtest.data_classes as data_classes
 
 pytest_plugins = "integrationtest.integrationtest_drunc"
 
+# 20-May-2025, KAB: tweak the print() statement default behavior so that it always flushes the output.
+import functools
+print = functools.partial(print, flush=True)
+
 # Values that help determine the running conditions
 number_of_data_producers = 2
 number_of_readout_apps = 3
@@ -41,7 +45,8 @@ daphne_tpset_params = {
     "fragment_type_description": "TP Stream",
     "fragment_type": "Trigger_Primitive",
     "expected_fragment_count": number_of_readout_apps,
-    "frag_counts_by_record_ordinal": {"first": {"min_count": 1, "max_count": number_of_readout_apps},
+    "frag_counts_by_record_ordinal": { "first": {"min_count": 1, "max_count": number_of_readout_apps},
+                                        "last": {"min_count": 1, "max_count": number_of_readout_apps},
                                       "default": {"min_count": number_of_readout_apps, "max_count": number_of_readout_apps} },
     "min_size_bytes": 200,
     "max_size_bytes": 210,
@@ -169,21 +174,21 @@ conf_dict.config_substitutions.append(
     data_classes.config_substitution(
         obj_class="DataStoreConf",
         obj_id="default",
-        updates={"max_file_size": 130000000},
+        updates={"max_file_size": 400000000},
     )
 )
 conf_dict.config_substitutions.append(
     data_classes.config_substitution(
         obj_class="DataStoreConf",
         obj_id="default_tp_store_conf",
-        updates={"max_file_size": 80000000},
+        updates={"max_file_size": 200000000},
     )
 )
 conf_dict.config_substitutions.append(
     data_classes.config_substitution(
         obj_class="DataStoreConf",
         obj_id="default",
-        updates={"compression_level": 1},
+        updates={"compression_level": 5},
     )
 )
 conf_dict.config_substitutions.append(
@@ -196,7 +201,7 @@ conf_dict.config_substitutions.append(
 
 conf_dict.config_substitutions.append(
     data_classes.config_substitution(
-        obj_class="DFOConf", updates={"busy_threshold": 10, "free_threshold": 7}
+        obj_class="DFOConf", updates={"busy_threshold": 16, "free_threshold": 12}
     )
 )
 conf_dict.config_substitutions.append(
@@ -220,9 +225,9 @@ confgen_arguments = {
 # The commands to run in nanorc, as a list
 nanorc_command_list = (
     "boot conf wait 5".split()
-    + "start --run-number 101 wait 1 enable-triggers wait 50".split()
+    + "start --run-number 101 wait 1 enable-triggers wait 100".split()
     + "disable-triggers wait 2 drain-dataflow wait 2 stop-trigger-sources stop ".split()
-    + "start --run-number 102 wait 1 enable-triggers wait 45".split()
+    + "start --run-number 102 wait 1 enable-triggers wait 100".split()
     + "disable-triggers wait 2 drain-dataflow wait 2 stop-trigger-sources stop ".split()
     + " scrap terminate".split()
 )
@@ -257,11 +262,12 @@ def test_data_files(run_nanorc):
     fragment_check_list.append(triggeractivity_frag_params)
 
     # Run some tests on the output data file
-    all_ok = len(run_nanorc.data_files) == 10  # three for each run - Fix this, KAB, 20-May
+    all_ok = len(run_nanorc.data_files) == 6  # three for each run
+    print("") # Clear potential dot from pytest
     if all_ok:
-        print("\N{WHITE HEAVY CHECK MARK} The correct number of raw data files was found (10)")
+        print("\N{WHITE HEAVY CHECK MARK} The correct number of raw data files was found (6)")
     else:
-        print(f"\N{POLICE CARS REVOLVING LIGHT} An incorrect number of raw data files was found, expected 10, found {len(run_nanorc.data_files)} \N{POLICE CARS REVOLVING LIGHT}")
+        print(f"\N{POLICE CARS REVOLVING LIGHT} An incorrect number of raw data files was found, expected 6, found {len(run_nanorc.data_files)} \N{POLICE CARS REVOLVING LIGHT}")
 
     for idx in range(len(run_nanorc.data_files)):
         data_file = data_file_checks.DataFile(run_nanorc.data_files[idx])
@@ -282,6 +288,7 @@ def test_tpstream_files(run_nanorc):
     fragment_check_list = [daphne_tpset_params]
 
     all_ok = len(tpstream_files) == 6  # three for each run
+    print("") # Clear potential dot from pytest
     if all_ok:
         print("\N{WHITE HEAVY CHECK MARK} The correct number of TP-stream data files was found (6)")
     else:
@@ -310,19 +317,19 @@ def test_cleanup(run_nanorc):
             pathlist_string += " " + str(data_file.parent)
 
     if pathlist_string and filelist_string:
-        print("============================================", flush=True)
-        print("Listing the hdf5 files before deleting them:", flush=True)
-        print("============================================", flush=True)
+        print("============================================")
+        print("Listing the hdf5 files before deleting them:")
+        print("============================================")
 
         os.system(f"df -h {pathlist_string}")
-        print("--------------------", flush=True)
+        print("--------------------")
         os.system(f"ls -alF {filelist_string}")
 
-        #for data_file in run_nanorc.data_files:
-        #    data_file.unlink()
-        #for data_file in run_nanorc.tpset_files:
-        #    data_file.unlink()
+        for data_file in run_nanorc.data_files:
+            data_file.unlink()
+        for data_file in run_nanorc.tpset_files:
+            data_file.unlink()
 
-        print("--------------------", flush=True)
+        print("--------------------")
         os.system(f"df -h {pathlist_string}")
-        print("============================================", flush=True)
+        print("============================================")
