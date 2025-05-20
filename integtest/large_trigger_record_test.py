@@ -39,7 +39,6 @@ expected_event_count_tolerance = 1
 wibeth_frag_55pct_params = {
     "fragment_type_description": "WIBEth",
     "fragment_type": "WIBEth",
-    "hdf5_source_subsystem": "Detector_Readout",
     "expected_fragment_count": (number_of_data_producers * number_of_readout_apps),
     "min_size_bytes": 38678472,
     "max_size_bytes": 38678472,
@@ -47,7 +46,6 @@ wibeth_frag_55pct_params = {
 wibeth_frag_125pct_params = {
     "fragment_type_description": "WIBEth",
     "fragment_type": "WIBEth",
-    "hdf5_source_subsystem": "Detector_Readout",
     "expected_fragment_count": (number_of_data_producers * number_of_readout_apps),
     "min_size_bytes": 91411272,
     "max_size_bytes": 91411272,
@@ -55,9 +53,8 @@ wibeth_frag_125pct_params = {
 triggercandidate_frag_params = {
     "fragment_type_description": "Trigger Candidate",
     "fragment_type": "Trigger_Candidate",
-    "hdf5_source_subsystem": "Trigger",
     "expected_fragment_count": 1,
-    "min_size_bytes": 72,
+    "min_size_bytes": 128,
     "max_size_bytes": 280,
 }
 ignored_logfile_problems = {

@@ -25,7 +25,6 @@ expected_event_count_tolerance = math.ceil(expected_event_count / 10)
 wib1_frag_hsi_trig_params = {
     "fragment_type_description": "WIB",
     "fragment_type": "ProtoWIB",
-    "hdf5_source_subsystem": "Detector_Readout",
     "expected_fragment_count": number_of_data_producers,
     "min_size_bytes": 37656,
     "max_size_bytes": 37656,
@@ -33,7 +32,6 @@ wib1_frag_hsi_trig_params = {
 wib1_frag_multi_trig_params = {
     "fragment_type_description": "WIB",
     "fragment_type": "ProtoWIB",
-    "hdf5_source_subsystem": "Detector_Readout",
     "expected_fragment_count": number_of_data_producers,
     "min_size_bytes": 72,
     "max_size_bytes": 54000,
@@ -41,7 +39,6 @@ wib1_frag_multi_trig_params = {
 wib2_frag_hsi_trig_params = {
     "fragment_type_description": "WIB",
     "fragment_type": "WIB",
-    "hdf5_source_subsystem": "Detector_Readout",
     "expected_fragment_count": (number_of_data_producers),
     "min_size_bytes": 29808,
     "max_size_bytes": 30280,
@@ -49,7 +46,6 @@ wib2_frag_hsi_trig_params = {
 wib2_frag_multi_trig_params = {
     "fragment_type_description": "WIB",
     "fragment_type": "WIB",
-    "hdf5_source_subsystem": "Detector_Readout",
     "expected_fragment_count": (number_of_data_producers),
     "min_size_bytes": 72,
     "max_size_bytes": 54000,
@@ -57,7 +53,6 @@ wib2_frag_multi_trig_params = {
 wibeth_frag_hsi_trig_params = {
     "fragment_type_description": "WIBEth",
     "fragment_type": "WIBEth",
-    "hdf5_source_subsystem": "Detector_Readout",
     "expected_fragment_count": (number_of_data_producers),
     "min_size_bytes": 7272,
     "max_size_bytes": 14472,
@@ -65,7 +60,6 @@ wibeth_frag_hsi_trig_params = {
 wibeth_frag_multi_trig_params = {
     "fragment_type_description": "WIBEth",
     "fragment_type": "WIBEth",
-    "hdf5_source_subsystem": "Detector_Readout",
     "expected_fragment_count": (number_of_data_producers),
     "min_size_bytes": 72,
     "max_size_bytes": 14472,
@@ -73,23 +67,20 @@ wibeth_frag_multi_trig_params = {
 triggercandidate_frag_params = {
     "fragment_type_description": "Trigger Candidate",
     "fragment_type": "Trigger_Candidate",
-    "hdf5_source_subsystem": "Trigger",
     "expected_fragment_count": 1,
-    "min_size_bytes": 72,
+    "min_size_bytes": 128,
     "max_size_bytes": 280,
 }
 triggeractivity_frag_params = {
     "fragment_type_description": "Trigger Activity",
     "fragment_type": "Trigger_Activity",
-    "hdf5_source_subsystem": "Trigger",
     "expected_fragment_count": 1,
     "min_size_bytes": 72,
     "max_size_bytes": 216,
 }
-triggertp_frag_params = {
-    "fragment_type_description": "Trigger with TPs",
+triggerprimitive_frag_params = {
+    "fragment_type_description": "Trigger Primitive",
     "fragment_type": "Trigger_Primitive",
-    "hdf5_source_subsystem": "Trigger",
     "expected_fragment_count": 2,  # number of readout apps (1) times 2
     "min_size_bytes": 72,
     "max_size_bytes": 16000,
@@ -97,7 +88,6 @@ triggertp_frag_params = {
 hsi_frag_params = {
     "fragment_type_description": "HSI",
     "fragment_type": "Hardware_Signal",
-    "hdf5_source_subsystem": "HW_Signals_Interface",
     "expected_fragment_count": 1,
     "min_size_bytes": 72,
     "max_size_bytes": 100,
@@ -225,7 +215,7 @@ def test_data_files(run_nanorc):
         # fragment_check_list.append(wib1_frag_multi_trig_params) # ProtoWIB
         # fragment_check_list.append(wib2_frag_multi_trig_params) # DuneWIB
         fragment_check_list.append(wibeth_frag_multi_trig_params)  # WIBEth
-        fragment_check_list.append(triggertp_frag_params)
+        fragment_check_list.append(triggerprimitive_frag_params)
         fragment_check_list.append(triggeractivity_frag_params)
     else:
         # fragment_check_list.append(wib1_frag_hsi_trig_params) # ProtoWIB
@@ -235,17 +225,19 @@ def test_data_files(run_nanorc):
     # Run some tests on the output data file
     assert len(run_nanorc.data_files) == expected_number_of_data_files
 
+    all_ok = True
     for idx in range(len(run_nanorc.data_files)):
         data_file = data_file_checks.DataFile(run_nanorc.data_files[idx])
-        assert data_file_checks.sanity_check(data_file)
-        assert data_file_checks.check_file_attributes(data_file)
-        assert data_file_checks.check_event_count(
+        all_ok &= data_file_checks.sanity_check(data_file)
+        all_ok &= data_file_checks.check_file_attributes(data_file)
+        all_ok &= data_file_checks.check_event_count(
             data_file, local_expected_event_count, local_event_count_tolerance
         )
         for jdx in range(len(fragment_check_list)):
-            assert data_file_checks.check_fragment_count(
+            all_ok &= data_file_checks.check_fragment_count(
                 data_file, fragment_check_list[jdx]
             )
-            assert data_file_checks.check_fragment_sizes(
+            all_ok &= data_file_checks.check_fragment_sizes(
                 data_file, fragment_check_list[jdx]
             )
+    assert all_ok
