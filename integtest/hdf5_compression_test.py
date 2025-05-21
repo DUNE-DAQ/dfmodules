@@ -181,7 +181,7 @@ conf_dict.config_substitutions.append(
     data_classes.config_substitution(
         obj_class="DataStoreConf",
         obj_id="default_tp_store_conf",
-        updates={"max_file_size": 200000000},
+        updates={"max_file_size": 170000000},
     )
 )
 conf_dict.config_substitutions.append(
