@@ -10,6 +10,10 @@ import integrationtest.data_classes as data_classes
 
 pytest_plugins = "integrationtest.integrationtest_drunc"
 
+# 02-Jun-2025, KAB: tweak the print() statement default behavior so that it always flushes the output.
+import functools
+print = functools.partial(print, flush=True)
+
 # Values that help determine the running conditions
 number_of_data_producers = 2
 number_of_readout_apps = 3
@@ -108,6 +112,13 @@ conf_dict.config_substitutions.append(
         obj_class="LatencyBuffer", updates={"size": 200000}
     )
 )
+conf_dict.config_substitutions.append(
+    data_classes.config_substitution(
+        obj_class="TCDataProcessor",
+        obj_id="def-tc-processor",
+        updates={"merge_overlapping_tcs": 0},
+    )
+)
 
 conf_dict.config_substitutions.append(
     data_classes.config_substitution(
@@ -163,6 +174,18 @@ conf_dict.config_substitutions.append(
     )
 )
 
+# 02-Jun-2025, KAB
+# With the replay data file and configuration in this test, the rate of TP vectors
+# out of each DataLinkHandler is about 3 kHz.  Two DLHs per app and a 5-second safety
+# factor gives a queue size of 30000.
+conf_dict.config_substitutions.append(
+    data_classes.config_substitution(
+        obj_class="QueueDescriptor",
+        obj_id="tp-input",
+        updates={"capacity": 200000},
+    )
+)
+
 
 confgen_arguments = {
     "WIBEth_TPG_System": conf_dict,
@@ -208,9 +231,13 @@ def test_data_files(run_nanorc):
     fragment_check_list.append(triggeractivity_frag_params)
 
     # Run some tests on the output data file
-    assert len(run_nanorc.data_files) == 6  # three for each run
+    all_ok = len(run_nanorc.data_files) == 6  # three for each run
+    print("") # Clear potential dot from pytest
+    if all_ok:
+        print("\N{WHITE HEAVY CHECK MARK} The correct number of raw data files was found (6)")
+    else:
+        print(f"\N{POLICE CARS REVOLVING LIGHT} An incorrect number of raw data files was found, expected 6, found {len(run_nanorc.data_files)} \N{POLICE CARS REVOLVING LIGHT}")
 
-    all_ok = True
     for idx in range(len(run_nanorc.data_files)):
         data_file = data_file_checks.DataFile(run_nanorc.data_files[idx])
         all_ok &= data_file_checks.sanity_check(data_file)
@@ -222,16 +249,20 @@ def test_data_files(run_nanorc):
             all_ok &= data_file_checks.check_fragment_sizes(
                 data_file, fragment_check_list[jdx]
             )
-    assert all_ok
+    assert all_ok, "\N{POLICE CARS REVOLVING LIGHT} One or more raw data file checks failed! \N{POLICE CARS REVOLVING LIGHT}"
 
 
 def test_tpstream_files(run_nanorc):
     tpstream_files = run_nanorc.tpset_files
     fragment_check_list = [wibeth_tpset_params]  # WIBEth
 
-    assert len(tpstream_files) == 6  # three for each run
+    all_ok = len(tpstream_files) == 6  # three for each run
+    print("") # Clear potential dot from pytest
+    if all_ok:
+        print("\N{WHITE HEAVY CHECK MARK} The correct number of TP-stream data files was found (6)")
+    else:
+        print(f"\N{POLICE CARS REVOLVING LIGHT} An incorrect number of TP-stream data files was found, expected 6, found {len(tpstream_files)} \N{POLICE CARS REVOLVING LIGHT}")
 
-    all_ok = True
     for idx in range(len(tpstream_files)):
         data_file = data_file_checks.DataFile(tpstream_files[idx])
         all_ok &= data_file_checks.check_file_attributes(data_file)
@@ -239,7 +270,7 @@ def test_tpstream_files(run_nanorc):
             all_ok &= data_file_checks.check_fragment_count(
                 data_file, fragment_check_list[jdx]
             )
-    assert all_ok
+    assert all_ok, "\N{POLICE CARS REVOLVING LIGHT} One or more TP-stream data file checks failed! \N{POLICE CARS REVOLVING LIGHT}"
 
 
 def test_cleanup(run_nanorc):
@@ -255,12 +286,12 @@ def test_cleanup(run_nanorc):
             pathlist_string += " " + str(data_file.parent)
 
     if pathlist_string and filelist_string:
-        print("============================================", flush=True)
-        print("Listing the hdf5 files before deleting them:", flush=True)
-        print("============================================", flush=True)
+        print("============================================")
+        print("Listing the hdf5 files before deleting them:")
+        print("============================================")
 
         os.system(f"df -h {pathlist_string}")
-        print("--------------------", flush=True)
+        print("--------------------")
         os.system(f"ls -alF {filelist_string}")
 
         for data_file in run_nanorc.data_files:
@@ -268,6 +299,6 @@ def test_cleanup(run_nanorc):
         for data_file in run_nanorc.tpset_files:
             data_file.unlink()
 
-        print("--------------------", flush=True)
+        print("--------------------")
         os.system(f"df -h {pathlist_string}")
-        print("============================================", flush=True)
+        print("============================================")
