@@ -157,9 +157,13 @@ def test_data_files(run_nanorc):
     fragment_check_list.append(triggeractivity_frag_params)
 
     # Run some tests on the output data file
-    assert len(run_nanorc.data_files) == 6  # three for each run
+    all_ok = len(run_nanorc.data_files) == 6  # three for each run
+    print("") # Clear potential dot from pytest
+    if all_ok:
+        print("\N{WHITE HEAVY CHECK MARK} The correct number of raw data files was found (6)")
+    else:
+        print(f"\N{POLICE CARS REVOLVING LIGHT} An incorrect number of raw data files was found, expected 6, found {len(run_nanorc.data_files)} \N{POLICE CARS REVOLVING LIGHT}")
 
-    all_ok = True
     for idx in range(len(run_nanorc.data_files)):
         data_file = data_file_checks.DataFile(run_nanorc.data_files[idx])
         all_ok &= data_file_checks.sanity_check(data_file)
@@ -171,4 +175,4 @@ def test_data_files(run_nanorc):
             all_ok &= data_file_checks.check_fragment_sizes(
                 data_file, fragment_check_list[jdx]
             )
-    assert all_ok
+    assert all_ok, "\N{POLICE CARS REVOLVING LIGHT} One or more raw data file checks failed! \N{POLICE CARS REVOLVING LIGHT}"
