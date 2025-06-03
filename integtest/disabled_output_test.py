@@ -22,34 +22,6 @@ expected_number_of_data_files = 2
 check_for_logfile_errors = True
 expected_event_count = trigger_rate * run_duration
 expected_event_count_tolerance = math.ceil(expected_event_count / 10)
-wib1_frag_hsi_trig_params = {
-    "fragment_type_description": "WIB",
-    "fragment_type": "ProtoWIB",
-    "expected_fragment_count": number_of_data_producers,
-    "min_size_bytes": 37656,
-    "max_size_bytes": 37656,
-}
-wib1_frag_multi_trig_params = {
-    "fragment_type_description": "WIB",
-    "fragment_type": "ProtoWIB",
-    "expected_fragment_count": number_of_data_producers,
-    "min_size_bytes": 72,
-    "max_size_bytes": 54000,
-}
-wib2_frag_hsi_trig_params = {
-    "fragment_type_description": "WIB",
-    "fragment_type": "WIB",
-    "expected_fragment_count": (number_of_data_producers),
-    "min_size_bytes": 29808,
-    "max_size_bytes": 30280,
-}
-wib2_frag_multi_trig_params = {
-    "fragment_type_description": "WIB",
-    "fragment_type": "WIB",
-    "expected_fragment_count": (number_of_data_producers),
-    "min_size_bytes": 72,
-    "max_size_bytes": 54000,
-}
 wibeth_frag_hsi_trig_params = {
     "fragment_type_description": "WIBEth",
     "fragment_type": "WIBEth",
@@ -212,14 +184,10 @@ def test_data_files(run_nanorc):
         local_event_count_tolerance += (
             10 * number_of_data_producers * run_duration / 100
         )
-        # fragment_check_list.append(wib1_frag_multi_trig_params) # ProtoWIB
-        # fragment_check_list.append(wib2_frag_multi_trig_params) # DuneWIB
         fragment_check_list.append(wibeth_frag_multi_trig_params)  # WIBEth
         fragment_check_list.append(triggerprimitive_frag_params)
         fragment_check_list.append(triggeractivity_frag_params)
     else:
-        # fragment_check_list.append(wib1_frag_hsi_trig_params) # ProtoWIB
-        # fragment_check_list.append(wib2_frag_hsi_trig_params) # DuneWIB
         fragment_check_list.append(wibeth_frag_hsi_trig_params)  # WIBEth
 
     # Run some tests on the output data file

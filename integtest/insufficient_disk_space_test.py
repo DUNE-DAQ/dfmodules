@@ -10,6 +10,10 @@ import integrationtest.data_classes as data_classes
 
 pytest_plugins = "integrationtest.integrationtest_drunc"
 
+# 02-Jun-2025, KAB: tweak the print() statement default behavior so that it always flushes the output.
+import functools
+print = functools.partial(print, flush=True)
+
 # 21-Jul-2022, KAB:
 # --> changes that are needed in this script include the following:
 # * add intelligence to verify that the output disk is small enough
@@ -257,17 +261,17 @@ def test_cleanup(run_nanorc):
             pathlist_string += " " + str(data_file.parent)
 
     if pathlist_string and filelist_string:
-        print("============================================", flush=True)
-        print("Listing the hdf5 files before deleting them:", flush=True)
-        print("============================================", flush=True)
+        print("============================================")
+        print("Listing the hdf5 files before deleting them:")
+        print("============================================")
 
         os.system(f"df -h {pathlist_string}")
-        print("--------------------", flush=True)
+        print("--------------------")
         os.system(f"ls -alF {filelist_string}")
 
         for data_file in run_nanorc.data_files:
             data_file.unlink()
 
-        print("--------------------", flush=True)
+        print("--------------------")
         os.system(f"df -h {pathlist_string}")
-        print("============================================", flush=True)
+        print("============================================")

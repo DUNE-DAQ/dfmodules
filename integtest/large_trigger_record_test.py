@@ -17,6 +17,10 @@ import integrationtest.data_classes as data_classes
 
 pytest_plugins = "integrationtest.integrationtest_drunc"
 
+# 02-Jun-2025, KAB: tweak the print() statement default behavior so that it always flushes the output.
+import functools
+print = functools.partial(print, flush=True)
+
 # Values that help determine the running conditions
 output_path_parameter = "."
 number_of_data_producers = 10
@@ -151,10 +155,10 @@ confgen_arguments = {
 if sufficient_disk_space:
     nanorc_command_list = (
         "boot conf wait 5".split()
-        + "start 101 wait 1 enable-triggers wait ".split()
+        + "start --run-number 101 wait 1 enable-triggers wait ".split()
         + [str(run_duration)]
         + "disable-triggers wait 2 drain-dataflow wait 2 stop-trigger-sources stop ".split()
-        + "start 102 wait 1 enable-triggers wait ".split()
+        + "start --run-number 102 wait 1 enable-triggers wait ".split()
         + [str(run_duration)]
         + "disable-triggers wait 2 drain-dataflow wait 2 stop-trigger-sources stop ".split()
         + " scrap terminate".split()
@@ -260,17 +264,17 @@ def test_cleanup(run_nanorc):
             pathlist_string += " " + str(data_file.parent)
 
     if pathlist_string and filelist_string:
-        print("============================================", flush=True)
-        print("Listing the hdf5 files before deleting them:", flush=True)
-        print("============================================", flush=True)
+        print("============================================")
+        print("Listing the hdf5 files before deleting them:")
+        print("============================================")
 
         os.system(f"df -h {pathlist_string}")
-        print("--------------------", flush=True)
+        print("--------------------")
         os.system(f"ls -alF {filelist_string}")
 
         for data_file in run_nanorc.data_files:
             data_file.unlink()
 
-        print("--------------------", flush=True)
+        print("--------------------")
         os.system(f"df -h {pathlist_string}")
-        print("============================================", flush=True)
+        print("============================================")
