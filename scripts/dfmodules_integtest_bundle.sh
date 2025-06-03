@@ -15,6 +15,7 @@ Options:
     -h, --help : prints out usage information
     -f <zero-based index of the first test to be run, default=0>
     -l <zero-based index of the last test to be run, default=${last_test_index}>
+    -k <pipe-delimited string to select which tests will be run ('egrep -i' match to test name)>
     -n <number of times to run each individual test, default=1>
     -N <number of times to run the full set of selected tests, default=1>
     --stop-on-failure : causes the script to stop when one of the integtests reports a failure
@@ -29,7 +30,7 @@ Options:
     echo ""
 }
 
-TEMP=`getopt -o hs:f:l:n:N: --long help,stop-on-failure,stop-on-skip -- "$@"`
+TEMP=`getopt -o hs:f:l:k:n:N: --long help,stop-on-failure,stop-on-skip -- "$@"`
 eval set -- "$TEMP"
 
 let first_test_index=0
@@ -37,6 +38,7 @@ let individual_test_requested_iterations=1
 let full_set_requested_interations=1
 let stop_on_failure=0
 let stop_on_skip=0
+requested_test_names=
 
 while true; do
     case "$1" in
@@ -50,6 +52,10 @@ while true; do
             ;;
         -l)
             let last_test_index=$2
+            shift 2
+            ;;
+        -k)
+            requested_test_names=$2
             shift 2
             ;;
         -n)
@@ -90,7 +96,19 @@ fi
 TIMESTAMP=`date '+%Y%m%d%H%M%S'`
 mkdir -p /tmp/pytest-of-${USER}
 ITGRUNNER_LOG_FILE="/tmp/pytest-of-${USER}/dfmodules_integtest_bundle_${TIMESTAMP}.log"
-let total_number_of_tests=(1+${last_test_index}-${first_test_index})*${individual_test_requested_iterations}*${full_set_requested_interations}
+
+let number_of_individual_tests=0
+let test_index=0
+for TEST_NAME in ${integtest_list[@]}; do
+    if [[ ${test_index} -ge ${first_test_index} && ${test_index} -le ${last_test_index} ]]; then
+        requested_test=`echo ${TEST_NAME} | egrep -i ${requested_test_names:-${TEST_NAME}}`
+        if [[ "${requested_test}" != "" ]]; then
+            let number_of_individual_tests=${number_of_individual_tests}+1
+        fi
+    fi
+    let test_index=${test_index}+1
+done
+let total_number_of_tests=${number_of_individual_tests}*${individual_test_requested_iterations}*${full_set_requested_interations}
 
 # run the tests
 let overall_test_index=0  # this is only used for user feedback
@@ -99,6 +117,8 @@ while [[ ${full_set_loop_count} -lt ${full_set_requested_interations} ]]; do
   let test_index=0
   for TEST_NAME in ${integtest_list[@]}; do
     if [[ ${test_index} -ge ${first_test_index} && ${test_index} -le ${last_test_index} ]]; then
+      requested_test=`echo ${TEST_NAME} | egrep -i ${requested_test_names:-${TEST_NAME}}`
+      if [[ "${requested_test}" != "" ]]; then
 
       let individual_loop_count=0
       while [[ ${individual_loop_count} -lt ${individual_test_requested_iterations} ]]; do
@@ -136,6 +156,7 @@ while [[ ${full_set_loop_count} -lt ${full_set_requested_interations} ]]; do
         fi
       done
 
+      fi
     fi
     let test_index=${test_index}+1
   done
