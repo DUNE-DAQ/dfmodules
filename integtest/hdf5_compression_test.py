@@ -216,6 +216,17 @@ conf_dict.config_substitutions.append(
         obj_class="LatencyBuffer", updates={"size": 5592000}
     )
 )
+# 03-Jun-2025, KAB
+# TP rate is ~67 kHz with the run 36012 replay data file.
+# 67 kHz * 2 DataLinkHandlers per RU * safety factor of 3 seconds ~= 400,000
+# However, this doesn't always seem to be large enough, so we'll use 1e6 for now.
+conf_dict.config_substitutions.append(
+    data_classes.config_substitution(
+        obj_class="QueueDescriptor",
+        obj_id="tp-input",
+        updates={"capacity": 1000000},
+    )
+)
 
 
 confgen_arguments = {
@@ -280,7 +291,7 @@ def test_data_files(run_nanorc):
             all_ok &= data_file_checks.check_fragment_sizes(
                 data_file, fragment_check_list[jdx]
             )
-    assert all_ok
+    assert all_ok, "\N{POLICE CARS REVOLVING LIGHT} One or more raw data file checks failed! \N{POLICE CARS REVOLVING LIGHT}"
 
 
 def test_tpstream_files(run_nanorc):
@@ -301,7 +312,7 @@ def test_tpstream_files(run_nanorc):
             all_ok &= data_file_checks.check_fragment_count(
                 data_file, fragment_check_list[jdx]
             )
-    assert all_ok
+    assert all_ok, "\N{POLICE CARS REVOLVING LIGHT} One or more TP-stream data file checks failed! \N{POLICE CARS REVOLVING LIGHT}"
 
 
 def test_cleanup(run_nanorc):
