@@ -76,6 +76,7 @@ FragmentAggregatorModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcf
 void
 FragmentAggregatorModule::do_start(const data_t& /* args */)
 {
+  m_stop_requested = false;
   m_packets_processed = 0;
 
   // 19-Dec-2024, KAB: check that Fragment senders are ready to send. This is done so
@@ -101,6 +102,7 @@ FragmentAggregatorModule::do_start(const data_t& /* args */)
 void
 FragmentAggregatorModule::do_stop(const data_t& /* args */)
 {
+  m_stop_requested = true;
   auto iom = iomanager::IOManager::get();
   iom->remove_callback<dfmessages::DataRequest>(m_data_req_input);
   iom->remove_callback<std::unique_ptr<daqdataformats::Fragment>>(m_fragment_input);
@@ -158,22 +160,30 @@ FragmentAggregatorModule::process_fragment(std::unique_ptr<daqdataformats::Fragm
       return;
     }
   }
-  try {
-    TLOG_DEBUG(27) << get_name() << " Sending fragment for trigger/sequence_number "
-                   << fragment->get_trigger_number() << "."
-                   << fragment->get_sequence_number() << " and SourceID "
-                   << fragment->get_element_id() << " to "
-                   << trb_identifier;
-    auto sender = get_iom_sender<std::unique_ptr<daqdataformats::Fragment>>(trb_identifier);
-    sender->send(std::move(fragment), iomanager::Sender::s_no_block);
-  } catch (const ers::Issue& excpt) {
-    ers::error(AbandonedFragment(ERS_HERE,
-				 fragment->get_run_number(),
-				 fragment->get_trigger_number(),
-				 fragment->get_sequence_number(),
-				 fragment->get_element_id(),
-				 excpt));
-  }
+
+  auto counter = 3;
+  do {
+    try {
+      TLOG_DEBUG(27) << get_name() << " Sending fragment for trigger/sequence_number "
+		     << fragment->get_trigger_number() << "."
+		     << fragment->get_sequence_number() << " and SourceID "
+		     << fragment->get_element_id() << " to "
+		     << trb_identifier;
+      auto sender = get_iom_sender<std::unique_ptr<daqdataformats::Fragment>>(trb_identifier);
+      sender->send(std::move(fragment), iomanager::Sender::s_no_block);
+      return;
+    } catch (const ers::Issue& excpt) {
+      ers::warning(excpt);
+      --counter;
+    }
+  } while ( ! m_stop_requested.load() && counter>0 );
+  
+  ers::error(AbandonedFragment(ERS_HERE,
+			       fragment->get_run_number(),
+			       fragment->get_trigger_number(),
+			       fragment->get_sequence_number(),
+			       fragment->get_element_id() ) );
+  
 }
 
 } // namespace dfmodules
