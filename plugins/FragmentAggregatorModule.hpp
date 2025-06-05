@@ -39,6 +39,16 @@ ERS_DECLARE_ISSUE(dfmodules,                  ///< Namespace
                   ((daqdataformats::SourceID)src)                                         ///< Message parameters
 )
 
+
+ERS_DECLARE_ISSUE(dfmodules,                ///< Namespace
+                  AbandonedFragment,        ///< Issue class name
+                  "Fragment from " <<  source << " for trigger " << trigger << '-' << sequence << " of run " << run << " was dropped",
+		  ((daqdataformats::run_number_t)run)
+                  ((daqdataformats::trigger_number_t)trigger)
+		  ((daqdataformats::sequence_number_t)sequence)              
+		  ((daqdataformats::SourceID)source)
+)
+
 namespace dfmodules {
 
 class FragmentAggregatorModule : public dunedaq::appfwk::DAQModule
