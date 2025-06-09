@@ -167,7 +167,12 @@ FragmentAggregatorModule::process_fragment(std::unique_ptr<daqdataformats::Fragm
     auto sender = get_iom_sender<std::unique_ptr<daqdataformats::Fragment>>(trb_identifier);
     sender->send(std::move(fragment), iomanager::Sender::s_no_block);
   } catch (const ers::Issue& excpt) {
-    ers::warning(excpt);
+    ers::error(AbandonedFragment(ERS_HERE,
+				 fragment->get_run_number(),
+				 fragment->get_trigger_number(),
+				 fragment->get_sequence_number(),
+				 fragment->get_element_id(),
+				 excpt));
   }
 }
 
