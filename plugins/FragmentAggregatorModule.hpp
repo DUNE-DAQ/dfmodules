@@ -89,6 +89,12 @@ private:
   std::atomic<metric_counter_type> m_fragments_empty{ 0 };
   std::atomic<metric_counter_type> m_fragments_incomplete{ 0 };
   std::atomic<metric_counter_type> m_fragments_invalid{ 0 };
+  std::atomic<metric_counter_type> m_fragments_time_average_us{ 0 };
+  std::atomic<metric_counter_type> m_fragments_time_min_us{ 0 };
+  std::atomic<metric_counter_type> m_fragments_time_max_us{ 0 };
+  std::atomic<metric_counter_type> m_data_requests_time_average_us{ 0 };
+  std::atomic<metric_counter_type> m_data_requests_time_min_us{ 0 };
+  std::atomic<metric_counter_type> m_data_requests_time_max_us{ 0 };
 
   // TRB tracking
   std::map<std::tuple<dfmessages::trigger_number_t, dfmessages::sequence_number_t, daqdataformats::SourceID>,

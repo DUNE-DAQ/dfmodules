@@ -69,19 +69,34 @@ FragmentAggregatorModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcf
 void
 FragmentAggregatorModule::generate_opmon_data()
 {
-  opmon::FragmentAggregatorModuleInfo info;
+  opmon::FragmentAggregatorTimeInfo dr_times;
+  uint64_t avg = (m_data_requests_processed != 0) ? (m_data_requests_time_average_us / m_data_requests_processed) : 0;
+  dr_times.set_average_us(avg); m_data_requests_time_average_us.exchange(0);
+  dr_times.set_min_us(m_data_requests_time_min_us.exchange(0));
+  dr_times.set_max_us(m_data_requests_time_max_us.exchange(0));
+  this->publish(std::move(dr_times), { { "data", "DataRequest" } });
 
-  info.set_data_requests_received(m_data_requests_received.exchange(0));
-  info.set_data_requests_processed(m_data_requests_processed.exchange(0));
-  info.set_data_requests_failed(m_data_requests_failed.load());  //the failed counters are meant NOT to reset
-  info.set_fragments_received(m_fragments_received.exchange(0));
-  info.set_fragments_processed(m_fragments_processed.exchange(0));
-  info.set_fragments_failed(m_fragments_failed.load());
-  info.set_fragments_empty(m_fragments_empty.exchange(0));
-  info.set_fragments_incomplete(m_fragments_incomplete.exchange(0));
-  info.set_fragments_invalid(m_fragments_invalid.exchange(0));
+  opmon::FragmentAggregatorTimeInfo frag_times;
+  uint64_t avg2 = (m_fragments_processed != 0) ? (m_fragments_time_average_us / m_fragments_processed) : 0;
+  frag_times.set_average_us(avg2); m_fragments_time_average_us.exchange(0);
+  frag_times.set_min_us(m_fragments_time_min_us.exchange(0));
+  frag_times.set_max_us(m_fragments_time_max_us.exchange(0));
+  this->publish(std::move(frag_times), { { "data", "Fragment" } });
 
-  this->publish(std::move(info));
+  opmon::FADataRequestsCounterInfo dr_info;
+  dr_info.set_data_requests_received(m_data_requests_received.exchange(0));
+  dr_info.set_data_requests_processed(m_data_requests_processed.exchange(0));
+  dr_info.set_data_requests_failed(m_data_requests_failed.load());  //the failed counters are meant NOT to reset
+  this->publish(std::move(dr_info));
+
+  opmon::FAFragmentsCounterInfo frag_info;
+  frag_info.set_fragments_received(m_fragments_received.exchange(0));
+  frag_info.set_fragments_processed(m_fragments_processed.exchange(0));
+  frag_info.set_fragments_failed(m_fragments_failed.load());
+  frag_info.set_fragments_empty(m_fragments_empty.exchange(0));
+  frag_info.set_fragments_incomplete(m_fragments_incomplete.exchange(0));
+  frag_info.set_fragments_invalid(m_fragments_invalid.exchange(0));
+  this->publish(std::move(frag_info));
 }
 
 void
@@ -97,6 +112,12 @@ FragmentAggregatorModule::do_start(const data_t& /* args */)
   m_fragments_empty.store(0);
   m_fragments_incomplete.store(0);
   m_fragments_invalid.store(0);
+  m_fragments_time_average_us.store(0);
+  m_fragments_time_min_us.store(std::numeric_limits<uint64_t>::max());
+  m_fragments_time_max_us.store(0);
+  m_data_requests_time_average_us.store(0);
+  m_data_requests_time_min_us.store(std::numeric_limits<uint64_t>::max());
+  m_data_requests_time_max_us.store(0);
 
   // 19-Dec-2024, KAB: check that Fragment senders are ready to send. This is done so
   // that the IOManager infrastructure fetches the necessary connection details from
