@@ -8,10 +8,12 @@
 
 #include "FragmentAggregatorModule.hpp"
 #include "dfmodules/CommonIssues.hpp"
+#include "dfmodules/opmon/FragmentAggregatorModule.pb.h"
 
 #include "appmodel/FragmentAggregatorModule.hpp"
 #include "confmodel/Connection.hpp"
 #include "confmodel/QueueWithSourceId.hpp"
+#include "daqdataformats/FragmentHeader.hpp"
 #include "dfmessages/Fragment_serialization.hpp"
 #include "logging/Logging.hpp"
 
@@ -64,19 +66,37 @@ FragmentAggregatorModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcf
   iom->get_receiver<dfmessages::DataRequest>(m_data_req_input);
 }
 
-// void
-// FragmentAggregatorModule::get_info(opmonlib::InfoCollector& /*ci*/, int /* level */)
-// {
-//   // dummyconsumerinfo::Info info;
-//   // info.packets_processed = m_packets_processed;
+void
+FragmentAggregatorModule::generate_opmon_data()
+{
+  opmon::FragmentAggregatorModuleInfo info;
 
-//   // ci.add(info);
-// }
+  info.set_data_requests_received(m_data_requests_received.exchange(0));
+  info.set_data_requests_processed(m_data_requests_processed.exchange(0));
+  info.set_data_requests_failed(m_data_requests_failed.load());  //the failed counters are meant NOT to reset
+  info.set_fragments_received(m_fragments_received.exchange(0));
+  info.set_fragments_processed(m_fragments_processed.exchange(0));
+  info.set_fragments_failed(m_fragments_failed.load());
+  info.set_fragments_empty(m_fragments_empty.exchange(0));
+  info.set_fragments_incomplete(m_fragments_incomplete.exchange(0));
+  info.set_fragments_invalid(m_fragments_invalid.exchange(0));
+
+  this->publish(std::move(info));
+}
 
 void
 FragmentAggregatorModule::do_start(const data_t& /* args */)
 {
-  m_packets_processed = 0;
+
+  m_data_requests_received.store(0);
+  m_data_requests_processed.store(0);
+  m_data_requests_failed.store(0);
+  m_fragments_received.store(0);
+  m_fragments_processed.store(0);
+  m_fragments_failed.store(0);
+  m_fragments_empty.store(0);
+  m_fragments_incomplete.store(0);
+  m_fragments_invalid.store(0);
 
   // 19-Dec-2024, KAB: check that Fragment senders are ready to send. This is done so
   // that the IOManager infrastructure fetches the necessary connection details from
@@ -113,6 +133,7 @@ FragmentAggregatorModule::process_data_request(dfmessages::DataRequest& data_req
 
   {
     std::scoped_lock lock(m_mutex);
+    m_data_requests_received++;
     std::tuple<dfmessages::trigger_number_t, dfmessages::sequence_number_t, daqdataformats::SourceID> triplet = {
       data_request.trigger_number, data_request.sequence_number, data_request.request_information.component
     };
@@ -133,9 +154,11 @@ FragmentAggregatorModule::process_data_request(dfmessages::DataRequest& data_req
       auto sender = get_iom_sender<dfmessages::DataRequest>(uid_elem->second);
       data_request.data_destination = m_fragment_input;
       sender->send(std::move(data_request), iomanager::Sender::s_no_block);
+      m_data_requests_processed++;
     }
   } catch (const ers::Issue& excpt) {
     ers::warning(excpt);
+    m_data_requests_failed++;
   }
 }
 
@@ -146,6 +169,16 @@ FragmentAggregatorModule::process_fragment(std::unique_ptr<daqdataformats::Fragm
   std::string trb_identifier;
   {
     std::scoped_lock lock(m_mutex);
+    
+    m_fragments_received++;
+    std::bitset<32> error_bits = fragment->get_error_bits();
+    if (error_bits[static_cast<size_t>(dunedaq::daqdataformats::FragmentErrorBits::kDataNotFound)])
+      m_fragments_empty++;
+    if (error_bits[static_cast<size_t>(dunedaq::daqdataformats::FragmentErrorBits::kIncomplete)])
+      m_fragments_incomplete++;
+    if (error_bits[static_cast<size_t>(dunedaq::daqdataformats::FragmentErrorBits::kInvalidWindow)])
+      m_fragments_invalid++;
+
     auto dr_iter = m_data_req_map.find(
       std::make_tuple<dfmessages::trigger_number_t, dfmessages::sequence_number_t, daqdataformats::SourceID>(
         fragment->get_trigger_number(), fragment->get_sequence_number(), fragment->get_element_id()));
@@ -166,6 +199,7 @@ FragmentAggregatorModule::process_fragment(std::unique_ptr<daqdataformats::Fragm
                    << trb_identifier;
     auto sender = get_iom_sender<std::unique_ptr<daqdataformats::Fragment>>(trb_identifier);
     sender->send(std::move(fragment), iomanager::Sender::s_no_block);
+    m_fragments_processed++;
   } catch (const ers::Issue& excpt) {
     ers::error(AbandonedFragment(ERS_HERE,
 				 fragment->get_run_number(),
@@ -173,6 +207,7 @@ FragmentAggregatorModule::process_fragment(std::unique_ptr<daqdataformats::Fragm
 				 fragment->get_sequence_number(),
 				 fragment->get_element_id(),
 				 excpt));
+    m_fragments_failed++;
   }
 }
 

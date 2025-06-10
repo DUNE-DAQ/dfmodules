@@ -62,7 +62,7 @@ public:
   FragmentAggregatorModule& operator=(FragmentAggregatorModule&&) = delete;
 
   void init(std::shared_ptr<appfwk::ConfigurationManager> mcfg) override;
-  //  void get_info(opmonlib::InfoCollector& ci, int level) override;
+  void generate_opmon_data() override;
 
 private:
   // Commands
@@ -78,8 +78,17 @@ private:
   std::map<int, std::string> m_producer_conn_ids;
   std::vector<std::string> m_trb_conn_ids;
 
-  // Stats
-  std::atomic<int> m_packets_processed{ 0 };
+  // Opmon
+  using metric_counter_type = uint64_t;
+  std::atomic<metric_counter_type> m_data_requests_received{ 0 };
+  std::atomic<metric_counter_type> m_data_requests_processed{ 0 };
+  std::atomic<metric_counter_type> m_data_requests_failed{ 0 };
+  std::atomic<metric_counter_type> m_fragments_received{ 0 };
+  std::atomic<metric_counter_type> m_fragments_processed{ 0 };
+  std::atomic<metric_counter_type> m_fragments_failed{ 0 };
+  std::atomic<metric_counter_type> m_fragments_empty{ 0 };
+  std::atomic<metric_counter_type> m_fragments_incomplete{ 0 };
+  std::atomic<metric_counter_type> m_fragments_invalid{ 0 };
 
   // TRB tracking
   std::map<std::tuple<dfmessages::trigger_number_t, dfmessages::sequence_number_t, daqdataformats::SourceID>,

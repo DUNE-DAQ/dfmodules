@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package dunedaq.dfmodules.opmon;
+
+message FragmentAggregatorModuleInfo {
+
+  uint64 data_requests_received = 1;
+  uint64 data_requests_processed = 2;
+  uint64 data_requests_failed = 3;
+  uint64 fragments_received = 4;
+  uint64 fragments_processed = 5;
+  uint64 fragments_failed = 6;
+  uint64 fragments_empty = 7;
+  uint64 fragments_incomplete = 8;
+  uint64 fragments_invalid = 9;
+}
