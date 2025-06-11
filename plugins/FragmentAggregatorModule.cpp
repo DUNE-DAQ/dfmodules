@@ -72,14 +72,16 @@ FragmentAggregatorModule::generate_opmon_data()
   opmon::FragmentAggregatorTimeInfo dr_times;
   uint64_t avg = (m_data_requests_processed != 0) ? (m_data_requests_time_average_us / m_data_requests_processed) : 0;
   dr_times.set_average_us(avg); m_data_requests_time_average_us.exchange(0);
-  dr_times.set_min_us(m_data_requests_time_min_us.exchange(0));
+  uint64_t old_min = m_data_requests_time_min_us.exchange(std::numeric_limits<uint64_t>::max());
+  dr_times.set_min_us((old_min < std::numeric_limits<uint64_t>::max()) ? old_min : 0);
   dr_times.set_max_us(m_data_requests_time_max_us.exchange(0));
   this->publish(std::move(dr_times), { { "data", "DataRequest" } });
 
   opmon::FragmentAggregatorTimeInfo frag_times;
   uint64_t avg2 = (m_fragments_processed != 0) ? (m_fragments_time_average_us / m_fragments_processed) : 0;
   frag_times.set_average_us(avg2); m_fragments_time_average_us.exchange(0);
-  frag_times.set_min_us(m_fragments_time_min_us.exchange(0));
+  uint64_t old_min2 = m_fragments_time_min_us.exchange(std::numeric_limits<uint64_t>::max());
+  frag_times.set_min_us((old_min2 < std::numeric_limits<uint64_t>::max()) ? old_min2 : 0);
   frag_times.set_max_us(m_fragments_time_max_us.exchange(0));
   this->publish(std::move(frag_times), { { "data", "Fragment" } });
 
@@ -154,7 +156,10 @@ FragmentAggregatorModule::process_data_request(dfmessages::DataRequest& data_req
 
   {
     std::scoped_lock lock(m_mutex);
+    
+    m_timestamp_before_dr = get_current_time_us();
     m_data_requests_received++;
+
     std::tuple<dfmessages::trigger_number_t, dfmessages::sequence_number_t, daqdataformats::SourceID> triplet = {
       data_request.trigger_number, data_request.sequence_number, data_request.request_information.component
     };
@@ -175,7 +180,12 @@ FragmentAggregatorModule::process_data_request(dfmessages::DataRequest& data_req
       auto sender = get_iom_sender<dfmessages::DataRequest>(uid_elem->second);
       data_request.data_destination = m_fragment_input;
       sender->send(std::move(data_request), iomanager::Sender::s_no_block);
+
       m_data_requests_processed++;
+      auto timestamp_total = get_current_time_us() - m_timestamp_before_dr;
+      if (timestamp_total < m_data_requests_time_min_us) { m_data_requests_time_min_us = timestamp_total; }
+      if (timestamp_total > m_data_requests_time_max_us) { m_data_requests_time_max_us = timestamp_total; }
+      m_data_requests_time_average_us += timestamp_total;
     }
   } catch (const ers::Issue& excpt) {
     ers::warning(excpt);
@@ -191,7 +201,9 @@ FragmentAggregatorModule::process_fragment(std::unique_ptr<daqdataformats::Fragm
   {
     std::scoped_lock lock(m_mutex);
     
+    m_timestamp_before_frag = get_current_time_us();
     m_fragments_received++;
+
     std::bitset<32> error_bits = fragment->get_error_bits();
     if (error_bits[static_cast<size_t>(dunedaq::daqdataformats::FragmentErrorBits::kDataNotFound)])
       m_fragments_empty++;
@@ -220,7 +232,13 @@ FragmentAggregatorModule::process_fragment(std::unique_ptr<daqdataformats::Fragm
                    << trb_identifier;
     auto sender = get_iom_sender<std::unique_ptr<daqdataformats::Fragment>>(trb_identifier);
     sender->send(std::move(fragment), iomanager::Sender::s_no_block);
+    
     m_fragments_processed++;
+    auto timestamp_total = get_current_time_us() - m_timestamp_before_frag;
+    if (timestamp_total < m_fragments_time_min_us) { m_fragments_time_min_us = timestamp_total; }
+    if (timestamp_total > m_fragments_time_max_us) { m_fragments_time_max_us = timestamp_total; }
+    m_fragments_time_average_us += timestamp_total;
+
   } catch (const ers::Issue& excpt) {
     ers::error(AbandonedFragment(ERS_HERE,
 				 fragment->get_run_number(),
@@ -230,6 +248,13 @@ FragmentAggregatorModule::process_fragment(std::unique_ptr<daqdataformats::Fragm
 				 excpt));
     m_fragments_failed++;
   }
+}
+
+uint64_t 
+FragmentAggregatorModule::get_current_time_us()
+{
+  return std::chrono::duration_cast<std::chrono::microseconds>(
+    std::chrono::steady_clock::now().time_since_epoch()).count();
 }
 
 } // namespace dfmodules

@@ -72,13 +72,16 @@ private:
   void process_data_request(dfmessages::DataRequest&);
   void process_fragment(std::unique_ptr<daqdataformats::Fragment>&);
 
-  // Input and Output Connection namess
+  // Input and Output Connection names
   std::string m_data_req_input;
   std::string m_fragment_input;
   std::map<int, std::string> m_producer_conn_ids;
   std::vector<std::string> m_trb_conn_ids;
 
   // Opmon
+  uint64_t get_current_time_us();
+  uint64_t m_timestamp_before_dr;
+  uint64_t m_timestamp_before_frag;
   using metric_counter_type = uint64_t;
   std::atomic<metric_counter_type> m_data_requests_received{ 0 };
   std::atomic<metric_counter_type> m_data_requests_processed{ 0 };
