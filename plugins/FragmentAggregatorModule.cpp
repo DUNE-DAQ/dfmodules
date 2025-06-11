@@ -69,21 +69,21 @@ FragmentAggregatorModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcf
 void
 FragmentAggregatorModule::generate_opmon_data()
 {
-  opmon::FragmentAggregatorTimeInfo dr_times;
-  uint64_t avg = (m_data_requests_processed != 0) ? (m_data_requests_time_average_us / m_data_requests_processed) : 0;
-  dr_times.set_average_us(avg); m_data_requests_time_average_us.exchange(0);
-  uint64_t old_min = m_data_requests_time_min_us.exchange(std::numeric_limits<uint64_t>::max());
-  dr_times.set_min_us((old_min < std::numeric_limits<uint64_t>::max()) ? old_min : 0);
-  dr_times.set_max_us(m_data_requests_time_max_us.exchange(0));
-  this->publish(std::move(dr_times), { { "data", "DataRequest" } });
+  if (m_data_requests_processed > 0) {
+    opmon::FragmentAggregatorTimeInfo dr_times;
+    dr_times.set_min_us(m_data_requests_time_min_us.exchange(std::numeric_limits<uint64_t>::max()));	  
+    dr_times.set_max_us(m_data_requests_time_max_us.exchange(0));
+    dr_times.set_average_us(m_data_requests_time_average_us.exchange(0) / m_data_requests_processed);
+    this->publish(std::move(dr_times), { { "data", "DataRequest" } });
+  }
 
-  opmon::FragmentAggregatorTimeInfo frag_times;
-  uint64_t avg2 = (m_fragments_processed != 0) ? (m_fragments_time_average_us / m_fragments_processed) : 0;
-  frag_times.set_average_us(avg2); m_fragments_time_average_us.exchange(0);
-  uint64_t old_min2 = m_fragments_time_min_us.exchange(std::numeric_limits<uint64_t>::max());
-  frag_times.set_min_us((old_min2 < std::numeric_limits<uint64_t>::max()) ? old_min2 : 0);
-  frag_times.set_max_us(m_fragments_time_max_us.exchange(0));
-  this->publish(std::move(frag_times), { { "data", "Fragment" } });
+  if (m_fragments_processed > 0) {
+    opmon::FragmentAggregatorTimeInfo frag_times;
+    frag_times.set_min_us(m_fragments_time_min_us.exchange(std::numeric_limits<uint64_t>::max()));
+    frag_times.set_max_us(m_fragments_time_max_us.exchange(0));
+    frag_times.set_average_us(m_fragments_time_average_us.exchange(0) / m_fragments_processed);
+    this->publish(std::move(frag_times), { { "data", "Fragment" } });
+  }
 
   opmon::FADataRequestsCounterInfo dr_info;
   dr_info.set_data_requests_received(m_data_requests_received.exchange(0));
