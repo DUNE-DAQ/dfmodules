@@ -93,14 +93,11 @@ ERS_DECLARE_ISSUE(dfmodules,         ///< Namespace
  */
 ERS_DECLARE_ISSUE(dfmodules,          ///< Namespace
                   DRSenderSendFailed, ///< Issue class name
-                  "Failed to send Data Request message. Run: "
-                    << runno << ", trigger: " << trigno << ", trigger timestamp: " << triggerts << ", sequence: "
-                    << seqno << ", destination: " << datadest << ", requested component: " << sid << ".",
+                  "Failed to send Data Request message. Run: " << runno << ", trigger: " << trigno << ", sequence: "
+                                                               << seqno << ", requested component: " << sid << ".",
                   ((daqdataformats::run_number_t)runno)      ///< Message parameters
                   ((daqdataformats::trigger_number_t)trigno) ///< Message parameters
-                  ((daqdataformats::timestamp_t)triggerts)   ///< Message parameters
                   ((daqdataformats::sequence_number_t)seqno) ///< Message parameters
-                  ((std::string)datadest)                    ///< Message parameters
                   ((daqdataformats::SourceID)sid)            ///< Message parameters
 )
 // Re-enable coverage checking LCOV_EXCL_STOP
