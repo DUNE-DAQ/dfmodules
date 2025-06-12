@@ -188,7 +188,13 @@ FragmentAggregatorModule::process_data_request(dfmessages::DataRequest& data_req
       m_data_requests_time_average_us += timestamp_total;
     }
   } catch (const ers::Issue& excpt) {
-    ers::warning(excpt);
+    ers::warning(dunedaq::dfmodules::DRSenderSendFailed(ERS_HERE,
+							data_request.run_number,
+							data_request.trigger_number,
+							data_request.trigger_timestamp,
+							data_request.sequence_number,
+							data_request.data_destination,
+							data_request.request_information.component));
     m_data_requests_failed++;
   }
 }
