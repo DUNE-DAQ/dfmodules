@@ -70,9 +70,9 @@ ERS_DECLARE_ISSUE_BASE(dfmodules,
  */
 ERS_DECLARE_ISSUE(dfmodules,            ///< Namespace
                   DRSenderLookupFailed, ///< Issue class name
-                  "Unable to determine the Data Request message sender for SourceID [" << sid
-                  << "]. No DataRequest will be sent to this data source for run/trigger/sequence number "
-                  << runno << "/" << trigno << "/" << seqno << ".",
+                  "Unable to determine the Data Request message sender for SourceID ["
+                    << sid << "]. No DataRequest will be sent to this data source for run/trigger/sequence number "
+                    << runno << "/" << trigno << "/" << seqno << ".",
                   ((daqdataformats::SourceID)sid)            ///< Message parameters
                   ((daqdataformats::run_number_t)runno)      ///< Message parameters
                   ((daqdataformats::trigger_number_t)trigno) ///< Message parameters
@@ -91,16 +91,17 @@ ERS_DECLARE_ISSUE(dfmodules,         ///< Namespace
 /**
  * @brief Data Request send failed
  */
-ERS_DECLARE_ISSUE(dfmodules,           ///< Namespace
-                  DRSenderSendFailed,  ///< Issue class name
-                  "Failed to send Data Request message. Run: " << runno << ", trigger: " << trigno << ", trigger timestamp: "
-		  << triggerts << ", sequence: " << seqno << ", destination: " << datadest << ", requested component: " << sid << ".",
-		  ((daqdataformats::run_number_t)runno)          ///< Message parameters
-                  ((daqdataformats::trigger_number_t)trigno)     ///< Message parameters
-		  ((daqdataformats::timestamp_t)triggerts) ///< Message parameters
-                  ((daqdataformats::sequence_number_t)seqno)     ///< Message parameters
-		  ((std::string)datadest)                        ///< Message parameters
-		  ((daqdataformats::SourceID)sid)                ///< Message parameters
+ERS_DECLARE_ISSUE(dfmodules,          ///< Namespace
+                  DRSenderSendFailed, ///< Issue class name
+                  "Failed to send Data Request message. Run: "
+                    << runno << ", trigger: " << trigno << ", trigger timestamp: " << triggerts << ", sequence: "
+                    << seqno << ", destination: " << datadest << ", requested component: " << sid << ".",
+                  ((daqdataformats::run_number_t)runno)      ///< Message parameters
+                  ((daqdataformats::trigger_number_t)trigno) ///< Message parameters
+                  ((daqdataformats::timestamp_t)triggerts)   ///< Message parameters
+                  ((daqdataformats::sequence_number_t)seqno) ///< Message parameters
+                  ((std::string)datadest)                    ///< Message parameters
+                  ((daqdataformats::SourceID)sid)            ///< Message parameters
 )
 // Re-enable coverage checking LCOV_EXCL_STOP
 
