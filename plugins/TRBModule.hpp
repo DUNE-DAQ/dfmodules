@@ -196,6 +196,7 @@ protected:
   using trigger_record_sender_t = iomanager::SenderConcept<trigger_record_ptr_t>;
 
   bool read_fragments();
+  void fragments_callback(std::unique_ptr<daqdataformats::Fragment>& frag);
 
   bool read_and_process_trigger_decision(iomanager::Receiver::timeout_t, std::atomic<bool>& running);
 
@@ -236,6 +237,7 @@ private:
   std::chrono::milliseconds m_loop_sleep;
   std::string m_reply_connection;
   daqdataformats::SourceID m_this_trb_source_id;
+  bool m_use_callback;
 
   // Input Connections
   std::shared_ptr<trigger_decision_receiver_t> m_trigger_decision_input;
@@ -248,6 +250,8 @@ private:
 
   // bookeeping
   using clock_type = std::chrono::high_resolution_clock;
+  std::mutex m_trigger_records_mutex;
+  std::atomic<bool> m_trigger_records_updated;
   std::map<TriggerId, std::pair<clock_type::time_point, trigger_record_ptr_t>> m_trigger_records;
 
   // Data request properties

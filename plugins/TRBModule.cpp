@@ -188,6 +188,7 @@ TRBModule::do_conf(const data_t&)
 
   m_this_trb_source_id.subsystem = daqdataformats::SourceID::Subsystem::kTRBuilder;
   m_this_trb_source_id.id = m_trb_conf->get_source_id();
+  m_use_callback = m_trb_conf->get_use_fragment_callback();
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
 }
@@ -218,7 +219,8 @@ TRBModule::do_start(const data_t& args)
       std::shared_ptr<data_req_sender_t> sender = sid_sender.second;
       if (sender != nullptr) {
         bool is_ready = sender->is_ready_for_sending(std::chrono::milliseconds(100));
-        TLOG_DEBUG(0) << "The DataRequest sender for " << sid_sender.first << " " << (is_ready ? "is" : "is not") << " ready.";
+        TLOG_DEBUG(0) << "The DataRequest sender for " << sid_sender.first << " " << (is_ready ? "is" : "is not")
+                      << " ready.";
       }
     }
   }
@@ -232,6 +234,11 @@ TRBModule::do_start(const data_t& args)
   }
 
   m_thread.start_working_thread(get_name());
+
+  if (m_use_callback) {
+    m_fragment_input->add_callback(std::bind(&TRBModule::fragments_callback, this, std::placeholders::_1));
+  }
+
   TLOG() << get_name() << " successfully started";
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
 }
@@ -246,6 +253,9 @@ TRBModule::do_stop(const data_t& /*args*/)
     m_mon_receiver->remove_callback();
   }
 
+  if (m_use_callback) {
+    m_fragment_input->remove_callback();
+  }
   m_thread.stop_working_thread();
   TLOG() << get_name() << " successfully stopped";
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_stop() method";
@@ -303,28 +313,29 @@ TRBModule::do_work(std::atomic<bool>& running_flag)
     //--------------------------------------------------
 
     if (new_fragments) {
-
-      TLOG_DEBUG(TLVL_BOOKKEEPING) << "Bookeeping status: " << m_trigger_records.size()
-                                   << " trigger records in progress ";
-
       std::vector<TriggerId> complete;
-      for (const auto& tr : m_trigger_records) {
+      {
+        std::lock_guard<std::mutex> lk(m_trigger_records_mutex);
+        TLOG_DEBUG(TLVL_BOOKKEEPING) << "Bookeeping status: " << m_trigger_records.size()
+                                     << " trigger records in progress ";
 
-        auto comp_size = tr.second.second->get_fragments_ref().size();
-        auto requ_size = tr.second.second->get_header_ref().get_num_requested_components();
-        std::ostringstream message;
-        message << tr.first << " with " << comp_size << '/' << requ_size << " components";
+        for (const auto& tr : m_trigger_records) {
 
-        if (comp_size == requ_size) {
+          auto comp_size = tr.second.second->get_fragments_ref().size();
+          auto requ_size = tr.second.second->get_header_ref().get_num_requested_components();
+          std::ostringstream message;
+          message << tr.first << " with " << comp_size << '/' << requ_size << " components";
 
-          message << ": complete";
-          complete.push_back(tr.first);
-        }
+          if (comp_size == requ_size) {
 
-        TLOG_DEBUG(TLVL_BOOKKEEPING) << message.str();
+            message << ": complete";
+            complete.push_back(tr.first);
+          }
 
-      } // loop over TRs to check if they are complete
+          TLOG_DEBUG(TLVL_BOOKKEEPING) << message.str();
 
+        } // loop over TRs to check if they are complete
+      }
       //------------------------------------------------
       // Create TriggerRecords and send them
       //-----------------------------------------------
@@ -389,6 +400,10 @@ TRBModule::do_work(std::atomic<bool>& running_flag)
 bool
 TRBModule::read_fragments()
 {
+  if (m_use_callback) {
+    return m_trigger_records_updated.exchange(false);
+  }
+
   std::optional<std::unique_ptr<daqdataformats::Fragment>> temp_fragment;
 
   try {
@@ -409,6 +424,7 @@ TRBModule::read_fragments()
   TriggerId temp_id(*temp_fragment.value());
   bool requested = false;
 
+  std::lock_guard<std::mutex> lk(m_trigger_records_mutex);
   auto it = m_trigger_records.find(temp_id);
 
   if (it != m_trigger_records.end()) {
@@ -439,6 +455,49 @@ TRBModule::read_fragments()
   }
 
   return true;
+}
+
+void
+TRBModule::fragments_callback(std::unique_ptr<daqdataformats::Fragment>& temp_fragment)
+{
+  TLOG_DEBUG(TLVL_FRAGMENT_RECEIVE) << get_name() << " Received fragment for trigger/sequence_number "
+                                    << temp_fragment->get_trigger_number() << "."
+                                    << temp_fragment->get_sequence_number() << " from "
+                                    << temp_fragment->get_element_id();
+
+  TriggerId temp_id(*temp_fragment);
+  bool requested = false;
+
+  std::lock_guard<std::mutex> lk(m_trigger_records_mutex);
+  auto it = m_trigger_records.find(temp_id);
+
+  if (it != m_trigger_records.end()) {
+
+    // check if the fragment has a Source Id that was desired
+    daqdataformats::TriggerRecordHeader& header = it->second.second->get_header_ref();
+
+    for (size_t i = 0; i < header.get_num_requested_components(); ++i) {
+
+      const daqdataformats::ComponentRequest& request = header[i];
+      if (request.component == temp_fragment->get_element_id()) {
+        requested = true;
+        break;
+      }
+
+    } // request loop
+
+  } // if there is a corresponding trigger ID entry in the boook
+
+  m_trigger_records_updated = true;
+  if (requested) {
+    it->second.second->add_fragment(std::move(temp_fragment));
+    ++m_fragment_counter;
+    --m_pending_fragment_counter;
+  } else {
+    ers::error(UnexpectedFragment(
+      ERS_HERE, temp_id, temp_fragment->get_fragment_type_code(), temp_fragment->get_element_id()));
+    ++m_unexpected_fragments;
+  }
 }
 
 bool
@@ -474,7 +533,7 @@ TRBModule::read_and_process_trigger_decision(iomanager::Receiver::timeout_t time
 TRBModule::trigger_record_ptr_t
 TRBModule::extract_trigger_record(const TriggerId& id)
 {
-
+  std::lock_guard<std::mutex> lk(m_trigger_records_mutex);
   auto it = m_trigger_records.find(id);
 
   trigger_record_ptr_t temp = std::move(it->second.second);
@@ -566,37 +625,37 @@ TRBModule::create_trigger_records_and_dispatch(const dfmessages::TriggerDecision
 
     // create the book entry
     TriggerId slice_id(td, sequence);
+    {
+      std::lock_guard<std::mutex> lk(m_trigger_records_mutex);
+      auto it = m_trigger_records.find(slice_id);
+      if (it != m_trigger_records.end()) {
+        ers::error(DuplicatedTriggerDecision(ERS_HERE, slice_id));
+        ++m_duplicated_trigger_ids;
+        continue;
+      }
 
-    auto it = m_trigger_records.find(slice_id);
-    if (it != m_trigger_records.end()) {
-      ers::error(DuplicatedTriggerDecision(ERS_HERE, slice_id));
-      ++m_duplicated_trigger_ids;
-      continue;
+      // create trigger record for the slice
+      auto& entry = m_trigger_records[slice_id] = std::make_pair(clock_type::now(), trigger_record_ptr_t());
+      trigger_record_ptr_t& trp = entry.second;
+      trp.reset(new daqdataformats::TriggerRecord(slice_components));
+      daqdataformats::TriggerRecord& tr = *trp;
+
+      tr.get_header_ref().set_trigger_number(td.trigger_number);
+      tr.get_header_ref().set_sequence_number(sequence);
+      tr.get_header_ref().set_max_sequence_number(max_sequence_number);
+      tr.get_header_ref().set_run_number(td.run_number);
+      tr.get_header_ref().set_trigger_timestamp(td.trigger_timestamp);
+      tr.get_header_ref().set_trigger_type(td.trigger_type);
+      tr.get_header_ref().set_element_id(m_this_trb_source_id);
+
+      m_trigger_decisions_counter++;
+      m_pending_fragment_counter += slice_components.size();
+      ++new_tr_counter;
     }
-
-    // create trigger record for the slice
-    auto& entry = m_trigger_records[slice_id] = std::make_pair(clock_type::now(), trigger_record_ptr_t());
-    ;
-    trigger_record_ptr_t& trp = entry.second;
-    trp.reset(new daqdataformats::TriggerRecord(slice_components));
-    daqdataformats::TriggerRecord& tr = *trp;
-
-    tr.get_header_ref().set_trigger_number(td.trigger_number);
-    tr.get_header_ref().set_sequence_number(sequence);
-    tr.get_header_ref().set_max_sequence_number(max_sequence_number);
-    tr.get_header_ref().set_run_number(td.run_number);
-    tr.get_header_ref().set_trigger_timestamp(td.trigger_timestamp);
-    tr.get_header_ref().set_trigger_type(td.trigger_type);
-    tr.get_header_ref().set_element_id(m_this_trb_source_id);
-
-    m_trigger_decisions_counter++;
-    m_pending_fragment_counter += slice_components.size();
-    ++new_tr_counter;
 
     // create and send the requests
     TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Trigger Decision components: " << td.components.size()
                                 << ", slice components: " << slice_components.size();
-
     for (const auto& component : slice_components) {
 
       dfmessages::DataRequest dataReq;
@@ -745,26 +804,27 @@ TRBModule::check_stale_requests(std::atomic<bool>& running)
   if (m_trigger_timeout.count() > 0) {
 
     std::vector<TriggerId> stale_triggers;
+    {
+      std::lock_guard<std::mutex> lk(m_trigger_records_mutex);
+      for (auto it = m_trigger_records.begin(); it != m_trigger_records.end(); ++it) {
 
-    for (auto it = m_trigger_records.begin(); it != m_trigger_records.end(); ++it) {
+        daqdataformats::TriggerRecord& tr = *it->second.second;
 
-      daqdataformats::TriggerRecord& tr = *it->second.second;
+        auto tr_time = clock_type::now() - it->second.first;
 
-      auto tr_time = clock_type::now() - it->second.first;
+        if (tr_time > m_trigger_timeout) {
 
-      if (tr_time > m_trigger_timeout) {
+          ers::error(TimedOutTriggerDecision(ERS_HERE, it->first, tr.get_header_ref().get_trigger_timestamp()));
 
-        ers::error(TimedOutTriggerDecision(ERS_HERE, it->first, tr.get_header_ref().get_trigger_timestamp()));
+          // mark trigger record for seding
+          stale_triggers.push_back(it->first);
+          ++m_timed_out_trigger_records;
 
-        // mark trigger record for seding
-        stale_triggers.push_back(it->first);
-        ++m_timed_out_trigger_records;
+          book_updates = true;
+        }
 
-        book_updates = true;
-      }
-
-    } // trigger record loop
-
+      } // trigger record loop
+    }
     // create the trigger record and send it
     for (const auto& t : stale_triggers) {
       send_trigger_record(t, running);
