@@ -233,11 +233,11 @@ TRBModule::do_start(const data_t& args)
     m_mon_receiver->add_callback(std::bind(&TRBModule::tr_requested, this, std::placeholders::_1));
   }
 
-  m_thread.start_working_thread(get_name());
-
   if (m_use_callback) {
     m_fragment_input->add_callback(std::bind(&TRBModule::fragments_callback, this, std::placeholders::_1));
   }
+
+  m_thread.start_working_thread(get_name());
 
   TLOG() << get_name() << " successfully started";
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
