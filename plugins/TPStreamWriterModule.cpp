@@ -75,8 +75,10 @@ TPStreamWriterModule::generate_opmon_data() {
   info.set_tpsets_with_tps_received(m_tpsets_with_tps.exchange(0));
   info.set_tps_received(m_tps_received.exchange(0));
   info.set_tps_written(m_tps_written.exchange(0));
+  info.set_tps_discarded(m_tps_discarded.exchange(0));
   info.set_total_tps_received(m_total_tps_received.load());
   info.set_total_tps_written(m_total_tps_written.load());
+  info.set_total_tps_discarded(m_total_tps_discarded.load());
   info.set_tardy_timeslice_max_seconds(m_tardy_timeslice_max_seconds.exchange(0.0));
   info.set_timeslices_written(m_timeslices_written.exchange(0));
   info.set_bytes_output(m_bytes_output.exchange(0));
@@ -276,6 +278,9 @@ TPStreamWriterModule::do_work(std::atomic<bool>& running_flag)
               else {sid_list << ",";}
               sid_list << frag_ptr->get_element_id().to_string();
             }
+	    size_t number_of_tps_discarded = (timeslice_ptr->get_sum_of_fragment_payload_sizes() / sizeof(trgdataformats::TriggerPrimitive));
+	    m_tps_discarded += number_of_tps_discarded;
+	    m_total_tps_discarded += number_of_tps_discarded;
             ers::warning(TardyTPsDiscarded(ERS_HERE,
                                            get_name(),
                                            sid_list.str(),
