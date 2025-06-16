@@ -9,8 +9,10 @@ message TPStreamWriterInfo {
 
   uint64 tps_received = 11;       // incremental count of TPs that have been received
   uint64 tps_written = 12;        // incremental count of TPs that have been written out
+  uint64 tps_discarded = 13;      // incremental count of TPs that have been discarded (not written out)
   uint64 total_tps_received = 16; // count of TPs that have been received in the current run
   uint64 total_tps_written = 17;  // count of TPs that have been written out in the current run
+  uint64 total_tps_discarded = 18;// count of TPs that have been discarded in the current run
 
 uint64 tardy_timeslice_max_seconds = 21; //incremental max amount of time that a TimeSlice was tardy
 
