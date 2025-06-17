@@ -122,6 +122,7 @@ TPStreamWriterModule::do_start(const nlohmann::json& payload)
   m_run_number = start_params.run;
   m_total_tps_received.store(0);
   m_total_tps_written.store(0);
+  m_total_tps_discarded.store(0);
 
   // 06-Mar-2022, KAB: added this call to allow DataStore to prepare for the run.
   // I've put this call fairly early in this method because it could throw an
