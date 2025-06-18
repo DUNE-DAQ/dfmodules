@@ -10,6 +10,10 @@ import integrationtest.data_classes as data_classes
 
 pytest_plugins = "integrationtest.integrationtest_drunc"
 
+# 02-Jun-2025, KAB: tweak the print() statement default behavior so that it always flushes the output.
+import functools
+print = functools.partial(print, flush=True)
+
 # 21-Jul-2022, KAB:
 # --> changes that are needed in this script include the following:
 # * add intelligence to verify that the output disk is small enough
@@ -53,7 +57,6 @@ expected_event_count_tolerance = 1
 wibeth_frag_hsi_trig_params = {
     "fragment_type_description": "WIBEth",
     "fragment_type": "WIBEth",
-    "hdf5_source_subsystem": "Detector_Readout",
     "expected_fragment_count": (number_of_data_producers * number_of_readout_apps),
     "min_size_bytes": 35157672,
     "max_size_bytes": 35157672,
@@ -61,31 +64,20 @@ wibeth_frag_hsi_trig_params = {
 triggercandidate_frag_params = {
     "fragment_type_description": "Trigger Candidate",
     "fragment_type": "Trigger_Candidate",
-    "hdf5_source_subsystem": "Trigger",
     "expected_fragment_count": 1,
-    "min_size_bytes": 72,
+    "min_size_bytes": 128,
     "max_size_bytes": 280,
 }
 triggeractivity_frag_params = {
     "fragment_type_description": "Trigger Activity",
     "fragment_type": "Trigger_Activity",
-    "hdf5_source_subsystem": "Trigger",
     "expected_fragment_count": number_of_readout_apps,
     "min_size_bytes": 72,
     "max_size_bytes": 400,
 }
-triggertp_frag_params = {
-    "fragment_type_description": "Trigger with TPs",
-    "fragment_type": "Trigger_Primitive",
-    "hdf5_source_subsystem": "Trigger",
-    "expected_fragment_count": ((number_of_data_producers * number_of_readout_apps)),
-    "min_size_bytes": 72,
-    "max_size_bytes": 16000,
-}
 hsi_frag_params = {
     "fragment_type_description": "HSI",
     "fragment_type": "Hardware_Signal",
-    "hdf5_source_subsystem": "HW_Signals_Interface",
     "expected_fragment_count": 1,
     "min_size_bytes": 72,
     "max_size_bytes": 100,
@@ -190,7 +182,7 @@ def test_nanorc_success(run_nanorc):
         )
 
     current_test = os.environ.get("PYTEST_CURRENT_TEST")
-    match_obj = re.search(r".*\[(.+)\].*", current_test)
+    match_obj = re.search(r".*\[(.+)-run_nanorc0\].*", current_test)
     if match_obj:
         current_test = match_obj.group(1)
     banner_line = re.sub(".", "=", current_test)
@@ -237,20 +229,22 @@ def test_data_files(run_nanorc):
     # Run some tests on the output data file
     assert len(run_nanorc.data_files) == expected_number_of_data_files
 
+    all_ok = True
     for idx in range(len(run_nanorc.data_files)):
         data_file = data_file_checks.DataFile(run_nanorc.data_files[idx])
-        assert data_file_checks.sanity_check(data_file)
-        assert data_file_checks.check_file_attributes(data_file)
-        assert data_file_checks.check_event_count(
+        all_ok &= data_file_checks.sanity_check(data_file)
+        all_ok &= data_file_checks.check_file_attributes(data_file)
+        all_ok &= data_file_checks.check_event_count(
             data_file, local_expected_event_count, local_event_count_tolerance
         )
         for jdx in range(len(fragment_check_list)):
-            assert data_file_checks.check_fragment_count(
+            all_ok &= data_file_checks.check_fragment_count(
                 data_file, fragment_check_list[jdx]
             )
-            assert data_file_checks.check_fragment_sizes(
+            all_ok &= data_file_checks.check_fragment_sizes(
                 data_file, fragment_check_list[jdx]
             )
+    assert all_ok
 
 
 def test_cleanup(run_nanorc):
