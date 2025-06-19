@@ -120,6 +120,8 @@ FragmentAggregatorModule::do_start(const data_t& /* args */)
   m_data_requests_time_average_us.store(0);
   m_data_requests_time_min_us.store(std::numeric_limits<uint64_t>::max());
   m_data_requests_time_max_us.store(0);
+  
+  m_stop_requested = false;
 
   // 19-Dec-2024, KAB: check that Fragment senders are ready to send. This is done so
   // that the IOManager infrastructure fetches the necessary connection details from
@@ -144,6 +146,7 @@ FragmentAggregatorModule::do_start(const data_t& /* args */)
 void
 FragmentAggregatorModule::do_stop(const data_t& /* args */)
 {
+  m_stop_requested = true;
   auto iom = iomanager::IOManager::get();
   iom->remove_callback<dfmessages::DataRequest>(m_data_req_input);
   iom->remove_callback<std::unique_ptr<daqdataformats::Fragment>>(m_fragment_input);
@@ -232,32 +235,39 @@ FragmentAggregatorModule::process_fragment(std::unique_ptr<daqdataformats::Fragm
       return;
     }
   }
-  try {
-    TLOG_DEBUG(27) << get_name() << " Sending fragment for trigger/sequence_number " << fragment->get_trigger_number()
-                   << "." << fragment->get_sequence_number() << " and SourceID " << fragment->get_element_id() << " to "
-                   << trb_identifier;
-    auto sender = get_iom_sender<std::unique_ptr<daqdataformats::Fragment>>(trb_identifier);
-    sender->send(std::move(fragment), iomanager::Sender::s_no_block);
 
-    m_fragments_processed++;
-    auto timestamp_total = get_current_time_us() - m_timestamp_before_frag;
-    if (timestamp_total < m_fragments_time_min_us) {
-      m_fragments_time_min_us = timestamp_total;
-    }
-    if (timestamp_total > m_fragments_time_max_us) {
-      m_fragments_time_max_us = timestamp_total;
-    }
-    m_fragments_time_average_us += timestamp_total;
+  auto counter = 3;
+  do {
+    try {
+      TLOG_DEBUG(27) << get_name() << " Sending fragment for trigger/sequence_number " << fragment->get_trigger_number()
+                     << "." << fragment->get_sequence_number() << " and SourceID " << fragment->get_element_id() << " to "
+                     << trb_identifier;
+      auto sender = get_iom_sender<std::unique_ptr<daqdataformats::Fragment>>(trb_identifier);
+      sender->send(std::move(fragment), iomanager::Sender::s_no_block);
 
-  } catch (const ers::Issue& excpt) {
-    ers::error(AbandonedFragment(ERS_HERE,
-                                 fragment->get_run_number(),
-                                 fragment->get_trigger_number(),
-                                 fragment->get_sequence_number(),
-                                 fragment->get_element_id(),
-                                 excpt));
-    m_fragments_failed++;
-  }
+      m_fragments_processed++;
+      auto timestamp_total = get_current_time_us() - m_timestamp_before_frag;
+      if (timestamp_total < m_fragments_time_min_us) {
+        m_fragments_time_min_us = timestamp_total;
+      }
+      if (timestamp_total > m_fragments_time_max_us) {
+        m_fragments_time_max_us = timestamp_total;
+      }
+      m_fragments_time_average_us += timestamp_total;
+
+      return;
+    } catch (const ers::Issue& excpt) {
+      ers::error(AbandonedFragment(ERS_HERE,
+                                   fragment->get_run_number(),
+                                   fragment->get_trigger_number(),
+                                   fragment->get_sequence_number(),
+                                   fragment->get_element_id(),
+                                   excpt));
+      m_fragments_failed++;
+      --counter;
+    }
+  } while ( ! m_stop_requested.load() && counter>0 );
+
 }
 
 uint64_t

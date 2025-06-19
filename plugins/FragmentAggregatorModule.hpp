@@ -73,6 +73,8 @@ private:
   void process_fragment(std::unique_ptr<daqdataformats::Fragment>&);
 
   // Input and Output Connection names
+  std::atomic<bool> m_stop_requested = false;
+  
   std::string m_data_req_input;
   std::string m_fragment_input;
   std::map<int, std::string> m_producer_conn_ids;
