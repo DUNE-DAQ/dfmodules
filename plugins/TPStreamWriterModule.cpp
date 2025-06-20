@@ -248,8 +248,9 @@ TPStreamWriterModule::do_work(std::atomic<bool>& running_flag)
       size_t retry_wait_usec = 1000;
       do {
         should_retry = false;
+	size_t number_of_tps = 0;
         try {
-	  size_t number_of_tps = (timeslice_ptr->get_sum_of_fragment_payload_sizes() / sizeof(trgdataformats::TriggerPrimitive));
+	  number_of_tps = (timeslice_ptr->get_sum_of_fragment_payload_sizes() / sizeof(trgdataformats::TriggerPrimitive));
           m_data_writer->write(*timeslice_ptr);
 	  ++m_timeslices_written;
 	  m_bytes_output += timeslice_ptr->get_total_size_bytes();
