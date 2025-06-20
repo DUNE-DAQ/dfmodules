@@ -257,17 +257,17 @@ FragmentAggregatorModule::process_fragment(std::unique_ptr<daqdataformats::Fragm
 
       return;
     } catch (const ers::Issue& excpt) {
-      ers::error(AbandonedFragment(ERS_HERE,
-                                   fragment->get_run_number(),
-                                   fragment->get_trigger_number(),
-                                   fragment->get_sequence_number(),
-                                   fragment->get_element_id(),
-                                   excpt));
-      m_fragments_failed++;
+      ers::warning(excpt);
       --counter;
     }
   } while ( ! m_stop_requested.load() && counter>0 );
 
+    ers::error(AbandonedFragment(ERS_HERE,
+                                 fragment->get_run_number(),
+                                 fragment->get_trigger_number(),
+                                 fragment->get_sequence_number(),
+                                 fragment->get_element_id() ));
+    m_fragments_failed++;
 }
 
 uint64_t
