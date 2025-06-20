@@ -263,11 +263,8 @@ TPStreamWriterModule::do_work(std::atomic<bool>& running_flag)
                                         timeslice_ptr->get_header().timeslice_number,
                                         timeslice_ptr->get_header().run_number,
                                         excpt));
-          if (retry_wait_usec > 1000000) {
-            retry_wait_usec = 1000000;
-          }
-          usleep(retry_wait_usec);
-          retry_wait_usec *= 2;
+	  usleep(retry_wait_usec);
+	  retry_wait_usec = std::min(retry_wait_usec * 2, 1000000UL);
         } catch (const IgnorableDataStoreProblem& excpt) {
           int timeslice_number_diff = largest_timeslice_number - timeslice_ptr->get_header().timeslice_number;
           double seconds_too_late = m_accumulation_interval_seconds * timeslice_number_diff;
