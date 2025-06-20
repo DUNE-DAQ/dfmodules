@@ -249,12 +249,12 @@ TPStreamWriterModule::do_work(std::atomic<bool>& running_flag)
       do {
         should_retry = false;
         try {
+	  size_t number_of_tps = (timeslice_ptr->get_sum_of_fragment_payload_sizes() / sizeof(trgdataformats::TriggerPrimitive));
           m_data_writer->write(*timeslice_ptr);
 	  ++m_timeslices_written;
 	  m_bytes_output += timeslice_ptr->get_total_size_bytes();
-          size_t number_of_tps_written = (timeslice_ptr->get_sum_of_fragment_payload_sizes() / sizeof(trgdataformats::TriggerPrimitive));
-          m_tps_written += number_of_tps_written;
-          m_total_tps_written += number_of_tps_written;
+          m_tps_written += number_of_tps;
+          m_total_tps_written += number_of_tps;
         } catch (const RetryableDataStoreProblem& excpt) {
           should_retry = true;
           ers::error(DataWritingProblem(ERS_HERE,
@@ -271,6 +271,8 @@ TPStreamWriterModule::do_work(std::atomic<bool>& running_flag)
           int timeslice_number_diff = largest_timeslice_number - timeslice_ptr->get_header().timeslice_number;
           double seconds_too_late = m_accumulation_interval_seconds * timeslice_number_diff;
           m_tardy_timeslice_max_seconds = std::max(m_tardy_timeslice_max_seconds.load(), seconds_too_late);
+	  m_tps_discarded += number_of_tps;
+	  m_total_tps_discarded += number_of_tps;
           if (m_warn_user_when_tardy_tps_are_discarded) {
             std::ostringstream sid_list;
             bool first_frag = true;
@@ -279,9 +281,6 @@ TPStreamWriterModule::do_work(std::atomic<bool>& running_flag)
               else {sid_list << ",";}
               sid_list << frag_ptr->get_element_id().to_string();
             }
-	    size_t number_of_tps_discarded = (timeslice_ptr->get_sum_of_fragment_payload_sizes() / sizeof(trgdataformats::TriggerPrimitive));
-	    m_tps_discarded += number_of_tps_discarded;
-	    m_total_tps_discarded += number_of_tps_discarded;
             ers::warning(TardyTPsDiscarded(ERS_HERE,
                                            get_name(),
                                            sid_list.str(),
