@@ -62,7 +62,7 @@ public:
   FragmentAggregatorModule& operator=(FragmentAggregatorModule&&) = delete;
 
   void init(std::shared_ptr<appfwk::ConfigurationManager> mcfg) override;
-  //  void get_info(opmonlib::InfoCollector& ci, int level) override;
+  void generate_opmon_data() override;
 
 private:
   // Commands
@@ -72,16 +72,34 @@ private:
   void process_data_request(dfmessages::DataRequest&);
   void process_fragment(std::unique_ptr<daqdataformats::Fragment>&);
 
+  // Input and Output Connection names
   std::atomic<bool> m_stop_requested = false;
   
-  // Input and Output Connection namess
   std::string m_data_req_input;
   std::string m_fragment_input;
   std::map<int, std::string> m_producer_conn_ids;
   std::vector<std::string> m_trb_conn_ids;
 
-  // Stats
-  std::atomic<int> m_packets_processed{ 0 };
+  // Opmon
+  uint64_t get_current_time_us();
+  uint64_t m_timestamp_before_dr;
+  uint64_t m_timestamp_before_frag;
+  using metric_counter_type = uint64_t;
+  std::atomic<metric_counter_type> m_data_requests_received{ 0 };
+  std::atomic<metric_counter_type> m_data_requests_processed{ 0 };
+  std::atomic<metric_counter_type> m_data_requests_failed{ 0 };
+  std::atomic<metric_counter_type> m_fragments_received{ 0 };
+  std::atomic<metric_counter_type> m_fragments_processed{ 0 };
+  std::atomic<metric_counter_type> m_fragments_failed{ 0 };
+  std::atomic<metric_counter_type> m_fragments_empty{ 0 };
+  std::atomic<metric_counter_type> m_fragments_incomplete{ 0 };
+  std::atomic<metric_counter_type> m_fragments_invalid{ 0 };
+  std::atomic<metric_counter_type> m_fragments_time_average_us{ 0 };
+  std::atomic<metric_counter_type> m_fragments_time_min_us{ 0 };
+  std::atomic<metric_counter_type> m_fragments_time_max_us{ 0 };
+  std::atomic<metric_counter_type> m_data_requests_time_average_us{ 0 };
+  std::atomic<metric_counter_type> m_data_requests_time_min_us{ 0 };
+  std::atomic<metric_counter_type> m_data_requests_time_max_us{ 0 };
 
   // TRB tracking
   std::map<std::tuple<dfmessages::trigger_number_t, dfmessages::sequence_number_t, daqdataformats::SourceID>,
