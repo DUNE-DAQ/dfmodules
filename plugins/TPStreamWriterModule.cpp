@@ -285,6 +285,8 @@ TPStreamWriterModule::do_work(std::atomic<bool>& running_flag)
                                            seconds_too_late));
           }
         } catch (const std::exception& excpt) {
+	  m_tps_discarded += number_of_tps;
+	  m_total_tps_discarded += number_of_tps;
           ers::error(DataWritingProblem(ERS_HERE,
                                         get_name(),
                                         timeslice_ptr->get_header().timeslice_number,
