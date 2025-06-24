@@ -195,27 +195,26 @@ protected:
   using trigger_record_ptr_t = std::unique_ptr<daqdataformats::TriggerRecord>;
   using trigger_record_sender_t = iomanager::SenderConcept<trigger_record_ptr_t>;
 
-  bool read_fragments();
+  void trigger_decision_callback(dfmessages::TriggerDecision& td);
   void fragments_callback(std::unique_ptr<daqdataformats::Fragment>& frag);
-
-  bool read_and_process_trigger_decision(iomanager::Receiver::timeout_t, std::atomic<bool>& running);
 
   trigger_record_ptr_t extract_trigger_record(const TriggerId&);
   // build_trigger_record will allocate memory and then orphan it to the caller
   // via the returned pointer Plese note that the method will destroy the memory
   // saved in the bookkeeping map
 
-  unsigned int create_trigger_records_and_dispatch(const dfmessages::TriggerDecision&, std::atomic<bool>& running);
+  unsigned int create_trigger_records_and_dispatch(const dfmessages::TriggerDecision&);
 
   bool dispatch_data_requests(dfmessages::DataRequest,
-                              const daqdataformats::SourceID&,
-                              std::atomic<bool>& running);
+                              const daqdataformats::SourceID&);
 
-  bool send_trigger_record(const TriggerId&, std::atomic<bool>& running);
+  bool send_trigger_record(const TriggerId&);
   // this creates a trigger record and send it
 
-  bool check_stale_requests(std::atomic<bool>& running);
+  bool check_stale_requests();
   // it returns true when there are changes in the book = a TR timed out
+
+  void flush_trigger_records();
 
 private:
   // Commands
@@ -228,8 +227,7 @@ private:
   void tr_requested(const dfmessages::TRMonRequest &);
 
   // Threading
-  dunedaq::utilities::WorkerThread m_thread;
-  void do_work(std::atomic<bool>&);
+  std::atomic<bool> m_stop_requested;
 
   // Configuration
   const appmodel::TRBConf* m_trb_conf;
@@ -237,7 +235,6 @@ private:
   std::chrono::milliseconds m_loop_sleep;
   std::string m_reply_connection;
   daqdataformats::SourceID m_this_trb_source_id;
-  bool m_use_callback;
 
   // Input Connections
   std::shared_ptr<trigger_decision_receiver_t> m_trigger_decision_input;
