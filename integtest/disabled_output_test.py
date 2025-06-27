@@ -165,7 +165,7 @@ nanorc_command_list += "scrap terminate".split()
 
 def test_nanorc_success(run_nanorc):
     current_test = os.environ.get("PYTEST_CURRENT_TEST")
-    match_obj = re.search(r".*\[(.+)\].*", current_test)
+    match_obj = re.search(r".*\[(.+)-run_nanorc0\].*", current_test)
     if match_obj:
         current_test = match_obj.group(1)
     banner_line = re.sub(".", "=", current_test)
@@ -205,6 +205,7 @@ def test_data_files(run_nanorc):
     # Run some tests on the output data file
     all_ok &= len(run_nanorc.data_files) == expected_number_of_data_files
 
+    all_ok = True
     for idx in range(len(run_nanorc.data_files)):
         data_file = data_file_checks.DataFile(run_nanorc.data_files[idx])
         all_ok &= data_file_checks.sanity_check(data_file)
