@@ -75,8 +75,10 @@ TPStreamWriterModule::generate_opmon_data() {
   info.set_tpsets_with_tps_received(m_tpsets_with_tps.exchange(0));
   info.set_tps_received(m_tps_received.exchange(0));
   info.set_tps_written(m_tps_written.exchange(0));
+  info.set_tps_discarded(m_tps_discarded.exchange(0));
   info.set_total_tps_received(m_total_tps_received.load());
   info.set_total_tps_written(m_total_tps_written.load());
+  info.set_total_tps_discarded(m_total_tps_discarded.load());
   info.set_tardy_timeslice_max_seconds(m_tardy_timeslice_max_seconds.exchange(0.0));
   info.set_timeslices_written(m_timeslices_written.exchange(0));
   info.set_bytes_output(m_bytes_output.exchange(0));
@@ -120,6 +122,7 @@ TPStreamWriterModule::do_start(const nlohmann::json& payload)
   m_run_number = start_params.run;
   m_total_tps_received.store(0);
   m_total_tps_written.store(0);
+  m_total_tps_discarded.store(0);
 
   // 06-Mar-2022, KAB: added this call to allow DataStore to prepare for the run.
   // I've put this call fairly early in this method because it could throw an
@@ -245,13 +248,13 @@ TPStreamWriterModule::do_work(std::atomic<bool>& running_flag)
       size_t retry_wait_usec = 1000;
       do {
         should_retry = false;
+	size_t number_of_tps = (timeslice_ptr->get_sum_of_fragment_payload_sizes() / sizeof(trgdataformats::TriggerPrimitive));
         try {
           m_data_writer->write(*timeslice_ptr);
 	  ++m_timeslices_written;
 	  m_bytes_output += timeslice_ptr->get_total_size_bytes();
-          size_t number_of_tps_written = (timeslice_ptr->get_sum_of_fragment_payload_sizes() / sizeof(trgdataformats::TriggerPrimitive));
-          m_tps_written += number_of_tps_written;
-          m_total_tps_written += number_of_tps_written;
+          m_tps_written += number_of_tps;
+          m_total_tps_written += number_of_tps;
         } catch (const RetryableDataStoreProblem& excpt) {
           should_retry = true;
           ers::error(DataWritingProblem(ERS_HERE,
@@ -259,15 +262,14 @@ TPStreamWriterModule::do_work(std::atomic<bool>& running_flag)
                                         timeslice_ptr->get_header().timeslice_number,
                                         timeslice_ptr->get_header().run_number,
                                         excpt));
-          if (retry_wait_usec > 1000000) {
-            retry_wait_usec = 1000000;
-          }
-          usleep(retry_wait_usec);
-          retry_wait_usec *= 2;
+	  usleep(retry_wait_usec);
+	  retry_wait_usec = std::min(retry_wait_usec * 2, 1000000UL);
         } catch (const IgnorableDataStoreProblem& excpt) {
           int timeslice_number_diff = largest_timeslice_number - timeslice_ptr->get_header().timeslice_number;
           double seconds_too_late = m_accumulation_interval_seconds * timeslice_number_diff;
           m_tardy_timeslice_max_seconds = std::max(m_tardy_timeslice_max_seconds.load(), seconds_too_late);
+	  m_tps_discarded += number_of_tps;
+	  m_total_tps_discarded += number_of_tps;
           if (m_warn_user_when_tardy_tps_are_discarded) {
             std::ostringstream sid_list;
             bool first_frag = true;
@@ -283,6 +285,8 @@ TPStreamWriterModule::do_work(std::atomic<bool>& running_flag)
                                            seconds_too_late));
           }
         } catch (const std::exception& excpt) {
+	  m_tps_discarded += number_of_tps;
+	  m_total_tps_discarded += number_of_tps;
           ers::error(DataWritingProblem(ERS_HERE,
                                         get_name(),
                                         timeslice_ptr->get_header().timeslice_number,
