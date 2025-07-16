@@ -108,7 +108,7 @@
  <attr name="generate_timesync" type="bool" val="1"/>
  <rel name="request_handler" class="RequestHandler" id="def-data-request-handler"/>
  <rel name="latency_buffer" class="LatencyBuffer" id="def-latency-buf"/>
- <rel name="data_processor" class="RawDataProcessor" id="def-wib-processor"/>
+ <rel name="data_processor" class="TPCRawDataProcessor" id="def-wib-processor"/>
 </obj>
 
 <obj class="DetectorStream" id="dummyStream-1-1">
@@ -870,7 +870,7 @@
  </attr>
 </obj>
 
-<obj class="RawDataProcessor" id="def-wib-processor">
+<obj class="TPCRawDataProcessor" id="def-wib-processor">
  <attr name="queue_sizes" type="u32" val="10000"/>
  <attr name="thread_names_prefix" type="string" val="postproc-"/>
  <attr name="latency_monitoring" type="bool" val="1"/>
