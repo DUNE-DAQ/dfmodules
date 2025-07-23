@@ -121,6 +121,8 @@ FragmentAggregatorModule::do_start(const data_t& /* args */)
   m_data_requests_time_min_us.store(std::numeric_limits<uint64_t>::max());
   m_data_requests_time_max_us.store(0);
 
+  m_running.store(true);
+  
   // 19-Dec-2024, KAB: check that Fragment senders are ready to send. This is done so
   // that the IOManager infrastructure fetches the necessary connection details from
   // the ConnectivityService at 'start' time, instead of the first time that the sender
@@ -144,6 +146,7 @@ FragmentAggregatorModule::do_start(const data_t& /* args */)
 void
 FragmentAggregatorModule::do_stop(const data_t& /* args */)
 {
+  m_running.store(false);
   auto iom = iomanager::IOManager::get();
   iom->remove_callback<dfmessages::DataRequest>(m_data_req_input);
   iom->remove_callback<std::unique_ptr<daqdataformats::Fragment>>(m_fragment_input);
@@ -232,32 +235,43 @@ FragmentAggregatorModule::process_fragment(std::unique_ptr<daqdataformats::Fragm
       return;
     }
   }
-  try {
-    TLOG_DEBUG(27) << get_name() << " Sending fragment for trigger/sequence_number " << fragment->get_trigger_number()
-                   << "." << fragment->get_sequence_number() << " and SourceID " << fragment->get_element_id() << " to "
-                   << trb_identifier;
-    auto sender = get_iom_sender<std::unique_ptr<daqdataformats::Fragment>>(trb_identifier);
-    sender->send(std::move(fragment), iomanager::Sender::s_no_block);
-
-    m_fragments_processed++;
-    auto timestamp_total = get_current_time_us() - m_timestamp_before_frag;
-    if (timestamp_total < m_fragments_time_min_us) {
-      m_fragments_time_min_us = timestamp_total;
+  bool wasSentSuccessfully = false;
+  do {
+    try {
+      TLOG_DEBUG(27) << get_name() << " Sending fragment for trigger/sequence_number " << fragment->get_trigger_number()
+		     << "." << fragment->get_sequence_number() << " and SourceID " << fragment->get_element_id() << " to "
+		     << trb_identifier;
+      auto sender = get_iom_sender<std::unique_ptr<daqdataformats::Fragment>>(trb_identifier);
+      sender->send(std::move(fragment), iomanager::Sender::s_no_block);
+      wasSentSuccessfully = true;
+      m_fragments_processed++;
+      auto timestamp_total = get_current_time_us() - m_timestamp_before_frag;
+      if (timestamp_total < m_fragments_time_min_us) {
+	m_fragments_time_min_us = timestamp_total;
+      }
+      if (timestamp_total > m_fragments_time_max_us) {
+	m_fragments_time_max_us = timestamp_total;
+      }
+      m_fragments_time_average_us += timestamp_total;
+      
+    } catch (const ers::Issue& excpt) {
+      std::ostringstream oss_warn;
+      oss_warn << "Send to connection \"" << trb_identifier << "\" failed";
+      ers::warning(iomanager::OperationFailed(ERS_HERE, oss_warn.str(), excpt));
     }
-    if (timestamp_total > m_fragments_time_max_us) {
-      m_fragments_time_max_us = timestamp_total;
-    }
-    m_fragments_time_average_us += timestamp_total;
+    
+  } while (!wasSentSuccessfully && m_running.load() );
 
-  } catch (const ers::Issue& excpt) {
+  if ( ! wasSentSuccessfully ) {
+      
     ers::error(AbandonedFragment(ERS_HERE,
                                  fragment->get_run_number(),
                                  fragment->get_trigger_number(),
                                  fragment->get_sequence_number(),
-                                 fragment->get_element_id(),
-                                 excpt));
+                                 fragment->get_element_id() ));
     m_fragments_failed++;
   }
+
 }
 
 uint64_t

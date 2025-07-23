@@ -72,6 +72,9 @@ private:
   void process_data_request(dfmessages::DataRequest&);
   void process_fragment(std::unique_ptr<daqdataformats::Fragment>&);
 
+  // states
+  std::atomic<bool> m_running = {false};
+  
   // Input and Output Connection names
   std::string m_data_req_input;
   std::string m_fragment_input;
