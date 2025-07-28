@@ -277,14 +277,16 @@ private:
   mutable std::atomic<metric_counter_type> m_abandoned_trigger_records = { 0 };    // in the run
 
   mutable std::atomic<metric_counter_type> m_received_trigger_decisions = { 0 }; // in between calls
+  mutable std::atomic<metric_counter_type> m_received_fragments = { 0 };         // in between calls
   mutable std::atomic<metric_counter_type> m_generated_trigger_records = { 0 };  // in between calls
   mutable std::atomic<metric_counter_type> m_generated_data_requests = { 0 };    // in between calls
-  mutable std::atomic<metric_counter_type> m_sleep_counter = { 0 };              // in between calls
-  mutable std::atomic<metric_counter_type> m_loop_counter = { 0 };               // in between calls
   mutable std::atomic<metric_counter_type> m_data_waiting_time = { 0 };          // in between calls
   mutable std::atomic<metric_counter_type> m_trigger_decision_width = { 0 };     // in between calls
   mutable std::atomic<metric_counter_type> m_data_request_width = { 0 };         // in between calls
+  mutable std::atomic<metric_counter_type> m_td_processing_us = { 0 };           // in between calls
+  mutable std::atomic<metric_counter_type> m_fragment_processing_us = { 0 };     // in between calls
 
+  
   mutable std::atomic<metric_counter_type> m_trmon_request_counter = { 0 };
   mutable std::atomic<metric_counter_type> m_trmon_sent_counter = { 0 };
 

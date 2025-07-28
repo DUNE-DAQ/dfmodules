@@ -10,16 +10,17 @@ message TRBInfo {
   uint64 pending_fragments = 3;          // Fragments to be expected based on the TR in the book 
 
   // operation metrics
-  uint64 received_trigger_decisions = 20;    // Number of valid trigger decisions received in the run
+  uint64 received_trigger_decisions = 20;    // Number of valid trigger decisions received 
   uint64 generated_trigger_records = 21;     // Number of trigger records produced 
-  uint64 generated_data_requests = 22;       // Number of data requests generated 
-  uint64 sleep_counter = 23;                 // Number times the loop goes to sleep
-  uint64 loop_counter = 24;                  // Number times the loop is executed 
+  uint64 generated_data_requests = 22;       // Number of data requests generated
+  uint64 received_fragments = 23;            // Number of valid fragments received
   uint64 data_waiting_time = 25;             // Time the TRs spend in the TRB buffer in microseconds
   uint64 data_request_width = 26;            // total time window requested to readout
   uint64 trigger_decision_width = 27;        // total time window requested from a trigger decision
   uint64 received_trmon_requests = 28;       // Number of requests coming from DQM
-  uint64 sent_trmon = 29;                    // Number of TRs sent to DQM 
+  uint64 sent_trmon = 29;                    // Number of TRs sent to DQM
+  uint64 td_processing_us = 40;              // microseconds spent processing TDs
+  uint64 fragment_processing_us = 41;        // microseconds spent processing Fragments
   
 }
 
