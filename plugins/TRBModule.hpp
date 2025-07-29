@@ -195,26 +195,26 @@ protected:
   using trigger_record_ptr_t = std::unique_ptr<daqdataformats::TriggerRecord>;
   using trigger_record_sender_t = iomanager::SenderConcept<trigger_record_ptr_t>;
 
-  bool read_fragments();
-
-  bool read_and_process_trigger_decision(iomanager::Receiver::timeout_t, std::atomic<bool>& running);
+  void trigger_decision_callback(dfmessages::TriggerDecision& td);
+  void fragments_callback(std::unique_ptr<daqdataformats::Fragment>& frag);
 
   trigger_record_ptr_t extract_trigger_record(const TriggerId&);
   // build_trigger_record will allocate memory and then orphan it to the caller
   // via the returned pointer Plese note that the method will destroy the memory
   // saved in the bookkeeping map
 
-  unsigned int create_trigger_records_and_dispatch(const dfmessages::TriggerDecision&, std::atomic<bool>& running);
+  unsigned int create_trigger_records_and_dispatch(const dfmessages::TriggerDecision&);
 
   bool dispatch_data_requests(dfmessages::DataRequest,
-                              const daqdataformats::SourceID&,
-                              std::atomic<bool>& running);
+                              const daqdataformats::SourceID&);
 
-  bool send_trigger_record(const TriggerId&, std::atomic<bool>& running);
+  bool send_trigger_record(const TriggerId&);
   // this creates a trigger record and send it
 
-  bool check_stale_requests(std::atomic<bool>& running);
+  bool check_stale_requests();
   // it returns true when there are changes in the book = a TR timed out
+
+  void flush_trigger_records();
 
 private:
   // Commands
@@ -227,8 +227,7 @@ private:
   void tr_requested(const dfmessages::TRMonRequest &);
 
   // Threading
-  dunedaq::utilities::WorkerThread m_thread;
-  void do_work(std::atomic<bool>&);
+  std::atomic<bool> m_stop_requested;
 
   // Configuration
   const appmodel::TRBConf* m_trb_conf;
@@ -248,6 +247,8 @@ private:
 
   // bookeeping
   using clock_type = std::chrono::high_resolution_clock;
+  std::mutex m_trigger_records_mutex;
+  std::atomic<bool> m_trigger_records_updated;
   std::map<TriggerId, std::pair<clock_type::time_point, trigger_record_ptr_t>> m_trigger_records;
 
   // Data request properties
@@ -276,14 +277,16 @@ private:
   mutable std::atomic<metric_counter_type> m_abandoned_trigger_records = { 0 };    // in the run
 
   mutable std::atomic<metric_counter_type> m_received_trigger_decisions = { 0 }; // in between calls
+  mutable std::atomic<metric_counter_type> m_received_fragments = { 0 };         // in between calls
   mutable std::atomic<metric_counter_type> m_generated_trigger_records = { 0 };  // in between calls
   mutable std::atomic<metric_counter_type> m_generated_data_requests = { 0 };    // in between calls
-  mutable std::atomic<metric_counter_type> m_sleep_counter = { 0 };              // in between calls
-  mutable std::atomic<metric_counter_type> m_loop_counter = { 0 };               // in between calls
   mutable std::atomic<metric_counter_type> m_data_waiting_time = { 0 };          // in between calls
   mutable std::atomic<metric_counter_type> m_trigger_decision_width = { 0 };     // in between calls
   mutable std::atomic<metric_counter_type> m_data_request_width = { 0 };         // in between calls
+  mutable std::atomic<metric_counter_type> m_td_processing_us = { 0 };           // in between calls
+  mutable std::atomic<metric_counter_type> m_fragment_processing_us = { 0 };     // in between calls
 
+  
   mutable std::atomic<metric_counter_type> m_trmon_request_counter = { 0 };
   mutable std::atomic<metric_counter_type> m_trmon_sent_counter = { 0 };
 
