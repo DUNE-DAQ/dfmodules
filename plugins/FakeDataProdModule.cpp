@@ -79,7 +79,7 @@ FakeDataProdModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcfg)
 }
 
 void
-FakeDataProdModule::do_conf(const data_t& )
+FakeDataProdModule::do_conf(const CommandData_t&)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
 
@@ -96,7 +96,7 @@ FakeDataProdModule::do_conf(const data_t& )
 }
 
 void
-FakeDataProdModule::do_start(const data_t& payload)
+FakeDataProdModule::do_start(const CommandData_t& payload)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_start() method";
   m_sent_fragments = 0;
@@ -112,7 +112,7 @@ FakeDataProdModule::do_start(const data_t& payload)
 }
 
 void
-FakeDataProdModule::do_stop(const data_t& /*args*/)
+FakeDataProdModule::do_stop(const CommandData_t& /*args*/)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_stop() method";
   m_timesync_thread.stop_working_thread();

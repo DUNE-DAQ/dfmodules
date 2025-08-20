@@ -87,7 +87,7 @@ TPStreamWriterModule::generate_opmon_data() {
 }
 
 void
-TPStreamWriterModule::do_conf(const data_t& )
+TPStreamWriterModule::do_conf(const CommandData_t&)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
   m_accumulation_interval_ticks = m_tp_writer_conf->get_tp_accumulation_interval();
@@ -115,7 +115,7 @@ TPStreamWriterModule::do_conf(const data_t& )
 }
 
 void
-TPStreamWriterModule::do_start(const nlohmann::json& payload)
+TPStreamWriterModule::do_start(const CommandData_t& payload)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_start() method";
   rcif::cmd::StartParams start_params = payload.get<rcif::cmd::StartParams>();
@@ -141,7 +141,7 @@ TPStreamWriterModule::do_start(const nlohmann::json& payload)
 }
 
 void
-TPStreamWriterModule::do_stop(const nlohmann::json& /*payload*/)
+TPStreamWriterModule::do_stop(const CommandData_t& /*payload*/)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_stop() method";
   m_thread.stop_working_thread();
@@ -160,7 +160,7 @@ TPStreamWriterModule::do_stop(const nlohmann::json& /*payload*/)
 }
 
 void
-TPStreamWriterModule::do_scrap(const data_t& /*payload*/)
+TPStreamWriterModule::do_scrap(const CommandData_t& /*payload*/)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_scrap() method";
 
