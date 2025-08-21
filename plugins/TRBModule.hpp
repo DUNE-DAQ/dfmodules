@@ -246,9 +246,9 @@ private:
   std::map<daqdataformats::SourceID, std::shared_ptr<data_req_sender_t>> m_map_sourceid_connections; ///< Mappinng between SourceID and connections
 
   // bookeeping
-  using clock_type = std::chrono::high_resolution_clock;
+  using clock_type = std::chrono::steady_clock;
   std::mutex m_trigger_records_mutex;
-  std::atomic<bool> m_trigger_records_updated;
+  clock_type::time_point m_last_bookkeeping{};
   std::map<TriggerId, std::pair<clock_type::time_point, trigger_record_ptr_t>> m_trigger_records;
 
   // Data request properties
