@@ -331,7 +331,7 @@ TRBModule::fragments_callback(std::unique_ptr<daqdataformats::Fragment>& temp_fr
 {
 
   auto start_time = std::chrono::steady_clock::now();
-  
+
   TLOG_DEBUG(TLVL_FRAGMENT_RECEIVE) << get_name() << " Received fragment for trigger/sequence_number "
                                     << temp_fragment->get_trigger_number() << "."
                                     << temp_fragment->get_sequence_number() << " from "
@@ -344,65 +344,76 @@ TRBModule::fragments_callback(std::unique_ptr<daqdataformats::Fragment>& temp_fr
   { // Begin mutex block
     std::lock_guard<std::mutex> lk(m_trigger_records_mutex);
     auto it = m_trigger_records.find(temp_id);
-    
+
     if (it != m_trigger_records.end()) {
-      
+
       // check if the fragment has a Source Id that was desired
       daqdataformats::TriggerRecordHeader& header = it->second.second->get_header_ref();
-      
+
       for (size_t i = 0; i < header.get_num_requested_components(); ++i) {
-	
-	const daqdataformats::ComponentRequest& request = header[i];
-	if (request.component == temp_fragment->get_element_id()) {
-	  requested = true;
-	  break;
-	}
-	
+
+        const daqdataformats::ComponentRequest& request = header[i];
+        if (request.component == temp_fragment->get_element_id()) {
+          requested = true;
+          break;
+        }
+
       } // request loop
-      
+
     } // if there is a corresponding trigger ID entry in the boook
-    
-    m_trigger_records_updated = true;
+
     if (requested) {
       it->second.second->add_fragment(std::move(temp_fragment));
       ++m_fragment_counter;
       --m_pending_fragment_counter;
     } else {
-      ers::error(
-		 UnexpectedFragment(ERS_HERE, temp_id, temp_fragment->get_fragment_type_code(), temp_fragment->get_element_id()));
+      ers::error(UnexpectedFragment(
+        ERS_HERE, temp_id, temp_fragment->get_fragment_type_code(), temp_fragment->get_element_id()));
       ++m_unexpected_fragments;
     }
-    
-    //-------------------------------------------------
-    // Check if trigger records are complete or timedout
-    // and create dedicated record
-    //--------------------------------------------------
-    TLOG_DEBUG(TLVL_BOOKKEEPING) << "Bookeeping status: " << m_trigger_records.size()
-				 << " trigger records in progress ";
-    
-    for (const auto& tr : m_trigger_records) {
-      
-      auto comp_size = tr.second.second->get_fragments_ref().size();
-      auto requ_size = tr.second.second->get_header_ref().get_num_requested_components();
-      std::ostringstream message;
-      message << tr.first << " with " << comp_size << '/' << requ_size << " components";
-      
+
+    // Only do bookkeeping periodically
+    if (std::chrono::duration_cast<std::chrono::milliseconds>(clock_type::now() - m_last_bookkeeping).count() > 1000) {
+      //-------------------------------------------------
+      // Check if trigger records are complete or timedout
+      // and create dedicated record
+      //--------------------------------------------------
+      TLOG_DEBUG(TLVL_BOOKKEEPING) << "Bookeeping status: " << m_trigger_records.size()
+                                   << " trigger records in progress ";
+
+      for (const auto& tr : m_trigger_records) {
+
+        auto comp_size = tr.second.second->get_fragments_ref().size();
+        auto requ_size = tr.second.second->get_header_ref().get_num_requested_components();
+        std::ostringstream message;
+        message << tr.first << " with " << comp_size << '/' << requ_size << " components";
+
+        if (comp_size == requ_size) {
+
+          message << ": complete";
+          complete.push_back(tr.first);
+        }
+
+        TLOG_DEBUG(TLVL_BOOKKEEPING) << message.str();
+        m_last_bookkeeping = clock_type::now();
+
+      } // loop over TRs to check if they are complete
+    } else {
+
+      auto comp_size = it->second.second->get_fragments_ref().size();
+      auto requ_size = it->second.second->get_header_ref().get_num_requested_components();
+
       if (comp_size == requ_size) {
-	
-	message << ": complete";
-	complete.push_back(tr.first);
+        complete.push_back(temp_id);
       }
-      
-      TLOG_DEBUG(TLVL_BOOKKEEPING) << message.str();
-      
-    } // loop over TRs to check if they are complete
+    }
   } // End mutex block
   //------------------------------------------------
   // Create TriggerRecords and send them
   //-----------------------------------------------
-  
+
   for (const auto& id : complete) {
-    
+
     send_trigger_record(id);
 
   } // loop over compled trigger id
@@ -410,10 +421,9 @@ TRBModule::fragments_callback(std::unique_ptr<daqdataformats::Fragment>& temp_fr
   check_stale_requests();
 
   ++m_received_fragments;
-  
+
   auto end_time = std::chrono::steady_clock::now();
   m_fragment_processing_us += std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
-
 }
 
 void
@@ -421,7 +431,7 @@ TRBModule::trigger_decision_callback(dfmessages::TriggerDecision& td)
 {
 
   auto start_time = std::chrono::steady_clock::now();
-  
+
   if (td.run_number != *m_run_number) {
     ers::error(UnexpectedTriggerDecision(ERS_HERE, td.trigger_number, td.run_number, *m_run_number));
     ++m_unexpected_trigger_decisions;
@@ -431,27 +441,28 @@ TRBModule::trigger_decision_callback(dfmessages::TriggerDecision& td)
   ++m_received_trigger_decisions;
 
   create_trigger_records_and_dispatch(td);
-  check_stale_requests();
+  //check_stale_requests();
 
   auto end_time = std::chrono::steady_clock::now();
   m_td_processing_us += std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
-
 }
 
 TRBModule::trigger_record_ptr_t
 TRBModule::extract_trigger_record(const TriggerId& id)
 {
-  std::lock_guard<std::mutex> lk(m_trigger_records_mutex);
-  auto it = m_trigger_records.find(id);
+  std::unique_lock<std::mutex> lk(m_trigger_records_mutex);
+  auto it = m_trigger_records.extract(id);
+  lk.unlock();
 
-  trigger_record_ptr_t temp = std::move(it->second.second);
+  if (it.empty())
+    return nullptr;
+
+  trigger_record_ptr_t temp = std::move(it.mapped().second);
 
   auto time = clock_type::now();
-  auto duration = time - it->second.first;
+  auto duration = time - it.mapped().first;
 
   m_data_waiting_time += std::chrono::duration_cast<duration_type>(duration).count();
-
-  m_trigger_records.erase(it);
 
   --m_trigger_decisions_counter;
   m_fragment_counter -= temp->get_fragments_ref().size();
@@ -464,9 +475,10 @@ TRBModule::extract_trigger_record(const TriggerId& id)
     m_pending_fragment_counter -= missing_fragments;
     temp->get_header_ref().set_error_bit(TriggerRecordErrorBits::kIncomplete, true);
 
-    TLOG() << get_name() << " sending incomplete TriggerRecord downstream at Stop time "
-           << "(trigger/run_number=" << id << ", " << temp->get_fragments_ref().size() << " of "
-           << temp->get_header_ref().get_num_requested_components() << " fragments included)";
+    TLOG() << get_name() << " sending incomplete TriggerRecord downstream "
+           << (m_stop_requested.load() ? "at Stop time " : "") << "(trigger/run_number=" << id << ", "
+           << temp->get_fragments_ref().size() << " of " << temp->get_header_ref().get_num_requested_components()
+           << " fragments included)";
   }
 
   return temp;
@@ -589,8 +601,7 @@ TRBModule::create_trigger_records_and_dispatch(const dfmessages::TriggerDecision
 }
 
 bool
-TRBModule::dispatch_data_requests(dfmessages::DataRequest dr,
-                                  const daqdataformats::SourceID& sid)
+TRBModule::dispatch_data_requests(dfmessages::DataRequest dr, const daqdataformats::SourceID& sid)
 
 {
 
