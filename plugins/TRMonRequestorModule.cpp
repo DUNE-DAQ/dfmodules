@@ -81,6 +81,7 @@ TRMonRequestorModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcfg)
     }
   }
 
+  m_reply_connection = mdal->get_trigger_record_destination()->UID();
   m_requestor_conf = mdal->get_configuration();
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
@@ -108,7 +109,6 @@ TRMonRequestorModule::do_conf(const data_t&)
   if (m_trigger_type_mask == 0) {
     m_trigger_type_mask = dfmessages::TRMonTriggerTypes::s_any_trigger_type;
   }
-  m_reply_connection = m_requestor_conf->get_trigger_record_destination()->UID();
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
 }

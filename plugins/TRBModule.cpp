@@ -664,7 +664,7 @@ TRBModule::send_trigger_record(const TriggerId& id)
     auto it = m_mon_requests.begin();
     while (it != m_mon_requests.end()) {
       // send TR to mon if correct trigger type
-      if (it->trigger_type_mask & temp_record->get_header_data().trigger_type != 0) {
+      if ((it->trigger_type_mask & temp_record->get_header_data().trigger_type) != 0) {
         auto iom = iomanager::IOManager::get();
         bool wasSentSuccessfully = false;
         do {
