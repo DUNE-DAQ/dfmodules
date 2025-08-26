@@ -108,11 +108,7 @@ TRBModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcfg)
     throw InvalidQueueFatalError(ERS_HERE, get_name(), "Fragment Input queue");
   }
 
-  for (auto con : mdal->get_outputs()) {
-    if (con->get_data_type() == datatype_to_string<std::unique_ptr<daqdataformats::TriggerRecord>>()) {
-      m_trigger_record_output = iom->get_sender<std::unique_ptr<daqdataformats::TriggerRecord>>(con->UID());
-    }
-  }
+  m_trigger_record_output = iom->get_sender<std::unique_ptr<daqdataformats::TriggerRecord>>(mdal->get_trigger_record_output()->UID());
 
   for (auto con : mdal->get_request_connections()) {
     for (auto source_id : con->get_source_ids()) {
@@ -662,7 +658,15 @@ TRBModule::send_trigger_record(const TriggerId& id)
   if (m_mon_receiver) {
     const std::lock_guard<std::mutex> lock(m_mon_mutex);
     auto it = m_mon_requests.begin();
+    std::set<std::string> sent_destinations;
+
     while (it != m_mon_requests.end()) {
+        // Only sent TR to each monitor once
+      if (sent_destinations.count(it->data_destination)) {
+        ++it;
+        continue;
+      }
+
       // send TR to mon if correct trigger type
       if ((it->trigger_type_mask & temp_record->get_header_data().trigger_type) != 0) {
         auto iom = iomanager::IOManager::get();
@@ -682,6 +686,7 @@ TRBModule::send_trigger_record(const TriggerId& id)
             ers::warning(iomanager::OperationFailed(ERS_HERE, oss_warn.str(), excpt));
           }
         } while (!m_stop_requested.load() && !wasSentSuccessfully);
+        sent_destinations.insert(it->data_destination);
         it = m_mon_requests.erase(it);
       } else {
         ++it;

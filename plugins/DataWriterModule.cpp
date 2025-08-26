@@ -95,20 +95,27 @@ DataWriterModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcfg)
 
   auto modules = mcfg->modules();
   std::string trb_uid = "";
+  bool is_trmon = false;
   for (auto& mod : modules) {
     if (mod->class_name() == "TRBModule") {
       trb_uid = mod->UID();
       break;
     }
+    if (mod->class_name() == "TRMonRequestorModule") {
+        is_trmon = true;
+      break;
+    }
   }
 
-  auto trbdal = mcfg->get_dal<appmodel::TRBModule>(trb_uid);
-  if (!trbdal) {
-    throw appfwk::CommandFailed(ERS_HERE, "init", get_name(), "Unable to retrieve TRB configuration object");
-  }
-  for (auto con : trbdal->get_inputs()) {
-    if (con->get_data_type() == datatype_to_string<dfmessages::TriggerDecision>()) {
-      m_trigger_decision_connection =con->UID();
+  if (!is_trmon) {
+    auto trbdal = mcfg->get_dal<appmodel::TRBModule>(trb_uid);
+    if (!trbdal) {
+      throw appfwk::CommandFailed(ERS_HERE, "init", get_name(), "Unable to retrieve TRB configuration object");
+    }
+    for (auto con : trbdal->get_inputs()) {
+      if (con->get_data_type() == datatype_to_string<dfmessages::TriggerDecision>()) {
+        m_trigger_decision_connection = con->UID();
+      }
     }
   }
 
