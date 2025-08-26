@@ -93,7 +93,7 @@ DataWriterModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcfg)
 
   m_trigger_record_connection = inputs[0]->UID();
 
-  auto modules = mcfg->modules();
+  auto modules = mcfg->get_modules();
   std::string trb_uid = "";
   for (auto& mod : modules) {
     if (mod->class_name() == "TRBModule") {
@@ -137,7 +137,7 @@ DataWriterModule::generate_opmon_data() {
 }
   
 void
-DataWriterModule::do_conf(const data_t&)
+DataWriterModule::do_conf(const CommandData_t&)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
 
@@ -170,7 +170,7 @@ DataWriterModule::do_conf(const data_t&)
 }
 
 void
-DataWriterModule::do_start(const data_t& payload)
+DataWriterModule::do_start(const CommandData_t& payload)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_start() method";
   
@@ -238,7 +238,7 @@ DataWriterModule::do_start(const data_t& payload)
 }
 
 void
-DataWriterModule::do_stop(const data_t& /*args*/)
+DataWriterModule::do_stop(const CommandData_t& /*args*/)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_stop() method";
 
@@ -262,7 +262,7 @@ DataWriterModule::do_stop(const data_t& /*args*/)
 }
 
 void
-DataWriterModule::do_scrap(const data_t& /*payload*/)
+DataWriterModule::do_scrap(const CommandData_t& /*payload*/)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_scrap() method";
 

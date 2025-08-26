@@ -44,7 +44,7 @@ struct CfgFixture
     std::string appName = "TestApp";
     std::string sessionName = "partition_name";
     cfgMgr = std::make_shared<dunedaq::appfwk::ConfigurationManager>(oksConfig, appName, sessionName);
-    get_iomanager()->configure(sessionName, cfgMgr->queues(), cfgMgr->networkconnections(), nullptr, opmgr);
+    get_iomanager()->configure(sessionName, cfgMgr->get_queues(), cfgMgr->get_networkconnections(), nullptr, opmgr);
   }
   ~CfgFixture() {
     get_iomanager()->reset();
@@ -147,12 +147,10 @@ BOOST_AUTO_TEST_CASE(Commands)
   opmgr.register_node("dfo", dfo);
   dfo->init(cfgMgr);
 
-  auto conf_json = "{\"thresholds\": { \"free\": 1, \"busy\": 2 }, "
-                   "\"general_queue_timeout\": 100, \"td_send_retries\": 5}"_json;
-  auto start_json = "{\"run\": 1}"_json;
-  auto null_json = "{}"_json;
+  auto start_json = static_cast<appfwk::DAQModule::CommandData_t>("{\"run\": 1}"_json);
+  appfwk::DAQModule::CommandData_t null_json;
 
-  dfo->execute_command("conf", conf_json);
+  dfo->execute_command("conf", null_json);
   dfo->execute_command("start", start_json);
   dfo->execute_command("drain_dataflow", null_json);
   dfo->execute_command("scrap", null_json);
@@ -175,12 +173,10 @@ BOOST_AUTO_TEST_CASE(DataFlow)
   opmgr.register_node("dfo", dfo);
   dfo->init(cfgMgr);
 
-  auto conf_json = "{\"thresholds\": { \"free\": 1, \"busy\": 2 }, "
-                   "\"general_queue_timeout\": 100, \"td_send_retries\": 5}"_json;
-  auto start_json = "{\"run\": 1}"_json;
-  auto null_json = "{}"_json;
+  auto start_json = static_cast<appfwk::DAQModule::CommandData_t>("{\"run\": 1}"_json);
+  appfwk::DAQModule::CommandData_t null_json;
 
-  dfo->execute_command("conf", conf_json);
+  dfo->execute_command("conf", null_json);
 
   auto iom = iomanager::IOManager::get();
   auto dec_recv = iom->get_receiver<dfmessages::TriggerDecision>("trigdec_0");
@@ -244,12 +240,10 @@ BOOST_AUTO_TEST_CASE(SendTrigDecFailed)
   opmgr.register_node("dfo", dfo);
   dfo->init(cfgMgr);
 
-  auto conf_json = "{\"thresholds\": { \"free\": 1, \"busy\": 2 }, "
-                   "\"general_queue_timeout\": 100, \"td_send_retries\": 5}"_json;
-  auto start_json = "{\"run\": 1}"_json;
-  auto null_json = "{}"_json;
+  auto start_json = static_cast<appfwk::DAQModule::CommandData_t>("{\"run\": 1}"_json);
+  appfwk::DAQModule::CommandData_t null_json;
 
-  dfo->execute_command("conf", conf_json);
+  dfo->execute_command("conf", null_json);
 
   dfo->execute_command("start", start_json);
 

@@ -102,7 +102,7 @@ FragmentAggregatorModule::generate_opmon_data()
 }
 
 void
-FragmentAggregatorModule::do_start(const data_t& /* args */)
+FragmentAggregatorModule::do_start(const CommandData_t& /* args */)
 {
 
   m_data_requests_received.store(0);
@@ -142,7 +142,7 @@ FragmentAggregatorModule::do_start(const data_t& /* args */)
 }
 
 void
-FragmentAggregatorModule::do_stop(const data_t& /* args */)
+FragmentAggregatorModule::do_stop(const CommandData_t& /* args */)
 {
   auto iom = iomanager::IOManager::get();
   iom->remove_callback<dfmessages::DataRequest>(m_data_req_input);

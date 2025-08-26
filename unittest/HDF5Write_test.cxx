@@ -133,7 +133,7 @@ struct CfgFixture
 
   const dunedaq::confmodel::DetectorConfig* get_detector_config()
   {
-    return cfgMgr->session()->get_detector_configuration();
+    return cfgMgr->get_session()->get_detector_configuration();
   }
 
   std::shared_ptr<dunedaq::appfwk::ConfigurationManager> cfgMgr;
