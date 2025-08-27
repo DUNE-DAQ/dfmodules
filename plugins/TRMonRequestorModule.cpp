@@ -104,12 +104,12 @@ TRMonRequestorModule::do_conf(const data_t&)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
 
-  m_request_interval = std::chrono::milliseconds(m_requestor_conf->get_request_interval_ms());
+  m_request_interval = std::chrono::milliseconds(m_requestor_conf->get_minimum_request_interval_ms());
   m_trigger_type_mask = m_requestor_conf->get_trigger_type_mask();
   if (m_trigger_type_mask == 0) {
     m_trigger_type_mask = dfmessages::TRMonTriggerTypes::s_any_trigger_type;
   }
-
+  m_token_count = m_requestor_conf->get_maximum_outstanding_requests();
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
 }
 
@@ -170,9 +170,11 @@ TRMonRequestorModule::do_stop(const data_t& /*args*/)
 }
 
 void
-TRMonRequestorModule::token_callback(const dfmessages::TriggerDecisionToken&)
+TRMonRequestorModule::token_callback(const dfmessages::TriggerDecisionToken& token)
 {
-  m_token_count++;
+  if (token.run_number == *m_run_number) {
+    m_token_count++;
+  }
 }
 
 void
@@ -200,6 +202,10 @@ TRMonRequestorModule::do_work(std::atomic<bool>& run_flag)
 void
 TRMonRequestorModule::send_trmon_request()
 {
+  if (m_trmon_senders.size() == 0) {
+    return;
+  }
+
   dfmessages::TRMonRequest req;
   req.request_number = ++m_current_request_number;
   req.trigger_type_mask = m_trigger_type_mask;
