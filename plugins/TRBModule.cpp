@@ -398,7 +398,7 @@ TRBModule::fragments_callback(std::unique_ptr<daqdataformats::Fragment>& temp_fr
         m_last_bookkeeping = clock_type::now();
 
       } // loop over TRs to check if they are complete
-    } else {
+    } else if (requested && it != m_trigger_records.end()) {
 
       auto comp_size = it->second.second->get_fragments_ref().size();
       auto requ_size = it->second.second->get_header_ref().get_num_requested_components();
