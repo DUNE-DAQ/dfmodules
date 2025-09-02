@@ -89,20 +89,20 @@ conf_dict.tpg_enabled = True
 conf_dict.frame_file = "asset://?checksum=e96fd6efd3f98a9a3bfaba32975b476e"  # WIBEth
 
 conf_dict.config_substitutions.append(
-    data_classes.config_substitution(
+    data_classes.attribute_substitution(
         obj_id=conf_dict.session,
         obj_class="Session",
         updates={"data_rate_slowdown_factor": data_rate_slowdown_factor},
     )
 )
 conf_dict.config_substitutions.append(
-    data_classes.config_substitution(
+    data_classes.attribute_substitution(
         obj_class="RandomTCMakerConf",
         updates={"trigger_interval_ticks": 62500000 / trigger_rate},
     )
 )
 conf_dict.config_substitutions.append(
-    data_classes.config_substitution(
+    data_classes.attribute_substitution(
         obj_class="LatencyBuffer", updates={"size": 200000}
     )
 )
@@ -110,7 +110,7 @@ conf_dict.config_substitutions.append(
 swtpg_conf = copy.deepcopy(conf_dict)
 swtpg_conf.tpg_enabled = True
 swtpg_conf.config_substitutions.append(
-    data_classes.config_substitution(
+    data_classes.attribute_substitution(
         obj_class="TAMakerPrescaleAlgorithm",
         obj_id="dummy-ta-maker",
         updates={"prescale": 25},
