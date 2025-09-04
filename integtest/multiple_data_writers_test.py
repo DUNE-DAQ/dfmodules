@@ -79,14 +79,14 @@ conf_dict.fake_hsi_enabled = True
 conf_dict.n_data_writers = 3
 
 conf_dict.config_substitutions.append(
-    data_classes.config_substitution(
+    data_classes.attribute_substitution(
         obj_class="FakeHSIEventGeneratorConf",
         updates={"trigger_rate": 10.0},
     )
 )
 
 conf_dict.config_substitutions.append(
-    data_classes.config_substitution(
+    data_classes.attribute_substitution(
         obj_class="HSISignalWindow",
         updates={
             "time_before": 1000,
@@ -95,7 +95,7 @@ conf_dict.config_substitutions.append(
     )
 )
 conf_dict.config_substitutions.append(
-    data_classes.config_substitution(
+    data_classes.attribute_substitution(
         obj_class="TCReadoutMap",
         obj_id = "def-hsi-tc-map",
         updates={
@@ -106,7 +106,7 @@ conf_dict.config_substitutions.append(
 )
 
 conf_dict.config_substitutions.append(
-    data_classes.config_substitution(
+    data_classes.attribute_substitution(
         obj_class="QueueDescriptor",
         obj_id="trigger-records",
         updates={"queue_type": "kFollyMPMCQueue"},
