@@ -118,7 +118,7 @@ conf_dict.n_df_apps = number_of_dataflow_apps
 conf_dict.fake_hsi_enabled = True  # FakeHSI must be enabled to set trigger window width!
 
 conf_dict.config_substitutions.append(
-    data_classes.config_substitution(
+    data_classes.attribute_substitution(
         obj_id=conf_dict.session,
         obj_class="Session",
         updates={"data_rate_slowdown_factor": data_rate_slowdown_factor},
@@ -126,14 +126,14 @@ conf_dict.config_substitutions.append(
 )
 
 conf_dict.config_substitutions.append(
-    data_classes.config_substitution(
+    data_classes.attribute_substitution(
         obj_class="FakeHSIEventGeneratorConf",
         updates={"trigger_rate": trigger_rate},
     )
 )
 
 conf_dict.config_substitutions.append(
-    data_classes.config_substitution(
+    data_classes.attribute_substitution(
         obj_class="HSISignalWindow",
         updates={
             "time_before": readout_window_time_before,
@@ -142,7 +142,7 @@ conf_dict.config_substitutions.append(
     )
 )
 conf_dict.config_substitutions.append(
-    data_classes.config_substitution(
+    data_classes.attribute_substitution(
         obj_class="DataStoreConf",
         updates={
             "directory_path": output_path,

@@ -137,7 +137,7 @@ conf_dict.frame_file = "asset://?checksum=a8990a9eb3a505d4ded62dfdfa9e2681"  # r
 #conf_dict.frame_file = "file:///home/nfs/biery/dunedaq/12MayFDv5.3.2DevInstrUpdate/sourcecode/dfmodules/integtest/np02vdcoldbox_run035227_sample_hd_pds.bin"
 
 conf_dict.config_substitutions.append(
-    data_classes.config_substitution(
+    data_classes.attribute_substitution(
         obj_class="TAMakerPrescaleAlgorithm",
         obj_id="dummy-ta-maker",
         updates={"prescale": 2000},
@@ -145,14 +145,14 @@ conf_dict.config_substitutions.append(
 )
 
 conf_dict.config_substitutions.append(
-    data_classes.config_substitution(
+    data_classes.attribute_substitution(
         obj_class="FakeHSIEventGeneratorConf",
         updates={"trigger_rate": 10.0},
     )
 )
 
 conf_dict.config_substitutions.append(
-    data_classes.config_substitution(
+    data_classes.attribute_substitution(
         obj_class="HSISignalWindow",
         updates={
             "time_before": 1000,
@@ -161,7 +161,7 @@ conf_dict.config_substitutions.append(
     )
 )
 conf_dict.config_substitutions.append(
-    data_classes.config_substitution(
+    data_classes.attribute_substitution(
         obj_class="TCReadoutMap",
         obj_id = "def-hsi-tc-map",
         updates={
@@ -171,28 +171,28 @@ conf_dict.config_substitutions.append(
     )
 )
 conf_dict.config_substitutions.append(
-    data_classes.config_substitution(
+    data_classes.attribute_substitution(
         obj_class="DataStoreConf",
         obj_id="default",
         updates={"max_file_size": 400000000},
     )
 )
 conf_dict.config_substitutions.append(
-    data_classes.config_substitution(
+    data_classes.attribute_substitution(
         obj_class="DataStoreConf",
         obj_id="default_tp_store_conf",
         updates={"max_file_size": 170000000},
     )
 )
 conf_dict.config_substitutions.append(
-    data_classes.config_substitution(
+    data_classes.attribute_substitution(
         obj_class="DataStoreConf",
         obj_id="default",
         updates={"compression_level": 5},
     )
 )
 conf_dict.config_substitutions.append(
-    data_classes.config_substitution(
+    data_classes.attribute_substitution(
         obj_class="DataStoreConf",
         obj_id="default_tp_store_conf",
         updates={"compression_level": 1},
@@ -200,19 +200,19 @@ conf_dict.config_substitutions.append(
 )
 
 conf_dict.config_substitutions.append(
-    data_classes.config_substitution(
+    data_classes.attribute_substitution(
         obj_class="DFOConf", updates={"busy_threshold": 16, "free_threshold": 12}
     )
 )
 conf_dict.config_substitutions.append(
-    data_classes.config_substitution(
+    data_classes.attribute_substitution(
         obj_class="TCDataProcessor",
         obj_id="def-tc-processor",
         updates={"merge_overlapping_tcs": 0},
     )
 )
 conf_dict.config_substitutions.append(
-    data_classes.config_substitution(
+    data_classes.attribute_substitution(
         obj_class="LatencyBuffer", updates={"size": 5592000}
     )
 )
@@ -221,7 +221,7 @@ conf_dict.config_substitutions.append(
 # 67 kHz * 2 DataLinkHandlers per RU * safety factor of 3 seconds ~= 400,000
 # However, this doesn't always seem to be large enough, so we'll use 1e6 for now.
 conf_dict.config_substitutions.append(
-    data_classes.config_substitution(
+    data_classes.attribute_substitution(
         obj_class="QueueDescriptor",
         obj_id="tp-input",
         updates={"capacity": 1000000},

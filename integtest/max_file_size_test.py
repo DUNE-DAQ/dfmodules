@@ -101,19 +101,19 @@ conf_dict.frame_file = (
 )
 
 conf_dict.config_substitutions.append(
-    data_classes.config_substitution(
+    data_classes.attribute_substitution(
         obj_id=conf_dict.session,
         obj_class="Session",
         updates={"data_rate_slowdown_factor": data_rate_slowdown_factor},
     )
 )
 conf_dict.config_substitutions.append(
-    data_classes.config_substitution(
+    data_classes.attribute_substitution(
         obj_class="LatencyBuffer", updates={"size": 200000}
     )
 )
 conf_dict.config_substitutions.append(
-    data_classes.config_substitution(
+    data_classes.attribute_substitution(
         obj_class="TCDataProcessor",
         obj_id="def-tc-processor",
         updates={"merge_overlapping_tcs": 0},
@@ -121,14 +121,14 @@ conf_dict.config_substitutions.append(
 )
 
 conf_dict.config_substitutions.append(
-    data_classes.config_substitution(
+    data_classes.attribute_substitution(
         obj_class="FakeHSIEventGeneratorConf",
         updates={"trigger_rate": 10.0},
     )
 )
 
 conf_dict.config_substitutions.append(
-    data_classes.config_substitution(
+    data_classes.attribute_substitution(
         obj_class="HSISignalWindow",
         updates={
             "time_before": 1000,
@@ -137,7 +137,7 @@ conf_dict.config_substitutions.append(
     )
 )
 conf_dict.config_substitutions.append(
-    data_classes.config_substitution(
+    data_classes.attribute_substitution(
         obj_class="TCReadoutMap",
         obj_id = "def-hsi-tc-map",
         updates={
@@ -147,21 +147,21 @@ conf_dict.config_substitutions.append(
     )
 )
 conf_dict.config_substitutions.append(
-    data_classes.config_substitution(
+    data_classes.attribute_substitution(
         obj_class="DataStoreConf",
         obj_id="default",
         updates={"max_file_size": 725000000},
     )
 )
 conf_dict.config_substitutions.append(
-    data_classes.config_substitution(
+    data_classes.attribute_substitution(
         obj_class="DataStoreConf",
         obj_id="default_tp_store_conf",
         updates={"max_file_size": 275000000},
     )
 )
 conf_dict.config_substitutions.append(
-    data_classes.config_substitution(
+    data_classes.attribute_substitution(
         obj_class="StreamEmulationParameters",
         obj_id="stream-emu",
         updates={"TP_rate_per_channel": 5},
@@ -169,7 +169,7 @@ conf_dict.config_substitutions.append(
 )
 
 conf_dict.config_substitutions.append(
-    data_classes.config_substitution(
+    data_classes.attribute_substitution(
         obj_class="DFOConf", updates={"busy_threshold": 10, "free_threshold": 7}
     )
 )
@@ -179,7 +179,7 @@ conf_dict.config_substitutions.append(
 # out of each DataLinkHandler is about 3 kHz.  Two DLHs per app and a 5-second safety
 # factor gives a queue size of 30000.
 conf_dict.config_substitutions.append(
-    data_classes.config_substitution(
+    data_classes.attribute_substitution(
         obj_class="QueueDescriptor",
         obj_id="tp-input",
         updates={"capacity": 200000},

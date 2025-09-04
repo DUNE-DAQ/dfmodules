@@ -104,7 +104,7 @@ conf_dict.tpg_enabled = False
 conf_dict.n_df_apps = number_of_dataflow_apps
 
 conf_dict.config_substitutions.append(
-    data_classes.config_substitution(
+    data_classes.attribute_substitution(
         obj_id=conf_dict.session,
         obj_class="Session",
         updates={"data_rate_slowdown_factor": data_rate_slowdown_factor},
@@ -112,13 +112,13 @@ conf_dict.config_substitutions.append(
 )
 
 conf_dict.config_substitutions.append(
-    data_classes.config_substitution(
+    data_classes.attribute_substitution(
         obj_class="RandomTCMakerConf",
         updates={"trigger_rate_hz": trigger_rate},
     )
 )
 conf_dict.config_substitutions.append(
-    data_classes.config_substitution(
+    data_classes.attribute_substitution(
         obj_class="DataStoreConf",
         obj_id="default",
         updates={"max_file_size": 2 * 1024 * 1024 * 1024},
@@ -127,7 +127,7 @@ conf_dict.config_substitutions.append(
 oversize_conf = copy.deepcopy(conf_dict)  # Copy before setting the readout window
 
 conf_dict.config_substitutions.append(
-    data_classes.config_substitution(
+    data_classes.attribute_substitution(
         obj_class="TCReadoutMap",
         updates={
             "time_before": readout_window_time_before,
@@ -138,7 +138,7 @@ conf_dict.config_substitutions.append(
 
 # Now set the readout window for the over-size case
 oversize_conf.config_substitutions.append(
-    data_classes.config_substitution(
+    data_classes.attribute_substitution(
         obj_class="TCReadoutMap",
         updates={
             "time_before": 2.5 * readout_window_time_before,
