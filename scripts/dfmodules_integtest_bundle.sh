@@ -84,12 +84,12 @@ done
 # check if the numad daemon is running
 numad_grep_output=`ps -ef | grep numad | grep -v grep`
 if [[ "${numad_grep_output}" != "" ]]; then
-   echo "*********************************************************************"
-   echo "*** DANGER, DANGER, 'numad' appears to be running on this computer!"
-   echo "*** 'ps' output:  ${numad_grep_output}"
-   echo "*** <ctrl-c> now if you want to abort this testing."
-   echo "*********************************************************************"
-   sleep 3
+    echo "*********************************************************************"
+    echo "*** DANGER, DANGER, 'numad' appears to be running on this computer!"
+    echo "*** 'ps' output:  ${numad_grep_output}"
+    echo "*** <ctrl-c> now if you want to abort this testing."
+    echo "*********************************************************************"
+    sleep 3
 fi
 
 # other setup
@@ -114,54 +114,52 @@ let total_number_of_tests=${number_of_individual_tests}*${individual_test_reques
 let overall_test_index=0  # this is only used for user feedback
 let full_set_loop_count=0
 while [[ ${full_set_loop_count} -lt ${full_set_requested_interations} ]]; do
-  let test_index=0
-  for TEST_NAME in ${integtest_list[@]}; do
-    if [[ ${test_index} -ge ${first_test_index} && ${test_index} -le ${last_test_index} ]]; then
-      requested_test=`echo ${TEST_NAME} | egrep -i ${requested_test_names:-${TEST_NAME}}`
-      if [[ "${requested_test}" != "" ]]; then
+    let test_index=0
+    for TEST_NAME in ${integtest_list[@]}; do
+        if [[ ${test_index} -ge ${first_test_index} && ${test_index} -le ${last_test_index} ]]; then
+            requested_test=`echo ${TEST_NAME} | egrep -i ${requested_test_names:-${TEST_NAME}}`
+            if [[ "${requested_test}" != "" ]]; then
+                let individual_loop_count=0
+                while [[ ${individual_loop_count} -lt ${individual_test_requested_iterations} ]]; do
+                    let overall_test_index=${overall_test_index}+1
+                    echo ""
+                    echo -e "\U0001F535 \033[0;34mStarting test ${overall_test_index} of ${total_number_of_tests}...\033[0m \U0001F535" | tee -a ${ITGRUNNER_LOG_FILE}
 
-      let individual_loop_count=0
-      while [[ ${individual_loop_count} -lt ${individual_test_requested_iterations} ]]; do
-        let overall_test_index=${overall_test_index}+1
-        echo ""
-        echo -e "\U0001F535 \033[0;34mStarting test ${overall_test_index} of ${total_number_of_tests}...\033[0m \U0001F535" | tee -a ${ITGRUNNER_LOG_FILE}
+                    echo -e "\u2B95 \033[0;1mRunning ${TEST_NAME}\033[0m \u2B05" | tee -a ${ITGRUNNER_LOG_FILE}
+                    if [[ -e "./${TEST_NAME}" ]]; then
+                        pytest -s ./${TEST_NAME} | tee -a ${ITGRUNNER_LOG_FILE}
+                    elif [[ -e "${DBT_AREA_ROOT}/sourcecode/dfmodules/integtest/${TEST_NAME}" ]]; then
+                        if [[ -w "${DBT_AREA_ROOT}" ]]; then
+                            pytest -s ${DBT_AREA_ROOT}/sourcecode/dfmodules/integtest/${TEST_NAME} | tee -a ${ITGRUNNER_LOG_FILE}
+                        else
+                            pytest -s -p no:cacheprovider ${DBT_AREA_ROOT}/sourcecode/dfmodules/integtest/${TEST_NAME} | tee -a ${ITGRUNNER_LOG_FILE}
+                        fi
+                    else
+                        pytest -s -p no:cacheprovider ${DFMODULES_SHARE}/integtest/${TEST_NAME} | tee -a ${ITGRUNNER_LOG_FILE}
+                    fi
+                    let pytest_return_code=${PIPESTATUS[0]}
 
-        echo -e "\u2B95 \033[0;1mRunning ${TEST_NAME}\033[0m \u2B05" | tee -a ${ITGRUNNER_LOG_FILE}
-        if [[ -e "./${TEST_NAME}" ]]; then
-          pytest -s ./${TEST_NAME} | tee -a ${ITGRUNNER_LOG_FILE}
-        elif [[ -e "${DBT_AREA_ROOT}/sourcecode/dfmodules/integtest/${TEST_NAME}" ]]; then
-          if [[ -w "${DBT_AREA_ROOT}" ]]; then
-            pytest -s ${DBT_AREA_ROOT}/sourcecode/dfmodules/integtest/${TEST_NAME} | tee -a ${ITGRUNNER_LOG_FILE}
-          else
-            pytest -s -p no:cacheprovider ${DBT_AREA_ROOT}/sourcecode/dfmodules/integtest/${TEST_NAME} | tee -a ${ITGRUNNER_LOG_FILE}
-          fi
-        else
-          pytest -s -p no:cacheprovider ${DFMODULES_SHARE}/integtest/${TEST_NAME} | tee -a ${ITGRUNNER_LOG_FILE}
-        fi
-        let pytest_return_code=${PIPESTATUS[0]}
+                    let individual_loop_count=${individual_loop_count}+1
 
-        let individual_loop_count=${individual_loop_count}+1
-
-        if [[ ${stop_on_failure} -gt 0 ]]; then
-            if [[ ${pytest_return_code} -ne 0 ]]; then
-                break 3
+                    if [[ ${stop_on_failure} -gt 0 ]]; then
+                        if [[ ${pytest_return_code} -ne 0 ]]; then
+                            break 3
+                        fi
+                    fi
+                    if [[ ${stop_on_skip} -gt 0 ]]; then
+                        search_result=`tail -20 ${ITGRUNNER_LOG_FILE} | grep -i skip`
+                        #echo "skip search result is ${search_result}"
+                        if [[ ${search_result} != "" ]]; then
+                            break 3
+                        fi
+                    fi
+                done
             fi
         fi
-        if [[ ${stop_on_skip} -gt 0 ]]; then
-            search_result=`tail -20 ${ITGRUNNER_LOG_FILE} | grep -i skip`
-            #echo "skip search result is ${search_result}"
-            if [[ ${search_result} != "" ]]; then
-                break 3
-            fi
-        fi
-      done
+        let test_index=${test_index}+1
+    done
 
-      fi
-    fi
-    let test_index=${test_index}+1
-  done
-
-  let full_set_loop_count=${full_set_loop_count}+1
+    let full_set_loop_count=${full_set_loop_count}+1
 done
 
 # print out summary information
@@ -179,13 +177,13 @@ egrep $'=====|\u2B95' ${ITGRUNNER_LOG_FILE} | egrep ' in |Running' | tee -a ${IT
 # check again if the numad daemon is running
 numad_grep_output=`ps -ef | grep numad | grep -v grep`
 if [[ "${numad_grep_output}" != "" ]]; then
-   echo ""                                                                                 | tee -a ${ITGRUNNER_LOG_FILE}
-   echo "********************************************************************************" | tee -a ${ITGRUNNER_LOG_FILE}
-   echo "*** WARNING: 'numad' appears to be running on this computer!"                     | tee -a ${ITGRUNNER_LOG_FILE}
-   echo "*** 'ps' output:  ${numad_grep_output}"                                           | tee -a ${ITGRUNNER_LOG_FILE}
-   echo "*** This daemon can adversely affect the running of these tests, especially ones" | tee -a ${ITGRUNNER_LOG_FILE}
-   echo "*** that are resource intensive in the Readout Apps. This is because numad moves" | tee -a ${ITGRUNNER_LOG_FILE}
-   echo "*** processes (threads?) to different cores/numa nodes periodically, and that"    | tee -a ${ITGRUNNER_LOG_FILE}
-   echo "*** context switch can disrupt the stable running of the DAQ processes."          | tee -a ${ITGRUNNER_LOG_FILE}
-   echo "********************************************************************************" | tee -a ${ITGRUNNER_LOG_FILE}
+    echo ""                                                                                 | tee -a ${ITGRUNNER_LOG_FILE}
+    echo "********************************************************************************" | tee -a ${ITGRUNNER_LOG_FILE}
+    echo "*** WARNING: 'numad' appears to be running on this computer!"                     | tee -a ${ITGRUNNER_LOG_FILE}
+    echo "*** 'ps' output:  ${numad_grep_output}"                                           | tee -a ${ITGRUNNER_LOG_FILE}
+    echo "*** This daemon can adversely affect the running of these tests, especially ones" | tee -a ${ITGRUNNER_LOG_FILE}
+    echo "*** that are resource intensive in the Readout Apps. This is because numad moves" | tee -a ${ITGRUNNER_LOG_FILE}
+    echo "*** processes (threads?) to different cores/numa nodes periodically, and that"    | tee -a ${ITGRUNNER_LOG_FILE}
+    echo "*** context switch can disrupt the stable running of the DAQ processes."          | tee -a ${ITGRUNNER_LOG_FILE}
+    echo "********************************************************************************" | tee -a ${ITGRUNNER_LOG_FILE}
 fi

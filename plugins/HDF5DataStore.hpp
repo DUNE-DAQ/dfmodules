@@ -126,9 +126,9 @@ public:
 
     m_config_params = mcfg->get_dal<appmodel::DataStoreConf>(name);
     m_file_layout_params = m_config_params->get_file_layout_params();
-    m_session = mcfg->session();
-    m_operational_environment = mcfg->session()->get_detector_configuration()->get_op_env();
-    m_offline_data_stream = mcfg->session()->get_detector_configuration()->get_offline_data_stream();
+    m_session = mcfg->get_session();
+    m_operational_environment = mcfg->get_session()->get_detector_configuration()->get_op_env();
+    m_offline_data_stream = mcfg->get_session()->get_detector_configuration()->get_offline_data_stream();
 
     m_operation_mode = m_config_params->get_mode();
     m_path = m_config_params->get_directory_path();

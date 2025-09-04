@@ -51,10 +51,10 @@ public:
 
 private:
   // Commands
-  void do_conf(const data_t&);
-  void do_start(const data_t&);
-  void do_stop(const data_t&);
-  void do_scrap(const data_t&);
+  void do_conf(const CommandData_t&);
+  void do_start(const CommandData_t&);
+  void do_stop(const CommandData_t&);
+  void do_scrap(const CommandData_t&);
 
   // Callback
   void receive_trigger_record(std::unique_ptr<daqdataformats::TriggerRecord>&);

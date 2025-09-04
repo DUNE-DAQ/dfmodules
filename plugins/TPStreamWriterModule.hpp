@@ -49,10 +49,10 @@ public:
 
 private:
   // Commands
-  void do_conf(const data_t&);
-  void do_start(const data_t&);
-  void do_stop(const data_t&);
-  void do_scrap(const data_t&);
+  void do_conf(const CommandData_t&);
+  void do_start(const CommandData_t&);
+  void do_stop(const CommandData_t&);
+  void do_scrap(const CommandData_t&);
 
   // Threading
   dunedaq::utilities::WorkerThread m_thread;
@@ -83,11 +83,13 @@ private:
   std::atomic<uint64_t> m_tpsets_with_tps = { 0 };    // NOLINT(build/unsigned)
   std::atomic<uint64_t> m_tps_received = { 0 };       // NOLINT(build/unsigned)
   std::atomic<uint64_t> m_tps_written = { 0 };        // NOLINT(build/unsigned)
+  std::atomic<uint64_t> m_tps_discarded = { 0 };      // NOLINT(build/unsigned)
   std::atomic<uint64_t> m_timeslices_written = { 0 }; // NOLINT(build/unsigned)
   std::atomic<uint64_t> m_bytes_output = { 0 };       // NOLINT(build/unsigned)
   std::atomic<double>   m_tardy_timeslice_max_seconds = { 0.0 }; // NOLINT(build/unsigned)
   std::atomic<uint64_t> m_total_tps_received = { 0 }; // NOLINT(build/unsigned)
   std::atomic<uint64_t> m_total_tps_written = { 0 };  // NOLINT(build/unsigned)
+  std::atomic<uint64_t> m_total_tps_discarded = { 0 };// NOLINT(build/unsigned)
 };
 } // namespace dfmodules
 
