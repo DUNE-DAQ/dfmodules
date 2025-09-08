@@ -100,7 +100,7 @@ TRMonRequestorModule::generate_opmon_data()
 }
 
 void
-TRMonRequestorModule::do_conf(const data_t&)
+TRMonRequestorModule::do_conf(const CommandData_t&)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
 
@@ -114,7 +114,7 @@ TRMonRequestorModule::do_conf(const data_t&)
 }
 
 void
-TRMonRequestorModule::do_scrap(const data_t& /*args*/)
+TRMonRequestorModule::do_scrap(const CommandData_t& /*args*/)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_scrap() method";
 
@@ -123,7 +123,7 @@ TRMonRequestorModule::do_scrap(const data_t& /*args*/)
 }
 
 void
-TRMonRequestorModule::do_start(const data_t& args)
+TRMonRequestorModule::do_start(const CommandData_t& args)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_start() method";
 
@@ -157,7 +157,7 @@ TRMonRequestorModule::do_start(const data_t& args)
 }
 
 void
-TRMonRequestorModule::do_stop(const data_t& /*args*/)
+TRMonRequestorModule::do_stop(const CommandData_t& /*args*/)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_stop() method";
 

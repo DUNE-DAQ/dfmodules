@@ -48,10 +48,10 @@ protected:
   using trmon_sender_t = iomanager::SenderConcept<dfmessages::TRMonRequest>;
 
   // Commands
-  void do_conf(const data_t&);
-  void do_scrap(const data_t&);
-  void do_start(const data_t&);
-  void do_stop(const data_t&);
+  void do_conf(const CommandData_t&);
+  void do_scrap(const CommandData_t&);
+  void do_start(const CommandData_t&);
+  void do_stop(const CommandData_t&);
 
   // Callbacks
   void token_callback(const dfmessages::TriggerDecisionToken&);
