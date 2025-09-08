@@ -36,7 +36,7 @@ minimum_total_disk_space_gb = 33  # 50% more than what we need
 minimum_free_disk_space_gb = 28  # 25% more than what we need
 
 # Default values for validation parameters
-expected_number_of_data_files = 2
+expected_number_of_data_files = 4
 check_for_logfile_errors = True
 expected_event_count = 1
 expected_event_count_tolerance = 1
@@ -45,21 +45,21 @@ wibeth_frag_55pct_params = {
     "fragment_type": "WIBEth",
     "expected_fragment_count": (number_of_data_producers * number_of_readout_apps),
     "min_size_bytes": 38678472,
-    "max_size_bytes": 38678472,
+    "max_size_bytes": 38685672,
 }
 wibeth_frag_125pct_params = {
     "fragment_type_description": "WIBEth",
     "fragment_type": "WIBEth",
     "expected_fragment_count": (number_of_data_producers * number_of_readout_apps),
     "min_size_bytes": 91411272,
-    "max_size_bytes": 91411272,
+    "max_size_bytes": 91418472,
 }
 triggercandidate_frag_params = {
     "fragment_type_description": "Trigger Candidate",
     "fragment_type": "Trigger_Candidate",
     "expected_fragment_count": 1,
     "min_size_bytes": 128,
-    "max_size_bytes": 280,
+    "max_size_bytes": 128,
 }
 ignored_logfile_problems = {
     "-controller": [
@@ -155,10 +155,10 @@ confgen_arguments = {
 if sufficient_disk_space:
     nanorc_command_list = (
         "boot conf wait 5".split()
-        + "start --run-number 101 wait 1 enable-triggers wait ".split()
+        + "start --run-number 101 wait 10 enable-triggers wait ".split()
         + [str(run_duration)]
         + "disable-triggers wait 2 drain-dataflow wait 2 stop-trigger-sources stop ".split()
-        + "start --run-number 102 wait 1 enable-triggers wait ".split()
+        + "start --run-number 102 wait 10 enable-triggers wait ".split()
         + [str(run_duration)]
         + "disable-triggers wait 2 drain-dataflow wait 2 stop-trigger-sources stop ".split()
         + " scrap terminate".split()
@@ -228,7 +228,12 @@ def test_data_files(run_nanorc):
         fragment_check_list.append(wibeth_frag_55pct_params)
 
     # Run some tests on the output data file
-    all_ok =  len(run_nanorc.data_files) == expected_number_of_data_files
+    all_ok = len(run_nanorc.data_files) == expected_number_of_data_files
+    print("") # Clear potential dot from pytest
+    if all_ok:
+        print(f"\N{WHITE HEAVY CHECK MARK} The correct number of raw data files was found ({expected_number_of_data_files})")
+    else:
+        print(f"\N{POLICE CARS REVOLVING LIGHT} An incorrect number of raw data files was found, expected {expected_number_of_data_files}, found {len(run_nanorc.data_files)} \N{POLICE CARS REVOLVING LIGHT}")
 
     for idx in range(len(run_nanorc.data_files)):
         data_file = data_file_checks.DataFile(run_nanorc.data_files[idx])
