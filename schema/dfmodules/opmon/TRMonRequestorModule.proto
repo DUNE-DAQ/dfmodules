@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package dunedaq.dfmodules.opmon;
+
+message TRMonRequestorInfo {
+
+  // status metrics
+  uint64 trigger_records_requested = 1;  // Number of trigger records requested
+  
+}
