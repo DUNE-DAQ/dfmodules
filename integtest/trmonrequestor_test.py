@@ -19,7 +19,8 @@ data_rate_slowdown_factor = 1
 trmon_prescale = 3
 
 # Default values for validation parameters
-expected_number_of_data_files = 2
+run_count = 3
+expected_number_of_data_files = 2 * run_count
 check_for_logfile_errors = True
 expected_event_count = trigger_rate * run_duration / number_of_dataflow_apps
 expected_event_count_tolerance = math.ceil(expected_event_count / 10)
@@ -69,14 +70,14 @@ conf_dict.trmon_app_enabled = True
 conf_dict.n_df_apps = number_of_dataflow_apps
 
 
-substitution = data_classes.config_substitution(
+substitution = data_classes.attribute_substitution(
     obj_id="random-tc-generator",
     obj_class="RandomTCMakerConf",
     updates={"trigger_rate_hz": trigger_rate},
 )
 conf_dict.config_substitutions.append(substitution)
 
-substitution = data_classes.config_substitution(
+substitution = data_classes.attribute_substitution(
     obj_id="tr_mon_dw-01",
     obj_class="DataWriterConf",
     updates={"data_storage_prescale": trmon_prescale},
@@ -88,12 +89,17 @@ confgen_arguments = {
 }
 
 # The commands to run in nanorc, as a list
-nanorc_command_list = (
-    "boot conf start --run-number 101 wait 1 enable-triggers wait ".split()
-    + [str(run_duration)]
-    + "disable-triggers wait 2 drain-dataflow wait 2 stop-trigger-sources stop scrap terminate".split()
-)
+def make_run_command_list(runnum):
+    return (
+        f"start --run-number {runnum} wait 1 enable-triggers wait ".split()
+        + [str(run_duration)]
+        + "disable-triggers wait 2 drain-dataflow wait 2 stop-trigger-sources stop ".split())
 
+nanorc_command_list = "boot conf wait 5".split()
+for ii in range(run_count):
+    nanorc_command_list += make_run_command_list(100 + ii)
+nanorc_command_list += " scrap terminate".split()
+print(f"nanorc_command_list is {nanorc_command_list}")
 
 # The tests themselves
 def test_nanorc_success(run_nanorc):
@@ -161,8 +167,8 @@ def test_data_files(run_nanorc):
                 data_file, nontrig_fragment_check_list[kdx]
             )
 
-    trmon_low = (expected_event_count * number_of_dataflow_apps / trmon_prescale) - 1
-    trmon_high = (expected_event_count * number_of_dataflow_apps / trmon_prescale) + 2
+    trmon_low = (run_count * expected_event_count * number_of_dataflow_apps / trmon_prescale) - 1
+    trmon_high = (run_count * expected_event_count * number_of_dataflow_apps / trmon_prescale) + 2
     trmon_ok = len(run_nanorc.trmon_files) > trmon_low
     trmon_ok &= len(run_nanorc.trmon_files) < trmon_high
 
