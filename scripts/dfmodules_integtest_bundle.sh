@@ -1,7 +1,7 @@
 #!/bin/bash
 # 29-Apr-2025, KAB
 
-integtest_list=( "max_file_size_test.py" "multiple_data_writers_test.py" "hdf5_compression_test.py" )
+integtest_list=( "max_file_size_test.py" "multiple_data_writers_test.py" "hdf5_compression_test.py" "trmonrequestor_test.py")
 #integtest_list=( "large_trigger_record_test.py" "disabled_output_test.py" "multi_output_file_test.py" "insufficient_disk_space_test.py" )
 let last_test_index=${#integtest_list[@]}-1
 
