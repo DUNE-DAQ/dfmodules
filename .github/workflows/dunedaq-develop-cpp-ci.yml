@@ -25,4 +25,4 @@ on:
 jobs:
   build_develop_dispatch:
     name: Build against the development release
-    uses: DUNE-DAQ/.github/.github/workflows/dunedaq-develop-cpp-ci.yml@develop
+    uses: DUNE-DAQ/.github/.github/workflows/dunedaq-develop-cpp-ci.yml@dependabot/github_actions/actions/checkout-5
