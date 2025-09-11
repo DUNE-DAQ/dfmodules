@@ -42,7 +42,7 @@ triggercandidate_frag_params = {
     "max_size_bytes": 264,
     "debug_mask": 0x0,
     "frag_sizes_by_TC_type": {"kPrescale": {"min_size_bytes": 208, "max_size_bytes": 264},
-                                "kRandom": {"min_size_bytes": 128, "max_size_bytes": 128},
+                                "kRandom": {"min_size_bytes": 128, "max_size_bytes": 264},
                                 "default": {"min_size_bytes": 128, "max_size_bytes": 264} }
 }
 # sizes:  72 is for an empty TA fragment
