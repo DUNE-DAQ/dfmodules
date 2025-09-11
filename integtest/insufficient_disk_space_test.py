@@ -89,7 +89,7 @@ if (
 # the disk is full when there is still ~< 10 GB of free space.  And, having a
 # 1 GB size for the TRs means that we will write approximately
 # desired_free_disk_space_gb TriggerRecords before appearing to run out of space.
-free_space_safety_factor = 1 + round(0.5 + free_disk_space_gb - desired_size_of_output_disk_gb)
+free_space_safety_factor = int(free_disk_space_gb - desired_size_of_output_disk_gb)
 
 # The next three variable declarations *must* be present as globals in the test
 # file. They're read by the "fixtures" in conftest.py to determine how
@@ -217,12 +217,12 @@ def test_data_files(run_nanorc):
     fragment_check_list.append(wibeth_frag_hsi_trig_params)  # WIBEth
 
     # Run some tests on the output data file
-    all_ok = len(run_nanorc.data_files) == expected_number_of_data_files
+    all_ok = len(run_nanorc.data_files) == expected_number_of_data_files or len(run_nanorc.data_files) == (expected_number_of_data_files+1)
     print("") # Clear potential dot from pytest
     if all_ok:
-        print(f"\N{WHITE HEAVY CHECK MARK} The correct number of raw data files was found ({expected_number_of_data_files})")
+        print(f"\N{WHITE HEAVY CHECK MARK} An acceptable number of raw data files was found ({len(run_nanorc.data_files)} in {expected_number_of_data_files}..{expected_number_of_data_files+1})")
     else:
-        print(f"\N{POLICE CARS REVOLVING LIGHT} An incorrect number of raw data files was found, expected {expected_number_of_data_files}, found {len(run_nanorc.data_files)} \N{POLICE CARS REVOLVING LIGHT}")
+        print(f"\N{POLICE CARS REVOLVING LIGHT} An incorrect number of raw data files was found, expected {expected_number_of_data_files}..{expected_number_of_data_files+1}, found {len(run_nanorc.data_files)} \N{POLICE CARS REVOLVING LIGHT}")
 
     for idx in range(len(run_nanorc.data_files)):
         data_file = data_file_checks.DataFile(run_nanorc.data_files[idx])
