@@ -15,44 +15,27 @@ import functools
 print = functools.partial(print, flush=True)
 
 # 21-Jul-2022, KAB:
-# --> changes that are needed in this script include the following:
-# * add intelligence to verify that the output disk is small enough
-#
 # --> problems in the C++ code that this script currently highlights
 # * the crash of the DF App in the second run
 # * the need for the HDF5DataStore to stop retrying writes at stop (drain-dataflow?) time
 
-# 08-May-2023, ELF:
-# Tested script by creating a tmpfs ramdisk (as root):
-# mkdir /mnt/tmp
-# mount -t tmpfs -o size=5g tmpfs /mnt/tmp
-# chmod 777 /mnt/tmp
-# After testing, umount -lf /mnt/tmp to release memory
-
-# check how much free space there is on the configured output disk
-output_path = f"/mnt/tmp"
-disk_space = shutil.disk_usage(output_path)
-gb_space = disk_space.free / (1024 * 1024 * 1024)
-gb_limit = 6.0
-hostname = os.uname().nodename
-print(f"DEBUG: {gb_space} GB free in {output_path}")
-
 # Values that help determine the running conditions
+output_path_parameter = "."
+desired_size_of_output_disk_gb = 5
+minimum_free_disk_space_gb = desired_size_of_output_disk_gb + 5  # leave 5 GB free for other users/integtests/etc
 number_of_data_producers = 10
 run_duration = 20  # seconds
 number_of_readout_apps = 3
 number_of_dataflow_apps = 1
 trigger_rate = 0.2  # Hz
-data_rate_slowdown_factor = 10
-token_count = 1
 readout_window_time_before = 9000000
 readout_window_time_after = 1000000
 
 # Default values for validation parameters
-expected_number_of_data_files = 1
+expected_number_of_data_files = 2
 check_for_logfile_errors = True
-expected_event_count = int(gb_space - 5)
-expected_event_count_tolerance = 1
+expected_event_count = 2 # files can have 1 to 4 TriggerRecords, so we allow 2 +- 2
+expected_event_count_tolerance = 2
 
 wibeth_frag_hsi_trig_params = {
     "fragment_type_description": "WIBEth",
@@ -72,21 +55,41 @@ required_logfile_problems = {
     "df-01": [
         "A problem was encountered when writing TriggerRecord number",
         "A problem was encountered when writing a trigger record to file",
-        r"There are \d+ bytes free, and the required minimum is \d+ bytes based on a safety factor of 5 times the trigger record size",
-        "An invalid run number was received in a TriggerRecord message"
+        r"There are \d+ bytes free, and the required minimum is \d+ bytes based on a safety factor of \d+ times the trigger record size",
     ],
     "mlt": [r"Trigger is inhibited in run \d+"],
     "dfo": [r"TriggerDecision \d+ didn't complete within timeout in run \d+"],
 }
 ignored_logfile_problems = {
-    "-controller": [
-        "Worker with pid \\d+ was terminated due to signal 1",
-        "Connection '.*' not found on the application registry",
-    ],
     "connectivity-service": [
         "errorlog: -",
     ],
 }
+
+# Determine if the conditions are right for these tests
+sufficient_disk_space = True
+actual_output_path = output_path_parameter
+if output_path_parameter == ".":
+    actual_output_path = "/tmp"
+disk_space = shutil.disk_usage(actual_output_path)
+total_disk_space_gb = disk_space.total / (1024 * 1024 * 1024)
+free_disk_space_gb = disk_space.free / (1024 * 1024 * 1024)
+print(
+    f"DEBUG: Space on disk for output path \"{actual_output_path}\": total = {total_disk_space_gb} GB and free = {free_disk_space_gb} GB."
+)
+if (
+    free_disk_space_gb < minimum_free_disk_space_gb
+):
+    sufficient_disk_space = False
+
+# We simulate a nearly-full output disk by setting the free-space-safety-factor
+# that the data writer uses to a custom value, based on the free space on disk.
+# The size of each TriggerRecord in this test is tuned to be about 1 GB, so if
+# the free-space-safety-factor is calculated to be 10, then it will appear that
+# the disk is full when there is still ~< 10 GB of free space.  And, having a
+# 1 GB size for the TRs means that we will write approximately
+# desired_free_disk_space_gb TriggerRecords before appearing to run out of space.
+free_space_safety_factor = 1 + round(0.5 + free_disk_space_gb - desired_size_of_output_disk_gb)
 
 # The next three variable declarations *must* be present as globals in the test
 # file. They're read by the "fixtures" in conftest.py to determine how
@@ -102,14 +105,6 @@ conf_dict.session = "insufficient"
 conf_dict.tpg_enabled = False
 conf_dict.n_df_apps = number_of_dataflow_apps
 conf_dict.fake_hsi_enabled = False
-
-conf_dict.config_substitutions.append(
-    data_classes.attribute_substitution(
-        obj_id=conf_dict.session,
-        obj_class="Session",
-        updates={"data_rate_slowdown_factor": data_rate_slowdown_factor},
-    )
-)
 
 conf_dict.config_substitutions.append(
     data_classes.attribute_substitution(
@@ -130,18 +125,24 @@ conf_dict.config_substitutions.append(
 conf_dict.config_substitutions.append(
     data_classes.attribute_substitution(
         obj_class="DataStoreConf",
+        obj_id="default",
         updates={
-            "directory_path": output_path,
+            "directory_path": output_path_parameter,
+            "free_space_safety_factor": free_space_safety_factor,
         },
     )
 )
-
+conf_dict.config_substitutions.append(
+    data_classes.attribute_substitution(
+        obj_class="DFOConf", updates={"busy_threshold": 1, "free_threshold": 0}
+    )
+)
 
 confgen_arguments = {
     "Base_System": conf_dict,
 }
 # The commands to run in nanorc, as a list
-if gb_space < gb_limit:
+if sufficient_disk_space:
     nanorc_command_list = (
         "boot conf wait 5".split()
         + "start --run-number 101 wait 1 enable-triggers wait ".split()
@@ -162,9 +163,9 @@ else:
 
 
 def test_nanorc_success(run_nanorc):
-    if gb_space >= gb_limit:
+    if not sufficient_disk_space:
         pytest.skip(
-            f"This computer ({hostname}) has too much available space in {output_path}.\n    (There is {gb_space} GB of space in {output_path}, limit is {gb_limit} GB)"
+            f"The raw data output path ({actual_output_path}) does not have enough space to run this test."
         )
 
     current_test = os.environ.get("PYTEST_CURRENT_TEST")
@@ -180,9 +181,9 @@ def test_nanorc_success(run_nanorc):
 
 
 def test_log_files(run_nanorc):
-    if gb_space >= gb_limit:
+    if not sufficient_disk_space:
         pytest.skip(
-            f"This computer ({hostname}) has too much available space in {output_path}.\n    (There is {gb_space} GB of space in {output_path}, limit is {gb_limit} GB)"
+            f"The raw data output path ({actual_output_path}) does not have enough space to run this test."
         )
 
     if check_for_logfile_errors:
@@ -197,12 +198,15 @@ def test_log_files(run_nanorc):
 
 
 def test_data_files(run_nanorc):
-    if gb_space >= gb_limit:
+    if not sufficient_disk_space:
         print(
-            f"This computer ({hostname}) has too much available space in {output_path}.\n    (There is {gb_space} GB of space in {output_path}, limit is {gb_limit} GB)"
+            f"The raw data output path ({actual_output_path}) does not have enough space to run this test."
+        )
+        print(
+            f"    (Free space is {free_disk_space_gb} GB and require space is {minimum_free_disk_space_gb} GB.)"
         )
         pytest.skip(
-            f"This computer ({hostname}) has too much available space in {output_path}.\n    (There is {gb_space} GB of space in {output_path}, limit is {gb_limit} GB)"
+            f"The raw data output path ({actual_output_path}) does not have enough space to run this test."
         )
 
     local_expected_event_count = expected_event_count
@@ -213,10 +217,13 @@ def test_data_files(run_nanorc):
     fragment_check_list.append(wibeth_frag_hsi_trig_params)  # WIBEth
 
     # Run some tests on the output data file
-    all_ok = True
-    all_ok &= len(run_nanorc.data_files) == expected_number_of_data_files
+    all_ok = len(run_nanorc.data_files) == expected_number_of_data_files
+    print("") # Clear potential dot from pytest
+    if all_ok:
+        print(f"\N{WHITE HEAVY CHECK MARK} The correct number of raw data files was found ({expected_number_of_data_files})")
+    else:
+        print(f"\N{POLICE CARS REVOLVING LIGHT} An incorrect number of raw data files was found, expected {expected_number_of_data_files}, found {len(run_nanorc.data_files)} \N{POLICE CARS REVOLVING LIGHT}")
 
-    all_ok = True
     for idx in range(len(run_nanorc.data_files)):
         data_file = data_file_checks.DataFile(run_nanorc.data_files[idx])
         all_ok &= data_file_checks.sanity_check(data_file)
@@ -233,13 +240,11 @@ def test_data_files(run_nanorc):
             )
     assert all_ok
 
-    assert all_ok
-
 
 def test_cleanup(run_nanorc):
-    if gb_space >= gb_limit:
+    if not sufficient_disk_space:
         pytest.skip(
-            f"This computer ({hostname}) has too much available space in {output_path}.\n    (There is {gb_space} GB of space in {output_path}, limit is {gb_limit} GB)"
+            f"The raw data output path ({actual_output_path}) does not have enough space to run this test."
         )
 
     pathlist_string = ""
