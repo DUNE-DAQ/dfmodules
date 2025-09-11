@@ -21,7 +21,7 @@ print = functools.partial(print, flush=True)
 
 # Values that help determine the running conditions
 output_path_parameter = "."
-desired_size_of_output_disk_gb = 5
+desired_size_of_output_disk_gb = 6
 minimum_free_disk_space_gb = desired_size_of_output_disk_gb + 5  # leave 5 GB free for other users/integtests/etc
 number_of_data_producers = 10
 run_duration = 20  # seconds
