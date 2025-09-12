@@ -106,7 +106,7 @@ conf_dict.config_substitutions.append(
     )
 )
 conf_dict.config_substitutions.append(
-    data_classes.config_substitution(
+    data_classes.attribute_substitution(
         obj_class="TCDataProcessor",
         obj_id="def-tc-processor",
         updates={"merge_overlapping_tcs": 0},

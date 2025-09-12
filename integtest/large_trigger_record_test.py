@@ -28,7 +28,6 @@ run_duration = 32  # seconds
 number_of_readout_apps = 3
 number_of_dataflow_apps = 1
 trigger_rate = 0.06  # Hz
-token_count = 1
 readout_window_time_before = 10000000
 readout_window_time_after = 1000000
 data_rate_slowdown_factor = 1
@@ -121,7 +120,15 @@ conf_dict.config_substitutions.append(
     data_classes.attribute_substitution(
         obj_class="DataStoreConf",
         obj_id="default",
-        updates={"max_file_size": 2 * 1024 * 1024 * 1024},
+        updates={
+            "max_file_size": 2 * 1024 * 1024 * 1024,
+            "directory_path": output_path_parameter,
+        },
+    )
+)
+conf_dict.config_substitutions.append(
+    data_classes.attribute_substitution(
+        obj_class="DFOConf", updates={"busy_threshold": 1, "free_threshold": 0}
     )
 )
 oversize_conf = copy.deepcopy(conf_dict)  # Copy before setting the readout window
