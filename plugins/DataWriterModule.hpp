@@ -130,7 +130,7 @@ ERS_DECLARE_ISSUE_BASE(dfmodules,
                        InvalidRunNumber,
                        appfwk::GeneralDAQModuleIssue,
                        "An invalid run number was received in a "
-                         << msg_type << "message, "
+                         << msg_type << " message, "
                          << "received=" << received << ", expected=" << expected << ", trig/seq_number=" << trnum << "."
                          << seqnum,
                        ((std::string)name),

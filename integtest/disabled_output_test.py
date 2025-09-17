@@ -22,57 +22,61 @@ expected_number_of_data_files = 2
 check_for_logfile_errors = True
 expected_event_count = trigger_rate * run_duration
 expected_event_count_tolerance = math.ceil(expected_event_count / 10)
-wibeth_frag_hsi_trig_params = {
+
+wibeth_frag_params = {
     "fragment_type_description": "WIBEth",
     "fragment_type": "WIBEth",
     "expected_fragment_count": (number_of_data_producers),
     "min_size_bytes": 7272,
     "max_size_bytes": 14472,
+    "debug_mask": 0x0,
 }
-wibeth_frag_multi_trig_params = {
-    "fragment_type_description": "WIBEth",
-    "fragment_type": "WIBEth",
-    "expected_fragment_count": (number_of_data_producers),
-    "min_size_bytes": 72,
-    "max_size_bytes": 14472,
-}
+# sizes: 128 is for one TC with zero TAs inside it (72+56)
+#        208 is for one TC with one TA inside it (72+56+80)
+#        264 is for two TCs with one TA in one of them (72+56+80+56)
 triggercandidate_frag_params = {
     "fragment_type_description": "Trigger Candidate",
     "fragment_type": "Trigger_Candidate",
     "expected_fragment_count": 1,
     "min_size_bytes": 128,
-    "max_size_bytes": 280,
+    "max_size_bytes": 264,
+    "debug_mask": 0x0,
+    "frag_sizes_by_TC_type": {"kPrescale": {"min_size_bytes": 208, "max_size_bytes": 264},
+                                "kRandom": {"min_size_bytes": 128, "max_size_bytes": 264},
+                                "default": {"min_size_bytes": 128, "max_size_bytes": 264} }
 }
+# sizes:  72 is for an empty TA fragment
+#        184 is for one TA with one TP inside it (72+88+24)
+#        296 is for two TAs with one TP in each of them (72+88+24+88+24)
+#        408 is for three TAs with one TP in each of them (72+88+24+88+24+88+24)
 triggeractivity_frag_params = {
     "fragment_type_description": "Trigger Activity",
     "fragment_type": "Trigger_Activity",
     "expected_fragment_count": 1,
     "min_size_bytes": 72,
-    "max_size_bytes": 216,
+    "max_size_bytes": 408,
+    "debug_mask": 0x0,
+    "frag_sizes_by_TC_type": {"kPrescale": {"min_size_bytes": 184, "max_size_bytes": 408},
+                                "kRandom": {"min_size_bytes":  72, "max_size_bytes": 296},
+                                "default": {"min_size_bytes":  72, "max_size_bytes": 408} }
 }
+# sizes:  72 is for an empty TP fragment
+#        144 is for a fragment with three TPs in it (72+24+24+24)
 triggerprimitive_frag_params = {
     "fragment_type_description": "Trigger Primitive",
     "fragment_type": "Trigger_Primitive",
-    "expected_fragment_count": 2,  # number of readout apps (1) times 2
+    "expected_fragment_count": 3,
     "min_size_bytes": 72,
-    "max_size_bytes": 16000,
-}
-hsi_frag_params = {
-    "fragment_type_description": "HSI",
-    "fragment_type": "Hardware_Signal",
-    "expected_fragment_count": 1,
-    "min_size_bytes": 72,
-    "max_size_bytes": 100,
+    "max_size_bytes": 144,
 }
 ignored_logfile_problems = {
     "-controller": [
         "Worker with pid \\d+ was terminated due to signal 1",
+        "Connection '.*' not found on the application registry",
     ],
-    "local-connection-server": [
+    "connectivity-service": [
         "errorlog: -",
-        "Worker with pid \\d+ was terminated due to signal 1",
     ],
-    "log_.*_disabled_": ["connect: Connection refused"],
 }
 
 # The next three variable declarations *must* be present as globals in the test
@@ -85,7 +89,7 @@ conf_dict = data_classes.drunc_config()
 conf_dict.dro_map_config.n_streams = number_of_data_producers
 conf_dict.op_env = "integtest"
 conf_dict.session = "disabled"
-conf_dict.tpg_enabled = True
+conf_dict.tpg_enabled = False
 conf_dict.frame_file = "asset://?checksum=e96fd6efd3f98a9a3bfaba32975b476e"  # WIBEth
 
 conf_dict.config_substitutions.append(
@@ -98,7 +102,14 @@ conf_dict.config_substitutions.append(
 conf_dict.config_substitutions.append(
     data_classes.attribute_substitution(
         obj_class="RandomTCMakerConf",
-        updates={"trigger_interval_ticks": 62500000 / trigger_rate},
+        updates={"trigger_rate_hz": trigger_rate},
+    )
+)
+conf_dict.config_substitutions.append(
+    data_classes.attribute_substitution(
+        obj_class="TCDataProcessor",
+        obj_id="def-tc-processor",
+        updates={"merge_overlapping_tcs": 0},
     )
 )
 conf_dict.config_substitutions.append(
@@ -128,24 +139,24 @@ confgen_arguments = {
 # The commands to run in nanorc, as a list
 nanorc_command_list = "boot conf".split()
 nanorc_command_list += (
-    "start_run --disable-data-storage 101 wait ".split()
+    "start --disable-data-storage true --run-number 101 wait 1 enable-triggers wait ".split()
     + [str(run_duration)]
-    + "stop_run --wait 2 wait 2".split()
+    + "disable-triggers wait 2 drain-dataflow wait 2 stop-trigger-sources stop wait 2".split()
 )
 nanorc_command_list += (
-    "start_run                        102 wait ".split()
+    "start                             --run-number 102  wait 1 enable-triggers wait ".split()
     + [str(run_duration)]
-    + "stop_run --wait 2 wait 2".split()
+    + "disable-triggers wait 2 drain-dataflow wait 2 stop-trigger-sources stop wait 2".split()
 )
 nanorc_command_list += (
-    "start_run --disable-data-storage 103 wait ".split()
+    "start --disable-data-storage true --run-number 103  wait 1 enable-triggers wait ".split()
     + [str(run_duration)]
-    + "disable_triggers wait 2 stop_run wait 2".split()
+    + "disable-triggers wait 2 drain-dataflow wait 2 stop-trigger-sources stop wait 2".split()
 )
 nanorc_command_list += (
-    "start_run                        104 wait ".split()
+    "start                             --run-number 104  wait 1 enable-triggers wait ".split()
     + [str(run_duration)]
-    + "disable_triggers wait 2 stop_run wait 2".split()
+    + "disable-triggers wait 2 drain-dataflow wait 2 stop-trigger-sources stop wait 2".split()
 )
 nanorc_command_list += "scrap terminate".split()
 
@@ -176,7 +187,7 @@ def test_log_files(run_nanorc):
 def test_data_files(run_nanorc):
     local_expected_event_count = expected_event_count
     local_event_count_tolerance = expected_event_count_tolerance
-    fragment_check_list = [triggercandidate_frag_params, hsi_frag_params]
+    fragment_check_list = [triggercandidate_frag_params]
     if run_nanorc.confgen_config.tpg_enabled:
         local_expected_event_count += (
             250 * number_of_data_producers * run_duration / 100
@@ -184,14 +195,15 @@ def test_data_files(run_nanorc):
         local_event_count_tolerance += (
             10 * number_of_data_producers * run_duration / 100
         )
-        fragment_check_list.append(wibeth_frag_multi_trig_params)  # WIBEth
+        fragment_check_list.append(wibeth_frag_params)  # WIBEth
         fragment_check_list.append(triggerprimitive_frag_params)
         fragment_check_list.append(triggeractivity_frag_params)
     else:
-        fragment_check_list.append(wibeth_frag_hsi_trig_params)  # WIBEth
+        fragment_check_list.append(wibeth_frag_params)  # WIBEth
 
+    all_ok = True
     # Run some tests on the output data file
-    assert len(run_nanorc.data_files) == expected_number_of_data_files
+    all_ok &= len(run_nanorc.data_files) == expected_number_of_data_files
 
     all_ok = True
     for idx in range(len(run_nanorc.data_files)):

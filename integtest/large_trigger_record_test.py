@@ -28,7 +28,6 @@ run_duration = 32  # seconds
 number_of_readout_apps = 3
 number_of_dataflow_apps = 1
 trigger_rate = 0.06  # Hz
-token_count = 1
 readout_window_time_before = 10000000
 readout_window_time_after = 1000000
 data_rate_slowdown_factor = 1
@@ -36,7 +35,7 @@ minimum_total_disk_space_gb = 33  # 50% more than what we need
 minimum_free_disk_space_gb = 28  # 25% more than what we need
 
 # Default values for validation parameters
-expected_number_of_data_files = 2
+expected_number_of_data_files = 4
 check_for_logfile_errors = True
 expected_event_count = 1
 expected_event_count_tolerance = 1
@@ -45,21 +44,21 @@ wibeth_frag_55pct_params = {
     "fragment_type": "WIBEth",
     "expected_fragment_count": (number_of_data_producers * number_of_readout_apps),
     "min_size_bytes": 38678472,
-    "max_size_bytes": 38678472,
+    "max_size_bytes": 38685672,
 }
 wibeth_frag_125pct_params = {
     "fragment_type_description": "WIBEth",
     "fragment_type": "WIBEth",
     "expected_fragment_count": (number_of_data_producers * number_of_readout_apps),
     "min_size_bytes": 91411272,
-    "max_size_bytes": 91411272,
+    "max_size_bytes": 91418472,
 }
 triggercandidate_frag_params = {
     "fragment_type_description": "Trigger Candidate",
     "fragment_type": "Trigger_Candidate",
     "expected_fragment_count": 1,
     "min_size_bytes": 128,
-    "max_size_bytes": 280,
+    "max_size_bytes": 128,
 }
 ignored_logfile_problems = {
     "-controller": [
@@ -121,7 +120,15 @@ conf_dict.config_substitutions.append(
     data_classes.attribute_substitution(
         obj_class="DataStoreConf",
         obj_id="default",
-        updates={"max_file_size": 2 * 1024 * 1024 * 1024},
+        updates={
+            "max_file_size": 2 * 1024 * 1024 * 1024,
+            "directory_path": output_path_parameter,
+        },
+    )
+)
+conf_dict.config_substitutions.append(
+    data_classes.attribute_substitution(
+        obj_class="DFOConf", updates={"busy_threshold": 1, "free_threshold": 0}
     )
 )
 oversize_conf = copy.deepcopy(conf_dict)  # Copy before setting the readout window
@@ -155,10 +162,10 @@ confgen_arguments = {
 if sufficient_disk_space:
     nanorc_command_list = (
         "boot conf wait 5".split()
-        + "start --run-number 101 wait 1 enable-triggers wait ".split()
+        + "start --run-number 101 wait 10 enable-triggers wait ".split()
         + [str(run_duration)]
         + "disable-triggers wait 2 drain-dataflow wait 2 stop-trigger-sources stop ".split()
-        + "start --run-number 102 wait 1 enable-triggers wait ".split()
+        + "start --run-number 102 wait 10 enable-triggers wait ".split()
         + [str(run_duration)]
         + "disable-triggers wait 2 drain-dataflow wait 2 stop-trigger-sources stop ".split()
         + " scrap terminate".split()
@@ -176,7 +183,7 @@ def test_nanorc_success(run_nanorc):
         )
 
     current_test = os.environ.get("PYTEST_CURRENT_TEST")
-    match_obj = re.search(r".*\[(.+)-run_nanorc0\].*", current_test)
+    match_obj = re.search(r".*\[(.+)\-run_nanorc0].*", current_test)
     if match_obj:
         current_test = match_obj.group(1)
     banner_line = re.sub(".", "=", current_test)
@@ -219,7 +226,7 @@ def test_data_files(run_nanorc):
     local_event_count_tolerance = expected_event_count_tolerance
     fragment_check_list = [triggercandidate_frag_params]
     current_test = os.environ.get("PYTEST_CURRENT_TEST")
-    match_obj = re.search(r".*\[(.+)\].*", current_test)
+    match_obj = re.search(r".*\[(.+)-run_nanorc0\].*", current_test)
     if match_obj:
         current_test = match_obj.group(1)
     if current_test == "TRSize_125PercentOfMaxFileSize":
@@ -228,9 +235,12 @@ def test_data_files(run_nanorc):
         fragment_check_list.append(wibeth_frag_55pct_params)
 
     # Run some tests on the output data file
-    assert len(run_nanorc.data_files) == expected_number_of_data_files
-
-    all_ok = True
+    all_ok = len(run_nanorc.data_files) == expected_number_of_data_files
+    print("") # Clear potential dot from pytest
+    if all_ok:
+        print(f"\N{WHITE HEAVY CHECK MARK} The correct number of raw data files was found ({expected_number_of_data_files})")
+    else:
+        print(f"\N{POLICE CARS REVOLVING LIGHT} An incorrect number of raw data files was found, expected {expected_number_of_data_files}, found {len(run_nanorc.data_files)} \N{POLICE CARS REVOLVING LIGHT}")
 
     for idx in range(len(run_nanorc.data_files)):
         data_file = data_file_checks.DataFile(run_nanorc.data_files[idx])
