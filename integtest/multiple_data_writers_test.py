@@ -48,16 +48,12 @@ triggerprimitive_frag_params = {
     "min_size_bytes": 72,
     "max_size_bytes": 1032,
 }
-# 03-Jul-2025, KAB: changing the default max size from 72 to 100 to handle cases in which there
-# was a Random or Prescale trigger along with a coincidental HSI event within the readout window.
 hsi_frag_params = {
     "fragment_type_description": "HSI",
     "fragment_type": "Hardware_Signal",
     "expected_fragment_count": 1,
-    "min_size_bytes": 72,
+    "min_size_bytes": 100,
     "max_size_bytes": 100,
-    "frag_sizes_by_TC_type": {"kTiming": {"min_size_bytes": 100, "max_size_bytes": 100},
-                              "default": {"min_size_bytes":  72, "max_size_bytes": 100} }
 }
 ignored_logfile_problems = {
     "-controller": [
