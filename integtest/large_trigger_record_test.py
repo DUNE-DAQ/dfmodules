@@ -131,6 +131,11 @@ conf_dict.config_substitutions.append(
         obj_class="DFOConf", updates={"busy_threshold": 1, "free_threshold": 0}
     )
 )
+conf_dict.config_substitutions.append(
+    data_classes.attribute_substitution(
+        obj_class="LatencyBuffer", updates={"size": 200000}
+    )
+)
 oversize_conf = copy.deepcopy(conf_dict)  # Copy before setting the readout window
 
 conf_dict.config_substitutions.append(
