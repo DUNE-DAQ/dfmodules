@@ -84,7 +84,6 @@ resval.require_total_disk_space_gb(actual_output_path, minimum_total_disk_space_
 resval_debug_string = resval.get_debug_string()
 print(f"{resval_debug_string}")
 
-
 # The next three variable declarations *must* be present as globals in the test
 # file. They're read by the "fixtures" in conftest.py to determine how
 # to run the config generation and nanorc
@@ -173,7 +172,7 @@ if resval.this_computer_has_sufficient_resources:
         + " scrap terminate".split()
     )
 else:
-    nanorc_command_list = ["wait", "3"]
+    nanorc_command_list = ["wait", "1"]
 
 # The tests themselves
 
