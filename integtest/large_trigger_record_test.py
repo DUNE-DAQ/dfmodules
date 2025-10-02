@@ -30,9 +30,6 @@ number_of_dataflow_apps = 1
 trigger_rate = 0.06  # Hz
 readout_window_time_before = 10000000
 readout_window_time_after = 1000000
-data_rate_slowdown_factor = 1
-minimum_total_disk_space_gb = 20  # keep a reasonable amount for other users
-minimum_free_disk_space_gb = 15  # 50% more than what we need
 
 # Default values for validation parameters
 expected_number_of_data_files = 4
@@ -73,14 +70,19 @@ ignored_logfile_problems = {
 
 # Determine if the conditions are right for these tests
 resval = resource_validation.ResourceValidator()
-resval.require_cpu_count(30)
-resval.require_free_memory_gb(28)
-resval.require_total_memory_gb(56)
+resval.require_cpu_count(45)  # total number of data sources plus 50% more for everything else
+resval.require_free_memory_gb(28)  # the maximum amount that we observe being used ('free -h')
+resval.require_total_memory_gb(56)  # double what we need; trying to be kind to others
 actual_output_path = output_path_parameter
 if output_path_parameter == ".":
     actual_output_path = "/tmp"
-resval.require_free_disk_space_gb(actual_output_path, minimum_free_disk_space_gb)
-resval.require_total_disk_space_gb(actual_output_path, minimum_total_disk_space_gb)
+# The largest data set in this test is four 2.55 GB files.  To handle these four files
+# plus a safety factor of three for the last one, we need 6*2.55 = 15.3.
+# Note that a safety factor of 3 is configured below, over-riding the default value of 5.
+resval.require_free_disk_space_gb(actual_output_path, 16)
+# The value of 19 GB for the total disk space is just to reserve some space beyond what this
+# test needs for others to use, and to be slightly lower than a typical 20 GB full disk size.
+resval.require_total_disk_space_gb(actual_output_path, 19)
 resval_debug_string = resval.get_debug_string()
 print(f"{resval_debug_string}")
 
@@ -100,14 +102,6 @@ conf_dict.n_df_apps = number_of_dataflow_apps
 
 conf_dict.config_substitutions.append(
     data_classes.attribute_substitution(
-        obj_id=conf_dict.session,
-        obj_class="Session",
-        updates={"data_rate_slowdown_factor": data_rate_slowdown_factor},
-    )
-)
-
-conf_dict.config_substitutions.append(
-    data_classes.attribute_substitution(
         obj_class="RandomTCMakerConf",
         updates={"trigger_rate_hz": trigger_rate},
     )
@@ -119,6 +113,7 @@ conf_dict.config_substitutions.append(
         updates={
             "max_file_size": 2 * 1024 * 1024 * 1024,
             "directory_path": output_path_parameter,
+            "free_space_safety_factor": 3,
         },
     )
 )
@@ -130,6 +125,14 @@ conf_dict.config_substitutions.append(
 conf_dict.config_substitutions.append(
     data_classes.attribute_substitution(
         obj_class="LatencyBuffer", updates={"size": 100000}
+    )
+)
+conf_dict.config_substitutions.append(
+    data_classes.attribute_substitution(
+        obj_class="TRBConf",
+        updates={
+            "trigger_record_timeout_ms": 1000 / trigger_rate
+        },
     )
 )
 oversize_conf = copy.deepcopy(conf_dict)  # Copy before setting the readout window
