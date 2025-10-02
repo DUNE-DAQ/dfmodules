@@ -248,11 +248,11 @@ TPStreamWriterModule::do_work(std::atomic<bool>& running_flag)
       size_t retry_wait_usec = 1000;
       do {
         should_retry = false;
-	size_t number_of_tps = (timeslice_ptr->get_sum_of_fragment_payload_sizes() / sizeof(trgdataformats::TriggerPrimitive));
+        size_t number_of_tps = (timeslice_ptr->get_sum_of_fragment_payload_sizes() / sizeof(trgdataformats::TriggerPrimitive));
         try {
           m_data_writer->write(*timeslice_ptr);
-	  ++m_timeslices_written;
-	  m_bytes_output += timeslice_ptr->get_total_size_bytes();
+          ++m_timeslices_written;
+          m_bytes_output += timeslice_ptr->get_total_size_bytes();
           m_tps_written += number_of_tps;
           m_total_tps_written += number_of_tps;
         } catch (const RetryableDataStoreProblem& excpt) {
@@ -262,14 +262,14 @@ TPStreamWriterModule::do_work(std::atomic<bool>& running_flag)
                                         timeslice_ptr->get_header().timeslice_number,
                                         timeslice_ptr->get_header().run_number,
                                         excpt));
-	  usleep(retry_wait_usec);
-	  retry_wait_usec = std::min(retry_wait_usec * 2, 1000000UL);
+          usleep(retry_wait_usec);
+          retry_wait_usec = std::min(retry_wait_usec * 2, 1000000UL);
         } catch (const IgnorableDataStoreProblem& excpt) {
           int timeslice_number_diff = largest_timeslice_number - timeslice_ptr->get_header().timeslice_number;
           double seconds_too_late = m_accumulation_interval_seconds * timeslice_number_diff;
           m_tardy_timeslice_max_seconds = std::max(m_tardy_timeslice_max_seconds.load(), seconds_too_late);
-	  m_tps_discarded += number_of_tps;
-	  m_total_tps_discarded += number_of_tps;
+          m_tps_discarded += number_of_tps;
+          m_total_tps_discarded += number_of_tps;
           if (m_warn_user_when_tardy_tps_are_discarded) {
             std::ostringstream sid_list;
             bool first_frag = true;
@@ -285,8 +285,8 @@ TPStreamWriterModule::do_work(std::atomic<bool>& running_flag)
                                            seconds_too_late));
           }
         } catch (const std::exception& excpt) {
-	  m_tps_discarded += number_of_tps;
-	  m_total_tps_discarded += number_of_tps;
+          m_tps_discarded += number_of_tps;
+          m_total_tps_discarded += number_of_tps;
           ers::error(DataWritingProblem(ERS_HERE,
                                         get_name(),
                                         timeslice_ptr->get_header().timeslice_number,
