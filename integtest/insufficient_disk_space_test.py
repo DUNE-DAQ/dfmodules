@@ -68,6 +68,9 @@ ignored_logfile_problems = {
 
 # Determine if the conditions are right for these tests
 resval = resource_validation.ResourceValidator()
+resval.require_cpu_count(45)  # total number of data sources plus 50% more for everything else
+resval.require_free_memory_gb(35)  # the maximum amount that we observe being used ('free -h')
+resval.require_total_memory_gb(70)  # double what we need; trying to be kind to others
 actual_output_path = output_path_parameter
 if output_path_parameter == ".":
     actual_output_path = "/tmp"

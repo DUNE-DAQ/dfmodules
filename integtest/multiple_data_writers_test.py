@@ -67,7 +67,7 @@ ignored_logfile_problems = {
 
 # Determine if the conditions are right for this testing
 resval = resource_validation.ResourceValidator()
-resval.require_cpu_count(8)  # one per data source, plus a couple spares
+resval.require_cpu_count(10)  # one per data source, plus several spares
 resval.require_free_memory_gb(10)  # approximately what we observe
 resval.require_total_memory_gb(20)  # safety factor of 2
 actual_output_path = "/tmp"
