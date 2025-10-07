@@ -133,6 +133,11 @@ conf_dict.config_substitutions.append(
         obj_class="DFOConf", updates={"busy_threshold": 1, "free_threshold": 0}
     )
 )
+conf_dict.config_substitutions.append(
+    data_classes.attribute_substitution(
+        obj_class="LatencyBuffer", updates={"size": 200000}
+    )
+)
 
 confgen_arguments = {
     "Base_System": conf_dict,

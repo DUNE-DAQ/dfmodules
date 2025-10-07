@@ -217,7 +217,7 @@ conf_dict.config_substitutions.append(
 )
 conf_dict.config_substitutions.append(
     data_classes.attribute_substitution(
-        obj_class="LatencyBuffer", updates={"size": 5592000}
+        obj_class="LatencyBuffer", updates={"size": 200000}
     )
 )
 # 03-Jun-2025, KAB
