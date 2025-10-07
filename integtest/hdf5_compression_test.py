@@ -7,6 +7,7 @@ import urllib.request
 import integrationtest.data_file_checks as data_file_checks
 import integrationtest.log_file_checks as log_file_checks
 import integrationtest.data_classes as data_classes
+import integrationtest.resource_validation as resource_validation
 
 pytest_plugins = "integrationtest.integrationtest_drunc"
 
@@ -57,24 +58,6 @@ daphne_tpset_params = {
 #                                     "default": {"min_size_bytes": 80000, "max_size_bytes": 120000} }
 }
 
-#wibeth_frag_params = {
-#    "fragment_type_description": "WIBEth",
-#    "fragment_type": "WIBEth",
-#    "expected_fragment_count": (number_of_data_producers * number_of_readout_apps),
-#    "min_size_bytes": 7272,
-#    "max_size_bytes": 194472,
-#}
-#wibeth_tpset_params = {
-#    "fragment_type_description": "TP Stream",
-#    "fragment_type": "Trigger_Primitive",
-#    "expected_fragment_count": number_of_readout_apps * 3,
-#    "frag_counts_by_record_ordinal": {"first": {"min_count": 1, "max_count": number_of_readout_apps * 3},
-#                                      "default": {"min_count": number_of_readout_apps * 3, "max_count": number_of_readout_apps * 3} },
-#    "min_size_bytes": 0,  # not checked
-#    "max_size_bytes": 0,  # not checked
-#    "debug_mask": 0x0,
-#}
-
 # sizes: 128 is for one TC with zero TAs inside it (72+56)
 #        208 is for one TC with one TA inside it (72+56+80)
 #        264 is for two TCs with one TA in one of them (72+56+80+56)
@@ -122,6 +105,17 @@ ignored_logfile_problems = {
         "errorlog: -",
     ],
 }
+
+# Determine if the conditions are right for these tests
+resval = resource_validation.ResourceValidator()
+resval.require_cpu_count(15)  # total number of data sources (6RU+3TP) plus several more for everything else
+resval.require_free_memory_gb(10)  # the maximum amount that we observe being used ('free -h')
+resval.require_total_memory_gb(20)  # double what we need; trying to be kind to others
+actual_output_path = "/tmp"
+resval.require_free_disk_space_gb(actual_output_path, 5)  # what we actually use (3) plus margin
+resval.require_total_disk_space_gb(actual_output_path, 10)  # factor of two to reserve some for others
+resval_debug_string = resval.get_debug_string()
+print(f"{resval_debug_string}")
 
 # The next three variable declarations *must* be present as globals in the test
 # file. They're read by the "fixtures" in conftest.py to determine how
@@ -238,19 +232,28 @@ confgen_arguments = {
 }
 
 # The commands to run in nanorc, as a list
-nanorc_command_list = (
-    "boot conf wait 5".split()
-    + "start --run-number 101 wait 1 enable-triggers wait 100".split()
-    + "disable-triggers wait 2 drain-dataflow wait 2 stop-trigger-sources stop ".split()
-    + "start --run-number 102 wait 1 enable-triggers wait 100".split()
-    + "disable-triggers wait 2 drain-dataflow wait 2 stop-trigger-sources stop ".split()
-    + " scrap terminate".split()
+if resval.this_computer_has_sufficient_resources:
+    nanorc_command_list = (
+        "boot conf wait 5".split()
+        + "start --run-number 101 wait 1 enable-triggers wait 100".split()
+        + "disable-triggers wait 2 drain-dataflow wait 2 stop-trigger-sources stop ".split()
+        + "start --run-number 102 wait 1 enable-triggers wait 100".split()
+        + "disable-triggers wait 2 drain-dataflow wait 2 stop-trigger-sources stop ".split()
+        + " scrap terminate".split()
 )
+else:
+    nanorc_command_list = ["wait", "1"]
 
 # The tests themselves
 
 
 def test_nanorc_success(run_nanorc):
+    if not resval.this_computer_has_sufficient_resources:
+        resval_report_string = resval.get_insufficient_resources_report()
+        print(f"{resval_report_string}")
+        resval_summary_string = resval.get_insufficient_resources_summary()
+        pytest.skip(f"{resval_summary_string}")
+
     current_test = os.environ.get("PYTEST_CURRENT_TEST")
     match_obj = re.search(r".*\[(.+)-run_nanorc0\].*", current_test)
     if match_obj:
@@ -264,6 +267,10 @@ def test_nanorc_success(run_nanorc):
 
 
 def test_log_files(run_nanorc):
+    if not resval.this_computer_has_sufficient_resources:
+        resval_summary_string = resval.get_insufficient_resources_summary()
+        pytest.skip(f"{resval_summary_string}")
+
     if check_for_logfile_errors:
         # Check that there are no warnings or errors in the log files
         assert log_file_checks.logs_are_error_free(
@@ -272,6 +279,10 @@ def test_log_files(run_nanorc):
 
 
 def test_data_files(run_nanorc):
+    if not resval.this_computer_has_sufficient_resources:
+        resval_summary_string = resval.get_insufficient_resources_summary()
+        pytest.skip(f"{resval_summary_string}")
+
     fragment_check_list = [triggercandidate_frag_params, hsi_frag_params, daphne_frag_params]
     fragment_check_list.append(daphne_triggerprimitive_frag_params)
     fragment_check_list.append(triggeractivity_frag_params)
@@ -299,6 +310,10 @@ def test_data_files(run_nanorc):
 
 
 def test_tpstream_files(run_nanorc):
+    if not resval.this_computer_has_sufficient_resources:
+        resval_summary_string = resval.get_insufficient_resources_summary()
+        pytest.skip(f"{resval_summary_string}")
+
     tpstream_files = run_nanorc.tpset_files
     fragment_check_list = [daphne_tpset_params]
 
@@ -320,6 +335,10 @@ def test_tpstream_files(run_nanorc):
 
 
 def test_cleanup(run_nanorc):
+    if not resval.this_computer_has_sufficient_resources:
+        resval_summary_string = resval.get_insufficient_resources_summary()
+        pytest.skip(f"{resval_summary_string}")
+
     pathlist_string = ""
     filelist_string = ""
     for data_file in run_nanorc.data_files:
