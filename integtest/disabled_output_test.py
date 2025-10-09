@@ -90,7 +90,7 @@ conf_dict.dro_map_config.n_streams = number_of_data_producers
 conf_dict.op_env = "integtest"
 conf_dict.session = "disabled"
 conf_dict.tpg_enabled = False
-conf_dict.frame_file = "asset://?checksum=e96fd6efd3f98a9a3bfaba32975b476e"  # WIBEth
+conf_dict.frame_file = "asset://?checksum=370df564205290d27cab47e44ae4ca47"  # WIBEth
 
 conf_dict.config_substitutions.append(
     data_classes.attribute_substitution(
