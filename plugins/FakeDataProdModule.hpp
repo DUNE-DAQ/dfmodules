@@ -87,7 +87,6 @@ private:
   uint64_t m_response_delay; // NOLINT (build/unsigned)
   daqdataformats::FragmentType m_fragment_type;
   std::string m_timesync_topic_name;
-  uint32_t m_pid_of_current_process; // NOLINT (build/unsigned)
 
   std::string m_data_request_id;
   std::string m_timesync_id;

@@ -48,8 +48,6 @@ FakeDataProdModule::FakeDataProdModule(const std::string& name)
   register_command("conf", &FakeDataProdModule::do_conf);
   register_command("start", &FakeDataProdModule::do_start);
   register_command("stop", &FakeDataProdModule::do_stop);
-
-  m_pid_of_current_process = getpid();
 }
 
 void
@@ -148,10 +146,10 @@ FakeDataProdModule::do_timesync(std::atomic<bool>& running_flag)
     ++msg_seqno;
     timesyncmsg.run_number = m_run_number;
     timesyncmsg.sequence_number = msg_seqno;
-    timesyncmsg.source_pid = m_pid_of_current_process;
+    timesyncmsg.source_id = m_sourceid.id;
     TLOG_DEBUG(TLVL_TIME_SYNCS) << "New timesync: daq=" << timesyncmsg.daq_time << " wall=" << timesyncmsg.system_time
                                 << " run=" << timesyncmsg.run_number << " seqno=" << timesyncmsg.sequence_number
-                                << " pid=" << timesyncmsg.source_pid;
+                                << " source_id=" << timesyncmsg.source_id;
     try {
       sender_ptr->send(std::move(timesyncmsg), std::chrono::milliseconds(500));
       ++sent_count;
