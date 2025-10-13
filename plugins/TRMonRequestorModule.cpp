@@ -109,7 +109,6 @@ TRMonRequestorModule::do_conf(const CommandData_t&)
   if (m_trigger_type_mask == 0) {
     m_trigger_type_mask = dfmessages::TRMonTriggerTypes::s_any_trigger_type;
   }
-  m_token_count = m_requestor_conf->get_maximum_outstanding_requests();
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
 }
 
@@ -130,6 +129,7 @@ TRMonRequestorModule::do_start(const CommandData_t& args)
   // clean books from possible previous memory
   m_trigger_records_requested.store(0);
   m_current_request_number = 0;
+  m_token_count = m_requestor_conf->get_maximum_outstanding_requests();
 
   // 19-Dec-2024, KAB: check that DataRequest senders are ready to send. This is done so
   // that the IOManager infrastructure fetches the necessary connection details from
@@ -164,6 +164,7 @@ TRMonRequestorModule::do_stop(const CommandData_t& /*args*/)
   m_working_thread.stop_working_thread();
 
   m_token_receiver->remove_callback();
+  m_token_count = 0;
 
   TLOG() << get_name() << " successfully stopped";
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_stop() method";
