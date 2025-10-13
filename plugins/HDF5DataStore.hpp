@@ -52,21 +52,6 @@ ERS_DECLARE_ISSUE_BASE(dfmodules,
                        ((std::string)selected_operation))
 
 ERS_DECLARE_ISSUE_BASE(dfmodules,
-                       FileOperationProblem,
-                       appfwk::GeneralDAQModuleIssue,
-                       "A problem was encountered when opening or closing file \"" << filename << "\"",
-                       ((std::string)name),
-                       ((std::string)filename))
-
-ERS_DECLARE_ISSUE_BASE(dfmodules,
-                       InvalidHDF5Dataset,
-                       appfwk::GeneralDAQModuleIssue,
-                       "The HDF5 Dataset associated with name \"" << data_set << "\" is invalid. (file = " << filename
-                                                                  << ")",
-                       ((std::string)name),
-                       ((std::string)data_set)((std::string)filename))
-
-ERS_DECLARE_ISSUE_BASE(dfmodules,
                        InvalidOutputPath,
                        appfwk::GeneralDAQModuleIssue,
                        "The specified output destination, \"" << output_path

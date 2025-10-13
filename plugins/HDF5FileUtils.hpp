@@ -28,6 +28,25 @@
 //#include <sstream>
 
 namespace dunedaq {
+
+// Disable coverage checking LCOV_EXCL_START
+ERS_DECLARE_ISSUE_BASE(dfmodules,
+                       FileOperationProblem,
+                       appfwk::GeneralDAQModuleIssue,
+                       "A problem was encountered when opening or closing file \"" << filename << "\"",
+                       ((std::string)name),
+                       ((std::string)filename))
+
+ERS_DECLARE_ISSUE_BASE(dfmodules,
+                       InvalidHDF5Dataset,
+                       appfwk::GeneralDAQModuleIssue,
+                       "The HDF5 Dataset associated with name \"" << data_set << "\" is invalid. (file = " << filename
+                                                                  << ")",
+                       ((std::string)name),
+                       ((std::string)data_set)((std::string)filename))
+
+// Re-enable coverage checking LCOV_EXCL_STOP
+
 namespace dfmodules {
 namespace HDF5FileUtils {
 /**
