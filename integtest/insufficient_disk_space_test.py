@@ -1,12 +1,12 @@
 import pytest
 import os
 import re
-import shutil
 import urllib.request
 
 import integrationtest.data_file_checks as data_file_checks
 import integrationtest.log_file_checks as log_file_checks
 import integrationtest.data_classes as data_classes
+import integrationtest.resource_validation as resource_validation
 
 pytest_plugins = "integrationtest.integrationtest_drunc"
 
@@ -67,20 +67,16 @@ ignored_logfile_problems = {
 }
 
 # Determine if the conditions are right for these tests
-sufficient_disk_space = True
+resval = resource_validation.ResourceValidator()
+resval.require_cpu_count(45)  # total number of data sources plus 50% more for everything else
+resval.require_free_memory_gb(35)  # the maximum amount that we observe being used ('free -h')
+resval.require_total_memory_gb(70)  # double what we need; trying to be kind to others
 actual_output_path = output_path_parameter
 if output_path_parameter == ".":
     actual_output_path = "/tmp"
-disk_space = shutil.disk_usage(actual_output_path)
-total_disk_space_gb = disk_space.total / (1024 * 1024 * 1024)
-free_disk_space_gb = disk_space.free / (1024 * 1024 * 1024)
-print(
-    f"DEBUG: Space on disk for output path \"{actual_output_path}\": total = {total_disk_space_gb} GB and free = {free_disk_space_gb} GB."
-)
-if (
-    free_disk_space_gb < minimum_free_disk_space_gb
-):
-    sufficient_disk_space = False
+resval.require_free_disk_space_gb(actual_output_path, minimum_free_disk_space_gb)
+resval_debug_string = resval.get_debug_string()
+print(f"{resval_debug_string}")
 
 # We simulate a nearly-full output disk by setting the free-space-safety-factor
 # that the data writer uses to a custom value, based on the free space on disk.
@@ -89,7 +85,7 @@ if (
 # the disk is full when there is still ~< 10 GB of free space.  And, having a
 # 1 GB size for the TRs means that we will write approximately
 # desired_free_disk_space_gb TriggerRecords before appearing to run out of space.
-free_space_safety_factor = int(free_disk_space_gb - desired_size_of_output_disk_gb)
+free_space_safety_factor = int(resval.free_disk_space_gb - desired_size_of_output_disk_gb)
 
 # The next three variable declarations *must* be present as globals in the test
 # file. They're read by the "fixtures" in conftest.py to determine how
@@ -137,12 +133,17 @@ conf_dict.config_substitutions.append(
         obj_class="DFOConf", updates={"busy_threshold": 1, "free_threshold": 0}
     )
 )
+conf_dict.config_substitutions.append(
+    data_classes.attribute_substitution(
+        obj_class="LatencyBuffer", updates={"size": 200000}
+    )
+)
 
 confgen_arguments = {
     "Base_System": conf_dict,
 }
 # The commands to run in nanorc, as a list
-if sufficient_disk_space:
+if resval.this_computer_has_sufficient_resources:
     nanorc_command_list = (
         "boot conf wait 5".split()
         + "start --run-number 101 wait 1 enable-triggers wait ".split()
@@ -157,16 +158,17 @@ if sufficient_disk_space:
         + " scrap terminate".split()
     )
 else:
-    nanorc_command_list = ["boot", "terminate"]
+    nanorc_command_list = ["wait", "1"]
 
 # The tests themselves
 
 
 def test_nanorc_success(run_nanorc):
-    if not sufficient_disk_space:
-        pytest.skip(
-            f"The raw data output path ({actual_output_path}) does not have enough space to run this test."
-        )
+    if not resval.this_computer_has_sufficient_resources:
+        resval_report_string = resval.get_insufficient_resources_report()
+        print(f"{resval_report_string}")
+        resval_summary_string = resval.get_insufficient_resources_summary()
+        pytest.skip(f"{resval_summary_string}")
 
     current_test = os.environ.get("PYTEST_CURRENT_TEST")
     match_obj = re.search(r".*\[(.+)-run_nanorc0\].*", current_test)
@@ -181,10 +183,9 @@ def test_nanorc_success(run_nanorc):
 
 
 def test_log_files(run_nanorc):
-    if not sufficient_disk_space:
-        pytest.skip(
-            f"The raw data output path ({actual_output_path}) does not have enough space to run this test."
-        )
+    if not resval.this_computer_has_sufficient_resources:
+        resval_summary_string = resval.get_insufficient_resources_summary()
+        pytest.skip(f"{resval_summary_string}")
 
     if check_for_logfile_errors:
         # Check that there are no warnings or errors in the log files
@@ -198,16 +199,9 @@ def test_log_files(run_nanorc):
 
 
 def test_data_files(run_nanorc):
-    if not sufficient_disk_space:
-        print(
-            f"The raw data output path ({actual_output_path}) does not have enough space to run this test."
-        )
-        print(
-            f"    (Free space is {free_disk_space_gb} GB and require space is {minimum_free_disk_space_gb} GB.)"
-        )
-        pytest.skip(
-            f"The raw data output path ({actual_output_path}) does not have enough space to run this test."
-        )
+    if not resval.this_computer_has_sufficient_resources:
+        resval_summary_string = resval.get_insufficient_resources_summary()
+        pytest.skip(f"{resval_summary_string}")
 
     local_expected_event_count = expected_event_count
     local_event_count_tolerance = expected_event_count_tolerance
@@ -242,10 +236,9 @@ def test_data_files(run_nanorc):
 
 
 def test_cleanup(run_nanorc):
-    if not sufficient_disk_space:
-        pytest.skip(
-            f"The raw data output path ({actual_output_path}) does not have enough space to run this test."
-        )
+    if not resval.this_computer_has_sufficient_resources:
+        resval_summary_string = resval.get_insufficient_resources_summary()
+        pytest.skip(f"{resval_summary_string}")
 
     pathlist_string = ""
     filelist_string = ""
