@@ -15,6 +15,7 @@
 #include "dfmessages/TriggerDecisionToken.hpp"
 #include "dfmessages/TRMonRequest.hpp"
 #include "utilities/WorkerThread.hpp"
+#include "dfmodules/opmon/TRMonRequestorModule.pb.h"
 
 #include <atomic>
 #include <memory>
@@ -81,7 +82,10 @@ private:
   std::shared_ptr<token_receiver_t> m_token_receiver;
 
   // Monitoring
-  std::atomic<size_t> m_trigger_records_requested{ 0 };
+  using const_metric_counter_t = std::invoke_result<decltype(&dunedaq::dfmodules::opmon::TRMonRequestorInfo::trigger_records_requested),
+						    dunedaq::dfmodules::opmon::TRMonRequestorInfo>::type;
+  using metric_counter_t = std::remove_const<const_metric_counter_t>::type;
+  std::atomic<metric_counter_t> m_trigger_records_requested{ 0 };
 };
 }
 
