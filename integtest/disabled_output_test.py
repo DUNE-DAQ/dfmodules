@@ -90,7 +90,10 @@ conf_dict.dro_map_config.n_streams = number_of_data_producers
 conf_dict.op_env = "integtest"
 conf_dict.session = "disabled"
 conf_dict.tpg_enabled = False
-conf_dict.frame_file = "asset://?checksum=370df564205290d27cab47e44ae4ca47"  # WIBEth
+# We accept the default values for all of the other fields in the drunc_config data structure
+# (defined in integrationtest/src/integrationtest/data_classes.py), including the "frame_file",
+# which is the data file that is used to emulated the data. The current default for that field
+# specifies a set of WIBEth frames from a relatively recent run at EHN1.)
 
 conf_dict.config_substitutions.append(
     data_classes.attribute_substitution(
