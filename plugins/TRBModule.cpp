@@ -60,7 +60,8 @@ using daqdataformats::TriggerRecordErrorBits;
 TRBModule::TRBModule(const std::string& name)
   : dunedaq::appfwk::DAQModule(name)
   , m_stop_requested(true)
-  , m_queue_timeout(100)
+  , m_tr_queue_timeout(100)
+  , m_dreq_queue_timeout(100)
 {
 
   register_command("conf", &TRBModule::do_conf);
@@ -178,11 +179,13 @@ TRBModule::do_conf(const CommandData_t&)
 
   m_trigger_timeout = std::chrono::milliseconds(m_trb_conf->get_trigger_record_timeout_ms());
 
-  m_loop_sleep = m_queue_timeout = std::chrono::milliseconds(m_trb_conf->get_queues_timeout());
+  m_tr_queue_timeout = std::chrono::milliseconds(m_trb_conf->get_tr_queue_timeout());
+  m_dreq_queue_timeout = std::chrono::milliseconds(m_trb_conf->get_request_queue_timeout());
 
-  TLOG() << get_name() << ": timeouts (ms): queue = " << m_queue_timeout.count() << ", loop = " << m_loop_sleep.count();
-  m_max_time_window = m_trb_conf->get_max_time_window();
-  TLOG() << get_name() << ": Max time window is " << m_max_time_window;
+  TLOG() << get_name() << ": timeouts (ms): TR = " << m_tr_queue_timeout.count()
+         << ", DReq = " << m_dreq_queue_timeout.count();
+  m_max_sequence_length = m_trb_conf->get_max_sequence_length_ticks();
+  TLOG() << get_name() << ": Max time window is " << m_max_sequence_length;
 
   m_this_trb_source_id.subsystem = daqdataformats::SourceID::Subsystem::kTRBuilder;
   m_this_trb_source_id.id = m_trb_conf->get_source_id();
@@ -499,7 +502,7 @@ TRBModule::create_trigger_records_and_dispatch(const dfmessages::TriggerDecision
 
   daqdataformats::timestamp_diff_t tot_width = end - begin;
   daqdataformats::sequence_number_t max_sequence_number =
-    (m_max_time_window > 0 && tot_width > 0) ? ((tot_width - 1) / m_max_time_window) : 0;
+    (m_max_sequence_length > 0 && tot_width > 0) ? ((tot_width - 1) / m_max_sequence_length) : 0;
 
   TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": trig_number " << td.trigger_number << ": run_number " << td.run_number
                               << ": trig_timestamp " << td.trigger_timestamp << " will have " << max_sequence_number + 1
@@ -510,9 +513,9 @@ TRBModule::create_trigger_records_and_dispatch(const dfmessages::TriggerDecision
   // create the trigger records
   for (daqdataformats::sequence_number_t sequence = 0; sequence <= max_sequence_number; ++sequence) {
 
-    daqdataformats::timestamp_t slice_begin = begin + sequence * m_max_time_window;
+    daqdataformats::timestamp_t slice_begin = begin + sequence * m_max_sequence_length;
     daqdataformats::timestamp_t slice_end =
-      m_max_time_window > 0 ? std::min(slice_begin + m_max_time_window, end) : end;
+      m_max_sequence_length > 0 ? std::min(slice_begin + m_max_sequence_length, end) : end;
 
     TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": trig_number " << td.trigger_number << ", sequence " << sequence
                                 << " ts=" << slice_begin << ":" << slice_end << " (TR " << begin << ":" << end << ")";
@@ -634,7 +637,7 @@ TRBModule::dispatch_data_requests(dfmessages::DataRequest dr, const daqdataforma
 
     // send data request into the corresponding connection
     try {
-      sender->send(std::move(dr), m_queue_timeout);
+      sender->send(std::move(dr), m_dreq_queue_timeout);
       wasSentSuccessfully = true;
       ++m_generated_data_requests;
     } catch (const ers::Issue& excpt) {
@@ -677,7 +680,7 @@ TRBModule::send_trigger_record(const TriggerId& id)
             auto trigger_record_bytes =
               serialization::serialize(temp_record, serialization::SerializationType::kMsgPack);
             trigger_record_ptr_t record_copy = serialization::deserialize<trigger_record_ptr_t>(trigger_record_bytes);
-            iom->get_sender<trigger_record_ptr_t>(it->data_destination)->send(std::move(record_copy), m_queue_timeout);
+            iom->get_sender<trigger_record_ptr_t>(it->data_destination)->send(std::move(record_copy), m_tr_queue_timeout);
             ++m_trmon_sent_counter;
             wasSentSuccessfully = true;
           } catch (const ers::Issue& excpt) {
@@ -697,7 +700,7 @@ TRBModule::send_trigger_record(const TriggerId& id)
   bool wasSentSuccessfully = false;
   do {
     try {
-      m_trigger_record_output->send(std::move(temp_record), m_queue_timeout);
+      m_trigger_record_output->send(std::move(temp_record), m_tr_queue_timeout);
       wasSentSuccessfully = true;
       ++m_generated_trigger_records;
     } catch (const ers::Issue& excpt) {
