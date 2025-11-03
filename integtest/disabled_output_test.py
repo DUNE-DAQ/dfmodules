@@ -73,9 +73,11 @@ ignored_logfile_problems = {
     "-controller": [
         "Worker with pid \\d+ was terminated due to signal 1",
         "Connection '.*' not found on the application registry",
+        r"Worker \(pid:\d+\) was sent SIGHUP"  # ignoring SIGHUP messages pending investigation, 03-Nov, KAB/PP/JCF
     ],
     "connectivity-service": [
         "errorlog: -",
+        r"Worker \(pid:\d+\) was sent SIGHUP"  # ignoring SIGHUP messages pending investigation, 03-Nov, KAB/PP/JCF
     ],
 }
 

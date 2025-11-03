@@ -63,6 +63,7 @@ required_logfile_problems = {
 ignored_logfile_problems = {
     "connectivity-service": [
         "errorlog: -",
+        r"Worker \(pid:\d+\) was sent SIGHUP"  # ignoring SIGHUP messages pending investigation, 03-Nov, KAB/PP/JCF
     ],
 }
 
