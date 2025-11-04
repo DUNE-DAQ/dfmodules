@@ -187,6 +187,8 @@ TRBModule::do_conf(const CommandData_t&)
   m_this_trb_source_id.subsystem = daqdataformats::SourceID::Subsystem::kTRBuilder;
   m_this_trb_source_id.id = m_trb_conf->get_source_id();
 
+  m_max_open_trigger_records = m_trb_conf->get_maximum_open_trigger_records();
+
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
 }
 
@@ -448,6 +450,7 @@ TRBModule::extract_trigger_record(const TriggerId& id)
 {
   std::unique_lock<std::mutex> lk(m_trigger_records_mutex);
   auto it = m_trigger_records.extract(id);
+  m_open_trigger_record_cv.notify_one();
   lk.unlock();
 
   if (it.empty())
@@ -542,7 +545,8 @@ TRBModule::create_trigger_records_and_dispatch(const dfmessages::TriggerDecision
     // create the book entry
     TriggerId slice_id(td, sequence);
     {
-      std::lock_guard<std::mutex> lk(m_trigger_records_mutex);
+      std::unique_lock<std::mutex> lk(m_trigger_records_mutex);
+      m_open_trigger_record_cv.wait(lk, [&] { return m_trigger_records.size() < m_max_open_trigger_records; });
       auto it = m_trigger_records.find(slice_id);
       if (it != m_trigger_records.end()) {
         ers::error(DuplicatedTriggerDecision(ERS_HERE, slice_id));
