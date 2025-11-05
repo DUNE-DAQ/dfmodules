@@ -11,6 +11,7 @@
 #include "dfmodules/opmon/FragmentAggregatorModule.pb.h"
 
 #include "appmodel/FragmentAggregatorModule.hpp"
+#include "appmodel/FragmentAggregatorConf.hpp"
 #include "confmodel/Connection.hpp"
 #include "confmodel/QueueWithSourceId.hpp"
 #include "daqdataformats/FragmentHeader.hpp"
@@ -66,7 +67,7 @@ FragmentAggregatorModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcf
   auto iom = iomanager::IOManager::get();
   iom->get_receiver<dfmessages::DataRequest>(m_data_req_input);
 
-  m_fragment_send_timeout = std::chrono::milliseconds(mdal->get_fragment_send_timeout_ms());
+  m_fragment_send_timeout = std::chrono::milliseconds(mdal->get_configuration()->get_fragment_send_timeout_ms());
 }
 
 void
