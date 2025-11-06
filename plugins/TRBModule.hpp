@@ -231,8 +231,8 @@ private:
 
   // Configuration
   const appmodel::TRBConf* m_trb_conf;
-  std::chrono::milliseconds m_queue_timeout;
-  std::chrono::milliseconds m_loop_sleep;
+  std::chrono::milliseconds m_tr_queue_timeout;
+  std::chrono::milliseconds m_dreq_queue_timeout;
   std::string m_reply_connection;
   size_t m_max_open_trigger_records;
   daqdataformats::SourceID m_this_trb_source_id;
@@ -254,7 +254,7 @@ private:
   std::condition_variable m_open_trigger_record_cv;
 
   // Data request properties
-  daqdataformats::timestamp_diff_t m_max_time_window;
+  daqdataformats::timestamp_diff_t m_max_sequence_length;
 
   // Run information
   std::unique_ptr<const daqdataformats::run_number_t> m_run_number = nullptr;

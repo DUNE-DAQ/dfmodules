@@ -78,6 +78,8 @@ private:
   std::map<int, std::string> m_producer_conn_ids;
   std::vector<std::string> m_trb_conn_ids;
 
+  std::chrono::milliseconds m_fragment_send_timeout;
+
   // Opmon
   uint64_t get_current_time_us();
   uint64_t m_timestamp_before_dr;
