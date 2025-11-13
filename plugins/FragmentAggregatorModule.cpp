@@ -237,7 +237,9 @@ FragmentAggregatorModule::process_fragment(std::unique_ptr<daqdataformats::Fragm
                    << "." << fragment->get_sequence_number() << " and SourceID " << fragment->get_element_id() << " to "
                    << trb_identifier;
     auto sender = get_iom_sender<std::unique_ptr<daqdataformats::Fragment>>(trb_identifier);
-    sender->send(std::move(fragment), iomanager::Sender::s_no_block);
+    iomanager::Sender::timeout_t aggregator_timeout{1000};
+    sender->send(std::move(fragment), aggregator_timeout);
+    //sender->send(std::move(fragment), iomanager::Sender::s_no_block);
 
     m_fragments_processed++;
     auto timestamp_total = get_current_time_us() - m_timestamp_before_frag;
