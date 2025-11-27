@@ -105,19 +105,15 @@ conf_dict.fake_hsi_enabled = False
 conf_dict.config_substitutions.append(
     data_classes.attribute_substitution(
         obj_class="RandomTCMakerConf",
-        updates={"trigger_rate_hz": trigger_rate},
-    )
-)
-conf_dict.config_substitutions.append(
-    data_classes.attribute_substitution(
-        obj_class="TCReadoutMap",
-        obj_id = "def-random-readout",
         updates={
-            "time_before": readout_window_time_before,
-            "time_after": readout_window_time_after,
+            "trigger_rate_hz": trigger_rate,
+            "candidate_backshift_ts": 0,
+            "candidate_window_before_ts": readout_window_time_before,
+            "candidate_window_after_ts": readout_window_time_after
         },
     )
 )
+
 conf_dict.config_substitutions.append(
     data_classes.attribute_substitution(
         obj_class="DataStoreConf",

@@ -73,7 +73,12 @@ conf_dict.n_df_apps = number_of_dataflow_apps
 substitution = data_classes.attribute_substitution(
     obj_id="random-tc-generator",
     obj_class="RandomTCMakerConf",
-    updates={"trigger_rate_hz": trigger_rate},
+    updates={
+        "trigger_rate_hz": trigger_rate,
+        "candidate_backshift_ts": 0,
+        "candidate_window_before_ts": readout_window_time_before,
+        "candidate_window_after_ts": readout_window_time_after
+    },
 )
 conf_dict.config_substitutions.append(substitution)
 

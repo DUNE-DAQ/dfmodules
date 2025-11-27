@@ -102,7 +102,12 @@ conf_dict.n_df_apps = number_of_dataflow_apps
 conf_dict.config_substitutions.append(
     data_classes.attribute_substitution(
         obj_class="RandomTCMakerConf",
-        updates={"trigger_rate_hz": trigger_rate},
+        updates={
+            "trigger_rate_hz": trigger_rate,
+            "candidate_backshift_ts": 0,
+            "candidate_window_before_ts": readout_window_time_before,
+            "candidate_window_after_ts": readout_window_time_after
+        },
     )
 )
 conf_dict.config_substitutions.append(
@@ -136,23 +141,15 @@ conf_dict.config_substitutions.append(
 )
 oversize_conf = copy.deepcopy(conf_dict)  # Copy before setting the readout window
 
-conf_dict.config_substitutions.append(
-    data_classes.attribute_substitution(
-        obj_class="TCReadoutMap",
-        updates={
-            "time_before": readout_window_time_before,
-            "time_after": readout_window_time_after,
-        },
-    )
-)
-
 # Now set the readout window for the over-size case
 oversize_conf.config_substitutions.append(
     data_classes.attribute_substitution(
-        obj_class="TCReadoutMap",
+        obj_class="RandomTCMakerConf",
         updates={
-            "time_before": 2.5 * readout_window_time_before,
-            "time_after": readout_window_time_after,
+            "trigger_rate_hz": trigger_rate,
+            "candidate_backshift_ts": 0,
+            "candidate_window_before_ts": 2.5 * readout_window_time_before,
+            "candidate_window_after_ts": readout_window_time_after
         },
     )
 )
