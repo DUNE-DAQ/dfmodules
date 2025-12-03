@@ -279,7 +279,7 @@ TRBModule::do_stop(const CommandData_t& /*args*/)
 }
 
 void
-TRBModule::tr_requested(const dfmessages::TRMonRequest& req)
+TRBModule::tr_requested(const dfmessages::TRMonRequest&& req)
 {
   ++m_trmon_request_counter;
 
@@ -328,7 +328,7 @@ TRBModule::flush_trigger_records()
 } // NOLINT(readability/fn_size)
 
 void
-TRBModule::fragments_callback(std::unique_ptr<daqdataformats::Fragment>& temp_fragment)
+TRBModule::fragments_callback(std::unique_ptr<daqdataformats::Fragment>&& temp_fragment)
 {
 
   auto start_time = std::chrono::steady_clock::now();
@@ -428,7 +428,7 @@ TRBModule::fragments_callback(std::unique_ptr<daqdataformats::Fragment>& temp_fr
 }
 
 void
-TRBModule::trigger_decision_callback(dfmessages::TriggerDecision& td)
+TRBModule::trigger_decision_callback(dfmessages::TriggerDecision&& td)
 {
 
   auto start_time = std::chrono::steady_clock::now();

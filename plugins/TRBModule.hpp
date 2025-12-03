@@ -195,8 +195,8 @@ protected:
   using trigger_record_ptr_t = std::unique_ptr<daqdataformats::TriggerRecord>;
   using trigger_record_sender_t = iomanager::SenderConcept<trigger_record_ptr_t>;
 
-  void trigger_decision_callback(dfmessages::TriggerDecision& td);
-  void fragments_callback(std::unique_ptr<daqdataformats::Fragment>& frag);
+  void trigger_decision_callback(dfmessages::TriggerDecision&& td);
+  void fragments_callback(std::unique_ptr<daqdataformats::Fragment>&& frag);
 
   trigger_record_ptr_t extract_trigger_record(const TriggerId&);
   // build_trigger_record will allocate memory and then orphan it to the caller
@@ -224,7 +224,7 @@ private:
   void do_stop(const CommandData_t&);
 
   // Monitoring callback
-  void tr_requested(const dfmessages::TRMonRequest &);
+  void tr_requested(const dfmessages::TRMonRequest &&);
 
   // Threading
   std::atomic<bool> m_stop_requested;

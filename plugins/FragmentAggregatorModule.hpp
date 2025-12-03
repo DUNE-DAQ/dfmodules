@@ -69,8 +69,8 @@ private:
   void do_start(const CommandData_t& obj);
   void do_stop(const CommandData_t& obj);
 
-  void process_data_request(dfmessages::DataRequest&);
-  void process_fragment(std::unique_ptr<daqdataformats::Fragment>&);
+  void process_data_request(dfmessages::DataRequest&&);
+  void process_fragment(std::unique_ptr<daqdataformats::Fragment>&&);
 
   // Input and Output Connection names
   std::string m_data_req_input;

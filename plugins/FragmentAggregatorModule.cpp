@@ -155,7 +155,7 @@ FragmentAggregatorModule::do_stop(const CommandData_t& /* args */)
 }
 
 void
-FragmentAggregatorModule::process_data_request(dfmessages::DataRequest& data_request)
+FragmentAggregatorModule::process_data_request(dfmessages::DataRequest&& data_request)
 {
 
   {
@@ -206,7 +206,7 @@ FragmentAggregatorModule::process_data_request(dfmessages::DataRequest& data_req
 }
 
 void
-FragmentAggregatorModule::process_fragment(std::unique_ptr<daqdataformats::Fragment>& fragment)
+FragmentAggregatorModule::process_fragment(std::unique_ptr<daqdataformats::Fragment>&& fragment)
 {
   // Forward Fragment to the right TRB
   std::string trb_identifier;

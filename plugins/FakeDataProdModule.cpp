@@ -162,7 +162,7 @@ FakeDataProdModule::do_timesync(std::atomic<bool>& running_flag)
 }
 
 void
-FakeDataProdModule::process_data_request(dfmessages::DataRequest& data_request)
+FakeDataProdModule::process_data_request(dfmessages::DataRequest&& data_request)
 {
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": processsing request " << data_request.request_number;

@@ -73,7 +73,7 @@ private:
 
   // Threading
   dunedaq::utilities::WorkerThread m_timesync_thread;
-  void process_data_request(dfmessages::DataRequest&);
+  void process_data_request(dfmessages::DataRequest&&);
   void do_timesync(std::atomic<bool>&);
 
   // Configuration
