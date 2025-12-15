@@ -35,7 +35,7 @@ CaptureOutputNoANSI() {
 }
 # Captures the output to the specified file, without changing the output
 CaptureOutput() {
-    tee -a 
+    tee -a $1
 }
 
 TEMP=`getopt -o hs:f:l:k:n:N: --long help,stop-on-failure,stop-on-skip -- "$@"`
