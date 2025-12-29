@@ -147,13 +147,14 @@ BOOST_AUTO_TEST_CASE(Commands)
   opmgr.register_node("dfo", dfo);
   dfo->init(cfgMgr);
 
-  auto start_json = static_cast<appfwk::DAQModule::CommandData_t>("{\"run\": 1}"_json);
-  appfwk::DAQModule::CommandData_t null_json;
+  appfwk::DAQModule::CommandData_t null_data;
+  appfwk::DAQModule::CommandData_t start_data;
+  start_data.emplace("run", 1);
 
-  dfo->execute_command("conf", null_json);
-  dfo->execute_command("start", start_json);
-  dfo->execute_command("drain_dataflow", null_json);
-  dfo->execute_command("scrap", null_json);
+  dfo->execute_command("conf", null_data);
+  dfo->execute_command("start", start_data);
+  dfo->execute_command("drain_dataflow", null_data);
+  dfo->execute_command("scrap", null_data);
 
   auto metric = get_dfo_info();
   BOOST_REQUIRE_EQUAL(metric.tokens_received(), 0);
@@ -173,10 +174,11 @@ BOOST_AUTO_TEST_CASE(DataFlow)
   opmgr.register_node("dfo", dfo);
   dfo->init(cfgMgr);
 
-  auto start_json = static_cast<appfwk::DAQModule::CommandData_t>("{\"run\": 1}"_json);
-  appfwk::DAQModule::CommandData_t null_json;
+  appfwk::DAQModule::CommandData_t null_data;
+  appfwk::DAQModule::CommandData_t start_data;
+  start_data.emplace("run", 1);
 
-  dfo->execute_command("conf", null_json);
+  dfo->execute_command("conf", null_data);
 
   auto iom = iomanager::IOManager::get();
   auto dec_recv = iom->get_receiver<dfmessages::TriggerDecision>("trigdec_0");
@@ -198,7 +200,7 @@ BOOST_AUTO_TEST_CASE(DataFlow)
   
   BOOST_REQUIRE_EQUAL(metric.tokens_received(), 0);
 
-  dfo->execute_command("start", start_json);
+  dfo->execute_command("start", start_data);
   send_init_token();
 
   std::this_thread::sleep_for(std::chrono::milliseconds(150));
@@ -227,8 +229,8 @@ BOOST_AUTO_TEST_CASE(DataFlow)
   BOOST_REQUIRE_EQUAL(metric.decisions_sent(), 1);
   BOOST_REQUIRE(!busy_signal_recvd.load());
 
-  dfo->execute_command("drain_dataflow", null_json);
-  dfo->execute_command("scrap", null_json);
+  dfo->execute_command("drain_dataflow", null_data);
+  dfo->execute_command("scrap", null_data);
 
   dec_recv->remove_callback();
   inh_recv->remove_callback();
@@ -240,12 +242,13 @@ BOOST_AUTO_TEST_CASE(SendTrigDecFailed)
   opmgr.register_node("dfo", dfo);
   dfo->init(cfgMgr);
 
-  auto start_json = static_cast<appfwk::DAQModule::CommandData_t>("{\"run\": 1}"_json);
-  appfwk::DAQModule::CommandData_t null_json;
+  appfwk::DAQModule::CommandData_t null_data;
+  appfwk::DAQModule::CommandData_t start_data;
+  start_data.emplace("run", 1);
 
-  dfo->execute_command("conf", null_json);
+  dfo->execute_command("conf", null_data);
 
-  dfo->execute_command("start", start_json);
+  dfo->execute_command("start", start_data);
 
   send_init_token("invalid_connection");
 
@@ -267,8 +270,8 @@ BOOST_AUTO_TEST_CASE(SendTrigDecFailed)
   send_token(1000);
   std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
-  dfo->execute_command("drain_dataflow", null_json);
-  dfo->execute_command("scrap", null_json);
+  dfo->execute_command("drain_dataflow", null_data);
+  dfo->execute_command("scrap", null_data);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
