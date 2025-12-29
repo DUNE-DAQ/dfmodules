@@ -17,3 +17,4 @@ For reference, here are the ideas behind the existing tests:
 * `disabled_output_test.py` - verifies that the --disable-data-storage option prevents a raw data file from being produced
 * `insufficient_disk_space_test.py` - verifies that the appropriate errors and warnings are produced when there isn't enough disk space to write additional TriggerRecords
 * `trmonrequestor_test.py` - verifies that the TriggerRecord monitoring functionality successfully writes a subset of the TRs to disk
+* `offline_prod_run_test.py` - verifies that the --run-type=PROD argument to the run control 'start' command has the correct effect in the attributes of the output HDF5 file

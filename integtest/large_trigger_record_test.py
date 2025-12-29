@@ -61,11 +61,10 @@ ignored_logfile_problems = {
     "-controller": [
         "Worker with pid \\d+ was terminated due to signal 1",
     ],
-    "local-connection-server": [
+    "connectivity-service": [
         "errorlog: -",
         "Worker with pid \\d+ was terminated due to signal 1",
     ],
-    "log_.*_largerecord_": ["connect: Connection refused"],
 }
 
 # Determine if the conditions are right for these tests

@@ -110,7 +110,7 @@ DFOModule::do_conf(const CommandData_t&)
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
 
   m_queue_timeout = std::chrono::milliseconds(m_dfo_conf->get_general_queue_timeout_ms());
-  m_stop_timeout = std::chrono::microseconds(m_dfo_conf->get_stop_timeout_ms());
+  m_stop_timeout = std::chrono::milliseconds(m_dfo_conf->get_stop_timeout_ms());
   m_busy_threshold = m_dfo_conf->get_busy_threshold();
   m_free_threshold = m_dfo_conf->get_free_threshold();
 

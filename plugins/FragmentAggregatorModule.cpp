@@ -11,6 +11,7 @@
 #include "dfmodules/opmon/FragmentAggregatorModule.pb.h"
 
 #include "appmodel/FragmentAggregatorModule.hpp"
+#include "appmodel/FragmentAggregatorConf.hpp"
 #include "confmodel/Connection.hpp"
 #include "confmodel/QueueWithSourceId.hpp"
 #include "daqdataformats/FragmentHeader.hpp"
@@ -27,6 +28,7 @@ namespace dfmodules {
 
 FragmentAggregatorModule::FragmentAggregatorModule(const std::string& name)
   : DAQModule(name)
+  , m_fragment_send_timeout(1000)
 {
   register_command("start", &FragmentAggregatorModule::do_start);
   register_command("stop_trigger_sources", &FragmentAggregatorModule::do_stop);
@@ -64,6 +66,8 @@ FragmentAggregatorModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcf
   // this is just to get the data request receiver registered early (before Start)
   auto iom = iomanager::IOManager::get();
   iom->get_receiver<dfmessages::DataRequest>(m_data_req_input);
+
+  m_fragment_send_timeout = std::chrono::milliseconds(mdal->get_configuration()->get_fragment_send_timeout_ms());
 }
 
 void
@@ -237,7 +241,7 @@ FragmentAggregatorModule::process_fragment(std::unique_ptr<daqdataformats::Fragm
                    << "." << fragment->get_sequence_number() << " and SourceID " << fragment->get_element_id() << " to "
                    << trb_identifier;
     auto sender = get_iom_sender<std::unique_ptr<daqdataformats::Fragment>>(trb_identifier);
-    sender->send(std::move(fragment), iomanager::Sender::s_no_block);
+    sender->send(std::move(fragment), m_fragment_send_timeout);
 
     m_fragments_processed++;
     auto timestamp_total = get_current_time_us() - m_timestamp_before_frag;
