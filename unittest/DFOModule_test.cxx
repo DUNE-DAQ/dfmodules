@@ -12,10 +12,10 @@
 #include "dfmessages/TriggerDecisionToken.hpp"
 #include "dfmessages/TriggerInhibit.hpp"
 #include "dfmodules/CommonIssues.hpp"
+#include "dfmodules/opmon/DFOModule.pb.h"
 #include "iomanager/IOManager.hpp"
 #include "iomanager/Sender.hpp"
 #include "opmonlib/TestOpMonManager.hpp"
-#include "dfmodules/opmon/DFOModule.pb.h"
 
 #define BOOST_TEST_MODULE DFOModule_test // NOLINT
 
@@ -30,7 +30,6 @@ using namespace dunedaq::dfmodules;
 
 namespace dunedaq {
 
-
 struct EnvFixture
 {
   EnvFixture() { setenv("DUNEDAQ_PARTITION", "partition_name", 0); }
@@ -40,32 +39,31 @@ BOOST_TEST_GLOBAL_FIXTURE(EnvFixture);
 struct CfgFixture
 {
   CfgFixture()
-  {   std::string oksConfig = "oksconflibs:test/config/datafloworchestrator_test.data.xml";
+  {
+    std::string oksConfig = "oksconflibs:test/config/datafloworchestrator_test.data.xml";
     std::string appName = "TestApp";
     std::string sessionName = "partition_name";
     cfgMgr = std::make_shared<dunedaq::appfwk::ConfigurationManager>(oksConfig, appName, sessionName);
     get_iomanager()->configure(sessionName, cfgMgr->get_queues(), cfgMgr->get_networkconnections(), nullptr, opmgr);
   }
-  ~CfgFixture() {
-    get_iomanager()->reset();
-  }
+  ~CfgFixture() { get_iomanager()->reset(); }
 
-  auto get_dfo_info()	{	
+  auto get_dfo_info()
+  {
 
     opmgr.collect();
     auto opmon_facility = opmgr.get_backend_facility();
     auto list = opmon_facility->get_entries(std::regex(".*DFOInfo"));
     BOOST_REQUIRE_EQUAL(list.size(), 1);
-    const auto & entry = list.front();
-    return opmonlib::from_entry<dfmodules::opmon::DFOInfo>( entry );
+    const auto& entry = list.front();
+    return opmonlib::from_entry<dfmodules::opmon::DFOInfo>(entry);
   }
-  
+
   dunedaq::opmonlib::TestOpMonManager opmgr;
   std::shared_ptr<dunedaq::appfwk::ConfigurationManager> cfgMgr;
 };
 
 BOOST_FIXTURE_TEST_SUITE(DFOModule_test, CfgFixture)
-
 
 void
 send_init_token(std::string connection_name = "trigdec_0")
@@ -165,7 +163,6 @@ BOOST_AUTO_TEST_CASE(Commands)
   BOOST_REQUIRE_EQUAL(metric.deciding_destination(), 0);
   BOOST_REQUIRE_EQUAL(metric.waiting_for_token(), 0);
   BOOST_REQUIRE_EQUAL(metric.processing_token(), 0);
-  
 }
 
 BOOST_AUTO_TEST_CASE(DataFlow)
@@ -193,11 +190,9 @@ BOOST_AUTO_TEST_CASE(DataFlow)
   send_token(9999, "trigdec_0", true);
   std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
-  
-  
   // Note: Counters are reset by calling get_dfo_info!
   auto metric = get_dfo_info();
-  
+
   BOOST_REQUIRE_EQUAL(metric.tokens_received(), 0);
 
   dfo->execute_command("start", start_data);
