@@ -1,7 +1,6 @@
 import pytest
 import os
 import re
-import copy
 import urllib.request
 
 import integrationtest.data_file_checks as data_file_checks
@@ -254,14 +253,16 @@ def test_nanorc_success(run_nanorc):
         resval_summary_string = resval.get_insufficient_resources_summary()
         pytest.skip(f"{resval_summary_string}")
 
+    # print the name of the current test
     current_test = os.environ.get("PYTEST_CURRENT_TEST")
-    match_obj = re.search(r".*\[(.+)-run_nanorc0\].*", current_test)
+    match_obj = re.search(r".*\[(.+)-run_.*rc.*\d].*", current_test)
     if match_obj:
         current_test = match_obj.group(1)
     banner_line = re.sub(".", "=", current_test)
     print(banner_line)
     print(current_test)
     print(banner_line)
+
     # Check that nanorc completed correctly
     assert run_nanorc.completed_process.returncode == 0
 
