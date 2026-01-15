@@ -11,6 +11,7 @@
 
 #include "appmodel/FakeDataProdModule.hpp"
 #include "confmodel/Connection.hpp"
+#include "confmodel/DetectorConfig.hpp"
 #include "dfmessages/Fragment_serialization.hpp"
 #include "dfmessages/TimeSync.hpp"
 #include "iomanager/IOManager.hpp"
@@ -54,6 +55,10 @@ void
 FakeDataProdModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcfg)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering init() method";
+
+  auto clock_speed_hz = mcfg->get_session()->get_detector_configuration()->get_clock_speed_hz();
+  m_timestamp_estimator = std::make_unique<utilities::TimestampEstimatorSystem>(clock_speed_hz);
+
   auto mdal = mcfg->get_dal<appmodel::FakeDataProdModule>(get_name());
   if (!mdal) {
     throw appfwk::CommandFailed(ERS_HERE, "init", get_name(), "Unable to retrieve configuration object");
@@ -132,17 +137,16 @@ FakeDataProdModule::do_stop(const CommandData_t& /*args*/)
 void
 FakeDataProdModule::do_timesync(std::atomic<bool>& running_flag)
 {
-
+  while (m_timestamp_estimator == nullptr) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  }
   auto iom = iomanager::IOManager::get();
   auto sender_ptr = iom->get_sender<dfmessages::TimeSync>(m_timesync_id);
 
   int sent_count = 0;
   uint64_t msg_seqno = 0; // NOLINT (build/unsigned)
   while (running_flag.load()) {
-    auto time_now = std::chrono::system_clock::now().time_since_epoch();
-    uint64_t current_timestamp = // NOLINT (build/unsigned)
-      std::chrono::duration_cast<std::chrono::nanoseconds>(time_now).count();
-    auto timesyncmsg = dfmessages::TimeSync(current_timestamp);
+    auto timesyncmsg = dfmessages::TimeSync(m_timestamp_estimator->get_timestamp_estimate());
     ++msg_seqno;
     timesyncmsg.run_number = m_run_number;
     timesyncmsg.sequence_number = msg_seqno;
