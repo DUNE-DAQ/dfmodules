@@ -404,18 +404,14 @@ DataWriterModule::receive_trigger_record(std::unique_ptr<daqdataformats::Trigger
 void
 DataWriterModule::do_work(std::atomic<bool>& running_flag)
 {
-  // 21-Jan-2026, KAB: we want this code to drain all pending TriggerRecords from
-  // the input queue at end-run time. So, we include a condition that there have
-  // been 5 or more consecutive timeouts when trying to read from the queue before
-  // we exit the loop (after running_flag has been set to false).
-  int consecutive_timeout_count = 0;
-  while (running_flag.load() || consecutive_timeout_count < 5) {
+  // 27-Jan-2026, KAB: we want this code to drain all pending TriggerRecords from
+  // the input queue at end-run time. So, we check if there is data in the queue
+  // and continue the while loop if there is any.
+  while (running_flag.load() || m_tr_receiver->data_pending()) {
     try {
       std::unique_ptr<daqdataformats::TriggerRecord> tr = m_tr_receiver->receive(std::chrono::milliseconds(10));
       receive_trigger_record(tr);
-      consecutive_timeout_count = 0;
     } catch (const iomanager::TimeoutExpired& excpt) {
-      ++consecutive_timeout_count;
     } catch (const ers::Issue& excpt) {
       ers::warning(excpt);
     }
