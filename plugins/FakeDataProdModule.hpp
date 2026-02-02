@@ -12,10 +12,11 @@
 #include "daqdataformats/Fragment.hpp"
 #include "dfmessages/DataRequest.hpp"
 
-#include "appmodel/FakeDataProdConf.hpp"
 #include "appfwk/DAQModule.hpp"
-#include "utilities/WorkerThread.hpp"
+#include "appmodel/FakeDataProdConf.hpp"
 #include "logging/Logging.hpp" // NOTE: if ISSUES ARE DECLARED BEFORE include logging/Logging.hpp, TLOG_DEBUG<<issue wont work.
+#include "utilities/TimestampEstimatorSystem.hpp"
+#include "utilities/WorkerThread.hpp"
 
 #include <memory>
 #include <string>
@@ -78,6 +79,7 @@ private:
 
   // Configuration
   const appmodel::FakeDataProdConf* m_fake_data_prod_conf;
+  std::unique_ptr<utilities::TimestampEstimatorSystem> m_timestamp_estimator;
   // size_t m_sleep_msec_while_running;
   std::chrono::milliseconds m_queue_timeout;
   dunedaq::daqdataformats::run_number_t m_run_number;

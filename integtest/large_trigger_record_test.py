@@ -183,14 +183,16 @@ def test_nanorc_success(run_nanorc):
         resval_summary_string = resval.get_insufficient_resources_summary()
         pytest.skip(f"{resval_summary_string}")
 
+    # print the name of the current test
     current_test = os.environ.get("PYTEST_CURRENT_TEST")
-    match_obj = re.search(r".*\[(.+)\-run_nanorc0].*", current_test)
+    match_obj = re.search(r".*\[(.+)-run_.*rc.*\d].*", current_test)
     if match_obj:
         current_test = match_obj.group(1)
     banner_line = re.sub(".", "=", current_test)
     print(banner_line)
     print(current_test)
     print(banner_line)
+
     # Check that nanorc completed correctly
     assert run_nanorc.completed_process.returncode == 0
 
@@ -216,10 +218,12 @@ def test_data_files(run_nanorc):
     local_event_count_tolerance = expected_event_count_tolerance
     fragment_check_list = [triggercandidate_frag_params]
     current_test = os.environ.get("PYTEST_CURRENT_TEST")
-    match_obj = re.search(r".*\[(.+)-run_nanorc0\].*", current_test)
-    if match_obj:
-        current_test = match_obj.group(1)
-    if current_test == "TRSize_125PercentOfMaxFileSize":
+    # 30-Dec-2025, KAB: modified the following "if" statement to check if the desired
+    # configuration name is contained in the current test name (instead of using an "if"
+    # clause that tests if the first part of the current test name is *equal* to the config
+    # name). This change is needed now because current test name has more information
+    # in it, and a simple comparison no longer works.
+    if "TRSize_125PercentOfMaxFileSize" in current_test:
         fragment_check_list.append(wibeth_frag_125pct_params)
     else:
         fragment_check_list.append(wibeth_frag_55pct_params)
