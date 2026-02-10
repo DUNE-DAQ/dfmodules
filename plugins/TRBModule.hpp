@@ -151,6 +151,15 @@ ERS_DECLARE_ISSUE(dfmodules,                ///< Namespace
 )
 
 /**
+ * @brief Incomplete TR
+ */
+ERS_DECLARE_ISSUE(dfmodules,                ///< Namespace
+                  IncompleteTriggerRecord , ///< Issue class name
+                  "sending incomplete TriggerRecord downstream " << optional_stop_time_phrase << " (trigger/run_number=" << id << ", " << num_frags_present << " of " << num_components_requested << " fragments included)",
+                  ((std::string)optional_stop_time_phrase)((dfmodules::TriggerId)id)((int)num_frags_present)((int)num_components_requested) ///< Message parameters
+)
+
+/**
  * @brief Missing connection ID
  */
 ERS_DECLARE_ISSUE(dfmodules,           ///< Namespace
