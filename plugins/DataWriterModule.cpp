@@ -404,7 +404,10 @@ DataWriterModule::receive_trigger_record(std::unique_ptr<daqdataformats::Trigger
 void
 DataWriterModule::do_work(std::atomic<bool>& running_flag)
 {
-  while (running_flag.load()) {
+  // 27-Jan-2026, KAB: we want this code to drain all pending TriggerRecords from
+  // the input queue at end-run time. So, we check if there is data in the queue
+  // and continue the while loop if there is any.
+  while (running_flag.load() || m_tr_receiver->data_pending()) {
     try {
       std::unique_ptr<daqdataformats::TriggerRecord> tr = m_tr_receiver->receive(std::chrono::milliseconds(10));
       receive_trigger_record(tr);
