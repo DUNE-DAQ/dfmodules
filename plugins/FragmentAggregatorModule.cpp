@@ -216,12 +216,13 @@ FragmentAggregatorModule::process_fragment(std::unique_ptr<daqdataformats::Fragm
     m_timestamp_before_frag = get_current_time_us();
     m_fragments_received++;
 
-    std::bitset<32> error_bits = fragment->get_error_bits();
-    if (error_bits[static_cast<size_t>(dunedaq::daqdataformats::FragmentErrorBits::kDataNotFound)])
+    std::bitset<32> status_bits = fragment->get_status_bits();
+    if (status_bits[static_cast<size_t>(dunedaq::daqdataformats::FragmentStatusBits::kEmptyFragment)] ||
+        status_bits[static_cast<size_t>(dunedaq::daqdataformats::FragmentStatusBits::kLatencyBufferEmpty)])
       m_fragments_empty++;
-    if (error_bits[static_cast<size_t>(dunedaq::daqdataformats::FragmentErrorBits::kIncomplete)])
+    if (status_bits[static_cast<size_t>(dunedaq::daqdataformats::FragmentStatusBits::kIncomplete)])
       m_fragments_incomplete++;
-    if (error_bits[static_cast<size_t>(dunedaq::daqdataformats::FragmentErrorBits::kInvalidWindow)])
+    if (status_bits[static_cast<size_t>(dunedaq::daqdataformats::FragmentStatusBits::kInvalidRequestWindow)])
       m_fragments_invalid++;
 
     auto dr_iter = m_data_req_map.find(

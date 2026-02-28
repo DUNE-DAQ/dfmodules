@@ -193,7 +193,7 @@ FakeDataProdModule::process_data_request(dfmessages::DataRequest& data_request)
   data_fragment_ptr->set_trigger_number(data_request.trigger_number);
   data_fragment_ptr->set_run_number(m_run_number);
   data_fragment_ptr->set_element_id(m_sourceid);
-  data_fragment_ptr->set_error_bits(0);
+  data_fragment_ptr->set_status_bits(0);
   data_fragment_ptr->set_type(m_fragment_type);
   data_fragment_ptr->set_trigger_timestamp(data_request.trigger_timestamp);
   data_fragment_ptr->set_window_begin(data_request.request_information.window_begin);
