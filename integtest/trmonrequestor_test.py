@@ -75,8 +75,6 @@ substitution = data_classes.attribute_substitution(
     updates={
         "trigger_rate_hz": trigger_rate,
         "candidate_backshift_ts": 0,
-        "candidate_window_before_ts": readout_window_time_before,
-        "candidate_window_after_ts": readout_window_time_after
     },
 )
 conf_dict.config_substitutions.append(substitution)
@@ -103,7 +101,6 @@ dunerc_command_list = "boot conf wait 5".split()
 for ii in range(run_count):
     dunerc_command_list += make_run_command_list(100 + ii)
 dunerc_command_list += " scrap terminate".split()
-print(f"dunerc_command_list is {dunerc_command_list}")
 
 # The tests themselves
 def test_dunerc_success(run_dunerc):
