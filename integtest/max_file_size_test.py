@@ -17,7 +17,6 @@ print = functools.partial(print, flush=True)
 # Values that help determine the running conditions
 number_of_data_producers = 2
 number_of_readout_apps = 3
-data_rate_slowdown_factor = 1
 
 # Default values for validation parameters
 check_for_logfile_errors = True
@@ -108,20 +107,13 @@ conf_dict = data_classes.drunc_config()
 conf_dict.dro_map_config.n_streams = number_of_data_producers
 conf_dict.dro_map_config.n_apps = number_of_readout_apps
 conf_dict.op_env = "integtest"
-conf_dict.session = "maxfilesize"
+conf_dict.config_session_name= "maxfilesize"
 conf_dict.tpg_enabled = True
 conf_dict.fake_hsi_enabled = True
 conf_dict.frame_file = (
     "asset://?checksum=dd156b4895f1b06a06b6ff38e37bd798"  # WIBEth All Zeros
 )
 
-conf_dict.config_substitutions.append(
-    data_classes.attribute_substitution(
-        obj_id=conf_dict.session,
-        obj_class="Session",
-        updates={"data_rate_slowdown_factor": data_rate_slowdown_factor},
-    )
-)
 conf_dict.config_substitutions.append(
     data_classes.attribute_substitution(
         obj_class="LatencyBuffer", updates={"size": 200000}
