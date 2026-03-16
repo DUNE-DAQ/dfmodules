@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.12)
-project(dfmodules VERSION 5.2.1)
+project(dfmodules VERSION 5.3.0)
 
 find_package(daq-cmake REQUIRED)
 daq_setup_environment()
