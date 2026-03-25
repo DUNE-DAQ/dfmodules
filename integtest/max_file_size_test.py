@@ -94,7 +94,7 @@ resource_validator.cpu_count_needs(15, 30)  # 2 for each data source (6) plus 3 
 resource_validator.free_memory_needs(15, 30)  # 25% more than what we observe being used ('free -h')
 resource_validator.total_memory_needs()  # no specific request, but it's useful to see how much is available
 actual_output_path = get_pytest_tmpdir()
-resource_validator.free_disk_space_needs(actual_output_path, 600, 10)  # 20% more than what we need
+resource_validator.free_disk_space_needs(actual_output_path, 6, 10)  # 20% more than what we need
 resource_validator.total_disk_space_needs(actual_output_path, recommended_total_disk_space=15)  # double what we need
 resval_debug_string = resource_validator.get_debug_string()
 print(f"{resval_debug_string}")
