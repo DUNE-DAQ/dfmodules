@@ -7,6 +7,7 @@ import integrationtest.data_file_checks as data_file_checks
 import integrationtest.log_file_checks as log_file_checks
 import integrationtest.data_classes as data_classes
 import integrationtest.resource_validation as resource_validation
+from integrationtest.get_pytest_tmpdir import get_pytest_tmpdir
 
 pytest_plugins = "integrationtest.integrationtest_drunc"
 
@@ -17,7 +18,6 @@ print = functools.partial(print, flush=True)
 # Values that help determine the running conditions
 number_of_data_producers = 2
 number_of_readout_apps = 3
-data_rate_slowdown_factor = 1
 
 # Default values for validation parameters
 check_for_logfile_errors = True
@@ -89,14 +89,14 @@ ignored_logfile_problems = {
 }
 
 # Determine if the conditions are right for these tests
-resval = resource_validation.ResourceValidator()
-resval.require_cpu_count(20)  # number of data sources (6) times 3 threads each  plus a couple more for everything else
-resval.require_free_memory_gb(12)  # the maximum amount that we observe being used ('free -h')
-resval.require_total_memory_gb(24)  # double what we need; trying to be kind to others
-actual_output_path = "/tmp"
-resval.require_free_disk_space_gb(actual_output_path, 5)  # approximately what we use
-resval.require_total_disk_space_gb(actual_output_path, 10)  # factor of two to reserve some for others
-resval_debug_string = resval.get_debug_string()
+resource_validator = resource_validation.ResourceValidator()
+resource_validator.cpu_count_needs(15, 30)  # 2 for each data source (6) plus 3 more for everything else
+resource_validator.free_memory_needs(15, 30)  # 25% more than what we observe being used ('free -h')
+resource_validator.total_memory_needs()  # no specific request, but it's useful to see how much is available
+actual_output_path = get_pytest_tmpdir()
+resource_validator.free_disk_space_needs(actual_output_path, 600, 10)  # 20% more than what we need
+resource_validator.total_disk_space_needs(actual_output_path, recommended_total_disk_space=15)  # double what we need
+resval_debug_string = resource_validator.get_debug_string()
 print(f"{resval_debug_string}")
 
 # The next three variable declarations *must* be present as globals in the test
@@ -116,13 +116,6 @@ conf_dict.frame_file = (
     "asset://?checksum=dd156b4895f1b06a06b6ff38e37bd798"  # WIBEth All Zeros
 )
 
-conf_dict.config_substitutions.append(
-    data_classes.attribute_substitution(
-        obj_id=conf_dict.session,
-        obj_class="Session",
-        updates={"data_rate_slowdown_factor": data_rate_slowdown_factor},
-    )
-)
 conf_dict.config_substitutions.append(
     data_classes.attribute_substitution(
         obj_class="LatencyBuffer", updates={"size": 200000}
@@ -208,28 +201,19 @@ confgen_arguments = {
 }
 
 # The commands to run in dunerc, as a list
-if resval.this_computer_has_sufficient_resources:
-    dunerc_command_list = (
-        "boot conf wait 5".split()
-        + "start --run-number 101 wait 1 enable-triggers wait 178".split()
-        + "disable-triggers wait 2 drain-dataflow wait 2 stop-trigger-sources stop ".split()
-        + "start --run-number 102 wait 1 enable-triggers wait 128".split()
-        + "disable-triggers wait 2 drain-dataflow wait 2 stop-trigger-sources stop ".split()
-        + " scrap terminate".split()
-    )
-else:
-    dunerc_command_list = ["wait", "1"]
+dunerc_command_list = (
+    "boot conf wait 5".split()
+    + "start --run-number 101 wait 1 enable-triggers wait 178".split()
+    + "disable-triggers wait 2 drain-dataflow wait 2 stop-trigger-sources stop ".split()
+    + "start --run-number 102 wait 1 enable-triggers wait 128".split()
+    + "disable-triggers wait 2 drain-dataflow wait 2 stop-trigger-sources stop ".split()
+    + " scrap terminate".split()
+)
 
 # The tests themselves
 
 
 def test_dunerc_success(run_dunerc):
-    if not resval.this_computer_has_sufficient_resources:
-        resval_report_string = resval.get_insufficient_resources_report()
-        print(f"{resval_report_string}")
-        resval_summary_string = resval.get_insufficient_resources_summary()
-        pytest.skip(f"{resval_summary_string}")
-
     # print the name of the current test
     current_test = os.environ.get("PYTEST_CURRENT_TEST")
     match_obj = re.search(r".*\[(.+)-run_.*rc.*\d].*", current_test)
@@ -245,10 +229,6 @@ def test_dunerc_success(run_dunerc):
 
 
 def test_log_files(run_dunerc):
-    if not resval.this_computer_has_sufficient_resources:
-        resval_summary_string = resval.get_insufficient_resources_summary()
-        pytest.skip(f"{resval_summary_string}")
-
     if check_for_logfile_errors:
         # Check that there are no warnings or errors in the log files
         assert log_file_checks.logs_are_error_free(
@@ -257,10 +237,6 @@ def test_log_files(run_dunerc):
 
 
 def test_data_files(run_dunerc):
-    if not resval.this_computer_has_sufficient_resources:
-        resval_summary_string = resval.get_insufficient_resources_summary()
-        pytest.skip(f"{resval_summary_string}")
-
     fragment_check_list = [triggercandidate_frag_params, hsi_frag_params, wibeth_frag_params]
     fragment_check_list.append(triggerprimitive_frag_params)
     fragment_check_list.append(triggeractivity_frag_params)
@@ -288,10 +264,6 @@ def test_data_files(run_dunerc):
 
 
 def test_tpstream_files(run_dunerc):
-    if not resval.this_computer_has_sufficient_resources:
-        resval_summary_string = resval.get_insufficient_resources_summary()
-        pytest.skip(f"{resval_summary_string}")
-
     tpstream_files = run_dunerc.tpset_files
     fragment_check_list = [wibeth_tpset_params]  # WIBEth
 
@@ -313,10 +285,6 @@ def test_tpstream_files(run_dunerc):
 
 
 def test_cleanup(run_dunerc):
-    if not resval.this_computer_has_sufficient_resources:
-        resval_summary_string = resval.get_insufficient_resources_summary()
-        pytest.skip(f"{resval_summary_string}")
-
     pathlist_string = ""
     filelist_string = ""
     for data_file in run_dunerc.data_files:
