@@ -33,7 +33,8 @@ wibeth_tpset_params = {
     "fragment_type_description": "TP Stream",
     "fragment_type": "Trigger_Primitive",
     "expected_fragment_count": number_of_readout_apps * 3,
-    "frag_counts_by_record_ordinal": {"first": {"min_count": 1, "max_count": number_of_readout_apps * 3},
+    "frag_counts_by_record_ordinal": {  "first": {"min_count": 1, "max_count": number_of_readout_apps * 3},
+                                         "last": {"min_count": 1, "max_count": number_of_readout_apps * 3},
                                       "default": {"min_count": number_of_readout_apps * 3, "max_count": number_of_readout_apps * 3} },
     "min_size_bytes": 0,  # not checked
     "max_size_bytes": 0,  # not checked
