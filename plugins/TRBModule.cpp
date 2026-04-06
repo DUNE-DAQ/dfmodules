@@ -55,7 +55,7 @@ enum
 namespace dunedaq {
 namespace dfmodules {
 
-using daqdataformats::TriggerRecordErrorBits;
+using daqdataformats::TriggerRecordStatusBits;
 
 TRBModule::TRBModule(const std::string& name)
   : dunedaq::appfwk::DAQModule(name)
@@ -475,12 +475,11 @@ TRBModule::extract_trigger_record(const TriggerId& id)
 
     m_lost_fragments += missing_fragments;
     m_pending_fragment_counter -= missing_fragments;
-    temp->get_header_ref().set_error_bit(TriggerRecordErrorBits::kIncomplete, true);
+    temp->get_header_ref().set_status_bit(TriggerRecordStatusBits::kIncomplete, true);
 
-    TLOG() << get_name() << " sending incomplete TriggerRecord downstream "
-           << (m_stop_requested.load() ? "at Stop time " : "") << "(trigger/run_number=" << id << ", "
-           << temp->get_fragments_ref().size() << " of " << temp->get_header_ref().get_num_requested_components()
-           << " fragments included)";
+    ers::error(IncompleteTriggerRecord(ERS_HERE, (m_stop_requested.load() ? "at Stop time " : ""), id,
+                                       temp->get_fragments_ref().size(),
+                                       temp->get_header_ref().get_num_requested_components()));
   }
 
   return temp;

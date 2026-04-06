@@ -1,4 +1,6 @@
 import pytest
+import os
+import re
 import urllib.request
 
 import integrationtest.data_file_checks as data_file_checks
@@ -9,7 +11,6 @@ pytest_plugins = "integrationtest.integrationtest_drunc"
 
 # Values that help determine the running conditions
 number_of_data_producers = 1
-data_rate_slowdown_factor = 1  # 10 for ProtoWIB/DuneWIB
 run_duration = 5  # seconds
 
 # Default values for validation parameters
@@ -53,7 +54,7 @@ ignored_logfile_problems = {
 
 # The next three variable declarations *must* be present as globals in the test
 # file. They're read by the "fixtures" in conftest.py to determine how
-# to run the config generation and nanorc
+# to run the config generation and dunerc
 
 # The arguments to pass to the config generator, excluding the json
 # output directory (the test framework handles that)
@@ -68,13 +69,6 @@ conf_dict.tpg_enabled = False
 conf_dict.fake_hsi_enabled = True
 
 conf_dict.config_substitutions.append(
-    data_classes.attribute_substitution(
-        obj_id=conf_dict.session,
-        obj_class="Session",
-        updates={"data_rate_slowdown_factor": data_rate_slowdown_factor},
-    )
-)
-conf_dict.config_substitutions.append(
     data_classes.attribute_substitution(obj_class="LatencyBuffer", updates={"size": 50000})
 )
 
@@ -86,8 +80,8 @@ conf_dict.config_substitutions.append(
 )
 
 confgen_arguments = {"SmallFootprint": conf_dict}
-# The commands to run in nanorc, as a list
-nanorc_command_list = (
+# The commands to run in dunerc, as a list
+dunerc_command_list = (
     "boot conf start --run-number 101 --run-type PROD wait 1 enable-triggers wait ".split()
     + [str(run_duration)]
     + "disable-triggers wait 2 drain-dataflow stop-trigger-sources stop wait 2 scrap terminate".split()
@@ -96,29 +90,39 @@ nanorc_command_list = (
 # The tests themselves
 
 
-def test_nanorc_success(run_nanorc):
-    # Check that nanorc completed correctly
-    assert run_nanorc.completed_process.returncode == 0
+def test_dunerc_success(run_dunerc):
+    # print the name of the current test
+    current_test = os.environ.get("PYTEST_CURRENT_TEST")
+    match_obj = re.search(r".*\[(.+)-run_.*rc.*\d].*", current_test)
+    if match_obj:
+        current_test = match_obj.group(1)
+    banner_line = re.sub(".", "=", current_test)
+    print(banner_line)
+    print(current_test)
+    print(banner_line)
+
+    # Check that dunerc completed correctly
+    assert run_dunerc.completed_process.returncode == 0
 
 
-def test_log_files(run_nanorc):
+def test_log_files(run_dunerc):
     if check_for_logfile_errors:
         # Check that there are no warnings or errors in the log files
         assert log_file_checks.logs_are_error_free(
-            run_nanorc.log_files, True, True, ignored_logfile_problems
+            run_dunerc.log_files, True, True, ignored_logfile_problems
         )
 
 
-def test_data_files(run_nanorc):
+def test_data_files(run_dunerc):
     # Run some tests on the output data file
-    assert len(run_nanorc.data_files) == expected_number_of_data_files
+    assert len(run_dunerc.data_files) == expected_number_of_data_files
 
     fragment_check_list = [triggercandidate_frag_params, hsi_frag_params]
     fragment_check_list.append(wibeth_frag_params)  # WIBEth
 
     all_ok = True
-    for idx in range(len(run_nanorc.data_files)):
-        data_file = data_file_checks.DataFile(run_nanorc.data_files[idx])
+    for idx in range(len(run_dunerc.data_files)):
+        data_file = data_file_checks.DataFile(run_dunerc.data_files[idx])
         all_ok &= data_file_checks.sanity_check(data_file)
         all_ok &= data_file_checks.check_file_attributes(data_file, was_test_run="false")
         all_ok &= data_file_checks.check_event_count(

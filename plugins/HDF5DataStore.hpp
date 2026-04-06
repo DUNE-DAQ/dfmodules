@@ -462,20 +462,6 @@ private:
     if (m_file_handle.get() == nullptr || m_basic_name_of_open_file.compare(file_name) ||
         m_open_flags_of_open_file != open_flags) {
 
-      // 04-Feb-2021, KAB: adding unique substrings to the filename
-      std::string unique_filename = file_name;
-      time_t now = time(0);
-      std::string file_creation_timestamp = boost::posix_time::to_iso_string(boost::posix_time::from_time_t(now));
-      if (!m_disable_unique_suffix) {
-        // timestamp substring
-        size_t ufn_len = unique_filename.length();
-        if (ufn_len > 6) { // len GT 6 gives us some confidence that we have at least x.hdf5
-          std::string timestamp_substring = "_" + file_creation_timestamp;
-          TLOG_DEBUG(TLVL_BASIC) << get_name() << ": timestamp substring for filename: " << timestamp_substring;
-          unique_filename.insert(ufn_len - 5, timestamp_substring);
-        }
-      }
-
       // close an existing open file
       if (m_file_handle.get() != nullptr) {
         std::string open_filename = m_file_handle->get_file_name();
@@ -486,6 +472,26 @@ private:
         } catch (...) { // NOLINT(runtime/exceptions)
           // NOLINT here because we *ARE* re-throwing the exception!
           throw FileOperationProblem(ERS_HERE, get_name(), open_filename);
+        }
+      }
+
+      // 04-Feb-2021, KAB: adding unique substrings to the filename
+      // 05-Feb-2026, KAB: moved this block of code *after* the block that closes an
+      // existing open file. When the two blocks were executed in the opposite order,
+      // it was possible that the closing of the currently-open file could take a
+      // non-trivial amount of time, and then the timestamp in the filename (determined
+      // here) and the timestamp in the creation_timestamp HDF5 file Attribute
+      // (determined inside the HDF5RawDataFile constructor) could disagree.
+      std::string unique_filename = file_name;
+      if (!m_disable_unique_suffix) {
+	time_t now = time(0);
+	std::string file_creation_timestamp = boost::posix_time::to_iso_string(boost::posix_time::from_time_t(now));
+        // timestamp substring
+        size_t ufn_len = unique_filename.length();
+        if (ufn_len > 6) { // len GT 6 gives us some confidence that we have at least x.hdf5
+          std::string timestamp_substring = "_" + file_creation_timestamp;
+          TLOG_DEBUG(TLVL_BASIC) << get_name() << ": timestamp substring for filename: " << timestamp_substring;
+          unique_filename.insert(ufn_len - 5, timestamp_substring);
         }
       }
 

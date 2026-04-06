@@ -17,8 +17,8 @@
 #include "dfmessages/TriggerDecisionToken.hpp"
 #include "iomanager/Receiver.hpp"
 #include "iomanager/Sender.hpp"
-#include "utilities/WorkerThread.hpp"
 #include "logging/Logging.hpp" // NOTE: if ISSUES ARE DECLARED BEFORE include logging/Logging.hpp, TLOG_DEBUG<<issue wont work.
+#include "utilities/WorkerThread.hpp"
 
 #include <chrono>
 #include <map>
@@ -98,7 +98,6 @@ private:
   std::atomic<uint64_t> m_bytes_output_tot = { 0 };     // NOLINT(build/unsigned)
   std::atomic<uint64_t> m_writing_us = { 0 };           // NOLINT(build/unsigned)
 
-  
   // Other
   std::map<daqdataformats::trigger_number_t, size_t> m_seqno_counts;
 
@@ -129,10 +128,9 @@ ERS_DECLARE_ISSUE_BASE(dfmodules,
 ERS_DECLARE_ISSUE_BASE(dfmodules,
                        InvalidRunNumber,
                        appfwk::GeneralDAQModuleIssue,
-                       "An invalid run number was received in a "
-                         << msg_type << " message, "
-                         << "received=" << received << ", expected=" << expected << ", trig/seq_number=" << trnum << "."
-                         << seqnum,
+                       "An invalid run number was received in a " << msg_type << " message, " << "received=" << received
+                                                                  << ", expected=" << expected
+                                                                  << ", trig/seq_number=" << trnum << "." << seqnum,
                        ((std::string)name),
                        ((std::string)msg_type)((size_t)received)((size_t)expected)((size_t)trnum)((size_t)seqnum))
 

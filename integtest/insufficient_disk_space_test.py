@@ -89,7 +89,7 @@ free_space_safety_factor = int(resval.free_disk_space_gb - desired_size_of_outpu
 
 # The next three variable declarations *must* be present as globals in the test
 # file. They're read by the "fixtures" in conftest.py to determine how
-# to run the config generation and nanorc
+# to run the config generation and dunerc
 
 object_databases = ["config/daqsystemtest/integrationtest-objects.data.xml"]
 
@@ -105,19 +105,15 @@ conf_dict.fake_hsi_enabled = False
 conf_dict.config_substitutions.append(
     data_classes.attribute_substitution(
         obj_class="RandomTCMakerConf",
-        updates={"trigger_rate_hz": trigger_rate},
-    )
-)
-conf_dict.config_substitutions.append(
-    data_classes.attribute_substitution(
-        obj_class="TCReadoutMap",
-        obj_id = "def-random-readout",
         updates={
-            "time_before": readout_window_time_before,
-            "time_after": readout_window_time_after,
+            "trigger_rate_hz": trigger_rate,
+            "candidate_backshift_ts": 0,
+            "candidate_window_before_ts": readout_window_time_before,
+            "candidate_window_after_ts": readout_window_time_after
         },
     )
 )
+
 conf_dict.config_substitutions.append(
     data_classes.attribute_substitution(
         obj_class="DataStoreConf",
@@ -142,9 +138,9 @@ conf_dict.config_substitutions.append(
 confgen_arguments = {
     "Base_System": conf_dict,
 }
-# The commands to run in nanorc, as a list
+# The commands to run in dunerc, as a list
 if resval.this_computer_has_sufficient_resources:
-    nanorc_command_list = (
+    dunerc_command_list = (
         "boot conf wait 5".split()
         + "start --run-number 101 wait 1 enable-triggers wait ".split()
         + [str(run_duration)]
@@ -158,31 +154,33 @@ if resval.this_computer_has_sufficient_resources:
         + " scrap terminate".split()
     )
 else:
-    nanorc_command_list = ["wait", "1"]
+    dunerc_command_list = ["wait", "1"]
 
 # The tests themselves
 
 
-def test_nanorc_success(run_nanorc):
+def test_dunerc_success(run_dunerc):
     if not resval.this_computer_has_sufficient_resources:
         resval_report_string = resval.get_insufficient_resources_report()
         print(f"{resval_report_string}")
         resval_summary_string = resval.get_insufficient_resources_summary()
         pytest.skip(f"{resval_summary_string}")
 
+    # print the name of the current test
     current_test = os.environ.get("PYTEST_CURRENT_TEST")
-    match_obj = re.search(r".*\[(.+)-run_nanorc0\].*", current_test)
+    match_obj = re.search(r".*\[(.+)-run_.*rc.*\d].*", current_test)
     if match_obj:
         current_test = match_obj.group(1)
     banner_line = re.sub(".", "=", current_test)
     print(banner_line)
     print(current_test)
     print(banner_line)
-    # Check that nanorc completed correctly
-    assert run_nanorc.completed_process.returncode == 0
+
+    # Check that dunerc completed correctly
+    assert run_dunerc.completed_process.returncode == 0
 
 
-def test_log_files(run_nanorc):
+def test_log_files(run_dunerc):
     if not resval.this_computer_has_sufficient_resources:
         resval_summary_string = resval.get_insufficient_resources_summary()
         pytest.skip(f"{resval_summary_string}")
@@ -190,7 +188,7 @@ def test_log_files(run_nanorc):
     if check_for_logfile_errors:
         # Check that there are no warnings or errors in the log files
         assert log_file_checks.logs_are_error_free(
-            run_nanorc.log_files,
+            run_dunerc.log_files,
             True,
             True,
             ignored_logfile_problems,
@@ -198,7 +196,7 @@ def test_log_files(run_nanorc):
         )
 
 
-def test_data_files(run_nanorc):
+def test_data_files(run_dunerc):
     if not resval.this_computer_has_sufficient_resources:
         resval_summary_string = resval.get_insufficient_resources_summary()
         pytest.skip(f"{resval_summary_string}")
@@ -211,15 +209,15 @@ def test_data_files(run_nanorc):
     fragment_check_list.append(wibeth_frag_hsi_trig_params)  # WIBEth
 
     # Run some tests on the output data file
-    all_ok = len(run_nanorc.data_files) == expected_number_of_data_files or len(run_nanorc.data_files) == (expected_number_of_data_files+1)
+    all_ok = len(run_dunerc.data_files) == expected_number_of_data_files or len(run_dunerc.data_files) == (expected_number_of_data_files+1)
     print("") # Clear potential dot from pytest
     if all_ok:
-        print(f"\N{WHITE HEAVY CHECK MARK} An acceptable number of raw data files was found ({len(run_nanorc.data_files)} in {expected_number_of_data_files}..{expected_number_of_data_files+1})")
+        print(f"\N{WHITE HEAVY CHECK MARK} An acceptable number of raw data files was found ({len(run_dunerc.data_files)} in {expected_number_of_data_files}..{expected_number_of_data_files+1})")
     else:
-        print(f"\N{POLICE CARS REVOLVING LIGHT} An incorrect number of raw data files was found, expected {expected_number_of_data_files}..{expected_number_of_data_files+1}, found {len(run_nanorc.data_files)} \N{POLICE CARS REVOLVING LIGHT}")
+        print(f"\N{POLICE CARS REVOLVING LIGHT} An incorrect number of raw data files was found, expected {expected_number_of_data_files}..{expected_number_of_data_files+1}, found {len(run_dunerc.data_files)} \N{POLICE CARS REVOLVING LIGHT}")
 
-    for idx in range(len(run_nanorc.data_files)):
-        data_file = data_file_checks.DataFile(run_nanorc.data_files[idx])
+    for idx in range(len(run_dunerc.data_files)):
+        data_file = data_file_checks.DataFile(run_dunerc.data_files[idx])
         all_ok &= data_file_checks.sanity_check(data_file)
         all_ok &= data_file_checks.check_file_attributes(data_file)
         all_ok &= data_file_checks.check_event_count(
@@ -235,14 +233,14 @@ def test_data_files(run_nanorc):
     assert all_ok
 
 
-def test_cleanup(run_nanorc):
+def test_cleanup(run_dunerc):
     if not resval.this_computer_has_sufficient_resources:
         resval_summary_string = resval.get_insufficient_resources_summary()
         pytest.skip(f"{resval_summary_string}")
 
     pathlist_string = ""
     filelist_string = ""
-    for data_file in run_nanorc.data_files:
+    for data_file in run_dunerc.data_files:
         filelist_string += " " + str(data_file)
         if str(data_file.parent) not in pathlist_string:
             pathlist_string += " " + str(data_file.parent)
@@ -256,7 +254,7 @@ def test_cleanup(run_nanorc):
         print("--------------------")
         os.system(f"ls -alF {filelist_string}")
 
-        for data_file in run_nanorc.data_files:
+        for data_file in run_dunerc.data_files:
             data_file.unlink()
 
         print("--------------------")
