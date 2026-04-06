@@ -11,7 +11,6 @@ pytest_plugins = "integrationtest.integrationtest_drunc"
 
 # Values that help determine the running conditions
 number_of_data_producers = 1
-data_rate_slowdown_factor = 1  # 10 for ProtoWIB/DuneWIB
 run_duration = 5  # seconds
 
 # Default values for validation parameters
@@ -69,13 +68,6 @@ conf_dict.session = "smallfootprint"
 conf_dict.tpg_enabled = False
 conf_dict.fake_hsi_enabled = True
 
-conf_dict.config_substitutions.append(
-    data_classes.attribute_substitution(
-        obj_id=conf_dict.session,
-        obj_class="Session",
-        updates={"data_rate_slowdown_factor": data_rate_slowdown_factor},
-    )
-)
 conf_dict.config_substitutions.append(
     data_classes.attribute_substitution(obj_class="LatencyBuffer", updates={"size": 50000})
 )

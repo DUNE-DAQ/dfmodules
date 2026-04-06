@@ -14,7 +14,6 @@ number_of_data_producers = 2
 number_of_dataflow_apps = 2
 run_duration = 20  # seconds
 trigger_rate = 1.0  # Hz
-data_rate_slowdown_factor = 1
 trmon_prescale = 3
 
 # Default values for validation parameters
