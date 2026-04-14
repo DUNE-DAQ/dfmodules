@@ -128,22 +128,22 @@ conf_dict.config_substitutions.append(
     )
 )
 
-swtpg_conf = copy.deepcopy(conf_dict)
-swtpg_conf.tpg_enabled = True
-swtpg_conf.config_substitutions.append(
+tpg_conf = copy.deepcopy(conf_dict)
+tpg_conf.tpg_enabled = True
+tpg_conf.config_substitutions.append(
     data_classes.attribute_substitution(
         obj_class="TAMakerPrescaleAlgorithm",
         obj_id="dummy-ta-maker",
         updates={"prescale": 25},
     )
 )
-swtpg_conf.frame_file = (
+tpg_conf.frame_file = (
     "asset://?checksum=dd156b4895f1b06a06b6ff38e37bd798"  # WIBEth All Zeros
 )
 
 confgen_arguments = {
     "WIBEth_System": conf_dict,
-    "WIBEth_TPG_System": swtpg_conf,
+    "WIBEth_TPG_System": tpg_conf,
 }
 
 # The commands to run in dunerc, as a list
