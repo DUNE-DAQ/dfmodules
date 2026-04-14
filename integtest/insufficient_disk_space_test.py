@@ -8,6 +8,7 @@ import integrationtest.log_file_checks as log_file_checks
 import integrationtest.basic_checks as basic_checks
 import integrationtest.data_classes as data_classes
 import integrationtest.resource_validation as resource_validation
+from integrationtest.get_pytest_tmpdir import get_pytest_tmpdir
 from integrationtest.verbosity_helper import IntegtestVerbosityLevels
 
 import functools
@@ -69,13 +70,13 @@ ignored_logfile_problems = {
 
 # Determine if the conditions are right for these tests
 resource_validator = resource_validation.ResourceValidator()
-resource_validator.require_cpu_count(45)  # total number of data sources plus 50% more for everything else
-resource_validator.require_free_memory_gb(35)  # the maximum amount that we observe being used ('free -h')
-resource_validator.require_total_memory_gb(70)  # double what we need; trying to be kind to others
-actual_output_path = output_path_parameter
-if output_path_parameter == ".":
-    actual_output_path = "/tmp"
-resource_validator.require_free_disk_space_gb(actual_output_path, minimum_free_disk_space_gb)
+resource_validator.cpu_count_needs(12, 24)  # 1/3 for each data source (30) plus two more for everything else
+resource_validator.free_memory_needs(50, 70)  # 10% more than what we observe being used ('free -h')
+resource_validator.total_memory_needs()  # no specific request, but it's useful to see how much is available
+actual_output_path = get_pytest_tmpdir()
+resource_validator.free_disk_space_needs(actual_output_path, minimum_free_disk_space_gb)
+resource_validator.total_disk_space_needs(actual_output_path,
+                                          recommended_total_disk_space=2*minimum_free_disk_space_gb)  # double what we need
 
 # We simulate a nearly-full output disk by setting the free-space-safety-factor
 # that the data writer uses to a custom value, based on the free space on disk.
@@ -84,7 +85,7 @@ resource_validator.require_free_disk_space_gb(actual_output_path, minimum_free_d
 # the disk is full when there is still ~< 10 GB of free space.  And, having a
 # 1 GB size for the TRs means that we will write approximately
 # desired_free_disk_space_gb TriggerRecords before appearing to run out of space.
-free_space_safety_factor = int(resource_validator.free_disk_space_gb - desired_size_of_output_disk_gb)
+free_space_safety_factor = round(resource_validator.free_disk_space_gb - desired_size_of_output_disk_gb)
 
 # The next three variable declarations *must* be present as globals in the test
 # file. They're read by the "fixtures" in conftest.py to determine how

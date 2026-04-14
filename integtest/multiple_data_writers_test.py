@@ -8,6 +8,7 @@ import integrationtest.log_file_checks as log_file_checks
 import integrationtest.basic_checks as basic_checks
 import integrationtest.data_classes as data_classes
 import integrationtest.resource_validation as resource_validation
+from integrationtest.get_pytest_tmpdir import get_pytest_tmpdir
 from integrationtest.verbosity_helper import IntegtestVerbosityLevels
 
 import functools
@@ -69,13 +70,13 @@ ignored_logfile_problems = {
     ],
 }
 
-# Determine if the conditions are right for this testing
+# Determine if the conditions are right for these tests
 resource_validator = resource_validation.ResourceValidator()
-resource_validator.require_cpu_count(10)  # one per data source, plus several spares
-resource_validator.require_free_memory_gb(10)  # approximately what we observe
-resource_validator.require_total_memory_gb(20)  # safety factor of 2
-actual_output_path = "/tmp"
-resource_validator.require_free_disk_space_gb(actual_output_path, 1)  # what we observe
+resource_validator.cpu_count_needs(9, 18)  # total number of data sources (6) plus three more for everything else
+resource_validator.free_memory_needs(10, 20)  # 25% more than what we observe being used ('free -h')
+resource_validator.total_memory_needs()  # no specific request, but it's useful to see how much is available
+actual_output_path = get_pytest_tmpdir()
+resource_validator.free_disk_space_needs(actual_output_path, 1)  # what we observe
 
 # The next three variable declarations *must* be present as globals in the test
 # file. They're read by the "fixtures" in conftest.py to determine how

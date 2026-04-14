@@ -15,6 +15,7 @@ import integrationtest.log_file_checks as log_file_checks
 import integrationtest.basic_checks as basic_checks
 import integrationtest.data_classes as data_classes
 import integrationtest.resource_validation as resource_validation
+from integrationtest.get_pytest_tmpdir import get_pytest_tmpdir
 from integrationtest.verbosity_helper import IntegtestVerbosityLevels
 
 import functools
@@ -70,19 +71,15 @@ ignored_logfile_problems = {
 
 # Determine if the conditions are right for these tests
 resource_validator = resource_validation.ResourceValidator()
-resource_validator.require_cpu_count(45)  # total number of data sources plus 50% more for everything else
-resource_validator.require_free_memory_gb(28)  # the maximum amount that we observe being used ('free -h')
-resource_validator.require_total_memory_gb(56)  # double what we need; trying to be kind to others
-actual_output_path = output_path_parameter
-if output_path_parameter == ".":
-    actual_output_path = "/tmp"
+resource_validator.cpu_count_needs(12, 24)  # 1/3 for each data source (30) plus two more for everything else
+resource_validator.free_memory_needs(28, 40)  # 20% more than what we observe being used ('free -h')
+resource_validator.total_memory_needs()  # no specific request, but it's useful to see how much is available
+actual_output_path = get_pytest_tmpdir()
 # The largest data set in this test is four 2.55 GB files.  To handle these four files
 # plus a safety factor of three for the last one, we need 6*2.55 = 15.3.
 # Note that a safety factor of 3 is configured below, over-riding the default value of 5.
-resource_validator.require_free_disk_space_gb(actual_output_path, 16)
-# The value of 19 GB for the total disk space is just to reserve some space beyond what this
-# test needs for others to use, and to be slightly lower than a typical 20 GB full disk size.
-resource_validator.require_total_disk_space_gb(actual_output_path, 19)
+resource_validator.free_disk_space_needs(actual_output_path, 16, 20)
+resource_validator.total_disk_space_needs(actual_output_path, recommended_total_disk_space=24)
 
 # The next three variable declarations *must* be present as globals in the test
 # file. They're read by the "fixtures" in conftest.py to determine how

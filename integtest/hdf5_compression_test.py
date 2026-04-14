@@ -8,6 +8,7 @@ import integrationtest.log_file_checks as log_file_checks
 import integrationtest.basic_checks as basic_checks
 import integrationtest.data_classes as data_classes
 import integrationtest.resource_validation as resource_validation
+from integrationtest.get_pytest_tmpdir import get_pytest_tmpdir
 from integrationtest.verbosity_helper import IntegtestVerbosityLevels
 
 import functools
@@ -108,12 +109,12 @@ ignored_logfile_problems = {
 
 # Determine if the conditions are right for these tests
 resource_validator = resource_validation.ResourceValidator()
-resource_validator.require_cpu_count(15)  # total number of data sources (6RU+3TP) plus several more for everything else
-resource_validator.require_free_memory_gb(10)  # the maximum amount that we observe being used ('free -h')
-resource_validator.require_total_memory_gb(20)  # double what we need; trying to be kind to others
-actual_output_path = "/tmp"
-resource_validator.require_free_disk_space_gb(actual_output_path, 5)  # what we actually use (3) plus margin
-resource_validator.require_total_disk_space_gb(actual_output_path, 10)  # factor of two to reserve some for others
+resource_validator.cpu_count_needs(9, 18)  # total number of data sources (6) plus three more for everything else
+resource_validator.free_memory_needs(12, 25)  # 20% more than what we observe being used ('free -h')
+resource_validator.total_memory_needs()  # no specific request, but it's useful to see how much is available
+actual_output_path = get_pytest_tmpdir()
+resource_validator.free_disk_space_needs(actual_output_path, 5)  # what we actually use (3) plus margin
+resource_validator.total_disk_space_needs(actual_output_path, recommended_total_disk_space=10)  # double what we need
 
 # The next three variable declarations *must* be present as globals in the test
 # file. They're read by the "fixtures" in conftest.py to determine how
@@ -129,7 +130,7 @@ conf_dict.session = "hdf5compression"
 conf_dict.tpg_enabled = True
 conf_dict.fake_hsi_enabled = True
 conf_dict.dro_map_config.det_id = 2  # det_id = 2 for kHD_PDS
-conf_dict.frame_file = "asset://?checksum=a8990a9eb3a505d4ded62dfdfa9e2681"  # run 36012
+conf_dict.frame_file = "asset://?checksum=a8990a9eb3a505d4ded62dfdfa9e2681"  # run 36012 DAPHNE data
 #conf_dict.frame_file = "file:///home/nfs/biery/dunedaq/12MayFDv5.3.2DevInstrUpdate/sourcecode/dfmodules/integtest/np02vdcoldbox_run035227_sample_hd_pds.bin"
 
 conf_dict.config_substitutions.append(
