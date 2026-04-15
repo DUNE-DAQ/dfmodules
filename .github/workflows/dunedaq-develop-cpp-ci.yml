@@ -28,6 +28,6 @@ on:
 jobs:
   build_develop_dispatch:
     name: Build against the development release
-    uses: DUNE-DAQ/.github/.github/workflows/dunedaq-develop-cpp-ci.yml@amogan/fix_linting_comparison
+    uses: DUNE-DAQ/.github/.github/workflows/dunedaq-develop-cpp-ci.yml@develop
     with:
       caller_event_name: ${{ github.event.inputs.caller_event_name || github.event_name }}
