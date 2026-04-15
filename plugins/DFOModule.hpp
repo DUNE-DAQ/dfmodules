@@ -98,6 +98,13 @@ protected:
   data_structure_t::iterator m_last_assignement_it;
   std::function<void(nlohmann::json&)> m_metadata_function;
 
+  virtual void receive_trigger_complete_token(const dfmessages::TriggerDecisionToken&);
+  virtual void receive_trigger_decision(const dfmessages::TriggerDecision&);
+
+  // Configuration accessible to subclasses
+  std::chrono::milliseconds m_queue_timeout;
+  std::atomic<bool> m_running_status{ false };
+
 private:
   // Commands
   void do_conf(const CommandData_t&);
@@ -106,9 +113,6 @@ private:
   void do_scrap(const CommandData_t&);
 
   void generate_opmon_data() override;
-
-  virtual void receive_trigger_complete_token(const dfmessages::TriggerDecisionToken&);
-  void receive_trigger_decision(const dfmessages::TriggerDecision&);
   virtual bool is_busy() const;
   bool is_empty() const;
   size_t used_slots() const;
@@ -118,7 +122,6 @@ private:
 
   // Configuration
   const appmodel::DFOConf* m_dfo_conf;
-  std::chrono::milliseconds m_queue_timeout;
   std::chrono::microseconds m_stop_timeout;
   dunedaq::daqdataformats::run_number_t m_run_number;
 
@@ -132,7 +135,6 @@ private:
   std::vector<std::string> m_trb_conn_ids;
 
   // Coordination
-  std::atomic<bool> m_running_status{ false };
   mutable std::atomic<bool> m_last_notified_busy{ false };
   std::chrono::steady_clock::time_point m_last_token_received;
   std::chrono::steady_clock::time_point m_last_td_received;

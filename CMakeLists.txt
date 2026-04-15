@@ -31,7 +31,8 @@ daq_add_plugin( HDF5DataStore     duneDataStore LINK_LIBRARIES dfmodules hdf5lib
 
 daq_add_plugin( FragmentAggregatorModule    duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager )
 daq_add_plugin( DataWriterModule            duneDAQModule LINK_LIBRARIES dfmodules hdf5libs::hdf5libs iomanager::iomanager )
-daq_add_plugin( DFOModule  duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager )
+daq_add_plugin( DFOModule          duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager )
+daq_add_plugin( DFOConsensusModule duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager )
 daq_add_plugin( TRBModule  duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager )
 daq_add_plugin( TRMonRequestorModule  duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager )
 daq_add_plugin( FakeDataProdModule          duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager)
@@ -45,6 +46,9 @@ add_dependencies(  HDF5Write_test dfmodules_HDF5DataStore_duneDataStore )
 
 daq_add_unit_test( DFOModule_test LINK_LIBRARIES dfmodules )
 add_dependencies( DFOModule_test dfmodules_DFOModule_duneDAQModule)
+
+daq_add_unit_test( DFOConsensusModule_test LINK_LIBRARIES dfmodules )
+add_dependencies( DFOConsensusModule_test dfmodules_DFOConsensusModule_duneDAQModule)
 
 daq_add_unit_test( TriggerRecordBuilderData_test LINK_LIBRARIES dfmodules)
 daq_add_unit_test( DataStoreFactory_test    LINK_LIBRARIES dfmodules)
