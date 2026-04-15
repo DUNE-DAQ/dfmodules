@@ -55,7 +55,7 @@ ignored_logfile_problems = {
 
 # The next three variable declarations *must* be present as globals in the test
 # file. They're read by the "fixtures" in conftest.py to determine how
-# to run the config generation and nanorc
+# to run the config generation and dunerc
 
 object_databases = ["config/daqsystemtest/integrationtest-objects.data.xml"]
 
@@ -89,20 +89,20 @@ confgen_arguments = {
     "WIBEth_System": conf_dict,
 }
 
-# The commands to run in nanorc, as a list
+# The commands to run in dunerc, as a list
 def make_run_command_list(runnum):
     return (
         f"start --run-number {runnum} wait 1 enable-triggers wait ".split()
         + [str(run_duration)]
         + "disable-triggers wait 2 drain-dataflow wait 2 stop-trigger-sources stop ".split())
 
-nanorc_command_list = "boot conf wait 5".split()
+dunerc_command_list = "boot conf wait 5".split()
 for ii in range(run_count):
-    nanorc_command_list += make_run_command_list(100 + ii)
-nanorc_command_list += " scrap terminate".split()
+    dunerc_command_list += make_run_command_list(100 + ii)
+dunerc_command_list += " scrap terminate".split()
 
 # The tests themselves
-def test_nanorc_success(run_nanorc):
+def test_dunerc_success(run_dunerc):
     # print the name of the current test
     current_test = os.environ.get("PYTEST_CURRENT_TEST")
     match_obj = re.search(r".*\[(.+)-run_.*rc.*\d].*", current_test)
@@ -113,37 +113,37 @@ def test_nanorc_success(run_nanorc):
     print(current_test)
     print(banner_line)
 
-    # Check that nanorc completed correctly
-    assert run_nanorc.completed_process.returncode == 0
+    # Check that dunerc completed correctly
+    assert run_dunerc.completed_process.returncode == 0
 
 
-def test_log_files(run_nanorc):
+def test_log_files(run_dunerc):
 
     # Check that at least some of the expected log files are present
     assert any(
-        f"{run_nanorc.daq_session_name}_df-01" in str(logname)
-        for logname in run_nanorc.log_files
+        f"{run_dunerc.daq_session_name}_df-01" in str(logname)
+        for logname in run_dunerc.log_files
     )
     assert any(
-        f"{run_nanorc.daq_session_name}_dfo" in str(logname) for logname in run_nanorc.log_files
+        f"{run_dunerc.daq_session_name}_dfo" in str(logname) for logname in run_dunerc.log_files
     )
     assert any(
-        f"{run_nanorc.daq_session_name}_mlt" in str(logname) for logname in run_nanorc.log_files
+        f"{run_dunerc.daq_session_name}_mlt" in str(logname) for logname in run_dunerc.log_files
     )
     assert any(
-        f"{run_nanorc.daq_session_name}_ru" in str(logname) for logname in run_nanorc.log_files
+        f"{run_dunerc.daq_session_name}_ru" in str(logname) for logname in run_dunerc.log_files
     )
 
     if check_for_logfile_errors:
         # Check that there are no warnings or errors in the log files
         assert log_file_checks.logs_are_error_free(
-            run_nanorc.log_files, True, True, ignored_logfile_problems
+            run_dunerc.log_files, True, True, ignored_logfile_problems
         )
 
 
-def test_data_files(run_nanorc):
+def test_data_files(run_dunerc):
     # Run some tests on the output data file
-    all_ok = len(run_nanorc.data_files) == expected_number_of_data_files
+    all_ok = len(run_dunerc.data_files) == expected_number_of_data_files
     print("")  # Clear potential dot from pytest
     if all_ok:
         print(
@@ -151,15 +151,15 @@ def test_data_files(run_nanorc):
         )
     else:
         print(
-            f"\N{POLICE CARS REVOLVING LIGHT} An incorrect number of raw data files was found, expected {expected_number_of_data_files}, found {len(run_nanorc.data_files)} \N{POLICE CARS REVOLVING LIGHT}"
+            f"\N{POLICE CARS REVOLVING LIGHT} An incorrect number of raw data files was found, expected {expected_number_of_data_files}, found {len(run_dunerc.data_files)} \N{POLICE CARS REVOLVING LIGHT}"
         )
 
     fragment_check_list = [triggercandidate_frag_params, hsi_frag_params]
     fragment_check_list.append(wibeth_frag_params)
     nontrig_fragment_check_list = [hsi_frag_params, wibeth_frag_params]
 
-    for idx in range(len(run_nanorc.data_files)):
-        data_file = data_file_checks.DataFile(run_nanorc.data_files[idx])
+    for idx in range(len(run_dunerc.data_files)):
+        data_file = data_file_checks.DataFile(run_dunerc.data_files[idx])
         all_ok &= data_file_checks.sanity_check(data_file)
         all_ok &= data_file_checks.check_file_attributes(data_file)
         all_ok &= data_file_checks.check_event_count(
@@ -179,21 +179,21 @@ def test_data_files(run_nanorc):
 
     trmon_low = (run_count * expected_event_count * number_of_dataflow_apps / trmon_prescale) - 1
     trmon_high = (run_count * expected_event_count * number_of_dataflow_apps / trmon_prescale) + 2
-    trmon_ok = len(run_nanorc.trmon_files) > trmon_low
-    trmon_ok &= len(run_nanorc.trmon_files) < trmon_high
+    trmon_ok = len(run_dunerc.trmon_files) > trmon_low
+    trmon_ok &= len(run_dunerc.trmon_files) < trmon_high
 
     print("")  # Add break from Data file printouts
     if trmon_ok:
         print(
-            f"\N{WHITE HEAVY CHECK MARK} The correct number of TRMon data files was found ({trmon_high} > {len(run_nanorc.trmon_files)} > {trmon_low})"
+            f"\N{WHITE HEAVY CHECK MARK} The correct number of TRMon data files was found ({trmon_high} > {len(run_dunerc.trmon_files)} > {trmon_low})"
         )
     else:
         print(
-            f"\N{POLICE CARS REVOLVING LIGHT} An incorrect number of TRMon data files was found, expected between {trmon_low} and {trmon_high}, found {len(run_nanorc.trmon_files)} \N{POLICE CARS REVOLVING LIGHT}"
+            f"\N{POLICE CARS REVOLVING LIGHT} An incorrect number of TRMon data files was found, expected between {trmon_low} and {trmon_high}, found {len(run_dunerc.trmon_files)} \N{POLICE CARS REVOLVING LIGHT}"
         )
 
-    for idx in range(len(run_nanorc.trmon_files)):
-        data_file = data_file_checks.DataFile(run_nanorc.trmon_files[idx])
+    for idx in range(len(run_dunerc.trmon_files)):
+        data_file = data_file_checks.DataFile(run_dunerc.trmon_files[idx])
         all_ok &= data_file_checks.sanity_check(data_file)
         all_ok &= data_file_checks.check_file_attributes(data_file)
         all_ok &= data_file_checks.check_event_count(data_file, 1, 0)

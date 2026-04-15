@@ -76,7 +76,7 @@ print(f"{resval_debug_string}")
 
 # The next three variable declarations *must* be present as globals in the test
 # file. They're read by the "fixtures" in conftest.py to determine how
-# to run the config generation and nanorc
+# to run the config generation and dunerc
 
 object_databases = ["config/daqsystemtest/integrationtest-objects.data.xml"]
 
@@ -128,9 +128,9 @@ confgen_arguments = {
     "WIBEth_System": conf_dict,
 }
 
-# The commands to run in nanorc, as a list
+# The commands to run in dunerc, as a list
 if resval.this_computer_has_sufficient_resources:
-    nanorc_command_list = (
+    dunerc_command_list = (
         "boot conf wait 5".split()
         + "start --run-number 101 wait 1 enable-triggers wait 30".split()
         + "disable-triggers wait 2 drain-dataflow wait 2 stop-trigger-sources stop ".split()
@@ -139,11 +139,11 @@ if resval.this_computer_has_sufficient_resources:
         + " scrap terminate".split()
     )
 else:
-    nanorc_command_list = ["wait", "1"]
+    dunerc_command_list = ["wait", "1"]
 
 # The tests themselves
 
-def test_nanorc_success(run_nanorc):
+def test_dunerc_success(run_dunerc):
     if not resval.this_computer_has_sufficient_resources:
         resval_report_string = resval.get_insufficient_resources_report()
         print(f"{resval_report_string}")
@@ -160,11 +160,11 @@ def test_nanorc_success(run_nanorc):
     print(current_test)
     print(banner_line)
 
-    # Check that nanorc completed correctly
-    assert run_nanorc.completed_process.returncode == 0
+    # Check that dunerc completed correctly
+    assert run_dunerc.completed_process.returncode == 0
 
 
-def test_log_files(run_nanorc):
+def test_log_files(run_dunerc):
     if not resval.this_computer_has_sufficient_resources:
         resval_summary_string = resval.get_insufficient_resources_summary()
         pytest.skip(f"{resval_summary_string}")
@@ -172,11 +172,11 @@ def test_log_files(run_nanorc):
     if check_for_logfile_errors:
         # Check that there are no warnings or errors in the log files
         assert log_file_checks.logs_are_error_free(
-            run_nanorc.log_files, True, True, ignored_logfile_problems
+            run_dunerc.log_files, True, True, ignored_logfile_problems
         )
 
 
-def test_data_files(run_nanorc):
+def test_data_files(run_dunerc):
     if not resval.this_computer_has_sufficient_resources:
         resval_summary_string = resval.get_insufficient_resources_summary()
         pytest.skip(f"{resval_summary_string}")
@@ -186,15 +186,15 @@ def test_data_files(run_nanorc):
     fragment_check_list.append(triggeractivity_frag_params)
 
     # Run some tests on the output data file
-    all_ok = len(run_nanorc.data_files) == 6  # three for each run
+    all_ok = len(run_dunerc.data_files) == 6  # three for each run
     print("") # Clear potential dot from pytest
     if all_ok:
         print("\N{WHITE HEAVY CHECK MARK} The correct number of raw data files was found (6)")
     else:
-        print(f"\N{POLICE CARS REVOLVING LIGHT} An incorrect number of raw data files was found, expected 6, found {len(run_nanorc.data_files)} \N{POLICE CARS REVOLVING LIGHT}")
+        print(f"\N{POLICE CARS REVOLVING LIGHT} An incorrect number of raw data files was found, expected 6, found {len(run_dunerc.data_files)} \N{POLICE CARS REVOLVING LIGHT}")
 
-    for idx in range(len(run_nanorc.data_files)):
-        data_file = data_file_checks.DataFile(run_nanorc.data_files[idx])
+    for idx in range(len(run_dunerc.data_files)):
+        data_file = data_file_checks.DataFile(run_dunerc.data_files[idx])
         all_ok &= data_file_checks.sanity_check(data_file)
         all_ok &= data_file_checks.check_file_attributes(data_file)
         for jdx in range(len(fragment_check_list)):
