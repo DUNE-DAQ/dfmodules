@@ -126,7 +126,7 @@ conf_dict = data_classes.drunc_config()
 conf_dict.dro_map_config.n_streams = number_of_data_producers
 conf_dict.dro_map_config.n_apps = number_of_readout_apps
 conf_dict.op_env = "integtest"
-conf_dict.session = "hdf5compression"
+conf_dict.config_session_name= "hdf5compression"
 conf_dict.tpg_enabled = True
 conf_dict.fake_hsi_enabled = True
 conf_dict.dro_map_config.det_id = 2  # det_id = 2 for kHD_PDS

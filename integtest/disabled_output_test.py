@@ -102,7 +102,7 @@ object_databases = ["config/daqsystemtest/integrationtest-objects.data.xml"]
 conf_dict = data_classes.drunc_config()
 conf_dict.dro_map_config.n_streams = number_of_data_producers
 conf_dict.op_env = "integtest"
-conf_dict.session = "disabled"
+conf_dict.config_session_name= "disabled"
 conf_dict.tpg_enabled = False
 # We accept the default values for all of the other fields in the drunc_config data structure
 # (defined in integrationtest/src/integrationtest/data_classes.py), including the "frame_file",
