@@ -28,6 +28,7 @@
 #include "dfmessages/TriggerDecisionToken.hpp"
 #include "dfmessages/TriggerInhibit.hpp"
 #include "iomanager/IOManager.hpp"
+#include "iomanager/Receiver.hpp"
 #include "iomanager/Sender.hpp"
 #include "opmonlib/TestOpMonManager.hpp"
 
@@ -69,9 +70,19 @@ struct CfgFixture
     std::string sessionName = "partition_name";
     cfgMgr = std::make_shared<dunedaq::appfwk::ConfigurationManager>(oksConfig, appName, sessionName);
     get_iomanager()->configure(sessionName, cfgMgr->get_queues(), cfgMgr->get_networkconnections(), nullptr, opmgr);
+
+    // Register a no-op callback on triginh so that TriggerInhibit messages sent
+    // by DFOCore are consumed immediately and never block the sender.
+    auto iom = iomanager::IOManager::get();
+    inh_recv = iom->get_receiver<dfmessages::TriggerInhibit>("triginh");
+    inh_recv->add_callback([](const dfmessages::TriggerInhibit&) {});
   }
 
-  ~CfgFixture() { get_iomanager()->reset(); }
+  ~CfgFixture()
+  {
+    inh_recv->remove_callback();
+    get_iomanager()->reset();
+  }
 
   // Helper: build and configure a DFOCore using the test config parameters.
   std::unique_ptr<DFOCore> make_core(std::string name = "test_core")
@@ -140,6 +151,7 @@ struct CfgFixture
 
   dunedaq::opmonlib::TestOpMonManager opmgr;
   std::shared_ptr<dunedaq::appfwk::ConfigurationManager> cfgMgr;
+  std::shared_ptr<iomanager::ReceiverConcept<dfmessages::TriggerInhibit>> inh_recv;
 };
 
 // ===========================================================================
