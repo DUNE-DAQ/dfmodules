@@ -243,6 +243,10 @@ BOOST_AUTO_TEST_CASE(SendTrigDecFailed)
 
   dfo->execute_command("conf", null_data);
 
+  auto iom = iomanager::IOManager::get();
+  auto inh_recv = iom->get_receiver<dfmessages::TriggerInhibit>("triginh");
+  inh_recv->add_callback([](const dfmessages::TriggerInhibit&) {});
+
   dfo->execute_command("start", start_data);
 
   send_init_token("invalid_connection");
@@ -267,6 +271,8 @@ BOOST_AUTO_TEST_CASE(SendTrigDecFailed)
 
   dfo->execute_command("drain_dataflow", null_data);
   dfo->execute_command("scrap", null_data);
+
+  inh_recv->remove_callback();
 }
 
 BOOST_AUTO_TEST_SUITE_END()
