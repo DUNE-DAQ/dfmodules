@@ -1,9 +1,9 @@
 /**
  * @file DFOConsensusModule.hpp
  *
- * DFOConsensusModule extends DFOModule with a consensus algorithm that allows
- * multiple DFO instances to run concurrently without assigning the same
- * TriggerDecision more than once.
+ * DFOConsensusModule implements a consensus algorithm that allows multiple DFO
+ * instances to run concurrently without assigning the same TriggerDecision
+ * more than once.
  *
  * The consensus is achieved through deterministic partitioning:
  *   - Each DFO instance discovers its peers by exchanging announcement tokens
@@ -13,9 +13,9 @@
  *   - A TriggerDecision is handled by exactly the DFO whose index satisfies
  *     trigger_number % num_dfos == own_index.
  *
- * This approach requires no round-trip coordination for every decision and
- * therefore adds negligible latency.  A DFO with zero configured peer output
- * connections operates as a standalone DFO, identical to DFOModule.
+ * This approach requires no round-trip coordination per decision and therefore
+ * adds negligible latency.  A DFO with zero configured peer output connections
+ * operates as a standalone DFO, identical to DFOModule.
  *
  * This is part of the DUNE DAQ Software Suite, copyright 2020.
  * Licensing/copyright details are in the COPYING file that you should have
@@ -25,8 +25,14 @@
 #ifndef DFMODULES_PLUGINS_DFOCONSENSUSMODULE_HPP_
 #define DFMODULES_PLUGINS_DFOCONSENSUSMODULE_HPP_
 
-#include "DFOModule.hpp"
+#include "dfmodules/DFOCore.hpp"
 
+#include "appmodel/DFOConf.hpp"
+#include "dfmessages/TriggerDecisionToken.hpp"
+#include "dfmessages/TriggerInhibit.hpp"
+#include "iomanager/Sender.hpp"
+
+#include "appfwk/DAQModule.hpp"
 #include "logging/Logging.hpp"
 
 #include <atomic>
@@ -62,8 +68,11 @@ namespace dfmodules {
  * @brief DFOConsensusModule distributes triggers across multiple DFO instances
  *        without double-assignment, using deterministic trigger-number
  *        partitioning and peer-announcement via TriggerDecisionToken messages.
+ *
+ *        Inherits directly from DAQModule; common DFO processing logic is
+ *        handled by DFOCore via composition.
  */
-class DFOConsensusModule : public DFOModule
+class DFOConsensusModule : public dunedaq::appfwk::DAQModule
 {
 public:
   /**
@@ -86,37 +95,45 @@ public:
   static constexpr daqdataformats::trigger_number_t s_peer_announce_magic =
     std::numeric_limits<daqdataformats::trigger_number_t>::max();
 
-protected:
-  /**
-   * @brief Intercept peer-announcement tokens; delegate all others to the
-   *        base-class handler.
-   */
-  void receive_trigger_complete_token(const dfmessages::TriggerDecisionToken& token) override;
-
-  /**
-   * @brief Apply partition filter before dispatching the decision.
-   *
-   * A TriggerDecision is processed only if
-   *   decision.trigger_number % num_dfos == own_index.
-   * In standalone mode (num_dfos == 1) every decision is processed.
-   */
-  void receive_trigger_decision(const dfmessages::TriggerDecision& decision) override;
-
 private:
   // Commands
-  void do_start(const CommandData_t& payload);
-  void do_stop(const CommandData_t& payload);
+  void do_conf(const CommandData_t&);
+  void do_start(const CommandData_t&);
+  void do_stop(const CommandData_t&);
+  void do_scrap(const CommandData_t&);
+
+  void generate_opmon_data() override;
 
   /// Send this DFO's peer-announcement token to all configured peer outputs.
   void send_peer_announcement();
 
   /**
-   * @brief (Re-)compute partition index and ensemble size from the set of
-   *        known peer names.  Must be called with m_peers_mutex NOT held.
+   * @brief (Re-)compute partition index and ensemble size from the current set
+   *        of known peer names.  Must be called with m_peers_mutex NOT held.
    */
   void compute_partition();
 
-  // Peer output connections (TriggerDecisionToken outputs, one per peer DFO)
+  /// Token callback: intercepts peer-announcement tokens; passes everything
+  /// else to DFOCore::receive_token().
+  void on_token(const dfmessages::TriggerDecisionToken& token);
+
+  /// TD callback: applies the partition filter and, if accepted, delegates to
+  /// DFOCore::receive_trigger_decision().
+  void on_trigger_decision(const dfmessages::TriggerDecision& decision);
+
+  // Core DFO processing logic (common with DFOModule)
+  std::unique_ptr<DFOCore> m_core;
+
+  // Configuration
+  const appmodel::DFOConf* m_dfo_conf{ nullptr };
+
+  // Connections (initialised in init(), used at start())
+  std::shared_ptr<iomanager::SenderConcept<dfmessages::TriggerInhibit>> m_busy_sender;
+  std::string m_token_connection;
+  std::string m_td_connection;
+  std::vector<std::string> m_trb_conn_ids;
+
+  // Peer DFO output connections (one per peer DFO, for sending announcements)
   std::vector<std::string> m_dfo_peer_output_connections;
   size_t m_expected_peers{ 0 };
 
