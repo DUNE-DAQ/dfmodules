@@ -260,8 +260,9 @@ DFOConsensusModule::send_peer_announcement()
   auto iom = iomanager::IOManager::get();
   for (const auto& conn : m_dfo_peer_output_connections) {
     try {
+      auto announcement_copy = announcement;
       iom->get_sender<dfmessages::TriggerDecisionToken>(conn)->send(
-        dfmessages::TriggerDecisionToken(announcement), m_core->queue_timeout());
+        std::move(announcement_copy), m_core->queue_timeout());
       TLOG_DEBUG(TLVL_PEER_ANNOUNCE) << get_name() << ": Sent peer announcement to " << conn;
     } catch (const ers::Issue& excpt) {
       ers::warning(excpt);
