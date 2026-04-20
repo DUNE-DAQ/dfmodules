@@ -214,14 +214,14 @@ DFOConsensusModule::do_start(const CommandData_t& payload)
   compute_partition();
   ers::info(DFOConsensusPartitionInfo(ERS_HERE, get_name(), m_own_index.load(), m_num_dfos.load()));
 
-  // Start the watchdog thread when there are (or might be) peer DFOs so that
-  // timeout-based failover runs.  Any of the following implies peers are present:
-  // - num_dfos > 1 (a peer already announced at start-up)
-  // - DFODecision output connections are configured (peers may announce later)
-  if (m_num_dfos.load() > 1 || !m_dfo_decision_output_connections.empty()) {
-    m_watchdog_running.store(true);
-    m_watchdog_thread = std::thread(&DFOConsensusModule::watchdog_thread_func, this);
-  }
+  // Start the watchdog thread unconditionally so that late-arriving peer
+  // announcements (i.e. peers that announce after do_start() completes) are
+  // correctly handled.  In standalone mode (single DFO) the watchdog is
+  // effectively a no-op: every TD is removed from m_pending_tds by
+  // on_assignment before the 2-second timeout expires, and any that aren't
+  // are guarded by the "own trigger" check inside watchdog_thread_func.
+  m_watchdog_running.store(true);
+  m_watchdog_thread = std::thread(&DFOConsensusModule::watchdog_thread_func, this);
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
 }
