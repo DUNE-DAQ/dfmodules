@@ -455,9 +455,10 @@ BOOST_AUTO_TEST_CASE(WatchdogFailover)
   std::this_thread::sleep_for(std::chrono::milliseconds(200));
   BOOST_REQUIRE_GE(received_count.load(), 1u); // trigger 2 processed
 
-  // Wait for the watchdog to fire (timeout + one watchdog interval).
-  auto watchdog_wait = DFOConsensusModule::s_dfo_decision_timeout +
-                       std::chrono::milliseconds(500);
+  // Wait for the watchdog to fire (timeout + extra time for the watchdog
+  // interval and processing).
+  static constexpr auto s_watchdog_test_buffer = std::chrono::milliseconds(500);
+  auto watchdog_wait = DFOConsensusModule::s_dfo_decision_timeout + s_watchdog_test_buffer;
   std::this_thread::sleep_for(watchdog_wait);
 
   // After failover, trigger 1 should also have been dispatched.

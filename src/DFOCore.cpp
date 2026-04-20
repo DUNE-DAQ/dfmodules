@@ -279,8 +279,11 @@ DFOCore::is_globally_busy(const std::map<std::string, size_t>& extra_slots_per_t
     }
     // If combined slot count is below the busy threshold, this TRB has
     // available capacity → the system is NOT globally busy.
-    if (own_slots + extra_slots < trbd->busy_threshold())
+    if (own_slots + extra_slots < trbd->busy_threshold()) {
+      // At least one TRB has remaining capacity: the system as a whole is
+      // NOT globally busy (global busy requires ALL TRBs to be at capacity).
       return false;
+    }
   }
   return true;
 }

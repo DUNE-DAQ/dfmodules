@@ -214,7 +214,10 @@ DFOConsensusModule::do_start(const CommandData_t& payload)
   compute_partition();
   ers::info(DFOConsensusPartitionInfo(ERS_HERE, get_name(), m_own_index.load(), m_num_dfos.load()));
 
-  // Start the watchdog thread if there are peer DFOs in the ensemble.
+  // Start the watchdog thread when there are (or might be) peer DFOs so that
+  // timeout-based failover runs.  Any of the following implies peers are present:
+  // - num_dfos > 1 (a peer already announced at start-up)
+  // - DFODecision output connections are configured (peers may announce later)
   if (m_num_dfos.load() > 1 || !m_dfo_decision_output_connections.empty()) {
     m_watchdog_running.store(true);
     m_watchdog_thread = std::thread(&DFOConsensusModule::watchdog_thread_func, this);
@@ -559,14 +562,15 @@ DFOConsensusModule::watchdog_thread_func()
     }
 
     for (auto& [tn, ptd] : timed_out) {
-      // Determine which DFO index was responsible for this trigger_number
-      // based on the CURRENT partition (before failover removal).
+      // Snapshot both atomics together to avoid observing a partially-updated
+      // partition (compute_partition() updates them sequentially).
       size_t num_dfos = m_num_dfos.load();
+      size_t own_index = m_own_index.load();
       size_t responsible_index = (num_dfos > 1) ? (tn % num_dfos) : 0;
 
       // Do not trigger failover if WE were responsible (should not happen, but
       // guard against it to avoid self-removal).
-      if (responsible_index == m_own_index.load()) {
+      if (responsible_index == own_index) {
         TLOG_DEBUG(TLVL_WATCHDOG) << get_name() << ": Watchdog: own trigger " << tn
                                   << " still pending – TRBs may be saturated";
         continue;
@@ -595,12 +599,22 @@ DFOConsensusModule::handle_peer_failure(size_t failed_index,
     }
     std::sort(ensemble.begin(), ensemble.end());
 
-    if (failed_index >= ensemble.size())
+    if (failed_index >= ensemble.size()) {
+      TLOG_DEBUG(TLVL_WATCHDOG) << get_name()
+                                << ": handle_peer_failure: stale failed_index=" << failed_index
+                                << " (ensemble size=" << ensemble.size()
+                                << "); partition already updated – skipping failover for trigger "
+                                << trigger_number;
       return; // Stale; partition has already changed.
+    }
 
     failed_dfo_name = ensemble[failed_index];
-    if (failed_dfo_name == get_name())
+    if (failed_dfo_name == get_name()) {
+      TLOG_DEBUG(TLVL_WATCHDOG) << get_name()
+                                << ": handle_peer_failure: resolved failed_index=" << failed_index
+                                << " to self – ignoring (trigger=" << trigger_number << ")";
       return; // Should not happen.
+    }
 
     m_registered_peers.erase(failed_dfo_name);
   }
@@ -618,14 +632,16 @@ DFOConsensusModule::handle_peer_failure(size_t failed_index,
   }
 
   // Re-assign all timed-out TDs that now belong to this DFO under the new partition.
+  // Snapshot both atomics together so the loop sees a consistent partition.
   std::vector<dfmessages::TriggerDecision> to_reassign;
   {
     std::lock_guard<std::mutex> guard(m_pending_tds_mutex);
     std::vector<daqdataformats::trigger_number_t> handled;
+    size_t new_num = m_num_dfos.load();
+    size_t new_own = m_own_index.load();
     for (auto& [tn, ptd] : m_pending_tds) {
-      size_t new_num = m_num_dfos.load();
       size_t new_owner = (new_num > 1) ? (tn % new_num) : 0;
-      if (new_owner == m_own_index.load()) {
+      if (new_owner == new_own) {
         to_reassign.push_back(ptd.decision);
         handled.push_back(tn);
       }
