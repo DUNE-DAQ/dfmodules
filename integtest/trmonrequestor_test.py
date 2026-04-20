@@ -62,7 +62,7 @@ object_databases = ["config/daqsystemtest/integrationtest-objects.data.xml"]
 conf_dict = data_classes.drunc_config()
 conf_dict.dro_map_config.n_streams = number_of_data_producers
 conf_dict.op_env = "integtest"
-conf_dict.session = "trmonrequestor"
+conf_dict.config_session_name= "trmonrequestor"
 conf_dict.tpg_enabled = False
 conf_dict.trmon_app_enabled = True
 conf_dict.n_df_apps = number_of_dataflow_apps
@@ -121,17 +121,17 @@ def test_log_files(run_dunerc):
 
     # Check that at least some of the expected log files are present
     assert any(
-        f"{run_dunerc.session}_df-01" in str(logname)
+        f"{run_dunerc.daq_session_name}_df-01" in str(logname)
         for logname in run_dunerc.log_files
     )
     assert any(
-        f"{run_dunerc.session}_dfo" in str(logname) for logname in run_dunerc.log_files
+        f"{run_dunerc.daq_session_name}_dfo" in str(logname) for logname in run_dunerc.log_files
     )
     assert any(
-        f"{run_dunerc.session}_mlt" in str(logname) for logname in run_dunerc.log_files
+        f"{run_dunerc.daq_session_name}_mlt" in str(logname) for logname in run_dunerc.log_files
     )
     assert any(
-        f"{run_dunerc.session}_ru" in str(logname) for logname in run_dunerc.log_files
+        f"{run_dunerc.daq_session_name}_ru" in str(logname) for logname in run_dunerc.log_files
     )
 
     if check_for_logfile_errors:
