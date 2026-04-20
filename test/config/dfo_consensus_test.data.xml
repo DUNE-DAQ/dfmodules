@@ -88,19 +88,23 @@
   DFO_A:
     Inputs:  token_a (TriggerDecisionToken from TRBs and from DFO_B)
              trigdec_in_a (TriggerDecision from MLT)
+             dfo_decision_b_to_a (DFODecision from DFO_B)
     Outputs: triginh_a (TriggerInhibit to MLT)
              trigdec_trb_a (TriggerDecision to TRBApp_A)
              peer_to_b (TriggerDecisionToken peer announcement to DFO_B)
+             dfo_decision_a_to_b (DFODecision to DFO_B)
 -->
 <obj class="DFOModule" id="dfo_a">
  <rel name="inputs">
   <ref class="NetworkConnection" id="token_a"/>
   <ref class="NetworkConnection" id="trigdec_in_a"/>
+  <ref class="Queue" id="dfo_decision_b_to_a"/>
  </rel>
  <rel name="outputs">
   <ref class="NetworkConnection" id="triginh_a"/>
   <ref class="NetworkConnection" id="trigdec_trb_a"/>
   <ref class="NetworkConnection" id="peer_to_b"/>
+  <ref class="Queue" id="dfo_decision_a_to_b"/>
  </rel>
  <rel name="configuration" class="DFOConf" id="dfo_conf"/>
 </obj>
@@ -109,19 +113,23 @@
   DFO_B:
     Inputs:  token_b (TriggerDecisionToken from TRBs and from DFO_A)
              trigdec_in_b (TriggerDecision from MLT)
+             dfo_decision_a_to_b (DFODecision from DFO_A)
     Outputs: triginh_b (TriggerInhibit to MLT)
              trigdec_trb_b (TriggerDecision to TRBApp_B)
              peer_to_a (TriggerDecisionToken peer announcement to DFO_A)
+             dfo_decision_b_to_a (DFODecision to DFO_A)
 -->
 <obj class="DFOModule" id="dfo_b">
  <rel name="inputs">
   <ref class="NetworkConnection" id="token_b"/>
   <ref class="NetworkConnection" id="trigdec_in_b"/>
+  <ref class="Queue" id="dfo_decision_a_to_b"/>
  </rel>
  <rel name="outputs">
   <ref class="NetworkConnection" id="triginh_b"/>
   <ref class="NetworkConnection" id="trigdec_trb_b"/>
   <ref class="NetworkConnection" id="peer_to_a"/>
+  <ref class="Queue" id="dfo_decision_b_to_a"/>
  </rel>
  <rel name="configuration" class="DFOConf" id="dfo_conf"/>
 </obj>
@@ -218,6 +226,23 @@
  <attr name="recv_timeout_ms" type="u32" val="100"/>
  <attr name="connection_type" type="enum" val="kSendRecv"/>
  <rel name="associated_service" class="Service" id="svc_token_a"/>
+</obj>
+
+<!-- DFODecision in-process queues (one per direction) -->
+<obj class="Queue" id="dfo_decision_a_to_b">
+ <attr name="data_type" type="string" val="DFODecision"/>
+ <attr name="send_timeout_ms" type="u32" val="100"/>
+ <attr name="recv_timeout_ms" type="u32" val="100"/>
+ <attr name="capacity" type="u32" val="100"/>
+ <attr name="queue_type" type="enum" val="kFollySPSCQueue"/>
+</obj>
+
+<obj class="Queue" id="dfo_decision_b_to_a">
+ <attr name="data_type" type="string" val="DFODecision"/>
+ <attr name="send_timeout_ms" type="u32" val="100"/>
+ <attr name="recv_timeout_ms" type="u32" val="100"/>
+ <attr name="capacity" type="u32" val="100"/>
+ <attr name="queue_type" type="enum" val="kFollySPSCQueue"/>
 </obj>
 
 <!-- Services -->

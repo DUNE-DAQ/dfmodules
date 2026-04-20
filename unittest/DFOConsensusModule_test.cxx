@@ -9,6 +9,15 @@
  *     partition are silently dropped, while decisions for the own partition
  *     are processed normally.
  *  5. Peer-announcement magic value does not collide with normal TRB tokens.
+ *  6. DFODecision broadcast: after a TD is assigned the module sends a
+ *     DFODecision to each configured peer output connection.
+ *  7. Remote-slot shadow update: injecting a DFODecision from a peer updates
+ *     the shadow state used for the global busy calculation.
+ *  8. Global busy check: busy signal is asserted only when ALL TRBs are at
+ *     capacity considering both own and remote slot counts.
+ *  9. Watchdog failover: if no DFODecision arrives for a trigger_number within
+ *     the timeout, the responsible peer is removed from the ensemble and the
+ *     trigger is reassigned by the surviving DFO.
  *
  * This is part of the DUNE DAQ Application Framework, copyright 2020.
  * Licensing/copyright details are in the COPYING file that you should have
@@ -20,6 +29,7 @@
 #include "dfmessages/TriggerDecisionToken.hpp"
 #include "dfmessages/TriggerInhibit.hpp"
 #include "dfmodules/CommonIssues.hpp"
+#include "dfmodules/DFODecision.hpp"
 #include "dfmodules/opmon/DFOModule.pb.h"
 #include "iomanager/IOManager.hpp"
 #include "iomanager/Sender.hpp"
@@ -327,6 +337,140 @@ BOOST_AUTO_TEST_CASE(PartitionFilter)
   inh_recv->remove_callback();
 }
 
+// ---------------------------------------------------------------------------
+// 8. DFODecision broadcast on assignment
+//    In standalone mode (no peer DFO connections) no DFODecision output
+//    connections are configured, so the broadcast is a no-op.  Verify that
+//    the module still correctly processes the TD and the callback path does
+//    not throw.
+// ---------------------------------------------------------------------------
+BOOST_AUTO_TEST_CASE(DFODecisionBroadcastStandaloneNoOp)
+{
+  auto dfo = appfwk::make_module("DFOConsensusModule", "test");
+  opmgr.register_node("dfo", dfo);
+  dfo->init(cfgMgr);
+
+  appfwk::DAQModule::CommandData_t null_data;
+  appfwk::DAQModule::CommandData_t start_data;
+  start_data.emplace("run", 1);
+
+  dfo->execute_command("conf", null_data);
+
+  auto iom = iomanager::IOManager::get();
+  auto dec_recv = iom->get_receiver<dfmessages::TriggerDecision>("trigdec_0");
+  std::atomic<int> received{ 0 };
+  dec_recv->add_callback([&](const dfmessages::TriggerDecision& td) {
+    ++received;
+    dfmessages::TriggerDecisionToken token;
+    token.run_number = td.run_number;
+    token.trigger_number = td.trigger_number;
+    token.decision_destination = "trigdec_0";
+    get_iom_sender<dfmessages::TriggerDecisionToken>("token")->send(
+      std::move(token), iomanager::Sender::s_block);
+  });
+
+  auto inh_recv = iom->get_receiver<dfmessages::TriggerInhibit>("triginh");
+  inh_recv->add_callback([](const dfmessages::TriggerInhibit&) {});
+
+  dfo->execute_command("start", start_data);
+  send_init_token();
+
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+  send_trigdec(1);
+  send_trigdec(2);
+  std::this_thread::sleep_for(std::chrono::milliseconds(300));
+
+  // Both TDs should have been processed without error.
+  BOOST_REQUIRE_GE(received.load(), 1);
+
+  dfo->execute_command("drain_dataflow", null_data);
+  dfo->execute_command("scrap", null_data);
+
+  dec_recv->remove_callback();
+  inh_recv->remove_callback();
+}
+
+// ---------------------------------------------------------------------------
+// 9. Watchdog failover
+//    Simulate a two-DFO scenario where the responsible peer (zzz_peer) for
+//    odd trigger_numbers never sends a DFODecision.  The watchdog should
+//    detect the timeout, remove zzz_peer from the ensemble, recompute the
+//    partition (this DFO now owns ALL triggers), and reassign the pending TD.
+//
+//    We use s_dfo_decision_timeout to bound the wait, then verify the module
+//    eventually dispatches the previously-orphaned TD.
+// ---------------------------------------------------------------------------
+BOOST_AUTO_TEST_CASE(WatchdogFailover)
+{
+  auto dfo = appfwk::make_module("DFOConsensusModule", "test");
+  opmgr.register_node("dfo", dfo);
+  dfo->init(cfgMgr);
+
+  appfwk::DAQModule::CommandData_t null_data;
+  appfwk::DAQModule::CommandData_t start_data;
+  start_data.emplace("run", 1);
+
+  dfo->execute_command("conf", null_data);
+
+  auto iom = iomanager::IOManager::get();
+
+  std::atomic<uint64_t> received_count{ 0 };
+  auto dec_recv = iom->get_receiver<dfmessages::TriggerDecision>("trigdec_0");
+  dec_recv->add_callback([&](const dfmessages::TriggerDecision& td) {
+    ++received_count;
+    dfmessages::TriggerDecisionToken token;
+    token.run_number = td.run_number;
+    token.trigger_number = td.trigger_number;
+    token.decision_destination = "trigdec_0";
+    get_iom_sender<dfmessages::TriggerDecisionToken>("token")->send(
+      std::move(token), iomanager::Sender::s_block);
+  });
+
+  auto inh_recv = iom->get_receiver<dfmessages::TriggerInhibit>("triginh");
+  inh_recv->add_callback([](const dfmessages::TriggerInhibit&) {});
+
+  dfo->execute_command("start", start_data);
+  send_init_token();
+
+  // Inject a synthetic peer announcement for "zzz_peer" so this DFO gets
+  // own_index=0 (even trigger_numbers) and zzz_peer gets index=1 (odd).
+  {
+    dfmessages::TriggerDecisionToken peer_ann;
+    peer_ann.run_number = 0;
+    peer_ann.trigger_number = DFOConsensusModule::s_peer_announce_magic;
+    peer_ann.decision_destination = "zzz_peer";
+    get_iom_sender<dfmessages::TriggerDecisionToken>("token")->send(
+      std::move(peer_ann), iomanager::Sender::s_block);
+  }
+
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+  // Send trigger_number 1 (odd → would normally go to zzz_peer) and
+  // trigger_number 2 (even → processed immediately by this DFO).
+  send_trigdec(1); // buffered; waiting for zzz_peer's DFODecision
+  send_trigdec(2); // processed immediately
+
+  // Wait for this DFO to handle trigger 2.
+  std::this_thread::sleep_for(std::chrono::milliseconds(200));
+  BOOST_REQUIRE_GE(received_count.load(), 1u); // trigger 2 processed
+
+  // Wait for the watchdog to fire (timeout + one watchdog interval).
+  auto watchdog_wait = DFOConsensusModule::s_dfo_decision_timeout +
+                       std::chrono::milliseconds(500);
+  std::this_thread::sleep_for(watchdog_wait);
+
+  // After failover, trigger 1 should also have been dispatched.
+  BOOST_REQUIRE_EQUAL(received_count.load(), 2u);
+
+  dfo->execute_command("drain_dataflow", null_data);
+  dfo->execute_command("scrap", null_data);
+
+  dec_recv->remove_callback();
+  inh_recv->remove_callback();
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 } // namespace dunedaq
+

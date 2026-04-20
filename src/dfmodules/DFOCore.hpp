@@ -103,6 +103,23 @@ public:
   using new_trb_fn_t =
     std::function<void(const std::string&, std::shared_ptr<TriggerRecordBuilderData>)>;
 
+  /// Called after each successful trigger-decision assignment.
+  /// Arguments: the AssignedTriggerDecision (with connection_name and decision),
+  ///            and the current slot count for that TRB after the assignment.
+  using on_assignment_fn_t =
+    std::function<void(const std::shared_ptr<AssignedTriggerDecision>&, size_t trb_slot_count)>;
+
+  /// Called after each trigger-decision token is processed (i.e., a TRB completed
+  /// a trigger).  Arguments: TRB connection name, trigger_number, and the current
+  /// slot count for that TRB after the completion.
+  using on_completion_fn_t =
+    std::function<void(const std::string&, daqdataformats::trigger_number_t, size_t trb_slot_count)>;
+
+  /// Optional override for the busy check used by notify_trigger_if_needed().
+  /// When set, this function is called instead of the default is_busy() to
+  /// determine whether a TriggerInhibit should be sent.
+  using is_busy_fn_t = std::function<bool()>;
+
   explicit DFOCore(std::string owner_name);
 
   DFOCore(const DFOCore&) = delete;
@@ -123,7 +140,10 @@ public:
   void start(daqdataformats::run_number_t run_number,
              std::shared_ptr<iomanager::SenderConcept<dfmessages::TriggerInhibit>> busy_sender,
              td_sender_fn_t get_td_sender_fn,
-             new_trb_fn_t on_new_trb_fn = nullptr);
+             new_trb_fn_t on_new_trb_fn = nullptr,
+             on_assignment_fn_t on_assignment_fn = nullptr,
+             on_completion_fn_t on_completion_fn = nullptr,
+             is_busy_fn_t is_busy_fn = nullptr);
 
   /// Waits up to the configured stop_timeout for outstanding
   /// TDs then flushes and returns any incomplete AssignedTriggerDecisions.
@@ -148,6 +168,11 @@ public:
   bool is_empty() const;
   size_t used_slots() const;
   void notify_trigger_if_needed();
+
+  /// Returns true if ALL TRBModules are busy when combining own slot counts
+  /// with the @p extra_slots_per_trb map (e.g., remote peer slot counts).
+  /// Used by DFOConsensusModule to determine global inhibit state.
+  bool is_globally_busy(const std::map<std::string, size_t>& extra_slots_per_trb) const;
 
   daqdataformats::run_number_t run_number() const { return m_run_number; }
   std::chrono::milliseconds queue_timeout() const { return m_queue_timeout; }
@@ -204,6 +229,9 @@ private:
   std::shared_ptr<iomanager::SenderConcept<dfmessages::TriggerInhibit>> m_busy_sender;
   td_sender_fn_t m_get_td_sender_fn;
   new_trb_fn_t m_on_new_trb_fn;
+  on_assignment_fn_t m_on_assignment_fn;
+  on_completion_fn_t m_on_completion_fn;
+  is_busy_fn_t m_is_busy_fn;
 
   std::function<void(nlohmann::json&)> m_metadata_function;
 

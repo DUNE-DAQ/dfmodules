@@ -34,7 +34,9 @@ enum
   TLVL_ENTER_EXIT_METHODS = 5,
   TLVL_PEER_ANNOUNCE = 6,
   TLVL_PARTITION = 7,
-  TLVL_TD_FILTER = 10
+  TLVL_TD_FILTER = 10,
+  TLVL_DFO_DECISION = 11,
+  TLVL_WATCHDOG = 12
 };
 
 namespace dunedaq::dfmodules {
@@ -67,6 +69,10 @@ DFOConsensusModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcfg)
     if (con->get_data_type() == datatype_to_string<dfmessages::TriggerDecision>()) {
       m_td_connection = con->UID();
     }
+    if (con->get_data_type() == datatype_to_string<DFODecision>()) {
+      m_dfo_decision_input_connection = con->UID();
+      TLOG_DEBUG(TLVL_DFO_DECISION) << get_name() << ": Found DFODecision input connection: " << con->UID();
+    }
   }
   for (auto con : mdal->get_outputs()) {
     if (con->get_data_type() == datatype_to_string<dfmessages::TriggerInhibit>()) {
@@ -79,6 +85,10 @@ DFOConsensusModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcfg)
     if (con->get_data_type() == datatype_to_string<dfmessages::TriggerDecisionToken>()) {
       m_dfo_peer_output_connections.push_back(con->UID());
       TLOG_DEBUG(TLVL_PEER_ANNOUNCE) << get_name() << ": Found peer DFO output connection: " << con->UID();
+    }
+    if (con->get_data_type() == datatype_to_string<DFODecision>()) {
+      m_dfo_decision_output_connections.push_back(con->UID());
+      TLOG_DEBUG(TLVL_DFO_DECISION) << get_name() << ": Found DFODecision output connection: " << con->UID();
     }
   }
 
@@ -102,7 +112,8 @@ DFOConsensusModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcfg)
   iom->get_receiver<dfmessages::TriggerDecisionToken>(m_token_connection);
   iom->get_receiver<dfmessages::TriggerDecision>(m_td_connection);
 
-  TLOG() << get_name() << ": DFOConsensusModule initialized with " << m_expected_peers << " expected peer DFO(s)";
+  TLOG() << get_name() << ": DFOConsensusModule initialized with " << m_expected_peers << " expected peer DFO(s)"
+         << " and " << m_dfo_decision_output_connections.size() << " DFODecision output connection(s)";
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
 
@@ -131,6 +142,14 @@ DFOConsensusModule::do_start(const CommandData_t& payload)
     std::lock_guard<std::mutex> guard(m_peers_mutex);
     m_registered_peers.clear();
   }
+  {
+    std::lock_guard<std::mutex> guard(m_remote_slots_mutex);
+    m_remote_slot_counts.clear();
+  }
+  {
+    std::lock_guard<std::mutex> guard(m_pending_tds_mutex);
+    m_pending_tds.clear();
+  }
 
   auto run_number = payload.value<daqdataformats::run_number_t>("run", 0);
 
@@ -155,13 +174,26 @@ DFOConsensusModule::do_start(const CommandData_t& payload)
                 },
                 [this](const std::string& name, std::shared_ptr<TriggerRecordBuilderData> trbd) {
                   register_node(name, trbd);
-                });
+                },
+                [this](const std::shared_ptr<AssignedTriggerDecision>& atd, size_t slot_count) {
+                  on_assignment(atd, slot_count);
+                },
+                [this](const std::string& trb_conn,
+                       daqdataformats::trigger_number_t tn,
+                       size_t slot_count) { on_completion(trb_conn, tn, slot_count); },
+                [this]() { return is_globally_busy(); });
 
   iom->add_callback<dfmessages::TriggerDecisionToken>(
     m_token_connection, std::bind(&DFOConsensusModule::on_token, this, std::placeholders::_1));
 
   iom->add_callback<dfmessages::TriggerDecision>(
     m_td_connection, std::bind(&DFOConsensusModule::on_trigger_decision, this, std::placeholders::_1));
+
+  if (!m_dfo_decision_input_connection.empty()) {
+    iom->add_callback<DFODecision>(
+      m_dfo_decision_input_connection,
+      std::bind(&DFOConsensusModule::on_dfo_decision, this, std::placeholders::_1));
+  }
 
   // Broadcast our identity to all peer DFOs.
   send_peer_announcement();
@@ -182,6 +214,12 @@ DFOConsensusModule::do_start(const CommandData_t& payload)
   compute_partition();
   ers::info(DFOConsensusPartitionInfo(ERS_HERE, get_name(), m_own_index.load(), m_num_dfos.load()));
 
+  // Start the watchdog thread if there are peer DFOs in the ensemble.
+  if (m_num_dfos.load() > 1 || !m_dfo_decision_output_connections.empty()) {
+    m_watchdog_running.store(true);
+    m_watchdog_thread = std::thread(&DFOConsensusModule::watchdog_thread_func, this);
+  }
+
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
 }
 
@@ -189,6 +227,13 @@ void
 DFOConsensusModule::do_stop(const CommandData_t& /*args*/)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_stop() method";
+
+  // Stop the watchdog thread before halting DFOCore so the watchdog does not
+  // try to dispatch TDs while DFOCore is draining.
+  m_watchdog_running.store(false);
+  if (m_watchdog_thread.joinable()) {
+    m_watchdog_thread.join();
+  }
 
   m_core->stop();
 
@@ -198,9 +243,22 @@ DFOConsensusModule::do_stop(const CommandData_t& /*args*/)
   auto remnants = m_core->flush();
 
   iom->remove_callback<dfmessages::TriggerDecisionToken>(m_token_connection);
+  if (!m_dfo_decision_input_connection.empty()) {
+    iom->remove_callback<DFODecision>(m_dfo_decision_input_connection);
+  }
 
   for (auto& r : remnants) {
     ers::error(IncompleteTriggerDecision(ERS_HERE, r->decision.trigger_number, m_core->run_number()));
+  }
+
+  // Clear runtime state.
+  {
+    std::lock_guard<std::mutex> guard(m_pending_tds_mutex);
+    m_pending_tds.clear();
+  }
+  {
+    std::lock_guard<std::mutex> guard(m_remote_slots_mutex);
+    m_remote_slot_counts.clear();
   }
 
   // Reset to standalone mode so a subsequent start is clean.
@@ -247,6 +305,10 @@ DFOConsensusModule::generate_opmon_data()
     publish(std::move(ti), { { "type", name } });
   }
 }
+
+// ---------------------------------------------------------------------------
+// Peer-announcement helpers
+// ---------------------------------------------------------------------------
 
 void
 DFOConsensusModule::send_peer_announcement()
@@ -297,6 +359,10 @@ DFOConsensusModule::compute_partition()
                               << ensemble.size() << " DFO(s)";
 }
 
+// ---------------------------------------------------------------------------
+// IOManager callbacks
+// ---------------------------------------------------------------------------
+
 void
 DFOConsensusModule::on_token(const dfmessages::TriggerDecisionToken& token)
 {
@@ -329,20 +395,255 @@ DFOConsensusModule::on_token(const dfmessages::TriggerDecisionToken& token)
 void
 DFOConsensusModule::on_trigger_decision(const dfmessages::TriggerDecision& decision)
 {
+  // Buffer the TD for potential failover monitoring – all DFOs do this.
+  {
+    std::lock_guard<std::mutex> guard(m_pending_tds_mutex);
+    m_pending_tds[decision.trigger_number] = { decision, std::chrono::steady_clock::now() };
+  }
+
   size_t num_dfos = m_num_dfos.load();
   size_t own_index = m_own_index.load();
 
-  // In multi-DFO mode, only process decisions that belong to our partition.
+  // In multi-DFO mode, only the responsible DFO processes the decision.
   if (num_dfos > 1 && (decision.trigger_number % num_dfos) != own_index) {
-    TLOG_DEBUG(TLVL_TD_FILTER) << get_name() << ": Skipping trigger_number " << decision.trigger_number
-                               << " (belongs to partition " << (decision.trigger_number % num_dfos)
-                               << ", own index is " << own_index << ")";
+    TLOG_DEBUG(TLVL_TD_FILTER) << get_name() << ": Buffered trigger_number " << decision.trigger_number
+                               << " awaiting DFODecision from partition "
+                               << (decision.trigger_number % num_dfos);
     return;
   }
 
+  // Process via DFOCore; on_assignment callback will broadcast the DFODecision
+  // and remove the entry from m_pending_tds.
   m_core->receive_trigger_decision(decision);
+}
+
+void
+DFOConsensusModule::on_dfo_decision(const DFODecision& msg)
+{
+  TLOG_DEBUG(TLVL_DFO_DECISION) << get_name() << ": Received DFODecision from " << msg.source_dfo_name
+                                 << " trigger=" << msg.trigger_number << " trb=" << msg.trb_connection_name
+                                 << " slots=" << msg.trb_slot_count
+                                 << " completion=" << std::boolalpha << msg.is_completion;
+
+  // Update shadow slot count for the reporting DFO's TRB.
+  {
+    std::lock_guard<std::mutex> guard(m_remote_slots_mutex);
+    m_remote_slot_counts[msg.source_dfo_name][msg.trb_connection_name] = msg.trb_slot_count;
+  }
+
+  // Remove the pending TD entry now that we know it was handled.
+  if (!msg.is_completion) {
+    std::lock_guard<std::mutex> guard(m_pending_tds_mutex);
+    m_pending_tds.erase(msg.trigger_number);
+  }
+
+  // Recalculate and potentially update the inhibit signal.
+  m_core->notify_trigger_if_needed();
+}
+
+// ---------------------------------------------------------------------------
+// DFODecision broadcasting
+// ---------------------------------------------------------------------------
+
+void
+DFOConsensusModule::broadcast_dfo_decision(daqdataformats::trigger_number_t trigger_number,
+                                            const std::string& trb_conn,
+                                            size_t trb_slot_count,
+                                            bool is_completion)
+{
+  if (m_dfo_decision_output_connections.empty())
+    return;
+
+  DFODecision msg;
+  msg.run_number = m_core->run_number();
+  msg.trigger_number = trigger_number;
+  msg.trb_connection_name = trb_conn;
+  msg.trb_slot_count = trb_slot_count;
+  msg.source_dfo_name = get_name();
+  msg.is_completion = is_completion;
+
+  auto iom = iomanager::IOManager::get();
+  for (const auto& conn : m_dfo_decision_output_connections) {
+    try {
+      auto msg_copy = msg;
+      iom->get_sender<DFODecision>(conn)->send(std::move(msg_copy), m_core->queue_timeout());
+      TLOG_DEBUG(TLVL_DFO_DECISION) << get_name() << ": Sent DFODecision to " << conn
+                                    << " trigger=" << trigger_number << " trb=" << trb_conn
+                                    << " slots=" << trb_slot_count
+                                    << " completion=" << std::boolalpha << is_completion;
+    } catch (const ers::Issue& excpt) {
+      ers::warning(excpt);
+    }
+  }
+}
+
+void
+DFOConsensusModule::on_assignment(const std::shared_ptr<AssignedTriggerDecision>& atd,
+                                   size_t trb_slot_count)
+{
+  // Broadcast to peer DFOs so they can update their shadow state.
+  broadcast_dfo_decision(atd->decision.trigger_number, atd->connection_name, trb_slot_count, false);
+
+  // Remove from the pending-TD buffer – this DFO has handled it.
+  {
+    std::lock_guard<std::mutex> guard(m_pending_tds_mutex);
+    m_pending_tds.erase(atd->decision.trigger_number);
+  }
+}
+
+void
+DFOConsensusModule::on_completion(const std::string& trb_conn,
+                                   daqdataformats::trigger_number_t trigger_number,
+                                   size_t trb_slot_count)
+{
+  // Broadcast to peer DFOs so they can update their shadow state.
+  broadcast_dfo_decision(trigger_number, trb_conn, trb_slot_count, true);
+}
+
+// ---------------------------------------------------------------------------
+// Global busy check
+// ---------------------------------------------------------------------------
+
+bool
+DFOConsensusModule::is_globally_busy() const
+{
+  if (m_core->num_trb_apps() == 0)
+    return true; // No TRBs known yet – treat as busy.
+
+  // Build aggregate slot count per TRB: own (from DFOCore) + peer (from shadow map).
+  // If *any* TRB has available capacity the system is not globally busy.
+  // Busy threshold comes from TriggerRecordBuilderData; we use DFOCore's own
+  // is_busy() as the baseline for own slots and add peer slots on top.
+
+  // Collect peer totals per TRB connection.
+  std::map<std::string, size_t> peer_totals;
+  {
+    std::lock_guard<std::mutex> guard(m_remote_slots_mutex);
+    for (const auto& [dfo_name, trb_map] : m_remote_slot_counts) {
+      for (const auto& [trb_conn, count] : trb_map) {
+        peer_totals[trb_conn] += count;
+      }
+    }
+  }
+
+  // Delegate to DFOCore, which knows the own slots and the busy_threshold per TRB.
+  // We add peer_totals to each TRB's own count via DFOCore::is_globally_busy().
+  return m_core->is_globally_busy(peer_totals);
+}
+
+// ---------------------------------------------------------------------------
+// Watchdog / failover
+// ---------------------------------------------------------------------------
+
+void
+DFOConsensusModule::watchdog_thread_func()
+{
+  TLOG_DEBUG(TLVL_WATCHDOG) << get_name() << ": Watchdog thread started";
+
+  while (m_watchdog_running.load()) {
+    std::this_thread::sleep_for(s_watchdog_interval);
+
+    if (!m_watchdog_running.load())
+      break;
+
+    auto now = std::chrono::steady_clock::now();
+    std::vector<std::pair<daqdataformats::trigger_number_t, PendingTD>> timed_out;
+
+    {
+      std::lock_guard<std::mutex> guard(m_pending_tds_mutex);
+      for (const auto& [tn, ptd] : m_pending_tds) {
+        if ((now - ptd.received_at) >= s_dfo_decision_timeout) {
+          timed_out.emplace_back(tn, ptd);
+        }
+      }
+    }
+
+    for (auto& [tn, ptd] : timed_out) {
+      // Determine which DFO index was responsible for this trigger_number
+      // based on the CURRENT partition (before failover removal).
+      size_t num_dfos = m_num_dfos.load();
+      size_t responsible_index = (num_dfos > 1) ? (tn % num_dfos) : 0;
+
+      // Do not trigger failover if WE were responsible (should not happen, but
+      // guard against it to avoid self-removal).
+      if (responsible_index == m_own_index.load()) {
+        TLOG_DEBUG(TLVL_WATCHDOG) << get_name() << ": Watchdog: own trigger " << tn
+                                  << " still pending – TRBs may be saturated";
+        continue;
+      }
+
+      handle_peer_failure(responsible_index, tn);
+    }
+  }
+
+  TLOG_DEBUG(TLVL_WATCHDOG) << get_name() << ": Watchdog thread stopped";
+}
+
+void
+DFOConsensusModule::handle_peer_failure(size_t failed_index,
+                                         daqdataformats::trigger_number_t trigger_number)
+{
+  // Identify the failed DFO name from the sorted ensemble.
+  std::string failed_dfo_name;
+  {
+    std::lock_guard<std::mutex> guard(m_peers_mutex);
+
+    std::vector<std::string> ensemble;
+    ensemble.push_back(get_name());
+    for (const auto& peer : m_registered_peers) {
+      ensemble.push_back(peer);
+    }
+    std::sort(ensemble.begin(), ensemble.end());
+
+    if (failed_index >= ensemble.size())
+      return; // Stale; partition has already changed.
+
+    failed_dfo_name = ensemble[failed_index];
+    if (failed_dfo_name == get_name())
+      return; // Should not happen.
+
+    m_registered_peers.erase(failed_dfo_name);
+  }
+
+  ers::warning(DFOConsensusFailover(ERS_HERE, get_name(), failed_dfo_name, trigger_number));
+
+  // Recompute partition without the failed DFO.
+  compute_partition();
+  ers::info(DFOConsensusPartitionInfo(ERS_HERE, get_name(), m_own_index.load(), m_num_dfos.load()));
+
+  // Also clear shadow slot counts from the failed DFO.
+  {
+    std::lock_guard<std::mutex> guard(m_remote_slots_mutex);
+    m_remote_slot_counts.erase(failed_dfo_name);
+  }
+
+  // Re-assign all timed-out TDs that now belong to this DFO under the new partition.
+  std::vector<dfmessages::TriggerDecision> to_reassign;
+  {
+    std::lock_guard<std::mutex> guard(m_pending_tds_mutex);
+    std::vector<daqdataformats::trigger_number_t> handled;
+    for (auto& [tn, ptd] : m_pending_tds) {
+      size_t new_num = m_num_dfos.load();
+      size_t new_owner = (new_num > 1) ? (tn % new_num) : 0;
+      if (new_owner == m_own_index.load()) {
+        to_reassign.push_back(ptd.decision);
+        handled.push_back(tn);
+      }
+    }
+    for (auto tn : handled) {
+      m_pending_tds.erase(tn);
+    }
+  }
+
+  for (const auto& decision : to_reassign) {
+    TLOG_DEBUG(TLVL_WATCHDOG) << get_name() << ": Failover: reassigning trigger_number "
+                              << decision.trigger_number;
+    m_core->receive_trigger_decision(decision);
+    // on_assignment callback will broadcast DFODecision.
+  }
 }
 
 } // namespace dunedaq::dfmodules
 
 DEFINE_DUNE_DAQ_MODULE(dunedaq::dfmodules::DFOConsensusModule)
+

@@ -56,12 +56,18 @@ void
 DFOCore::start(daqdataformats::run_number_t run_number,
                std::shared_ptr<iomanager::SenderConcept<dfmessages::TriggerInhibit>> busy_sender,
                td_sender_fn_t get_td_sender_fn,
-               new_trb_fn_t on_new_trb_fn)
+               new_trb_fn_t on_new_trb_fn,
+               on_assignment_fn_t on_assignment_fn,
+               on_completion_fn_t on_completion_fn,
+               is_busy_fn_t is_busy_fn)
 {
   m_run_number = run_number;
   m_busy_sender = std::move(busy_sender);
   m_get_td_sender_fn = std::move(get_td_sender_fn);
   m_on_new_trb_fn = std::move(on_new_trb_fn);
+  m_on_assignment_fn = std::move(on_assignment_fn);
+  m_on_completion_fn = std::move(on_completion_fn);
+  m_is_busy_fn = std::move(is_busy_fn);
 
   m_received_tokens.store(0);
   m_sent_decisions.store(0);
@@ -115,6 +121,9 @@ DFOCore::scrap()
   m_dataflow_availability.clear();
   m_get_td_sender_fn = nullptr;
   m_on_new_trb_fn = nullptr;
+  m_on_assignment_fn = nullptr;
+  m_on_completion_fn = nullptr;
+  m_is_busy_fn = nullptr;
   m_busy_sender.reset();
 }
 
@@ -161,6 +170,12 @@ DFOCore::receive_token(const dfmessages::TriggerDecisionToken& token)
     auto dec_ptr = app_it->second->complete_assignment(token.trigger_number, m_metadata_function);
     for (const auto t : unpack_types(dec_ptr->decision.trigger_type)) {
       ++get_trigger_counter(t).completed;
+    }
+    // Notify the owning module that a completion occurred so it can broadcast
+    // a DFODecision to peer DFOs with the updated slot count.
+    if (m_on_completion_fn) {
+      size_t slot_count = app_it->second->used_slots();
+      m_on_completion_fn(token.decision_destination, token.trigger_number, slot_count);
     }
   } catch (AssignedTriggerDecisionNotFound const& err) {
     ers::error(err);
@@ -250,6 +265,27 @@ DFOCore::is_busy() const
 }
 
 bool
+DFOCore::is_globally_busy(const std::map<std::string, size_t>& extra_slots_per_trb) const
+{
+  if (m_dataflow_availability.empty())
+    return true;
+
+  for (const auto& [conn, trbd] : m_dataflow_availability) {
+    size_t own_slots = trbd->used_slots();
+    size_t extra_slots = 0;
+    auto it = extra_slots_per_trb.find(conn);
+    if (it != extra_slots_per_trb.end()) {
+      extra_slots = it->second;
+    }
+    // If combined slot count is below the busy threshold, this TRB has
+    // available capacity → the system is NOT globally busy.
+    if (own_slots + extra_slots < trbd->busy_threshold())
+      return false;
+  }
+  return true;
+}
+
+bool
 DFOCore::is_empty() const
 {
   for (auto& dfapp : m_dataflow_availability) {
@@ -276,7 +312,7 @@ DFOCore::notify_trigger_if_needed()
   // avoid a race in which the busy state changes between check and send.
   std::lock_guard<std::mutex> guard(m_notify_trigger_mutex);
 
-  bool busy = is_busy();
+  bool busy = m_is_busy_fn ? m_is_busy_fn() : is_busy();
   if (busy == m_last_notified_busy.load())
     return;
 
@@ -395,6 +431,11 @@ void
 DFOCore::assign_trigger_decision(const std::shared_ptr<AssignedTriggerDecision>& assignment)
 {
   m_dataflow_availability[assignment->connection_name]->add_assignment(assignment);
+  // Notify the owning module so it can broadcast a DFODecision to peer DFOs.
+  if (m_on_assignment_fn) {
+    size_t slot_count = m_dataflow_availability[assignment->connection_name]->used_slots();
+    m_on_assignment_fn(assignment, slot_count);
+  }
 }
 
 DFOCore::TriggerData&
