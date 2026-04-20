@@ -125,9 +125,11 @@ public:
              td_sender_fn_t get_td_sender_fn,
              new_trb_fn_t on_new_trb_fn = nullptr);
 
-  /// Stop processing.  Waits up to the configured stop_timeout for outstanding
+  /// Waits up to the configured stop_timeout for outstanding
   /// TDs then flushes and returns any incomplete AssignedTriggerDecisions.
-  std::list<std::shared_ptr<AssignedTriggerDecision>> stop();
+  std::list<std::shared_ptr<AssignedTriggerDecision>> flush();
+
+  void stop();
 
   void scrap();
 

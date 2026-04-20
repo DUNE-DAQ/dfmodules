@@ -269,6 +269,7 @@ BOOST_AUTO_TEST_CASE(SendTrigDecFailed)
   send_token(1000);
   std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
+  BOOST_TEST_MESSAGE("Draining dataflow and scrapping DFO");
   dfo->execute_command("drain_dataflow", null_data);
   dfo->execute_command("scrap", null_data);
 

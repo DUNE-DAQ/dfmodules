@@ -78,11 +78,15 @@ DFOCore::start(daqdataformats::run_number_t run_number,
   m_last_token_received = m_last_td_received = std::chrono::steady_clock::now();
 }
 
-std::list<std::shared_ptr<AssignedTriggerDecision>>
+void
 DFOCore::stop()
 {
   m_running_status.store(false);
+}
 
+std::list<std::shared_ptr<AssignedTriggerDecision>>
+DFOCore::flush()
+{
   const int wait_steps = 20;
   auto step_timeout = m_stop_timeout / wait_steps;
   int step_counter = 0;

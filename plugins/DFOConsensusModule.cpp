@@ -190,10 +190,12 @@ DFOConsensusModule::do_stop(const CommandData_t& /*args*/)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_stop() method";
 
+  m_core->stop();
+
   auto iom = iomanager::IOManager::get();
   iom->remove_callback<dfmessages::TriggerDecision>(m_td_connection);
 
-  auto remnants = m_core->stop();
+  auto remnants = m_core->flush();
 
   iom->remove_callback<dfmessages::TriggerDecisionToken>(m_token_connection);
 

@@ -13,7 +13,7 @@
  *  7. Unknown token source → error, counter not incremented
  *  8. Trigger-decision dispatch: TD reaches TRB connection, opmon counters correct
  *  9. Run-number mismatch in trigger decision → error, not dispatched
- * 10. stop() with in-flight TDs returns remnants
+ * 10. flush() with in-flight TDs returns remnants
  * 11. OpMon snapshot: counters returned and atomically reset to zero
  * 12. Round-robin slot selection across multiple TRB connections
  *
@@ -188,7 +188,8 @@ BOOST_AUTO_TEST_CASE(LifecycleEmpty)
   auto core = make_core();
   start_core(*core);
 
-  auto remnants = core->stop();
+  core->stop();
+  auto remnants = core->flush();
   BOOST_REQUIRE(remnants.empty());
   core->scrap();
 }
@@ -361,7 +362,7 @@ BOOST_AUTO_TEST_CASE(RunNumberMismatch_TD)
 }
 
 // ---------------------------------------------------------------------------
-// 10. stop() with in-flight TDs returns them as remnants.
+// 10. flush() with in-flight TDs returns them as remnants.
 // ---------------------------------------------------------------------------
 BOOST_AUTO_TEST_CASE(StopReturnsInFlightTDs)
 {
@@ -380,8 +381,9 @@ BOOST_AUTO_TEST_CASE(StopReturnsInFlightTDs)
   send_td(*core, 10);
   std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
-  // stop() should return the in-flight TD as a remnant.
-  auto remnants = core->stop();
+  // flush() should return the in-flight TD as a remnant.
+  core->stop();
+  auto remnants = core->flush();
   BOOST_REQUIRE_EQUAL(remnants.size(), 1u);
   BOOST_REQUIRE_EQUAL(remnants.front()->decision.trigger_number, 10u);
 
