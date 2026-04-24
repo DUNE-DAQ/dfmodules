@@ -353,7 +353,7 @@ TRBModule::fragments_callback(std::unique_ptr<daqdataformats::Fragment>& temp_fr
 
       for (size_t i = 0; i < header.get_num_requested_components(); ++i) {
 
-        const daqdataformats::ComponentRequest& request = header[i];
+        const daqdataformats::ComponentRequest& request = header.at(i);
         if (request.component == temp_fragment->get_element_id()) {
           requested = true;
           break;
