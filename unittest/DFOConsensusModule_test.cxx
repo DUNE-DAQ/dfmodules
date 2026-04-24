@@ -25,6 +25,7 @@
  */
 
 #include "DFOConsensusModule.hpp"
+#include "DFOModule.hpp"
 
 #include "dfmessages/TriggerDecisionToken.hpp"
 #include "dfmessages/TriggerInhibit.hpp"
@@ -83,6 +84,16 @@ struct CfgFixture
 
   dunedaq::opmonlib::TestOpMonManager opmgr;
   std::shared_ptr<dunedaq::appfwk::ConfigurationManager> cfgMgr;
+};
+
+class TestConsensusDFOModule : public DFOModule
+{
+public:
+  explicit TestConsensusDFOModule(const std::string& name)
+    : DFOModule(name)
+  {
+    set_force_consensus_mode(true);
+  }
 };
 
 // ---------------------------------------------------------------------------
@@ -148,10 +159,10 @@ BOOST_FIXTURE_TEST_SUITE(DFOConsensusModule_test, CfgFixture)
 // ---------------------------------------------------------------------------
 BOOST_AUTO_TEST_CASE(CopyAndMoveSemantics)
 {
-  BOOST_REQUIRE(!std::is_copy_constructible_v<DFOConsensusModule>);
-  BOOST_REQUIRE(!std::is_copy_assignable_v<DFOConsensusModule>);
-  BOOST_REQUIRE(!std::is_move_constructible_v<DFOConsensusModule>);
-  BOOST_REQUIRE(!std::is_move_assignable_v<DFOConsensusModule>);
+  BOOST_REQUIRE(!std::is_copy_constructible_v<DFOModule>);
+  BOOST_REQUIRE(!std::is_copy_assignable_v<DFOModule>);
+  BOOST_REQUIRE(!std::is_move_constructible_v<DFOModule>);
+  BOOST_REQUIRE(!std::is_move_assignable_v<DFOModule>);
 }
 
 // ---------------------------------------------------------------------------
@@ -168,7 +179,7 @@ BOOST_AUTO_TEST_CASE(Constructor)
 // ---------------------------------------------------------------------------
 BOOST_AUTO_TEST_CASE(Init)
 {
-  auto dfo = appfwk::make_module("DFOConsensusModule", "test");
+  auto dfo = std::make_shared<TestConsensusDFOModule>("test");
   dfo->init(cfgMgr);
 }
 
@@ -177,7 +188,7 @@ BOOST_AUTO_TEST_CASE(Init)
 // ---------------------------------------------------------------------------
 BOOST_AUTO_TEST_CASE(Commands)
 {
-  auto dfo = appfwk::make_module("DFOConsensusModule", "test");
+  auto dfo = std::make_shared<TestConsensusDFOModule>("test");
   opmgr.register_node("dfo", dfo);
   dfo->init(cfgMgr);
 
@@ -201,7 +212,7 @@ BOOST_AUTO_TEST_CASE(Commands)
 // ---------------------------------------------------------------------------
 BOOST_AUTO_TEST_CASE(DataFlowStandaloneMode)
 {
-  auto dfo = appfwk::make_module("DFOConsensusModule", "test");
+  auto dfo = std::make_shared<TestConsensusDFOModule>("test");
   opmgr.register_node("dfo", dfo);
   dfo->init(cfgMgr);
 
@@ -255,9 +266,9 @@ BOOST_AUTO_TEST_CASE(DataFlowStandaloneMode)
 // ---------------------------------------------------------------------------
 BOOST_AUTO_TEST_CASE(PeerAnnounceMagicValue)
 {
-  BOOST_REQUIRE_NE(DFOConsensusModule::s_peer_announce_magic,
+  BOOST_REQUIRE_NE(DFOModule::s_peer_announce_magic,
                    static_cast<daqdataformats::trigger_number_t>(0));
-  BOOST_REQUIRE_EQUAL(DFOConsensusModule::s_peer_announce_magic,
+  BOOST_REQUIRE_EQUAL(DFOModule::s_peer_announce_magic,
                       std::numeric_limits<daqdataformats::trigger_number_t>::max());
 }
 
@@ -273,7 +284,7 @@ BOOST_AUTO_TEST_CASE(PeerAnnounceMagicValue)
 // ---------------------------------------------------------------------------
 BOOST_AUTO_TEST_CASE(PartitionFilter)
 {
-  auto dfo = appfwk::make_module("DFOConsensusModule", "test");
+  auto dfo = std::make_shared<TestConsensusDFOModule>("test");
   opmgr.register_node("dfo", dfo);
   dfo->init(cfgMgr);
 
@@ -311,7 +322,7 @@ BOOST_AUTO_TEST_CASE(PartitionFilter)
   {
     dfmessages::TriggerDecisionToken peer_ann;
     peer_ann.run_number = 0;
-    peer_ann.trigger_number = DFOConsensusModule::s_peer_announce_magic;
+    peer_ann.trigger_number = DFOModule::s_peer_announce_magic;
     peer_ann.decision_destination = "zzz_peer";
     get_iom_sender<dfmessages::TriggerDecisionToken>("token")->send(
       std::move(peer_ann), iomanager::Sender::s_block);
@@ -346,7 +357,7 @@ BOOST_AUTO_TEST_CASE(PartitionFilter)
 // ---------------------------------------------------------------------------
 BOOST_AUTO_TEST_CASE(DFODecisionBroadcastStandaloneNoOp)
 {
-  auto dfo = appfwk::make_module("DFOConsensusModule", "test");
+  auto dfo = std::make_shared<TestConsensusDFOModule>("test");
   opmgr.register_node("dfo", dfo);
   dfo->init(cfgMgr);
 
@@ -403,7 +414,7 @@ BOOST_AUTO_TEST_CASE(DFODecisionBroadcastStandaloneNoOp)
 // ---------------------------------------------------------------------------
 BOOST_AUTO_TEST_CASE(WatchdogFailover)
 {
-  auto dfo = appfwk::make_module("DFOConsensusModule", "test");
+  auto dfo = std::make_shared<TestConsensusDFOModule>("test");
   opmgr.register_node("dfo", dfo);
   dfo->init(cfgMgr);
 
@@ -438,7 +449,7 @@ BOOST_AUTO_TEST_CASE(WatchdogFailover)
   {
     dfmessages::TriggerDecisionToken peer_ann;
     peer_ann.run_number = 0;
-    peer_ann.trigger_number = DFOConsensusModule::s_peer_announce_magic;
+    peer_ann.trigger_number = DFOModule::s_peer_announce_magic;
     peer_ann.decision_destination = "zzz_peer";
     get_iom_sender<dfmessages::TriggerDecisionToken>("token")->send(
       std::move(peer_ann), iomanager::Sender::s_block);
@@ -458,7 +469,7 @@ BOOST_AUTO_TEST_CASE(WatchdogFailover)
   // Wait for the watchdog to fire (timeout + extra time for the watchdog
   // interval and processing).
   static constexpr auto s_watchdog_test_buffer = std::chrono::milliseconds(500);
-  auto watchdog_wait = DFOConsensusModule::s_dfo_decision_timeout + s_watchdog_test_buffer;
+  auto watchdog_wait = DFOModule::s_dfo_decision_timeout + s_watchdog_test_buffer;
   std::this_thread::sleep_for(watchdog_wait);
 
   // After failover, trigger 1 should also have been dispatched.
@@ -474,4 +485,3 @@ BOOST_AUTO_TEST_CASE(WatchdogFailover)
 BOOST_AUTO_TEST_SUITE_END()
 
 } // namespace dunedaq
-
