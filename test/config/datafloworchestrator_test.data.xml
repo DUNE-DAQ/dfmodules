@@ -92,7 +92,19 @@
  <attr name="free_threshold" type="s32" val="1"/>
 </obj>
 
-<obj class="DFOModule" id="test">
+
+	<obj class="DFOConf" id="test_consensus">
+		<attr name="general_queue_timeout_ms" type="u32" val="100"/>
+		<attr name="stop_timeout_ms" type="u32" val="100"/>
+		<attr name="td_send_retries" type="s32" val="5"/>
+		<attr name="busy_threshold" type="s32" val="2"/>
+		<attr name="free_threshold" type="s32" val="1"/>
+		<attr name="consensus_enabled" type="bool" val="1"/>
+	</obj>
+
+
+
+	<obj class="DFOModule" id="test">
  <rel name="inputs">
   <ref class="NetworkConnection" id="token"/>
   <ref class="NetworkConnection" id="trigdec"/>
@@ -103,6 +115,20 @@
  </rel>
  <rel name="configuration" class="DFOConf" id="test"/>
 </obj>
+	<obj class="DFOModule" id="test_consensus">
+		<rel name="inputs">
+			<ref class="NetworkConnection" id="token"/>
+			<ref class="NetworkConnection" id="trigdec"/>
+			<ref class="Queue" id="dfo_decision_input"/>
+		</rel>
+		<rel name="outputs">
+			<ref class="NetworkConnection" id="triginh"/>
+			<ref class="NetworkConnection" id="trigdec_0"/>
+			<ref class="NetworkConnection" id="peer"/>
+			<ref class="Queue" id="dfo_decision_output"/>
+		</rel>
+		<rel name="configuration" class="DFOConf" id="test_consensus"/>
+	</obj>
 
 <obj class="DaqApplication" id="TestApp">
  <attr name="application_name" type="string" val="daq_application"/>
@@ -110,6 +136,7 @@
  <rel name="opmon_conf" class="OpMonConf" id="slow-all-monitoring"/>
  <rel name="modules">
   <ref class="DFOModule" id="test"/>
+	 <ref class="DFOModule" id="test_consensus"/>
  </rel>
 </obj>
 
@@ -329,7 +356,40 @@
  </attr>
 </obj>
 
-<obj class="Queue" id="trigger_decision_q">
+
+	<obj class="NetworkConnection" id="peer">
+		<attr name="data_type" type="string" val="TriggerDecisionToken"/>
+		<attr name="send_timeout_ms" type="u32" val="100"/>
+		<attr name="recv_timeout_ms" type="u32" val="100"/>
+		<attr name="connection_type" type="enum" val="kSendRecv"/>
+		<rel name="associated_service" class="Service" id="svc_peer"/>
+	</obj>
+
+	<obj class="Queue" id="dfo_decision_input">
+		<attr name="data_type" type="string" val="DFODecision"/>
+		<attr name="send_timeout_ms" type="u32" val="100"/>
+		<attr name="recv_timeout_ms" type="u32" val="100"/>
+		<attr name="capacity" type="u32" val="100"/>
+		<attr name="queue_type" type="enum" val="kFollySPSCQueue"/>
+	</obj>
+
+	<obj class="Queue" id="dfo_decision_output">
+		<attr name="data_type" type="string" val="DFODecision"/>
+		<attr name="send_timeout_ms" type="u32" val="100"/>
+		<attr name="recv_timeout_ms" type="u32" val="100"/>
+		<attr name="capacity" type="u32" val="100"/>
+		<attr name="queue_type" type="enum" val="kFollySPSCQueue"/>
+	</obj>
+
+
+	<obj class="Service" id="svc_peer">
+		<attr name="protocol" type="string" val="tcp"/>
+		<attr name="port" type="u16" val="5064"/>
+		<attr name="eth_device_name" type="string" val="lo"/>
+	</obj>
+
+
+	<obj class="Queue" id="trigger_decision_q">
  <attr name="data_type" type="string" val="TriggerDecision"/>
  <attr name="send_timeout_ms" type="u32" val="10"/>
  <attr name="recv_timeout_ms" type="u32" val="10"/>

@@ -41,70 +41,6 @@ enum
 };
 
 namespace dunedaq::dfmodules {
-namespace {
-
-template<typename T, typename = void>
-struct has_get_enable_consensus : std::false_type
-{};
-template<typename T>
-struct has_get_enable_consensus<T, std::void_t<decltype(std::declval<const T&>().get_enable_consensus())>>
-  : std::true_type
-{};
-
-template<typename T, typename = void>
-struct has_get_consensus_enabled : std::false_type
-{};
-template<typename T>
-struct has_get_consensus_enabled<T, std::void_t<decltype(std::declval<const T&>().get_consensus_enabled())>>
-  : std::true_type
-{};
-
-template<typename T, typename = void>
-struct has_get_enable_consensus_mode : std::false_type
-{};
-template<typename T>
-struct has_get_enable_consensus_mode<T, std::void_t<decltype(std::declval<const T&>().get_enable_consensus_mode())>>
-  : std::true_type
-{};
-
-template<typename T, typename = void>
-struct has_get_consensus_mode : std::false_type
-{};
-template<typename T>
-struct has_get_consensus_mode<T, std::void_t<decltype(std::declval<const T&>().get_consensus_mode())>> : std::true_type
-{};
-
-template<typename T, typename = void>
-struct has_get_use_consensus : std::false_type
-{};
-template<typename T>
-struct has_get_use_consensus<T, std::void_t<decltype(std::declval<const T&>().get_use_consensus())>> : std::true_type
-{};
-
-template<typename T>
-bool
-get_consensus_enabled_from_conf(const T& conf)
-{
-  // DFOConf getter naming has varied across schema/model versions:
-  // get_enable_consensus(), get_consensus_enabled(),
-  // get_enable_consensus_mode(), get_consensus_mode(), get_use_consensus().
-  // Check known variants at compile time and default to standalone mode if
-  // none are available.
-  if constexpr (has_get_enable_consensus<T>::value) {
-    return conf.get_enable_consensus();
-  } else if constexpr (has_get_consensus_enabled<T>::value) {
-    return conf.get_consensus_enabled();
-  } else if constexpr (has_get_enable_consensus_mode<T>::value) {
-    return conf.get_enable_consensus_mode();
-  } else if constexpr (has_get_consensus_mode<T>::value) {
-    return conf.get_consensus_mode();
-  } else if constexpr (has_get_use_consensus<T>::value) {
-    return conf.get_use_consensus();
-  }
-  return false;
-}
-
-} // namespace
 
 DFOModule::DFOModule(const std::string& name)
   : dunedaq::appfwk::DAQModule(name)
@@ -170,10 +106,7 @@ DFOModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcfg)
   }
 
   m_dfo_conf = mdal->get_configuration();
-  m_consensus_enabled = m_force_consensus_mode;
-  if (!m_consensus_enabled) {
-    m_consensus_enabled = get_consensus_enabled_from_conf(*m_dfo_conf);
-  }
+  m_consensus_enabled = m_dfo_conf->get_consensus_enabled();
   m_expected_peers = m_consensus_enabled ? m_dfo_peer_output_connections.size() : 0;
 
   iom->get_receiver<dfmessages::TriggerDecisionToken>(m_token_connection);
@@ -197,6 +130,10 @@ DFOModule::do_conf(const CommandData_t&)
                     m_dfo_conf->get_td_send_retries(),
                     std::chrono::milliseconds(m_dfo_conf->get_general_queue_timeout_ms()),
                     std::chrono::milliseconds(m_dfo_conf->get_stop_timeout_ms()));
+
+  m_dfo_decision_timeout = std::chrono::milliseconds(m_dfo_conf->get_dfo_decision_timeout_ms());
+  m_peer_announce_timeout = std::chrono::milliseconds(m_dfo_conf->get_peer_announce_timeout_ms());
+  m_watchdog_interval = std::chrono::milliseconds(m_dfo_conf->get_watchdog_interval_ms());
 
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method, there are "
                                       << m_core->num_trb_apps() << " TRB apps defined";
@@ -282,7 +219,7 @@ DFOModule::do_start(const CommandData_t& payload)
 
     if (m_expected_peers > 0) {
       std::unique_lock<std::mutex> lock(m_peers_mutex);
-      bool all_peers_ready = m_peers_cv.wait_for(lock, s_peer_announce_timeout, [this] {
+      bool all_peers_ready = m_peers_cv.wait_for(lock, m_peer_announce_timeout, [this] {
         return m_registered_peers.size() >= m_expected_peers;
       });
       if (!all_peers_ready) {
@@ -589,7 +526,7 @@ DFOModule::watchdog_thread_func()
   TLOG_DEBUG(TLVL_WATCHDOG) << get_name() << ": Watchdog thread started";
 
   while (m_watchdog_running.load()) {
-    std::this_thread::sleep_for(s_watchdog_interval);
+    std::this_thread::sleep_for(m_watchdog_interval);
 
     if (!m_watchdog_running.load())
       break;
@@ -600,7 +537,7 @@ DFOModule::watchdog_thread_func()
     {
       std::lock_guard<std::mutex> guard(m_pending_tds_mutex);
       for (const auto& [tn, ptd] : m_pending_tds) {
-        if ((now - ptd.received_at) >= s_dfo_decision_timeout) {
+        if ((now - ptd.received_at) >= m_dfo_decision_timeout) {
           timed_out.emplace_back(tn, ptd);
         }
       }

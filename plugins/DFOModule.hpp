@@ -80,10 +80,6 @@ public:
 
   static constexpr daqdataformats::trigger_number_t s_peer_announce_magic =
     std::numeric_limits<daqdataformats::trigger_number_t>::max();
-  static constexpr std::chrono::milliseconds s_dfo_decision_timeout{ 2000 };
-
-protected:
-  void set_force_consensus_mode(bool enabled) { m_force_consensus_mode = enabled; }
 
 private:
   void do_conf(const CommandData_t&);
@@ -118,27 +114,25 @@ private:
   std::unique_ptr<DFOCore> m_core;
 
   const appmodel::DFOConf* m_dfo_conf{ nullptr };
-  bool m_consensus_enabled{ false };
-  bool m_force_consensus_mode{ false };
 
   std::shared_ptr<iomanager::SenderConcept<dfmessages::TriggerInhibit>> m_busy_sender;
   std::string m_token_connection;
   std::string m_td_connection;
   std::vector<std::string> m_trb_conn_ids;
 
+  bool m_consensus_enabled{ false };
   std::vector<std::string> m_dfo_peer_output_connections;
   size_t m_expected_peers{ 0 };
-
   std::vector<std::string> m_dfo_decision_output_connections;
   std::string m_dfo_decision_input_connection;
-
+  std::chrono::milliseconds m_dfo_decision_timeout{ 2000 };
+  std::chrono::milliseconds m_peer_announce_timeout{ 500 };
+  std::chrono::milliseconds m_watchdog_interval{ 100 };
   std::set<std::string> m_registered_peers;
   mutable std::mutex m_peers_mutex;
   std::condition_variable m_peers_cv;
-
   std::atomic<size_t> m_own_index{ 0 };
   std::atomic<size_t> m_num_dfos{ 1 };
-
   std::map<std::string, std::map<std::string, size_t>> m_remote_slot_counts;
   mutable std::mutex m_remote_slots_mutex;
 
@@ -153,8 +147,6 @@ private:
   std::thread m_watchdog_thread;
   std::atomic<bool> m_watchdog_running{ false };
 
-  static constexpr std::chrono::milliseconds s_peer_announce_timeout{ 500 };
-  static constexpr std::chrono::milliseconds s_watchdog_interval{ 100 };
 };
 
 } // namespace dfmodules
