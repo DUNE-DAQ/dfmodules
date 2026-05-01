@@ -14,6 +14,7 @@
 #include "dfmessages/TriggerDecisionToken.hpp"
 #include "dfmessages/TriggerInhibit.hpp"
 #include "dfmodules/CommonIssues.hpp"
+#include "dfmodules/DFODecision.hpp"
 #include "dfmodules/opmon/DFOModule.pb.h"
 #include "iomanager/IOManager.hpp"
 #include "iomanager/Sender.hpp"
@@ -280,8 +281,7 @@ BOOST_AUTO_TEST_CASE(SendTrigDecFailed)
 
 // ---------------------------------------------------------------------------
 // Peer-announcement magic value
-//    Verify that s_peer_announce_magic does not equal 0 (which is the
-//    trigger_number used in TRB registration tokens) and is max for the type.
+//    Verify that s_peer_announce_magic does not equal 0 and is max for the type.
 // ---------------------------------------------------------------------------
 BOOST_AUTO_TEST_CASE(PeerAnnounceMagicValue)
 {
@@ -336,11 +336,14 @@ BOOST_AUTO_TEST_CASE(PartitionFilter)
   // second DFO "zzz_peer" is also in the ensemble. "test" < "zzz_peer"
   // alphabetically, so "test" gets index 0 and processes even trigger_numbers.
   {
-    dfmessages::TriggerDecisionToken peer_ann;
+    DFODecision peer_ann;
     peer_ann.run_number = 0;
     peer_ann.trigger_number = DFOModule::s_peer_announce_magic;
-    peer_ann.decision_destination = "zzz_peer";
-    get_iom_sender<dfmessages::TriggerDecisionToken>("token")->send(std::move(peer_ann), iomanager::Sender::s_block);
+    peer_ann.trb_connection_name = "";
+    peer_ann.trb_slot_count = 0;
+    peer_ann.source_dfo_name = "zzz_peer";
+    peer_ann.is_completion = true;
+    get_iom_sender<DFODecision>("dfo_decision_input")->send(std::move(peer_ann), iomanager::Sender::s_block);
   }
 
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -460,11 +463,14 @@ BOOST_AUTO_TEST_CASE(WatchdogFailover)
   // Inject a synthetic peer announcement for "zzz_peer" so this DFO gets
   // own_index=0 (even trigger_numbers) and zzz_peer gets index=1 (odd).
   {
-    dfmessages::TriggerDecisionToken peer_ann;
+    DFODecision peer_ann;
     peer_ann.run_number = 0;
     peer_ann.trigger_number = DFOModule::s_peer_announce_magic;
-    peer_ann.decision_destination = "zzz_peer";
-    get_iom_sender<dfmessages::TriggerDecisionToken>("token")->send(std::move(peer_ann), iomanager::Sender::s_block);
+    peer_ann.trb_connection_name = "";
+    peer_ann.trb_slot_count = 0;
+    peer_ann.source_dfo_name = "zzz_peer";
+    peer_ann.is_completion = true;
+    get_iom_sender<DFODecision>("dfo_decision_input")->send(std::move(peer_ann), iomanager::Sender::s_block);
   }
 
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
