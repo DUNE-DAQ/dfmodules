@@ -61,8 +61,7 @@ namespace dfmodules {
 /**
  * @brief DFOModule distributes triggers according to the availability of TRB apps.
  *
- * If consensus mode is enabled in DFOConf (or forced by the
- * DFOConsensusModule compatibility wrapper), DFOModule also coordinates with
+ * If consensus mode is enabled in DFOConf, DFOModule also coordinates with
  * peer DFOs, partitions TriggerDecision processing, propagates DFODecision
  * state and performs timeout-based failover.
  */
@@ -121,7 +120,6 @@ private:
   std::vector<std::string> m_trb_conn_ids;
 
   bool m_consensus_enabled{ false };
-  std::vector<std::string> m_dfo_peer_output_connections;
   size_t m_expected_peers{ 0 };
   std::vector<std::string> m_dfo_decision_output_connections;
   std::string m_dfo_decision_input_connection;

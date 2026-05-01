@@ -1,11 +1,9 @@
 /**
- * @file DFOCore.hpp  Core DFO processing logic shared by DFOModule and
- *                    DFOConsensusModule.
+ * @file DFOCore.hpp  Core DFO processing logic shared by DFOModule modes.
  *
  * DFOCore encapsulates TRB connection management, trigger-decision dispatching
- * and token processing that is common to both DFO module variants.  It is used
- * via composition (not inheritance) so that each module can inherit directly
- * from DAQModule while still sharing the same processing logic.
+ * and token processing that is common to DFOModule standalone and consensus
+ * behavior. It is used via composition to keep DFOModule logic modular.
  *
  * This is part of the DUNE DAQ Software Suite, copyright 2020.
  * Licensing/copyright details are in the COPYING file that you should have
@@ -76,7 +74,7 @@ namespace dfmodules {
 
 /**
  * @brief DFOCore encapsulates the core DFO processing logic shared between
- *        DFOModule and DFOConsensusModule.  It is used via composition.
+ *        DFOModule standalone and consensus behavior. It is used via composition.
  *
  * Usage:
  *  1. Construct with the owning module's name (used in log messages).
@@ -171,7 +169,7 @@ public:
 
   /// Returns true if ALL TRBModules are busy when combining own slot counts
   /// with the @p extra_slots_per_trb map (e.g., remote peer slot counts).
-  /// Used by DFOConsensusModule to determine global inhibit state.
+  /// Used by DFOModule consensus behavior to determine global inhibit state.
   bool is_globally_busy(const std::map<std::string, size_t>& extra_slots_per_trb) const;
 
   daqdataformats::run_number_t run_number() const { return m_run_number; }

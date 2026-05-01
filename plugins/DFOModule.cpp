@@ -82,10 +82,6 @@ DFOModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcfg)
     if (con->get_data_type() == datatype_to_string<dfmessages::TriggerDecision>()) {
       m_trb_conn_ids.push_back(con->UID());
     }
-    if (con->get_data_type() == datatype_to_string<dfmessages::TriggerDecisionToken>()) {
-      m_dfo_peer_output_connections.push_back(con->UID());
-      TLOG_DEBUG(TLVL_PEER_ANNOUNCE) << get_name() << ": Found peer DFO output connection: " << con->UID();
-    }
     if (con->get_data_type() == datatype_to_string<DFODecision>()) {
       m_dfo_decision_output_connections.push_back(con->UID());
       TLOG_DEBUG(TLVL_DFO_DECISION) << get_name() << ": Found DFODecision output connection: " << con->UID();
@@ -107,7 +103,7 @@ DFOModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcfg)
 
   m_dfo_conf = mdal->get_configuration();
   m_consensus_enabled = m_dfo_conf->get_consensus_enabled();
-  m_expected_peers = m_consensus_enabled ? m_dfo_peer_output_connections.size() : 0;
+  m_expected_peers = m_consensus_enabled ? m_dfo_decision_output_connections.size() : 0;
 
   iom->get_receiver<dfmessages::TriggerDecisionToken>(m_token_connection);
   iom->get_receiver<dfmessages::TriggerDecision>(m_td_connection);
@@ -320,19 +316,22 @@ DFOModule::generate_opmon_data()
 void
 DFOModule::send_peer_announcement()
 {
-  if (!m_consensus_enabled || m_dfo_peer_output_connections.empty())
+  if (!m_consensus_enabled || m_dfo_decision_output_connections.empty())
     return;
 
-  dfmessages::TriggerDecisionToken announcement;
+  DFODecision announcement;
   announcement.run_number = 0;
   announcement.trigger_number = s_peer_announce_magic;
-  announcement.decision_destination = get_name();
+  announcement.trb_connection_name = "";
+  announcement.trb_slot_count = 0;
+  announcement.source_dfo_name = get_name();
+  announcement.is_completion = true;
 
   auto iom = iomanager::IOManager::get();
-  for (const auto& conn : m_dfo_peer_output_connections) {
+  for (const auto& conn : m_dfo_decision_output_connections) {
     try {
       auto announcement_copy = announcement;
-      iom->get_sender<dfmessages::TriggerDecisionToken>(conn)->send(
+      iom->get_sender<DFODecision>(conn)->send(
         std::move(announcement_copy), m_core->queue_timeout());
       TLOG_DEBUG(TLVL_PEER_ANNOUNCE) << get_name() << ": Sent peer announcement to " << conn;
     } catch (const ers::Issue& excpt) {
@@ -368,29 +367,6 @@ DFOModule::compute_partition()
 void
 DFOModule::on_token(const dfmessages::TriggerDecisionToken& token)
 {
-  if (!m_consensus_enabled) {
-    m_core->receive_token(token);
-    return;
-  }
-
-  if (token.run_number == 0 && token.trigger_number == s_peer_announce_magic) {
-    TLOG_DEBUG(TLVL_PEER_ANNOUNCE) << get_name() << ": Received peer announcement from "
-                                   << token.decision_destination;
-    bool newly_registered = false;
-    {
-      std::lock_guard<std::mutex> guard(m_peers_mutex);
-      auto [it, inserted] = m_registered_peers.insert(token.decision_destination);
-      newly_registered = inserted;
-    }
-    m_peers_cv.notify_all();
-
-    if (newly_registered) {
-      compute_partition();
-      ers::info(DFOConsensusPartitionInfo(ERS_HERE, get_name(), m_own_index.load(), m_num_dfos.load()));
-    }
-    return;
-  }
-
   m_core->receive_token(token);
 }
 
@@ -431,6 +407,23 @@ DFOModule::on_dfo_decision(const DFODecision& msg)
                                  << " trigger=" << msg.trigger_number << " trb=" << msg.trb_connection_name
                                  << " slots=" << msg.trb_slot_count
                                  << " completion=" << std::boolalpha << msg.is_completion;
+
+  if (msg.run_number == 0 && msg.trigger_number == s_peer_announce_magic) {
+    TLOG_DEBUG(TLVL_PEER_ANNOUNCE) << get_name() << ": Received peer announcement from " << msg.source_dfo_name;
+    bool newly_registered = false;
+    {
+      std::lock_guard<std::mutex> guard(m_peers_mutex);
+      auto [it, inserted] = m_registered_peers.insert(msg.source_dfo_name);
+      newly_registered = inserted;
+    }
+    m_peers_cv.notify_all();
+
+    if (newly_registered) {
+      compute_partition();
+      ers::info(DFOConsensusPartitionInfo(ERS_HERE, get_name(), m_own_index.load(), m_num_dfos.load()));
+    }
+    return;
+  }
 
   {
     std::lock_guard<std::mutex> guard(m_remote_slots_mutex);
