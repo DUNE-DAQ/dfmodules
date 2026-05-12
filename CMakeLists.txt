@@ -22,7 +22,7 @@ find_package(Boost COMPONENTS iostreams unit_test_framework REQUIRED)
 daq_protobuf_codegen( opmon/*.proto )
 
 ##############################################################################
-daq_add_library( TriggerInhibitAgent.cpp TriggerRecordBuilderData.cpp TPBundleHandler.cpp DFOCore.cpp
+daq_add_library( TriggerInhibitAgent.cpp TriggerRecordBuilderData.cpp TPBundleHandler.cpp
                  LINK_LIBRARIES
                  opmonlib::opmonlib ers::ers HighFive appfwk::appfwk logging::logging stdc++fs dfmessages::dfmessages utilities::utilities trigger::trigger detdataformats::detdataformats trgdataformats::trgdataformats)
 
@@ -45,8 +45,6 @@ add_dependencies(  HDF5Write_test dfmodules_HDF5DataStore_duneDataStore )
 
 daq_add_unit_test( DFOModule_test LINK_LIBRARIES dfmodules )
 add_dependencies( DFOModule_test dfmodules_DFOModule_duneDAQModule)
-
-daq_add_unit_test( DFOCore_test LINK_LIBRARIES dfmodules )
 
 daq_add_unit_test( TriggerRecordBuilderData_test LINK_LIBRARIES dfmodules)
 daq_add_unit_test( DataStoreFactory_test    LINK_LIBRARIES dfmodules)
