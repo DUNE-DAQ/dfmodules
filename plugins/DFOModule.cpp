@@ -177,7 +177,7 @@ DFOModule::do_start(const CommandData_t& payload)
 
   m_running_status.store(true);
   m_last_notified_busy.store(false);
-  m_last_assignement_it = m_dataflow_availability.end();
+  m_last_assignment_it = m_dataflow_availability.end();
   m_last_token_received = m_last_td_received = std::chrono::steady_clock::now();
 
   // 19-Dec-2024, KAB: check that TriggerDecision senders are ready to send. This is done
@@ -255,7 +255,7 @@ DFOModule::do_stop(const CommandData_t& /*args*/)
   auto step_timeout = m_stop_timeout / wait_steps;
   int step_counter = 0;
   while (!is_empty() && step_counter < wait_steps) {
-    TLOG() << get_name() << ": stop delayed while waiting for " << used_slots() << " TDs to completed";
+    TLOG() << get_name() << ": stop delayed while waiting for " << used_slots() << " TDs to complete";
     std::this_thread::sleep_for(step_timeout);
     ++step_counter;
   }
@@ -526,7 +526,7 @@ DFOModule::find_slot(const dfmessages::TriggerDecision& decision)
   size_t minimum = std::numeric_limits<size_t>::max();
   unsigned int counter = 0;
 
-  auto candidate_it = m_last_assignement_it;
+  auto candidate_it = m_last_assignment_it;
   if (candidate_it == m_dataflow_availability.end())
     candidate_it = m_dataflow_availability.begin();
 
@@ -553,7 +553,7 @@ DFOModule::find_slot(const dfmessages::TriggerDecision& decision)
       continue;
 
     output = candidate_it->second->make_assignment(decision);
-    m_last_assignement_it = candidate_it;
+    m_last_assignment_it = candidate_it;
   }
 
   if (!output) {
@@ -562,7 +562,7 @@ DFOModule::find_slot(const dfmessages::TriggerDecision& decision)
     // number of assignments
     if (minimum_occupied != m_dataflow_availability.end()) {
       output = minimum_occupied->second->make_assignment(decision);
-      m_last_assignement_it = minimum_occupied;
+      m_last_assignment_it = minimum_occupied;
       ers::warning(AssignedToBusyApp(ERS_HERE, decision.trigger_number, minimum_occupied->first, minimum));
     }
   }
@@ -778,13 +778,14 @@ DFOModule::dispatch(const std::shared_ptr<AssignedTriggerDecision>& assignment)
 
     try {
       auto decision_copy = dfmessages::TriggerDecision(assignment->decision);
-      iom->get_sender<dfmessages::TriggerDecision>(assignment->connection_name)
-        ->send(std::move(decision_copy), m_queue_timeout);
+      iom->get_sender<dfmessages::TriggerDecision>(assignment->connection_name)->send(std::move(decision_copy),
+                                                                                       m_queue_timeout);
       wasSentSuccessfully = true;
       ++m_sent_decisions;
       TLOG_DEBUG(TLVL_DISPATCH_TO_TRB) << get_name() << " Sent TriggerDecision for trigger_number "
-                                       << decision_copy.trigger_number << " to TRB at connection "
-                                       << assignment->connection_name << " for run number " << decision_copy.run_number;
+                                       << assignment->decision.trigger_number << " to TRB at connection "
+                                       << assignment->connection_name << " for run number "
+                                       << assignment->decision.run_number;
     } catch (const ers::Issue& excpt) {
       std::ostringstream oss_warn;
       oss_warn << "Send to connection \"" << assignment->connection_name << "\" failed";

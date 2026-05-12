@@ -10,3 +10,6 @@ __pycache__
 
 # clang formatting temporary files
 .clang-format
+
+# ctest generated artifacts
+Testing/Temporary/

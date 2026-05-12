@@ -126,7 +126,7 @@ protected:
   using trbd_ptr_t = std::shared_ptr<TriggerRecordBuilderData>;
   using data_structure_t = std::map<std::string, trbd_ptr_t>;
   data_structure_t m_dataflow_availability;
-  data_structure_t::iterator m_last_assignement_it;
+  data_structure_t::iterator m_last_assignment_it;
   std::function<void(nlohmann::json&)> m_metadata_function;
 
 private:
