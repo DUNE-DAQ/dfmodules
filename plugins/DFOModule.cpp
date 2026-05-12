@@ -772,7 +772,9 @@ DFOModule::dispatch(const std::shared_ptr<AssignedTriggerDecision>& assignment)
                                       << assignment->connection_name;
 
   bool wasSentSuccessfully = false;
-  int retries = m_td_send_retries;
+  int retries = m_td_send_retries > static_cast<size_t>(std::numeric_limits<int>::max())
+                  ? std::numeric_limits<int>::max()
+                  : static_cast<int>(m_td_send_retries);
   auto iom = iomanager::IOManager::get();
   do {
 
@@ -850,10 +852,10 @@ DFOModule::assign_trigger_decision(const std::shared_ptr<AssignedTriggerDecision
 void
 DFOModule::watchdog_thread_func()
 {
-  while (m_watchdog_running.load()) {
+  while (m_watchdog_running.load() && m_consensus_enabled) {
     std::this_thread::sleep_for(m_watchdog_interval);
 
-    if (!m_consensus_enabled || !m_running_status.load()) {
+    if (!m_running_status.load()) {
       continue;
     }
 
