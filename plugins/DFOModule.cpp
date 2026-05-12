@@ -792,7 +792,7 @@ DFOModule::dispatch(const std::shared_ptr<AssignedTriggerDecision>& assignment)
       ers::warning(iomanager::OperationFailed(ERS_HERE, oss_warn.str(), excpt));
     }
 
-    retries--;
+    --retries;
 
   } while (!wasSentSuccessfully && m_running_status.load() && retries > 0);
 

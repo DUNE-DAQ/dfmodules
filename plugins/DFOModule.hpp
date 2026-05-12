@@ -229,7 +229,7 @@ private:
     const std::bitset<64> bits(t);
     for (size_t i = 0; i < bits.size(); ++i) {
       if (bits[i])
-        results.insert((trgdataformats::TriggerCandidateData::Type)i);
+        results.insert(static_cast<trgdataformats::TriggerCandidateData::Type>(i));
     }
     return results;
   }
