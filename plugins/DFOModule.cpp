@@ -79,7 +79,7 @@ DFOModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcfg)
     if (con->get_data_type() == datatype_to_string<dfmessages::TriggerDecision>()) {
       m_td_connection = con->UID();
     }
-    if (con->get_data_type() == datatype_to_string<DFODecision>()) {
+    if (con->get_data_type() == datatype_to_string<dfmessages::DFODecision>()) {
       m_dfo_decision_input_connection = con->UID();
       TLOG_DEBUG(TLVL_DFO_DECISION) << get_name() << ": Found DFODecision input connection: " << con->UID();
     }
@@ -91,7 +91,7 @@ DFOModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcfg)
     if (con->get_data_type() == datatype_to_string<dfmessages::TriggerDecision>()) {
       m_trb_conn_ids.push_back(con->UID());
     }
-    if (con->get_data_type() == datatype_to_string<DFODecision>()) {
+    if (con->get_data_type() == datatype_to_string<dfmessages::DFODecision>()) {
       m_dfo_decision_output_connections.push_back(con->UID());
       TLOG_DEBUG(TLVL_DFO_DECISION) << get_name() << ": Found DFODecision output connection: " << con->UID();
     }
@@ -116,7 +116,7 @@ DFOModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcfg)
   iom->get_receiver<dfmessages::TriggerDecisionToken>(m_token_connection);
   iom->get_receiver<dfmessages::TriggerDecision>(m_td_connection);
   if (m_consensus_enabled && !m_dfo_decision_input_connection.empty()) {
-    iom->get_receiver<DFODecision>(m_dfo_decision_input_connection);
+    iom->get_receiver<dfmessages::DFODecision>(m_dfo_decision_input_connection);
   }
 
   TLOG() << get_name() << ": DFOModule initialized in " << (m_consensus_enabled ? "consensus" : "standalone")
@@ -207,7 +207,7 @@ DFOModule::do_start(const CommandData_t& payload)
     m_td_connection, std::bind(&DFOModule::on_trigger_decision, this, std::placeholders::_1));
 
   if (m_consensus_enabled && !m_dfo_decision_input_connection.empty()) {
-    iom->add_callback<DFODecision>(
+    iom->add_callback<dfmessages::DFODecision>(
       m_dfo_decision_input_connection,
       std::bind(&DFOModule::on_dfo_decision, this, std::placeholders::_1));
   }
@@ -262,7 +262,7 @@ DFOModule::do_stop(const CommandData_t& /*args*/)
 
   iom->remove_callback<dfmessages::TriggerDecisionToken>(m_token_connection);
   if (m_consensus_enabled && !m_dfo_decision_input_connection.empty()) {
-    iom->remove_callback<DFODecision>(m_dfo_decision_input_connection);
+    iom->remove_callback<dfmessages::DFODecision>(m_dfo_decision_input_connection);
   }
 
   std::list<std::shared_ptr<AssignedTriggerDecision>> remnants;
@@ -351,7 +351,7 @@ DFOModule::on_trigger_decision(const dfmessages::TriggerDecision& decision)
 }
 
 void
-DFOModule::on_dfo_decision(const DFODecision& msg)
+DFOModule::on_dfo_decision(const dfmessages::DFODecision& msg)
 {
   if (!m_consensus_enabled) {
     return;
@@ -403,7 +403,7 @@ DFOModule::send_peer_announcement()
     return;
   }
 
-  DFODecision announcement;
+  dfmessages::DFODecision announcement;
   announcement.run_number = 0;
   announcement.trigger_number = s_peer_announce_magic;
   announcement.trb_connection_name = "";
@@ -415,7 +415,7 @@ DFOModule::send_peer_announcement()
   for (const auto& conn : m_dfo_decision_output_connections) {
     try {
       auto announcement_copy = announcement;
-      iom->get_sender<DFODecision>(conn)->send(std::move(announcement_copy), m_queue_timeout);
+      iom->get_sender<dfmessages::DFODecision>(conn)->send(std::move(announcement_copy), m_queue_timeout);
       TLOG_DEBUG(TLVL_PEER_ANNOUNCE) << get_name() << ": Sent peer announcement to " << conn;
     } catch (const ers::Issue& excpt) {
       ers::warning(excpt);
@@ -811,7 +811,7 @@ DFOModule::broadcast_dfo_decision(daqdataformats::trigger_number_t trigger_numbe
   if (!m_consensus_enabled || m_dfo_decision_output_connections.empty())
     return;
 
-  DFODecision msg;
+  dfmessages::DFODecision msg;
   msg.run_number = m_run_number;
   msg.trigger_number = trigger_number;
   msg.trb_connection_name = trb_conn;
@@ -823,7 +823,7 @@ DFOModule::broadcast_dfo_decision(daqdataformats::trigger_number_t trigger_numbe
   for (const auto& conn : m_dfo_decision_output_connections) {
     try {
       auto msg_copy = msg;
-      iom->get_sender<DFODecision>(conn)->send(std::move(msg_copy), m_queue_timeout);
+      iom->get_sender<dfmessages::DFODecision>(conn)->send(std::move(msg_copy), m_queue_timeout);
       TLOG_DEBUG(TLVL_DFO_DECISION) << get_name() << ": Sent DFODecision to " << conn
                                     << " trigger=" << trigger_number << " trb=" << trb_conn
                                     << " slots=" << trb_slot_count
@@ -876,13 +876,14 @@ DFOModule::watchdog_thread_func()
       size_t failed_index = m_num_dfos.load() > 0 ? (trigger_number % m_num_dfos.load()) : 0;
       handle_peer_failure(failed_index, trigger_number);
 
-      std::lock_guard<std::mutex> guard(m_pending_tds_mutex);
+      std::unique_lock<std::mutex> guard(m_pending_tds_mutex);
       auto it = m_pending_tds.find(trigger_number);
       if (it != m_pending_tds.end()) {
         TLOG_DEBUG(TLVL_WATCHDOG) << get_name() << ": Reprocessing trigger_number " << trigger_number
                                   << " after failover";
         auto decision_copy = it->second.decision;
         m_pending_tds.erase(it);
+        guard.unlock();
         receive_trigger_decision(decision_copy);
       }
     }

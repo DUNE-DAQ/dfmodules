@@ -9,12 +9,12 @@
 #ifndef DFMODULES_PLUGINS_DATAFLOWORCHESTRATOR_HPP_
 #define DFMODULES_PLUGINS_DATAFLOWORCHESTRATOR_HPP_
 
-#include "dfmodules/DFODecision.hpp"
 #include "dfmodules/TriggerRecordBuilderData.hpp"
 
 #include "appmodel/DFOConf.hpp"
 
 #include "daqdataformats/TriggerRecord.hpp"
+#include "dfmessages/DFODecision.hpp"
 #include "dfmessages/DataRequest.hpp"
 #include "dfmessages/TriggerDecision.hpp"
 #include "dfmessages/TriggerDecisionToken.hpp"
@@ -53,9 +53,9 @@ ERS_DECLARE_ISSUE(dfmodules,
                   ((std::string)connection_name))
 ERS_DECLARE_ISSUE(dfmodules,
                   DFOModuleRunNumberMismatch,
-                  "DFOModule encountered run number mismatch: recvd ("
-                    << received_run_number << ") != " << run_number << " from " << src_app << " for trigger_number "
-                    << trig_num,
+                  "DFOModule encountered run number mismatch: recvd (" << received_run_number << ") != " << run_number
+                                                                       << " from " << src_app << " for trigger_number "
+                                                                       << trig_num,
                   ((uint32_t)received_run_number)((uint32_t)run_number)((std::string)src_app)(
                     (uint32_t)trig_num)) // NOLINT(build/unsigned)
 ERS_DECLARE_ISSUE(dfmodules,
@@ -75,21 +75,20 @@ ERS_DECLARE_ISSUE(dfmodules,
 ERS_DECLARE_ISSUE(dfmodules,
                   DFOConsensusPeerTimeout,
                   "DFOModule " << module_name << ": Timed out waiting for " << expected_peers
-                    << " peer(s) to announce; received " << received_peers
-                    << ". Continuing with the peers that responded.",
+                               << " peer(s) to announce; received " << received_peers
+                               << ". Continuing with the peers that responded.",
                   ((std::string)module_name)((size_t)expected_peers)((size_t)received_peers))
 
 ERS_DECLARE_ISSUE(dfmodules,
                   DFOConsensusPartitionInfo,
                   "DFOModule " << module_name << ": Partition index " << own_index << " of " << num_dfos
-                    << " DFO(s) in the ensemble.",
+                               << " DFO(s) in the ensemble.",
                   ((std::string)module_name)((size_t)own_index)((size_t)num_dfos))
 
 ERS_DECLARE_ISSUE(dfmodules,
                   DFOConsensusFailover,
-                  "DFOModule " << module_name << ": DFO peer " << failed_dfo
-                    << " timed out for trigger_number " << trigger_number
-                    << ". Removing from ensemble and reassigning.",
+                  "DFOModule " << module_name << ": DFO peer " << failed_dfo << " timed out for trigger_number "
+                               << trigger_number << ". Removing from ensemble and reassigning.",
                   ((std::string)module_name)((std::string)failed_dfo)((uint32_t)trigger_number))
 // Re-enable coverage checking LCOV_EXCL_STOP
 
@@ -108,11 +107,10 @@ public:
    */
   explicit DFOModule(const std::string& name);
 
-  DFOModule(const DFOModule&) = delete; ///< DFOModule is not copy-constructible
-  DFOModule& operator=(const DFOModule&) =
-    delete;                                                         ///< DFOModule is not copy-assignable
-  DFOModule(DFOModule&&) = delete;            ///< DFOModule is not move-constructible
-  DFOModule& operator=(DFOModule&&) = delete; ///< DFOModule is not move-assignable
+  DFOModule(const DFOModule&) = delete;            ///< DFOModule is not copy-constructible
+  DFOModule& operator=(const DFOModule&) = delete; ///< DFOModule is not copy-assignable
+  DFOModule(DFOModule&&) = delete;                 ///< DFOModule is not move-constructible
+  DFOModule& operator=(DFOModule&&) = delete;      ///< DFOModule is not move-assignable
 
   void init(std::shared_ptr<appfwk::ConfigurationManager> mcfg) override;
 
@@ -143,7 +141,7 @@ private:
 
   void on_token(const dfmessages::TriggerDecisionToken& token);
   void on_trigger_decision(const dfmessages::TriggerDecision& decision);
-  void on_dfo_decision(const DFODecision& msg);
+  void on_dfo_decision(const dfmessages::DFODecision& msg);
 
   void receive_trigger_complete_token(const dfmessages::TriggerDecisionToken&);
   void receive_trigger_decision(const dfmessages::TriggerDecision&);
@@ -162,8 +160,7 @@ private:
   virtual void assign_trigger_decision(const std::shared_ptr<AssignedTriggerDecision>& assignment);
 
   void watchdog_thread_func();
-  void handle_peer_failure(size_t failed_index,
-                           daqdataformats::trigger_number_t trigger_number);
+  void handle_peer_failure(size_t failed_index, daqdataformats::trigger_number_t trigger_number);
 
   // Configuration
   const appmodel::DFOConf* m_dfo_conf{ nullptr };
@@ -220,8 +217,8 @@ private:
     std::atomic<uint64_t> received{ 0 };
     std::atomic<uint64_t> completed{ 0 };
   };
-  static std::set<trgdataformats::TriggerCandidateData::Type>
-  unpack_types(decltype(dfmessages::TriggerDecision::trigger_type) t)
+  static std::set<trgdataformats::TriggerCandidateData::Type> unpack_types(
+    decltype(dfmessages::TriggerDecision::trigger_type) t)
   {
     std::set<trgdataformats::TriggerCandidateData::Type> results;
     if (t == dfmessages::TypeDefaults::s_invalid_trigger_type)
