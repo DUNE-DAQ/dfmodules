@@ -93,18 +93,14 @@ resource_validator.total_memory_needs()  # no specific request, but it's useful 
 actual_output_path = get_pytest_tmpdir()
 resource_validator.free_disk_space_needs(actual_output_path, 1)  # what we observe
 
-# The next three variable declarations *must* be present as globals in the test
-# file. They're read by the "fixtures" in conftest.py to determine how
-# to run the config generation and dunerc
 
-object_databases = ["config/daqsystemtest/integrationtest-objects.data.xml"]
-
-conf_dict = data_classes.drunc_config()
+conf_dict = data_classes.integtest_params_for_generated_dunedaq_config()
+conf_dict.object_databases = ["config/daqsystemtest/integrationtest-objects.data.xml"]
 conf_dict.dro_map_config.n_streams = number_of_data_producers
 conf_dict.op_env = "integtest"
 conf_dict.config_session_name= "disabled"
 conf_dict.tpg_enabled = False
-# We accept the default values for all of the other fields in the drunc_config data structure
+# We accept the default values for all of the other integtest config parameters
 # (defined in integrationtest/src/integrationtest/data_classes.py), including the "frame_file",
 # which is the data file that is used to emulated the data. The current default for that field
 # specifies a set of WIBEth frames from a relatively recent run at EHN1.)
