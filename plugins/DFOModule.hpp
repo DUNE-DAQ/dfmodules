@@ -63,6 +63,13 @@ ERS_DECLARE_ISSUE(dfmodules,
                   "TriggerDecision " << trigger_number << " was assigned to DF app " << app << " that was busy with "
                                      << used_slots << " TDs",
                   ((uint32_t)trigger_number)((std::string)app)((size_t)used_slots)) // NOLINT(build/unsigned)
+ERS_DECLARE_ISSUE_BASE(dfmodules,
+                       ArtificialDelay,
+                       appfwk::GeneralDAQModuleIssue,
+                       "An artificial delay of " << delay << " usec is being introduced before "
+                       << action << " " << object << " " << identifier,
+                       ((std::string)name),
+                       ((size_t)delay)((std::string)action)((std::string)object)((size_t)identifier))
 // Re-enable coverage checking LCOV_EXCL_STOP
 
 namespace dfmodules {

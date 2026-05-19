@@ -224,6 +224,13 @@ DFOModule::receive_trigger_decision(const dfmessages::TriggerDecision& decision)
     return;
   }
 
+  // the following sleep statement is for testing only!
+  int delay_usec = 0;  //1500000;
+  if (delay_usec > 0) {
+    ers::warning(ArtificialDelay(ERS_HERE, get_name(), delay_usec, "processing", "trigger decision", decision.trigger_number));
+    usleep(delay_usec);
+  }
+
   auto decision_received = std::chrono::steady_clock::now();
   ++m_received_decisions;
   auto trigger_types = unpack_types(decision.trigger_type);

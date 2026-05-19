@@ -91,6 +91,14 @@ ERS_DECLARE_ISSUE_BASE(dfmodules,
                        ((std::string)name),
                        ERS_EMPTY)
 
+ERS_DECLARE_ISSUE_BASE(dfmodules,
+                       ArtificialDelay,
+                       appfwk::GeneralDAQModuleIssue,
+                       "An artificial delay of " << delay << " usec is being introduced before "
+                       << action << " " << object << " " << identifier,
+                       ((std::string)name),
+                       ((size_t)delay)((std::string)action)((std::string)object)((size_t)identifier))
+
 // Re-enable coverage checking LCOV_EXCL_STOP
 namespace dfmodules {
 
@@ -216,6 +224,13 @@ public:
     } catch (...) { // NOLINT(runtime/exceptions)
       // NOLINT here because we *ARE* re-throwing the exception!
       throw FileOperationProblem(ERS_HERE, get_name(), full_filename);
+    }
+
+    // the following sleep statement is for testing only!
+    int delay_usec = 0; //1500000;
+    if (delay_usec > 0) {
+      ers::warning(ArtificialDelay(ERS_HERE, get_name(), delay_usec, "writing", "trigger record", m_current_record_number));
+      usleep(delay_usec);
     }
 
     // write the record
