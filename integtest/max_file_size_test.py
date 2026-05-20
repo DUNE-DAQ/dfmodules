@@ -5,9 +5,9 @@ import urllib.request
 
 import integrationtest.data_file_checks as data_file_checks
 import integrationtest.log_file_checks as log_file_checks
-import integrationtest.basic_checks as basic_checks
 import integrationtest.data_classes as data_classes
 import integrationtest.resource_validation as resource_validation
+import integrationtest.utility_functions as utility_functions
 from integrationtest.get_pytest_tmpdir import get_pytest_tmpdir
 from integrationtest.verbosity_helper import IntegtestVerbosityLevels
 
@@ -210,7 +210,7 @@ dunerc_command_list = (
 
 def test_dunerc_success(run_dunerc, caplog):
     # checks for run control success, problems during pytest setup, etc.
-    basic_checks.basic_checks(run_dunerc, caplog, print_test_name=False)
+    utility_functions.basic_checks(run_dunerc, caplog, print_test_name=False)
 
 
 def test_log_files(run_dunerc):
@@ -273,33 +273,4 @@ def test_tpstream_files(run_dunerc):
 
 
 def test_cleanup(run_dunerc):
-    pathlist_string = ""
-    filelist_string = ""
-    for data_file in run_dunerc.data_files:
-        filelist_string += " " + str(data_file)
-        if str(data_file.parent) not in pathlist_string:
-            pathlist_string += " " + str(data_file.parent)
-    for data_file in run_dunerc.tpset_files:
-        filelist_string += " " + str(data_file)
-        if str(data_file.parent) not in pathlist_string:
-            pathlist_string += " " + str(data_file.parent)
-
-    if pathlist_string and filelist_string:
-        if run_dunerc.verbosity_helper.compare_level(IntegtestVerbosityLevels.integtest_debug):
-            print("============================================")
-            print("Listing the hdf5 files before deleting them:")
-            print("============================================")
-
-            os.system(f"df -h {pathlist_string}")
-            print("--------------------")
-            os.system(f"ls -alF {filelist_string}")
-
-        for data_file in run_dunerc.data_files:
-            data_file.unlink()
-        for data_file in run_dunerc.tpset_files:
-            data_file.unlink()
-
-        if run_dunerc.verbosity_helper.compare_level(IntegtestVerbosityLevels.integtest_debug):
-            print("--------------------")
-            os.system(f"df -h {pathlist_string}")
-            print("============================================")
+    utility_functions.remove_hdf5_files_if_requested(run_dunerc, this_test_requests_hdf5_file_removal=True)
