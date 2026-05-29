@@ -7,6 +7,7 @@ import integrationtest.data_file_checks as data_file_checks
 import integrationtest.log_file_checks as log_file_checks
 import integrationtest.basic_checks as basic_checks
 import integrationtest.data_classes as data_classes
+import integrationtest.utility_functions2 as utility_functions
 from integrationtest.verbosity_helper import IntegtestVerbosityLevels
 
 import functools
@@ -67,17 +68,8 @@ conf_dict.config_session_name= "trmonrequestor"
 conf_dict.tpg_enabled = False
 conf_dict.trmon_app_enabled = True
 conf_dict.n_df_apps = number_of_dataflow_apps
-
-
-substitution = data_classes.attribute_substitution(
-    obj_id="random-tc-generator",
-    obj_class="RandomTCMakerConf",
-    updates={
-        "trigger_rate_hz": trigger_rate,
-        "candidate_backshift_ts": 0,
-    },
-)
-conf_dict.config_substitutions.append(substitution)
+utility_functions.enable_fake_hsi_trigger(conf_dict, trigger_rate=trigger_rate,
+                                          readout_window_backshift_ticks=0)
 
 substitution = data_classes.attribute_substitution(
     obj_id="tr_mon_dw-01",

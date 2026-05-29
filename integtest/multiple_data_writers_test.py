@@ -8,6 +8,7 @@ import integrationtest.log_file_checks as log_file_checks
 import integrationtest.basic_checks as basic_checks
 import integrationtest.data_classes as data_classes
 import integrationtest.resource_validation as resource_validation
+import integrationtest.utility_functions2 as utility_functions
 from integrationtest.get_pytest_tmpdir import get_pytest_tmpdir
 from integrationtest.verbosity_helper import IntegtestVerbosityLevels
 
@@ -85,35 +86,9 @@ conf_dict.dro_map_config.n_streams = number_of_data_producers
 conf_dict.dro_map_config.n_apps = number_of_readout_apps
 conf_dict.op_env = "integtest"
 conf_dict.config_session_name= "multidatawriter"
-conf_dict.fake_hsi_enabled = True
 conf_dict.n_data_writers = 3
-
-conf_dict.config_substitutions.append(
-    data_classes.attribute_substitution(
-        obj_class="FakeHSIEventGeneratorConf",
-        updates={"trigger_rate": 10.0},
-    )
-)
-
-conf_dict.config_substitutions.append(
-    data_classes.attribute_substitution(
-        obj_class="HSISignalWindow",
-        updates={
-            "time_before": 1000,
-            "time_after": 500,
-        },
-    )
-)
-conf_dict.config_substitutions.append(
-    data_classes.attribute_substitution(
-        obj_class="TCReadoutMap",
-        obj_id = "def-hsi-tc-map",
-        updates={
-            "time_before": 52000,
-            "time_after": 1000,
-        },
-    )
-)
+utility_functions.enable_fake_hsi_trigger(conf_dict, trigger_rate=10.0,
+                                          readout_window_before_ticks=52000, readout_window_after_ticks=1000)
 
 conf_dict.config_substitutions.append(
     data_classes.attribute_substitution(

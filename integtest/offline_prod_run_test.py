@@ -7,6 +7,7 @@ import integrationtest.data_file_checks as data_file_checks
 import integrationtest.log_file_checks as log_file_checks
 import integrationtest.basic_checks as basic_checks
 import integrationtest.data_classes as data_classes
+import integrationtest.utility_functions2 as utility_functions
 from integrationtest.verbosity_helper import IntegtestVerbosityLevels
 
 import functools
@@ -66,17 +67,10 @@ conf_dict.dro_map_config.n_streams = number_of_data_producers
 conf_dict.op_env = "integtest"
 conf_dict.config_session_name= "prodruntype"
 conf_dict.tpg_enabled = False
-conf_dict.fake_hsi_enabled = True
+utility_functions.enable_fake_hsi_trigger(conf_dict, trigger_rate=1.0)
 
 conf_dict.config_substitutions.append(
     data_classes.attribute_substitution(obj_class="LatencyBuffer", updates={"size": 50000})
-)
-
-conf_dict.config_substitutions.append(
-    data_classes.attribute_substitution(
-        obj_class="FakeHSIEventGeneratorConf",
-        updates={"trigger_rate": 1.0},
-    )
 )
 
 confgen_arguments = {"OfflineProdRun": conf_dict}
