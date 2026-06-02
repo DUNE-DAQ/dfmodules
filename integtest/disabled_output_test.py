@@ -7,7 +7,14 @@ import urllib.request
 
 import integrationtest.data_file_checks as data_file_checks
 import integrationtest.log_file_checks as log_file_checks
+import integrationtest.basic_checks as basic_checks
 import integrationtest.data_classes as data_classes
+import integrationtest.resource_validation as resource_validation
+from integrationtest.get_pytest_tmpdir import get_pytest_tmpdir
+from integrationtest.verbosity_helper import IntegtestVerbosityLevels
+
+import functools
+print = functools.partial(print, flush=True)  # always flush print() output
 
 pytest_plugins = "integrationtest.integrationtest_drunc"
 
@@ -78,18 +85,22 @@ ignored_logfile_problems = {
     ],
 }
 
-# The next three variable declarations *must* be present as globals in the test
-# file. They're read by the "fixtures" in conftest.py to determine how
-# to run the config generation and dunerc
+# Determine if the conditions are right for these tests
+resource_validator = resource_validation.ResourceValidator()
+resource_validator.cpu_count_needs(6, 12)  # two for each data source plus two more for everything else
+resource_validator.free_memory_needs(10, 20)  # 25% more than what we observe being used ('free -h')
+resource_validator.total_memory_needs()  # no specific request, but it's useful to see how much is available
+actual_output_path = get_pytest_tmpdir()
+resource_validator.free_disk_space_needs(actual_output_path, 1)  # what we observe
 
-object_databases = ["config/daqsystemtest/integrationtest-objects.data.xml"]
 
-conf_dict = data_classes.drunc_config()
+conf_dict = data_classes.integtest_params_for_generated_dunedaq_config()
+conf_dict.object_databases = ["config/daqsystemtest/integrationtest-objects.data.xml"]
 conf_dict.dro_map_config.n_streams = number_of_data_producers
 conf_dict.op_env = "integtest"
 conf_dict.config_session_name= "disabled"
 conf_dict.tpg_enabled = False
-# We accept the default values for all of the other fields in the drunc_config data structure
+# We accept the default values for all of the other integtest config parameters
 # (defined in integrationtest/src/integrationtest/data_classes.py), including the "frame_file",
 # which is the data file that is used to emulated the data. The current default for that field
 # specifies a set of WIBEth frames from a relatively recent run at EHN1.)
@@ -113,22 +124,22 @@ conf_dict.config_substitutions.append(
     )
 )
 
-swtpg_conf = copy.deepcopy(conf_dict)
-swtpg_conf.tpg_enabled = True
-swtpg_conf.config_substitutions.append(
+tpg_conf = copy.deepcopy(conf_dict)
+tpg_conf.tpg_enabled = True
+tpg_conf.config_substitutions.append(
     data_classes.attribute_substitution(
         obj_class="TAMakerPrescaleAlgorithm",
         obj_id="dummy-ta-maker",
         updates={"prescale": 25},
     )
 )
-swtpg_conf.frame_file = (
+tpg_conf.frame_file = (
     "asset://?checksum=dd156b4895f1b06a06b6ff38e37bd798"  # WIBEth All Zeros
 )
 
 confgen_arguments = {
     "WIBEth_System": conf_dict,
-    "Software_TPG_System": swtpg_conf,
+    "WIBEth_TPG_System": tpg_conf,
 }
 
 # The commands to run in dunerc, as a list
@@ -158,26 +169,17 @@ dunerc_command_list += "scrap terminate".split()
 # The tests themselves
 
 
-def test_dunerc_success(run_dunerc):
-    # print the name of the current test
-    current_test = os.environ.get("PYTEST_CURRENT_TEST")
-    match_obj = re.search(r".*\[(.+)-run_.*rc.*\d].*", current_test)
-    if match_obj:
-        current_test = match_obj.group(1)
-    banner_line = re.sub(".", "=", current_test)
-    print(banner_line)
-    print(current_test)
-    print(banner_line)
-
-    # Check that dunerc completed correctly
-    assert run_dunerc.completed_process.returncode == 0
+def test_dunerc_success(run_dunerc, caplog):
+    # checks for run control success, problems during pytest setup, etc.
+    basic_checks.basic_checks(run_dunerc, caplog, print_test_name=True)
 
 
 def test_log_files(run_dunerc):
     if check_for_logfile_errors:
         # Check that there are no warnings or errors in the log files
         assert log_file_checks.logs_are_error_free(
-            run_dunerc.log_files, True, True, ignored_logfile_problems
+            run_dunerc.log_files, True, True, ignored_logfile_problems,
+            verbosity_helper=run_dunerc.verbosity_helper
         )
 
 
@@ -204,7 +206,7 @@ def test_data_files(run_dunerc):
 
     all_ok = True
     for idx in range(len(run_dunerc.data_files)):
-        data_file = data_file_checks.DataFile(run_dunerc.data_files[idx])
+        data_file = data_file_checks.DataFile(run_dunerc.data_files[idx], run_dunerc.verbosity_helper)
         all_ok &= data_file_checks.sanity_check(data_file)
         all_ok &= data_file_checks.check_file_attributes(data_file)
         all_ok &= data_file_checks.check_event_count(

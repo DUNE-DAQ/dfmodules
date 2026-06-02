@@ -5,7 +5,12 @@ import re
 
 import integrationtest.data_file_checks as data_file_checks
 import integrationtest.log_file_checks as log_file_checks
+import integrationtest.basic_checks as basic_checks
 import integrationtest.data_classes as data_classes
+from integrationtest.verbosity_helper import IntegtestVerbosityLevels
+
+import functools
+print = functools.partial(print, flush=True)  # always flush print() output
 
 pytest_plugins = "integrationtest.integrationtest_drunc"
 
@@ -53,13 +58,9 @@ ignored_logfile_problems = {
     ],
 }
 
-# The next three variable declarations *must* be present as globals in the test
-# file. They're read by the "fixtures" in conftest.py to determine how
-# to run the config generation and dunerc
 
-object_databases = ["config/daqsystemtest/integrationtest-objects.data.xml"]
-
-conf_dict = data_classes.drunc_config()
+conf_dict = data_classes.integtest_params_for_generated_dunedaq_config()
+conf_dict.object_databases = ["config/daqsystemtest/integrationtest-objects.data.xml"]
 conf_dict.dro_map_config.n_streams = number_of_data_producers
 conf_dict.op_env = "integtest"
 conf_dict.config_session_name= "trmonrequestor"
@@ -102,19 +103,9 @@ for ii in range(run_count):
 dunerc_command_list += " scrap terminate".split()
 
 # The tests themselves
-def test_dunerc_success(run_dunerc):
-    # print the name of the current test
-    current_test = os.environ.get("PYTEST_CURRENT_TEST")
-    match_obj = re.search(r".*\[(.+)-run_.*rc.*\d].*", current_test)
-    if match_obj:
-        current_test = match_obj.group(1)
-    banner_line = re.sub(".", "=", current_test)
-    print(banner_line)
-    print(current_test)
-    print(banner_line)
-
-    # Check that dunerc completed correctly
-    assert run_dunerc.completed_process.returncode == 0
+def test_dunerc_success(run_dunerc, caplog):
+    # checks for run control success, problems during pytest setup, etc.
+    basic_checks.basic_checks(run_dunerc, caplog, print_test_name=False)
 
 
 def test_log_files(run_dunerc):
@@ -137,18 +128,20 @@ def test_log_files(run_dunerc):
     if check_for_logfile_errors:
         # Check that there are no warnings or errors in the log files
         assert log_file_checks.logs_are_error_free(
-            run_dunerc.log_files, True, True, ignored_logfile_problems
+            run_dunerc.log_files, True, True, ignored_logfile_problems,
+            verbosity_helper=run_dunerc.verbosity_helper
         )
 
 
 def test_data_files(run_dunerc):
     # Run some tests on the output data file
     all_ok = len(run_dunerc.data_files) == expected_number_of_data_files
-    print("")  # Clear potential dot from pytest
+    #print("")  # Clear potential dot from pytest
     if all_ok:
-        print(
-            f"\N{WHITE HEAVY CHECK MARK} The correct number of raw data files was found ({expected_number_of_data_files})"
-        )
+        if run_dunerc.verbosity_helper.compare_level(IntegtestVerbosityLevels.drunc_transitions):
+            print(
+                f"\N{WHITE HEAVY CHECK MARK} The correct number of raw data files was found ({expected_number_of_data_files})"
+            )
     else:
         print(
             f"\N{POLICE CARS REVOLVING LIGHT} An incorrect number of raw data files was found, expected {expected_number_of_data_files}, found {len(run_dunerc.data_files)} \N{POLICE CARS REVOLVING LIGHT}"
@@ -159,7 +152,7 @@ def test_data_files(run_dunerc):
     nontrig_fragment_check_list = [hsi_frag_params, wibeth_frag_params]
 
     for idx in range(len(run_dunerc.data_files)):
-        data_file = data_file_checks.DataFile(run_dunerc.data_files[idx])
+        data_file = data_file_checks.DataFile(run_dunerc.data_files[idx], run_dunerc.verbosity_helper)
         all_ok &= data_file_checks.sanity_check(data_file)
         all_ok &= data_file_checks.check_file_attributes(data_file)
         all_ok &= data_file_checks.check_event_count(
@@ -184,16 +177,17 @@ def test_data_files(run_dunerc):
 
     print("")  # Add break from Data file printouts
     if trmon_ok:
-        print(
-            f"\N{WHITE HEAVY CHECK MARK} The correct number of TRMon data files was found ({trmon_high} > {len(run_dunerc.trmon_files)} > {trmon_low})"
-        )
+        if run_dunerc.verbosity_helper.compare_level(IntegtestVerbosityLevels.drunc_transitions):
+            print(
+                f"\N{WHITE HEAVY CHECK MARK} The correct number of TRMon data files was found ({trmon_high} > {len(run_dunerc.trmon_files)} > {trmon_low})"
+            )
     else:
         print(
             f"\N{POLICE CARS REVOLVING LIGHT} An incorrect number of TRMon data files was found, expected between {trmon_low} and {trmon_high}, found {len(run_dunerc.trmon_files)} \N{POLICE CARS REVOLVING LIGHT}"
         )
 
     for idx in range(len(run_dunerc.trmon_files)):
-        data_file = data_file_checks.DataFile(run_dunerc.trmon_files[idx])
+        data_file = data_file_checks.DataFile(run_dunerc.trmon_files[idx], run_dunerc.verbosity_helper)
         all_ok &= data_file_checks.sanity_check(data_file)
         all_ok &= data_file_checks.check_file_attributes(data_file)
         all_ok &= data_file_checks.check_event_count(data_file, 1, 0)
