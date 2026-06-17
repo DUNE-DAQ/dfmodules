@@ -90,6 +90,7 @@ conf_dict.op_env = "integtest"
 conf_dict.config_session_name= "largerecord"
 conf_dict.tpg_enabled = False
 conf_dict.n_df_apps = number_of_dataflow_apps
+conf_dict.remove_hdf5_files = True
 
 conf_dict.config_substitutions.append(
     data_classes.attribute_substitution(
@@ -219,7 +220,3 @@ def test_data_files(run_dunerc):
             )
 
     assert all_ok
-
-
-def test_cleanup(run_dunerc):
-    utility_functions.remove_hdf5_files_if_requested(run_dunerc, this_test_requests_hdf5_file_removal=True)

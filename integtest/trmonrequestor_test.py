@@ -205,7 +205,3 @@ def test_data_files(run_dunerc):
 
     assert all_ok
     assert trmon_ok
-
-
-def test_cleanup(run_dunerc):
-    utility_functions.remove_hdf5_files_if_requested(run_dunerc, this_test_requests_hdf5_file_removal=False)

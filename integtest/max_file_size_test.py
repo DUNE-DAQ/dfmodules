@@ -110,6 +110,7 @@ conf_dict.fake_hsi_enabled = True
 conf_dict.frame_file = (
     "asset://?checksum=dd156b4895f1b06a06b6ff38e37bd798"  # WIBEth All Zeros
 )
+conf_dict.remove_hdf5_files = True
 
 conf_dict.config_substitutions.append(
     data_classes.attribute_substitution(
@@ -270,7 +271,3 @@ def test_tpstream_files(run_dunerc):
                 data_file, fragment_check_list[jdx]
             )
     assert all_ok, "\N{POLICE CARS REVOLVING LIGHT} One or more TP-stream data file checks failed! \N{POLICE CARS REVOLVING LIGHT}"
-
-
-def test_cleanup(run_dunerc):
-    utility_functions.remove_hdf5_files_if_requested(run_dunerc, this_test_requests_hdf5_file_removal=True)
