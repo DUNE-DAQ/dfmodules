@@ -5,10 +5,9 @@ import urllib.request
 
 import integrationtest.data_file_checks as data_file_checks
 import integrationtest.log_file_checks as log_file_checks
-import integrationtest.basic_checks as basic_checks
 import integrationtest.data_classes as data_classes
 import integrationtest.resource_validation as resource_validation
-import integrationtest.utility_functions2 as utility_functions
+import integrationtest.utility_functions as utility_functions
 from integrationtest.get_pytest_tmpdir import get_pytest_tmpdir
 from integrationtest.verbosity_helper import IntegtestVerbosityLevels
 
@@ -131,6 +130,7 @@ utility_functions.enable_fake_hsi_trigger(conf_dict, trigger_rate=10.0,
 conf_dict.dro_map_config.det_id = 2  # det_id = 2 for kHD_PDS
 conf_dict.frame_file = "asset://?checksum=a8990a9eb3a505d4ded62dfdfa9e2681"  # run 36012 DAPHNE data
 #conf_dict.frame_file = "file:///home/nfs/biery/dunedaq/12MayFDv5.3.2DevInstrUpdate/sourcecode/dfmodules/integtest/np02vdcoldbox_run035227_sample_hd_pds.bin"
+conf_dict.remove_hdf5_files = True
 
 conf_dict.config_substitutions.append(
     data_classes.attribute_substitution(
@@ -218,7 +218,7 @@ dunerc_command_list = (
 
 def test_dunerc_success(run_dunerc, caplog):
     # checks for run control success, problems during pytest setup, etc.
-    basic_checks.basic_checks(run_dunerc, caplog, print_test_name=False)
+    utility_functions.basic_checks(run_dunerc, caplog, print_test_name=False)
 
 
 def test_log_files(run_dunerc):
@@ -278,36 +278,3 @@ def test_tpstream_files(run_dunerc):
                 data_file, fragment_check_list[jdx]
             )
     assert all_ok, "\N{POLICE CARS REVOLVING LIGHT} One or more TP-stream data file checks failed! \N{POLICE CARS REVOLVING LIGHT}"
-
-
-def test_cleanup(run_dunerc):
-    pathlist_string = ""
-    filelist_string = ""
-    for data_file in run_dunerc.data_files:
-        filelist_string += " " + str(data_file)
-        if str(data_file.parent) not in pathlist_string:
-            pathlist_string += " " + str(data_file.parent)
-    for data_file in run_dunerc.tpset_files:
-        filelist_string += " " + str(data_file)
-        if str(data_file.parent) not in pathlist_string:
-            pathlist_string += " " + str(data_file.parent)
-
-    if pathlist_string and filelist_string:
-        if run_dunerc.verbosity_helper.compare_level(IntegtestVerbosityLevels.integtest_debug):
-            print("============================================")
-            print("Listing the hdf5 files before deleting them:")
-            print("============================================")
-
-            os.system(f"df -h {pathlist_string}")
-            print("--------------------")
-            os.system(f"ls -alF {filelist_string}")
-
-        for data_file in run_dunerc.data_files:
-            data_file.unlink()
-        for data_file in run_dunerc.tpset_files:
-            data_file.unlink()
-
-        if run_dunerc.verbosity_helper.compare_level(IntegtestVerbosityLevels.integtest_debug):
-            print("--------------------")
-            os.system(f"df -h {pathlist_string}")
-            print("============================================")
