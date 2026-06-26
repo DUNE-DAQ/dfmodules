@@ -93,7 +93,7 @@ public:
     TLVL_BASIC = 2
   };
 
-  static size_t s_unset_record_number { std::numeric_limits<size_t>::max() };
+  static constexpr size_t s_unset_record_number { std::numeric_limits<size_t>::max() };
 
   /**
    * @brief DataStoreImpl Constructor
