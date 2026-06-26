@@ -149,6 +149,25 @@ public:
 
   virtual void open_new_file(const std::string& unique_filename) = 0;
 
+  void throw_if_insufficient_space_for_object(size_t obj_size, const std::string& obj_name) {
+
+    size_t current_free_space = get_free_space(m_path);
+    if (current_free_space < (m_free_space_safety_factor_for_write * obj_size)) {
+      std::ostringstream msg_oss;
+      msg_oss << "a safety factor of " << m_free_space_safety_factor_for_write << " times the " << obj_name << " size";
+      InsufficientDiskSpace issue(ERS_HERE,
+                                  get_name(),
+                                  m_path,
+                                  current_free_space,
+                                  (m_free_space_safety_factor_for_write * obj_size),
+                                  msg_oss.str());
+      assert(m_file_handle);
+      std::string msg =
+        "writing a " + obj_name + " to file" + m_file_handle->get_file_name();
+      throw RetryableDataStoreProblem(ERS_HERE, get_name(), msg, issue);
+    }
+  }
+
   /**
    * @brief DataStoreImpl write() 
    * Method used to write TriggerRecords into the data
@@ -157,25 +176,12 @@ public:
    */
   virtual void write(const daqdataformats::TriggerRecord& tr)
   {
-
-    // check if there is sufficient space for this record
-    size_t current_free_space = get_free_space(m_path);
     size_t tr_size = tr.get_total_size_bytes();
-    if (current_free_space < (m_free_space_safety_factor_for_write * tr_size)) {
-      std::ostringstream msg_oss;
-      msg_oss << "a safety factor of " << m_free_space_safety_factor_for_write << " times the trigger record size";
-      InsufficientDiskSpace issue(ERS_HERE,
-                                  get_name(),
-                                  m_path,
-                                  current_free_space,
-                                  (m_free_space_safety_factor_for_write * tr_size),
-                                  msg_oss.str());
-      std::string msg =
-        "writing a trigger record to file" + (m_file_handle ? " " + m_file_handle->get_file_name() : "");
-      throw RetryableDataStoreProblem(ERS_HERE, get_name(), msg, issue);
-    }
+
+    throw_if_insufficient_space_for_object(tr_size, "trigger record");
 
     // check if a new file should be opened for this record
+
     size_t size_of_next_write = tr_size;
     if (m_compression_level != 0 && m_recorded_size != 0) {
       // Without compression, the uncompressed raw data size is approximately the total file size, so it
@@ -225,22 +231,8 @@ public:
    */
   virtual void write(const daqdataformats::TimeSlice& ts)
   {
-
-    // check if there is sufficient space for this record
-    size_t current_free_space = get_free_space(m_path);
     size_t ts_size = ts.get_total_size_bytes();
-    if (current_free_space < (m_free_space_safety_factor_for_write * ts_size)) {
-      std::ostringstream msg_oss;
-      msg_oss << "a safety factor of " << m_free_space_safety_factor_for_write << " times the time slice size";
-      InsufficientDiskSpace issue(ERS_HERE,
-                                  get_name(),
-                                  m_path,
-                                  current_free_space,
-                                  (m_free_space_safety_factor_for_write * ts_size),
-                                  msg_oss.str());
-      std::string msg = "writing a time slice to file " + m_file_handle->get_file_name();
-      throw RetryableDataStoreProblem(ERS_HERE, get_name(), msg, issue);
-    }
+    throw_if_insufficient_space_for_object(ts_size, "time slice");
 
     // check if a new file should be opened for this record
     size_t size_of_next_write = ts_size;
