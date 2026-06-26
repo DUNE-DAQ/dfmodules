@@ -15,11 +15,8 @@
 #ifndef DFMODULES_INCLUDE_DFMODULES_DATASTOREIMPL_HPP_
 #define DFMODULES_INCLUDE_DFMODULES_DATASTOREIMPL_HPP_
 
-//#include "HDF5FileUtils.hpp"
 #include "dfmodules/DataStore.hpp"
 #include "dfmodules/opmon/DataStore.pb.h"
-
-//#include "hdf5libs/HDF5RawDataFile.hpp"
 
 #include "appmodel/DataStoreConf.hpp"
 #include "appmodel/FilenameParams.hpp"
@@ -61,14 +58,6 @@ ERS_DECLARE_ISSUE_BASE(dfmodules,
                        ((std::string)name),
                        ((std::string)filename))
 
-// ERS_DECLARE_ISSUE_BASE(dfmodules,
-//                        InvalidHDF5Dataset,
-//                        appfwk::GeneralDAQModuleIssue,
-//                        "The HDF5 Dataset associated with name \"" << data_set << "\" is invalid. (file = " << filename
-//                                                                   << ")",
-//                        ((std::string)name),
-//                        ((std::string)data_set)((std::string)filename))
-
 ERS_DECLARE_ISSUE_BASE(dfmodules,
                        InvalidOutputPath,
                        appfwk::GeneralDAQModuleIssue,
@@ -86,21 +75,13 @@ ERS_DECLARE_ISSUE_BASE(dfmodules,
                        ((std::string)name),
                        ((std::string)path)((size_t)free_bytes)((size_t)needed_bytes)((std::string)criteria))
 
-ERS_DECLARE_ISSUE_BASE(dfmodules,
-                       EmptyDataBlockList,
-                       appfwk::GeneralDAQModuleIssue,
-                       "There was a request to write out a list of data blocks, but the list was empty. "
-                         << "Ignoring this request",
-                       ((std::string)name),
-                       ERS_EMPTY)
-
 // Re-enable coverage checking LCOV_EXCL_STOP
 namespace dfmodules {
 
 /**
  * @brief DataStoreImpl contains functionality you'd generally want in a data store irrespective of file type
  */
-  template <typename FileReader, // E.g., hdf5libs::HDF5RawDataFile
+  template <typename FileHandleClass, // E.g., hdf5libs::HDF5RawDataFile
 	    unsigned FileIOInfo, // E.g., HighFive::File::OpenOrCreate
 	    typename TimeSliceAlreadyExistsException>  // E.g., hdf5libs::TimeSliceAlreadyExistsException
 class DataStoreImpl : public DataStore
@@ -109,9 +90,10 @@ class DataStoreImpl : public DataStore
 public:
   enum
   {
-    TLVL_BASIC = 2,
-    TLVL_FILE_SIZE = 5
+    TLVL_BASIC = 2
   };
+
+  static size_t s_unset_record_number { std::numeric_limits<size_t>::max() };
 
   /**
    * @brief DataStoreImpl Constructor
@@ -148,10 +130,9 @@ public:
     m_file_index = 0;
     m_recorded_size = 0;
     m_uncompressed_raw_data_size = 0;
-    m_current_record_number = std::numeric_limits<size_t>::max();
+    m_current_record_number = s_unset_record_number;
 
     if (m_operation_mode != "one-event-per-file"
-        //&& m_operation_mode != "one-fragment-per-file"
         && m_operation_mode != "all-per-file") {
 
       throw InvalidOperationMode(ERS_HERE, get_name(), m_operation_mode);
@@ -169,10 +150,9 @@ public:
   virtual void open_new_file(const std::string& unique_filename) = 0;
 
   /**
-   * @brief DataStoreImpl write()
-   * Method used to write constant data
-   * into HDF5 format. Operational mode
-   * defined in the configuration file.
+   * @brief DataStoreImpl write() 
+   * Method used to write TriggerRecords into the data
+   * file. Operational mode defined in the configuration file.
    *
    */
   virtual void write(const daqdataformats::TriggerRecord& tr)
@@ -205,7 +185,7 @@ public:
     }
     if (! increment_file_index_if_needed(size_of_next_write)) {
       if (m_operation_mode == "one-event-per-file") {
-        if (m_current_record_number != std::numeric_limits<size_t>::max() &&
+        if (m_current_record_number != s_unset_record_number &&
             tr.get_header_ref().get_trigger_number() != m_current_record_number) {
           ++m_file_index;
         }
@@ -238,9 +218,9 @@ public:
 
   /**
    * @brief DataStoreImpl write()
-   * Method used to write constant data
-   * into HDF5 format. Operational mode
-   * defined in the configuration file.
+   *
+   * Method used to write TimeSlices into the data file. Operational
+   * mode defined in the configuration file.
    *
    */
   virtual void write(const daqdataformats::TimeSlice& ts)
@@ -272,7 +252,7 @@ public:
     }
     if (! increment_file_index_if_needed(size_of_next_write)) {
       if (m_operation_mode == "one-event-per-file") {
-        if (m_current_record_number != std::numeric_limits<size_t>::max() &&
+        if (m_current_record_number != s_unset_record_number &&
             ts.get_header().timeslice_number != m_current_record_number) {
           ++m_file_index;
         }
@@ -344,7 +324,7 @@ public:
     m_file_index = 0;
     m_recorded_size = 0;
     m_uncompressed_raw_data_size = 0;
-    m_current_record_number = std::numeric_limits<size_t>::max();
+    m_current_record_number = s_unset_record_number;
   }
 
   /**
@@ -390,7 +370,7 @@ protected:
     publish(std::move(info), { { "path", m_path } });
   }
 
-  std::unique_ptr<FileReader> m_file_handle;
+  std::unique_ptr<FileHandleClass> m_file_handle;
 
   daqdataformats::run_number_t m_run_number;
 
