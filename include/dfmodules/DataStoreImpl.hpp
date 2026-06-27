@@ -180,23 +180,8 @@ public:
 
     throw_if_insufficient_space_for_object(tr_size, "trigger record");
 
-    // check if a new file should be opened for this record
+    increment_file_index_if_needed(tr_size, tr.get_header_ref().get_trigger_number());
 
-    size_t size_of_next_write = tr_size;
-    if (m_compression_level != 0 && m_recorded_size != 0) {
-      // Without compression, the uncompressed raw data size is approximately the total file size, so it
-      // serves as an approximation of what would have been written without compression
-      float compression_factor = (float) m_file_handle->get_uncompressed_raw_data_size() / m_file_handle->get_total_file_size();
-      size_of_next_write = tr_size / compression_factor;
-    }
-    if (! increment_file_index_if_needed(size_of_next_write)) {
-      if (m_operation_mode == "one-event-per-file") {
-        if (m_current_record_number != s_unset_record_number &&
-            tr.get_header_ref().get_trigger_number() != m_current_record_number) {
-          ++m_file_index;
-        }
-      }
-    }
     m_current_record_number = tr.get_header_ref().get_trigger_number();
 
     // determine the filename from Storage Key + configuration parameters
@@ -234,22 +219,8 @@ public:
     size_t ts_size = ts.get_total_size_bytes();
     throw_if_insufficient_space_for_object(ts_size, "time slice");
 
-    // check if a new file should be opened for this record
-    size_t size_of_next_write = ts_size;
-    if (m_compression_level != 0 && m_recorded_size != 0) {
-      // Without compression, the uncompressed raw data size is approximately the total file size, so it
-      // serves as an approximation of what would have been written without compression
-      float compression_factor = (float) m_file_handle->get_uncompressed_raw_data_size() / m_file_handle->get_total_file_size();
-      size_of_next_write = ts_size / compression_factor;
-    }
-    if (! increment_file_index_if_needed(size_of_next_write)) {
-      if (m_operation_mode == "one-event-per-file") {
-        if (m_current_record_number != s_unset_record_number &&
-            ts.get_header().timeslice_number != m_current_record_number) {
-          ++m_file_index;
-        }
-      }
-    }
+    increment_file_index_if_needed(ts_size, ts.get_header().timeslice_number);
+
     m_current_record_number = ts.get_header().timeslice_number;
 
     // determine the filename from Storage Key + configuration parameters
@@ -445,16 +416,34 @@ private:
     return work_oss.str();
   }
 
-  bool increment_file_index_if_needed(size_t size_of_next_write)
+  // Check if a new file should be opened for the record
+  void increment_file_index_if_needed(size_t size_of_object_to_write, size_t object_record_number)
   {
+    float compression_factor {1.0};
+
+    if (m_compression_level != 0 && m_recorded_size != 0) {
+      // Without compression, the uncompressed raw data size is approximately the total file size, so it
+      // serves as an approximation of what would have been written without compression
+      compression_factor = static_cast<float>(m_file_handle->get_uncompressed_raw_data_size()) / m_file_handle->get_total_file_size();
+    }
+
+    float size_of_next_write = size_of_object_to_write / compression_factor;
+
     if ((m_total_file_size + size_of_next_write) > m_max_file_size && m_recorded_size > 0) {
       ++m_file_index;
       m_recorded_size = 0;
       m_uncompressed_raw_data_size = 0;
       m_previous_file_size.store(0);
-      return true;
+      return;
     }
-    return false;
+
+    // JCF, 06-27-2026: TODO: probably need to reset m_recorded_size, etc., as is done right above
+    if (m_operation_mode == "one-event-per-file" &&
+	m_current_record_number != s_unset_record_number &&
+	m_current_record_number != object_record_number) {
+      ++m_file_index;
+      return;
+    }
   }
 
   void open_file_if_needed(const std::string& file_name, unsigned open_flags)
