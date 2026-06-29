@@ -365,90 +365,114 @@
  <rel name="net_senders">
   <ref class="FakeDataSender" id="det-streams-1-1"/>
  </rel>
+ <rel name="net_receiver" class="FakeDataReceiver" id="dataRec-0"/>
 </obj>
 
 <obj class="NetworkDetectorToDaqConnection" id="det-1-2">
  <rel name="net_senders">
   <ref class="FakeDataSender" id="det-streams-1-2"/>
  </rel>
+ <rel name="net_receiver" class="FakeDataReceiver" id="dataRec-0"/>
 </obj>
 
 <obj class="NetworkDetectorToDaqConnection" id="det-1-3">
  <rel name="net_senders">
   <ref class="FakeDataSender" id="det-streams-1-3"/>
  </rel>
+ <rel name="net_receiver" class="FakeDataReceiver" id="dataRec-0"/>
 </obj>
 
 <obj class="NetworkDetectorToDaqConnection" id="det-1-4">
  <rel name="net_senders">
   <ref class="FakeDataSender" id="det-streams-1-4"/>
  </rel>
+ <rel name="net_receiver" class="FakeDataReceiver" id="dataRec-0"/>
 </obj>
 
 <obj class="NetworkDetectorToDaqConnection" id="det-1-5">
  <rel name="net_senders">
   <ref class="FakeDataSender" id="det-streams-1-5"/>
  </rel>
+ <rel name="net_receiver" class="FakeDataReceiver" id="dataRec-0"/>
 </obj>
 
 <obj class="NetworkDetectorToDaqConnection" id="det-10-1">
  <rel name="net_senders">
   <ref class="FakeDataSender" id="det-streams-10-1"/>
  </rel>
+ <rel name="net_receiver" class="FakeDataReceiver" id="dataRec-0"/>
 </obj>
 
 <obj class="NetworkDetectorToDaqConnection" id="det-10-2">
  <rel name="net_senders">
   <ref class="FakeDataSender" id="det-streams-10-2"/>
  </rel>
+ <rel name="net_receiver" class="FakeDataReceiver" id="dataRec-0"/>
 </obj>
 
 <obj class="NetworkDetectorToDaqConnection" id="det-10-3">
  <rel name="net_senders">
   <ref class="FakeDataSender" id="det-streams-10-3"/>
  </rel>
+ <rel name="net_receiver" class="FakeDataReceiver" id="dataRec-0"/>
 </obj>
 
 <obj class="NetworkDetectorToDaqConnection" id="det-10-4">
  <rel name="net_senders">
   <ref class="FakeDataSender" id="det-streams-10-4"/>
  </rel>
+ <rel name="net_receiver" class="FakeDataReceiver" id="dataRec-0"/>
 </obj>
 
 <obj class="NetworkDetectorToDaqConnection" id="det-10-5">
  <rel name="net_senders">
   <ref class="FakeDataSender" id="det-streams-10-5"/>
  </rel>
+ <rel name="net_receiver" class="FakeDataReceiver" id="dataRec-0"/>
+</obj>
+
+<obj class="FakeDataReceiver" id="dataRec-0">
+ <rel name="uses" class="NetworkInterface" id="nic-0"/>
+</obj>
+
+<obj class="NetworkInterface" id="nic-0">
+ <attr name="mac_address" type="string" val="00:00:00:00:00:00"/>
+ <attr name="network_name" type="enum" val="Control"/>
 </obj>
 
 <obj class="FakeDataSender" id="det-streams-1-1">
  <rel name="streams">
   <ref class="DetectorStream" id="dummyStream-1-1"/>
  </rel>
+ <rel name="uses" class="NetworkInterface" id="nic-0"/>
 </obj>
 
 <obj class="FakeDataSender" id="det-streams-1-2">
  <rel name="streams">
   <ref class="DetectorStream" id="dummyStream-2-1"/>
  </rel>
+ <rel name="uses" class="NetworkInterface" id="nic-0"/>
 </obj>
 
 <obj class="FakeDataSender" id="det-streams-1-3">
  <rel name="streams">
   <ref class="DetectorStream" id="dummyStream-3-1"/>
  </rel>
+ <rel name="uses" class="NetworkInterface" id="nic-0"/>
 </obj>
 
 <obj class="FakeDataSender" id="det-streams-1-4">
  <rel name="streams">
   <ref class="DetectorStream" id="dummyStream-4-1"/>
  </rel>
+ <rel name="uses" class="NetworkInterface" id="nic-0"/>
 </obj>
 
 <obj class="FakeDataSender" id="det-streams-1-5">
  <rel name="streams">
   <ref class="DetectorStream" id="dummyStream-5-1"/>
  </rel>
+ <rel name="uses" class="NetworkInterface" id="nic-0"/>
 </obj>
 
 <obj class="FakeDataSender" id="det-streams-10-1">
@@ -464,6 +488,7 @@
   <ref class="DetectorStream" id="dummyStream-1-9"/>
   <ref class="DetectorStream" id="dummyStream-1-10"/>
  </rel>
+ <rel name="uses" class="NetworkInterface" id="nic-0"/>
 </obj>
 
 <obj class="FakeDataSender" id="det-streams-10-2">
@@ -479,6 +504,7 @@
   <ref class="DetectorStream" id="dummyStream-2-9"/>
   <ref class="DetectorStream" id="dummyStream-2-10"/>
  </rel>
+ <rel name="uses" class="NetworkInterface" id="nic-0"/>
 </obj>
 
 <obj class="FakeDataSender" id="det-streams-10-3">
@@ -494,6 +520,7 @@
   <ref class="DetectorStream" id="dummyStream-3-9"/>
   <ref class="DetectorStream" id="dummyStream-3-10"/>
  </rel>
+ <rel name="uses" class="NetworkInterface" id="nic-0"/>
 </obj>
 
 <obj class="FakeDataSender" id="det-streams-10-4">
@@ -509,6 +536,7 @@
   <ref class="DetectorStream" id="dummyStream-4-9"/>
   <ref class="DetectorStream" id="dummyStream-4-10"/>
  </rel>
+ <rel name="uses" class="NetworkInterface" id="nic-0"/>
 </obj>
 
 <obj class="FakeDataSender" id="det-streams-10-5">
@@ -524,6 +552,7 @@
   <ref class="DetectorStream" id="dummyStream-5-9"/>
   <ref class="DetectorStream" id="dummyStream-5-10"/>
  </rel>
+ <rel name="uses" class="NetworkInterface" id="nic-0"/>
 </obj>
 
 <obj class="GeoId" id="dummyGeoId-1-1">
