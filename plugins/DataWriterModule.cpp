@@ -93,32 +93,6 @@ DataWriterModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcfg)
 
   m_trigger_record_connection = inputs[0]->UID();
 
-  auto modules = mcfg->get_modules();
-  std::string trb_uid = "";
-  bool is_trmon = false;
-  for (auto& mod : modules) {
-    if (mod->class_name() == "TRBModule") {
-      trb_uid = mod->UID();
-      break;
-    }
-    if (mod->class_name() == "TRMonRequestorModule") {
-      is_trmon = true;
-      break;
-    }
-  }
-
-  if (!is_trmon) {
-    auto trbdal = mcfg->get_dal<appmodel::TRBModule>(trb_uid);
-    if (!trbdal) {
-      throw appfwk::CommandFailed(ERS_HERE, "init", get_name(), "Unable to retrieve TRB configuration object");
-    }
-    for (auto con : trbdal->get_inputs()) {
-      if (con->get_data_type() == datatype_to_string<dfmessages::TriggerDecision>()) {
-        m_trigger_decision_connection = con->UID();
-      }
-    }
-  }
-
   // try to create the receiver to see test the connection anyway
   m_tr_receiver = iom->get_receiver<std::unique_ptr<daqdataformats::TriggerRecord>>(m_trigger_record_connection);
 
@@ -187,26 +161,6 @@ DataWriterModule::do_start(const CommandData_t& payload)
   rcif::cmd::StartParams start_params = payload.get<rcif::cmd::StartParams>();
   m_data_storage_is_enabled = (!start_params.disable_data_storage);
   m_run_number = start_params.run;
-
-  TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Sending initial TriggerDecisionToken to DFO to announce my presence";
-  dfmessages::TriggerDecisionToken token;
-  token.run_number = 0;
-  token.trigger_number = 0;
-  token.decision_destination = m_trigger_decision_connection;
-
-  int wasSentSuccessfully = 5;
-  do {
-    try {
-      m_token_output->send(std::move(token), m_queue_timeout);
-      wasSentSuccessfully = 0;
-    } catch (const ers::Issue& excpt) {
-      std::ostringstream oss_warn;
-      oss_warn << "Send with sender \"" << m_token_output->get_name() << "\" failed";
-      ers::warning(iomanager::OperationFailed(ERS_HERE, oss_warn.str(), excpt));
-      wasSentSuccessfully--;
-      std::this_thread::sleep_for(std::chrono::microseconds(5000));
-    }
-  } while (wasSentSuccessfully);
 
   // 04-Feb-2021, KAB: added this call to allow DataStore to prepare for the run.
   // I've put this call fairly early in this method because it could throw an
@@ -383,7 +337,7 @@ DataWriterModule::receive_trigger_record(std::unique_ptr<daqdataformats::Trigger
     dfmessages::TriggerDecisionToken token;
     token.run_number = m_run_number;
     token.trigger_number = trigger_record_ptr->get_header_ref().get_trigger_number();
-    token.decision_destination = m_trigger_decision_connection;
+    token.writer_identifier = m_writer_identifier;
 
     bool wasSentSuccessfully = false;
     do {

@@ -81,7 +81,6 @@ private:
 
   using token_sender_t = iomanager::SenderConcept<dfmessages::TriggerDecisionToken>;
   std::shared_ptr<token_sender_t> m_token_output;
-  std::string m_trigger_decision_connection;
 
   // Worker(s)
   dunedaq::utilities::WorkerThread m_thread;

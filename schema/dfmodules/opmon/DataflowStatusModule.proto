@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package dunedaq.dfmodules.opmon;
+
+
+// regular metric published byt the DataflowStateModule
+message DataflowStatusInfo {
+
+  // counters
+  uint64 decisions_received = 1;
+  uint64 trb_completions_received = 2;
+  uint64 tokens_received = 3;
+  uint64 requests_received = 4;
+  uint64 status_messages_sent = 5;
+  uint64 decisions_sent = 6;
+
+  // errors
+  uint64 duplicate_decisions_received = 7;
+  uint64 unexpected_trb_completions_received = 8;
+  uint64 unexpected_tokens_received = 9;
+  uint64 early_tokens_received = 10;
+
+}
