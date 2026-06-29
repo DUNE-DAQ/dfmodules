@@ -18,7 +18,6 @@
 #include "dfmodules/DataStore.hpp"
 #include "dfmodules/opmon/DataStore.pb.h"
 
-#include "appmodel/DataStoreConf.hpp"
 #include "appmodel/FilenameParams.hpp"
 #include "confmodel/DetectorConfig.hpp"
 #include "confmodel/Session.hpp"
@@ -82,6 +81,7 @@ namespace dfmodules {
  * @brief DataStoreImpl contains functionality you'd generally want in a data store irrespective of file type
  */
   template <typename FileHandleClass, // E.g., hdf5libs::HDF5RawDataFile
+	    typename DataStoreConf, // E.g., appmodel::DataStoreConf
 	    unsigned FileIOInfo, // E.g., HighFive::File::OpenOrCreate
 	    typename TimeSliceAlreadyExistsException>  // E.g., hdf5libs::TimeSliceAlreadyExistsException
 class DataStoreImpl : public DataStore
@@ -111,7 +111,7 @@ public:
   {
     TLOG_DEBUG(TLVL_BASIC) << get_name();
 
-    m_config_params = mcfg->get_dal<appmodel::DataStoreConf>(name);
+    m_config_params = mcfg->get_dal<DataStoreConf>(name);
     
     m_session = mcfg->get_session();
     m_operational_environment = mcfg->get_session()->get_detector_configuration()->get_op_env();
@@ -341,7 +341,7 @@ protected:
   std::atomic<size_t> m_file_index;
   std::string m_writer_identifier;
 
-  const appmodel::DataStoreConf* m_config_params;
+  const DataStoreConf* m_config_params;
 
   const confmodel::Session* m_session;
 

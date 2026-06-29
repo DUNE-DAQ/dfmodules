@@ -9,6 +9,7 @@
 
 #include "dfmodules/DataStoreImpl.hpp"
 
+#include "appmodel/DataStoreConf.hpp"
 #include "hdf5libs/HDF5RawDataFile.hpp"
 
 #include <string>
@@ -16,6 +17,7 @@
 namespace dunedaq::dfmodules {
 
   class HDF5DataStore : public DataStoreImpl<hdf5libs::HDF5RawDataFile,
+					     appmodel::DataStoreConf,
 					     HighFive::File::OpenOrCreate,
 					     hdf5libs::TimeSliceAlreadyExists> {
 
