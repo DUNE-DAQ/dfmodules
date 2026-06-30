@@ -100,7 +100,7 @@ conf_dict.dro_map_config.n_streams = number_of_data_producers
 conf_dict.op_env = "integtest"
 conf_dict.config_session_name= "disabled"
 conf_dict.tpg_enabled = False
-utility_functions.set_RTCM_trigger_params(conf_dict, trigger_rate=trigger_rate)
+utility_functions.set_rtcm_trigger_params(conf_dict, trigger_rate=trigger_rate)
 # We accept the default values for all of the other integtest config parameters
 # (defined in integrationtest/src/integrationtest/data_classes.py), including the "frame_file",
 # which is the data file that is used to emulated the data. The current default for that field

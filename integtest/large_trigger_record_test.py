@@ -91,7 +91,7 @@ conf_dict.config_session_name= "largerecord"
 conf_dict.tpg_enabled = False
 conf_dict.n_df_apps = number_of_dataflow_apps
 conf_dict.remove_hdf5_files = True
-utility_functions.set_RTCM_trigger_params(conf_dict, trigger_rate=trigger_rate,
+utility_functions.set_rtcm_trigger_params(conf_dict, trigger_rate=trigger_rate,
                                           readout_window_backshift_ticks=0,
                                           readout_window_before_ticks=readout_window_time_before,
                                           readout_window_after_ticks=readout_window_time_after)
@@ -126,9 +126,9 @@ conf_dict.config_substitutions.append(
     )
 )
 oversize_conf = copy.deepcopy(conf_dict)  # Copy before setting the readout window
-utility_functions.set_RTCM_trigger_params(oversize_conf, trigger_rate=trigger_rate,
+utility_functions.set_rtcm_trigger_params(oversize_conf, trigger_rate=trigger_rate,
                                           readout_window_backshift_ticks=0,
-                                          readout_window_before_ticks=2.5*readout_window_time_before,
+                                          readout_window_before_ticks=int(2.5*readout_window_time_before),
                                           readout_window_after_ticks=readout_window_time_after)
 
 confgen_arguments = {

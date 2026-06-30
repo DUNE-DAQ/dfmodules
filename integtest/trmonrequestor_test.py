@@ -67,7 +67,7 @@ conf_dict.config_session_name= "trmonrequestor"
 conf_dict.tpg_enabled = False
 conf_dict.trmon_app_enabled = True
 conf_dict.n_df_apps = number_of_dataflow_apps
-utility_functions.set_RTCM_trigger_params(conf_dict, trigger_rate=trigger_rate,
+utility_functions.set_rtcm_trigger_params(conf_dict, trigger_rate=trigger_rate,
                                           readout_window_backshift_ticks=0)
 
 substitution = data_classes.attribute_substitution(
