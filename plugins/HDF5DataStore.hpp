@@ -18,8 +18,7 @@ namespace dunedaq::dfmodules {
 
   class HDF5DataStore : public DataStoreImpl<hdf5libs::HDF5RawDataFile,
 					     appmodel::DataStoreConf,
-					     HighFive::File::OpenOrCreate,
-					     hdf5libs::TimeSliceAlreadyExists> {
+					     HighFive::File::OpenOrCreate> {
 
   public:
     explicit HDF5DataStore(std::string const& name,

@@ -21,6 +21,7 @@
 #include "appmodel/FilenameParams.hpp"
 #include "confmodel/DetectorConfig.hpp"
 #include "confmodel/Session.hpp"
+#include "daqdataformats/Types.hpp"
 
 #include "appfwk/DAQModule.hpp"
 #include "logging/Logging.hpp" // NOTE: if ISSUES ARE DECLARED BEFORE include logging/Logging.hpp, TLOG_DEBUG<<issue wont work.
@@ -74,6 +75,13 @@ ERS_DECLARE_ISSUE_BASE(dfmodules,
                        ((std::string)name),
                        ((std::string)path)((size_t)free_bytes)((size_t)needed_bytes)((std::string)criteria))
 
+ERS_DECLARE_ISSUE_BASE(dfmodules,
+		       TimeSliceAlreadyExists,
+		       appfwk::GeneralDAQModuleIssue,
+		       "The TimeSlice record for timeslice #" << timeslice_number << " already exists.",
+		       ((std::string)name),
+		       ((daqdataformats::timeslice_number_t)timeslice_number))
+
 // Re-enable coverage checking LCOV_EXCL_STOP
 namespace dfmodules {
 
@@ -82,8 +90,7 @@ namespace dfmodules {
  */
   template <typename FileHandleClass, // E.g., hdf5libs::HDF5RawDataFile
 	    typename DataStoreConf, // E.g., appmodel::DataStoreConf
-	    unsigned FileIOInfo, // E.g., HighFive::File::OpenOrCreate
-	    typename TimeSliceAlreadyExistsException>  // E.g., hdf5libs::TimeSliceAlreadyExistsException
+	    unsigned FileIOInfo> // E.g., HighFive::File::OpenOrCreate
 class DataStoreImpl : public DataStore
 {
 
@@ -237,11 +244,17 @@ public:
 
     // write the record
     try {
+
+      if (m_file_handle->timeslice_already_exists(ts)) {
+	TimeSliceAlreadyExists excpt(ERS_HERE, get_name(), ts.get_header().timeslice_number);
+      }
+
       m_file_handle->write(ts);
       m_recorded_size = m_file_handle->get_recorded_size();
       m_uncompressed_raw_data_size = m_file_handle->get_uncompressed_raw_data_size();
       m_total_file_size = m_file_handle->get_total_file_size();
-    } catch (TimeSliceAlreadyExistsException const& excpt) {
+
+    } catch (TimeSliceAlreadyExists const& excpt) {
       std::string msg = "writing a time slice to file " + m_file_handle->get_file_name();
       throw IgnorableDataStoreProblem(ERS_HERE, get_name(), msg, excpt);
     }
