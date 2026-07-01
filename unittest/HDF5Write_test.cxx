@@ -9,6 +9,9 @@
 
 #include "dfmodules/DataStore.hpp"
 
+// We need the actual HDF5DataStore.hpp plugin header so the unit tests can access its exceptions
+#include "../plugins/HDF5DataStore.hpp" // NOLINT(build/include_path)
+
 #include "appmodel/DataWriterModule.hpp"
 #include "appmodel/DataWriterConf.hpp"
 #include "appmodel/FilenameParams.hpp"
@@ -25,6 +28,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <limits>
 #include <memory>
 #include <regex>
 #include <string>
@@ -267,6 +271,61 @@ BOOST_AUTO_TEST_CASE(CheckWritingSuffix)
   delete_files_matching_pattern(file_path, "HardwareMap.*\\.txt");
   BOOST_REQUIRE_EQUAL(file_list.size(), 1);
 }
+
+BOOST_AUTO_TEST_CASE(NoDuplicateTimeSlices)
+{
+  std::string file_path(std::filesystem::temp_directory_path());
+
+  CfgFixture cfg("test-session-3-1");
+  auto data_writer_conf = cfg.cfgMgr->get_dal<dunedaq::appmodel::DataWriterModule>("dwm-01")->get_configuration();
+  auto data_store_conf = data_writer_conf->get_data_store_params();
+
+  auto data_store_conf_obj = data_store_conf->config_object();
+  data_store_conf_obj.set_by_val<std::string>("directory_path", file_path);
+
+  auto data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.cfgMgr, "dwm-01");
+
+  dunedaq::daqdataformats::TimeSlice timeslice {999, 999}; // timeslice #, run #
+  dunedaq::daqdataformats::TimeSlice identical_timeslice {999, 999};
+
+  data_store_ptr->write(timeslice);
+
+  std::string search_pattern = "hdf5writetest.*\\.writing";
+  std::vector<std::string> file_list = get_files_matching_pattern(file_path, search_pattern);
+  BOOST_REQUIRE_EQUAL(file_list.size(), 1);
+
+  BOOST_CHECK_THROW(data_store_ptr->write(identical_timeslice), dunedaq::dfmodules::IgnorableDataStoreProblem);
+
+  delete_files_matching_pattern(file_path, "hdf5writetest.*\\.hdf5");
+}
+
+BOOST_AUTO_TEST_CASE(WriteToBadOutputArea)
+{
+  std::string file_path("/this/path/does/not/exist");
+
+  CfgFixture cfg("test-session-3-1");
+  auto data_writer_conf = cfg.cfgMgr->get_dal<dunedaq::appmodel::DataWriterModule>("dwm-01")->get_configuration();
+  auto data_store_conf = data_writer_conf->get_data_store_params();
+
+  auto data_store_conf_obj = data_store_conf->config_object();
+  data_store_conf_obj.set_by_val<std::string>("directory_path", file_path);
+  auto data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.cfgMgr, "dwm-01");
+
+  BOOST_CHECK_THROW(data_store_ptr->prepare_for_run(1, true), dunedaq::dfmodules::InvalidOutputPath);
+}
+
+BOOST_AUTO_TEST_CASE(EnormousMaxFileSize)
+{
+  CfgFixture cfg("test-session-3-1");
+  auto data_writer_conf = cfg.cfgMgr->get_dal<dunedaq::appmodel::DataWriterModule>("dwm-01")->get_configuration();
+  auto data_store_conf = data_writer_conf->get_data_store_params();
+
+  auto data_store_conf_obj = data_store_conf->config_object();
+  data_store_conf_obj.set_by_val<size_t>("max_file_size", std::numeric_limits<size_t>::max());
+  auto data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.cfgMgr, "dwm-01");
+  BOOST_CHECK_THROW(data_store_ptr->prepare_for_run(1, true), dunedaq::dfmodules::InsufficientDiskSpace);
+}
+
 
 BOOST_AUTO_TEST_CASE(FileSizeLimitResultsInMultipleFiles)
 {
