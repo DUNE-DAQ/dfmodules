@@ -91,9 +91,9 @@
 </obj>
 
 <obj class="AVXThresholdProcessor" id="tpg-threshold-proc">
- <attr name="plane0" type="u16" val="100"/>
- <attr name="plane1" type="u16" val="100"/>
- <attr name="plane2" type="u16" val="100"/>
+ <attr name="plane0" type="s16" val="100"/>
+ <attr name="plane1" type="s16" val="100"/>
+ <attr name="plane2" type="s16" val="100"/>
 </obj>
 
 <obj class="DPDKReaderConf" id="def-emu-nic-receiver-conf">
@@ -899,6 +899,12 @@
  </attr>
 </obj>
 
+<obj class="SamplesOverThresholdMinima" id="def-sot-minima">
+ <attr name="sot_minimum_plane0" type="u16" val="1"/>
+ <attr name="sot_minimum_plane1" type="u16" val="1"/>
+ <attr name="sot_minimum_plane2" type="u16" val="1"/>
+</obj>
+
 <obj class="TPCRawDataProcessor" id="def-wib-processor">
  <attr name="queue_sizes" type="u32" val="10000"/>
  <attr name="thread_names_prefix" type="string" val="postproc-"/>
@@ -908,6 +914,16 @@
   <ref class="AVXFrugalPedestalSubtractProcessor" id="tpg-pedsub-proc"/>
   <ref class="AVXThresholdProcessor" id="tpg-threshold-proc"/>
  </rel>
+ <rel name="sot_minima" class="SamplesOverThresholdMinima" id="def-sot-minima"/>
+</obj>
+
+<obj class="FragmentAggregatorConf" id="frag-agg-01">
+ <attr name="fragment_send_timeout_ms" type="u32" val="1000"/>
+</obj>
+
+<obj class="DataMoveCallbackDescriptor" id="wib-eth-raw-input">
+ <attr name="uid_base" type="string" val="raw_input_"/>
+ <attr name="data_type" type="string" val="WIBEthFrame"/>
 </obj>
 
 <obj class="ReadoutApplication" id="ru-3-1">
@@ -924,6 +940,8 @@
  <rel name="uses" class="RoHwConfig" id="rohw-1"/>
  <rel name="link_handler" class="DataHandlerConf" id="def-link-handler"/>
  <rel name="data_reader" class="DPDKReaderConf" id="def-emu-nic-receiver-conf"/>
+ <rel name="fragment_aggregator" class="FragmentAggregatorConf" id="frag-agg-01"/>
+ <rel name="callback_desc" class="DataMoveCallbackDescriptor" id="wib-eth-raw-input"/>
 </obj>
 
 <obj class="ReadoutApplication" id="ru-5-1">
@@ -942,6 +960,8 @@
  <rel name="uses" class="RoHwConfig" id="rohw-1"/>
  <rel name="link_handler" class="DataHandlerConf" id="def-link-handler"/>
  <rel name="data_reader" class="DPDKReaderConf" id="def-emu-nic-receiver-conf"/>
+ <rel name="fragment_aggregator" class="FragmentAggregatorConf" id="frag-agg-01"/>
+ <rel name="callback_desc" class="DataMoveCallbackDescriptor" id="wib-eth-raw-input"/>
 </obj>
 
 <obj class="ReadoutApplication" id="ru-5-10">
@@ -960,6 +980,8 @@
  <rel name="uses" class="RoHwConfig" id="rohw-1"/>
  <rel name="link_handler" class="DataHandlerConf" id="def-link-handler"/>
  <rel name="data_reader" class="DPDKReaderConf" id="def-emu-nic-receiver-conf"/>
+ <rel name="fragment_aggregator" class="FragmentAggregatorConf" id="frag-agg-01"/>
+ <rel name="callback_desc" class="DataMoveCallbackDescriptor" id="wib-eth-raw-input"/>
 </obj>
 
 <obj class="RequestHandler" id="def-data-request-handler">
