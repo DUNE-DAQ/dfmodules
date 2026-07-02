@@ -21,9 +21,9 @@
 #include "appmodel/FilenameParams.hpp"
 #include "confmodel/DetectorConfig.hpp"
 #include "confmodel/Session.hpp"
-#include "daqdataformats/Types.hpp"
 
 #include "appfwk/DAQModule.hpp"
+#include "daqdataformats/Types.hpp"
 #include "logging/Logging.hpp" // NOTE: if ISSUES ARE DECLARED BEFORE include logging/Logging.hpp, TLOG_DEBUG<<issue wont work.
 
 #include "boost/date_time/posix_time/posix_time.hpp"
@@ -43,6 +43,13 @@ namespace dunedaq {
 /**
  * @brief Various ERS Issues for exceptional data store situations
  */
+ERS_DECLARE_ISSUE_BASE(dfmodules,
+                       DataStoreImplBadConfiguration,
+                       appfwk::GeneralDAQModuleIssue,
+                       "Construction of the DataStoreImpl base class failed due to faulty configuration",
+                       ((std::string)name),
+		       )
+  
 ERS_DECLARE_ISSUE_BASE(dfmodules,
                        InvalidOperationMode,
                        appfwk::GeneralDAQModuleIssue,
@@ -111,38 +118,45 @@ public:
                          std::shared_ptr<appfwk::ConfigurationManager> mcfg,
                          std::string const& writer_name)
     : DataStore(name)
-    , m_basic_name_of_open_file("")
-    , m_open_flags_of_open_file(0)
-    , m_run_number(0)
-    , m_writer_identifier(writer_name)
+    , m_file_handle {nullptr}
+    , m_run_number {0}
+    , m_file_index {0}
+    , m_writer_identifier {writer_name}
+    , m_config_params { mcfg ? mcfg->get_dal<DataStoreConf>(name) : nullptr }
+    , m_session { mcfg ? mcfg->get_session() : nullptr }
+    , m_compression_level { m_config_params ? m_config_params->get_compression_level() : 0 }
+    , m_open_flags_of_open_file {0}
+    , m_operational_environment { m_session ? m_session->get_detector_configuration()->get_op_env() : "unavailable" }
+    , m_offline_data_stream { m_session ? m_session->get_detector_configuration()->get_offline_data_stream() : "unavailable" }
+    , m_run_is_for_test_purposes { false }
+    , m_basic_name_of_open_file {""}
+    , m_recorded_size {0}
+    , m_uncompressed_raw_data_size {0}
+    , m_previous_file_size {0}
+    , m_total_file_size {0}
+    , m_current_record_number {s_unset_record_number}
+    , m_new_bytes {0}
+    , m_new_objects {0}
+    , m_operation_mode { m_config_params ? m_config_params->get_mode() : "unavailable" }
+    , m_path {m_config_params ?  m_config_params->get_directory_path() : "unavailable" }
+    , m_max_file_size {m_config_params ?  m_config_params->get_max_file_size() : std::numeric_limits<size_t>::max() }
+    , m_disable_unique_suffix { m_config_params ? m_config_params->get_disable_unique_filename_suffix() : false }
+    , m_free_space_safety_factor_for_write {m_config_params ? m_config_params->get_free_space_safety_factor() : std::numeric_limits<float>::max() }
   {
     TLOG_DEBUG(TLVL_BASIC) << get_name();
 
-    m_config_params = mcfg->get_dal<DataStoreConf>(name);
-    
-    m_session = mcfg->get_session();
-    m_operational_environment = mcfg->get_session()->get_detector_configuration()->get_op_env();
-    m_offline_data_stream = mcfg->get_session()->get_detector_configuration()->get_offline_data_stream();
-
-    m_operation_mode = m_config_params->get_mode();
-    m_path = m_config_params->get_directory_path();
-    m_max_file_size = m_config_params->get_max_file_size();
-    m_disable_unique_suffix = m_config_params->get_disable_unique_filename_suffix();
-    m_free_space_safety_factor_for_write = m_config_params->get_free_space_safety_factor();
-    if (m_free_space_safety_factor_for_write < 1.1) {
-      m_free_space_safety_factor_for_write = 1.1;
+    if (!m_config_params || !m_session) {
+      throw DataStoreImplBadConfiguration(ERS_HERE, get_name());
     }
-    m_compression_level = m_config_params->get_compression_level();
-
-    m_file_index = 0;
-    m_recorded_size = 0;
-    m_uncompressed_raw_data_size = 0;
-    m_current_record_number = s_unset_record_number;
 
     if (m_operation_mode != "one-event-per-file"
         && m_operation_mode != "all-per-file") {
 
       throw InvalidOperationMode(ERS_HERE, get_name(), m_operation_mode);
+    }
+
+    if (m_free_space_safety_factor_for_write < 1.1) {
+      m_free_space_safety_factor_for_write = 1.1;
     }
 
     // 05-Apr-2022, KAB: added warning message when the output destination
@@ -352,7 +366,7 @@ protected:
 
   // Total number of generated files
   std::atomic<size_t> m_file_index;
-  std::string m_writer_identifier;
+  const std::string m_writer_identifier;
 
   const DataStoreConf* m_config_params;
 
@@ -362,8 +376,8 @@ protected:
 
   unsigned m_open_flags_of_open_file;
 
-  std::string m_operational_environment;
-  std::string m_offline_data_stream;
+  const std::string m_operational_environment;
+  const std::string m_offline_data_stream;
   bool m_run_is_for_test_purposes;
 
   std::string m_basic_name_of_open_file;
@@ -391,10 +405,10 @@ private:
   std::atomic<uint64_t> m_new_bytes;
   std::atomic<uint64_t> m_new_objects;
 
-  std::string m_operation_mode;
-  std::string m_path;
-  size_t m_max_file_size;
-  bool m_disable_unique_suffix;
+  const std::string m_operation_mode;
+  const std::string m_path;
+  const size_t m_max_file_size;
+  const bool m_disable_unique_suffix;
   float m_free_space_safety_factor_for_write;
 
 
