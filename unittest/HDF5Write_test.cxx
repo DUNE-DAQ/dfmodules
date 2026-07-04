@@ -145,6 +145,11 @@ struct CfgFixture
 
 BOOST_AUTO_TEST_SUITE(HDF5Write_test)
 
+BOOST_AUTO_TEST_CASE(NullConfiguration)
+{
+  BOOST_CHECK_THROW(make_data_store("HDF5DataStore", "dummy", nullptr, "dummy"), dunedaq::dfmodules::DataStoreImplBadConfiguration);
+}
+
 BOOST_AUTO_TEST_CASE(WriteEventFiles)
 {
   std::string file_path(std::filesystem::temp_directory_path());
