@@ -173,6 +173,7 @@ public:
   void throw_if_insufficient_space_for_object(size_t obj_size, const std::string& obj_name) {
 
     size_t current_free_space = get_free_space(m_path);
+
     if (current_free_space < (m_free_space_safety_factor_for_write * obj_size)) {
       std::ostringstream msg_oss;
       msg_oss << "a safety factor of " << m_free_space_safety_factor_for_write << " times the " << obj_name << " size";
@@ -260,7 +261,7 @@ public:
     try {
 
       if (m_file_handle->timeslice_already_exists(ts)) {
-	TimeSliceAlreadyExists excpt(ERS_HERE, get_name(), ts.get_header().timeslice_number);
+	throw TimeSliceAlreadyExists(ERS_HERE, get_name(), ts.get_header().timeslice_number);
       }
 
       m_file_handle->write(ts);
