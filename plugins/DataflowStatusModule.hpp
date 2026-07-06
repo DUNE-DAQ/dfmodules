@@ -76,6 +76,8 @@ private:
   std::chrono::milliseconds m_heartbeat_interval{ 100 };
   std::chrono::milliseconds m_stop_timeout{ 1000 };
   std::chrono::milliseconds m_td_queue_timeout{ 1000 };
+  size_t m_snapshot_history_size{ 100 };
+  size_t m_completed_trigger_history_size{ 100 };
 
   // Connections
   std::shared_ptr<iomanager::SenderConcept<dfmessages::TriggerDecision>> m_trigger_decision_sender;
@@ -88,7 +90,6 @@ private:
   // Status
   dfmessages::DataflowStatus m_current_status;
   std::map<dfmessages::trigger_number_t, dfmessages::DataflowStatus> m_status_snapshots;
-  size_t m_snapshot_history_size{ 100 };
   std::mutex m_status_mutex;
   std::atomic<bool> m_status_updated;
   std::condition_variable m_status_update_cv;

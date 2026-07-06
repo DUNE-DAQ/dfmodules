@@ -29,19 +29,23 @@ daq_add_library( TriggerInhibitAgent.cpp TriggerRecordBuilderData.cpp TPBundleHa
 
 daq_add_plugin( HDF5DataStore     duneDataStore LINK_LIBRARIES dfmodules hdf5libs::hdf5libs stdc++fs)
 
-daq_add_plugin( FragmentAggregatorModule    duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager )
-daq_add_plugin( DataWriterModule            duneDAQModule LINK_LIBRARIES dfmodules hdf5libs::hdf5libs iomanager::iomanager )
-daq_add_plugin( DataflowStatusModule   duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager )
-daq_add_plugin( TRBModule  duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager )
-daq_add_plugin( TRMonRequestorModule  duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager )
-daq_add_plugin( FakeDataProdModule          duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager)
-daq_add_plugin( TPStreamWriterModule        duneDAQModule LINK_LIBRARIES dfmodules hdf5libs::hdf5libs trigger::trigger Boost::iostreams )
+daq_add_plugin( FragmentAggregatorModule duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager )
+daq_add_plugin( DataWriterModule         duneDAQModule LINK_LIBRARIES dfmodules hdf5libs::hdf5libs iomanager::iomanager )
+daq_add_plugin( DataflowStatusModule     duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager )
+#daq_add_plugin( DFOModule                duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager )
+daq_add_plugin( TRBModule                duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager )
+daq_add_plugin( TRMonRequestorModule     duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager )
+daq_add_plugin( FakeDataProdModule       duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager )
+daq_add_plugin( TPStreamWriterModule     duneDAQModule LINK_LIBRARIES dfmodules hdf5libs::hdf5libs trigger::trigger Boost::iostreams )
 
 ##############################################################################
 daq_add_unit_test( HDF5FileUtils_test       LINK_LIBRARIES dfmodules )
 
 daq_add_unit_test( HDF5Write_test           LINK_LIBRARIES dfmodules hdf5libs::hdf5libs )
 add_dependencies(  HDF5Write_test dfmodules_HDF5DataStore_duneDataStore )
+
+#daq_add_unit_test( DFOModule_test LINK_LIBRARIES dfmodules )
+#add_dependencies( DFOModule_test dfmodules_DFOModule_duneDAQModule)
 
 daq_add_unit_test( DataflowStatusModule_test LINK_LIBRARIES dfmodules )
 add_dependencies( DataflowStatusModule_test dfmodules_DataflowStatusModule_duneDAQModule)

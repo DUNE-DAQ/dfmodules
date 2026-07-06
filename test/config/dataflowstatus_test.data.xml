@@ -63,7 +63,7 @@
 
 <oks-data>
 
-<info name="" type="" num-of-items="65" oks-format="data" oks-version="862f2957270" created-by="gjc" created-on="thinkpad" creation-time="20231116T105446" last-modified-by="eflumerf" last-modified-on="ironvirt9.mshome.net" last-modification-time="20260626T200820"/>
+<info name="" type="" num-of-items="65" oks-format="data" oks-version="862f2957270" created-by="gjc" created-on="thinkpad" creation-time="20231116T105446" last-modified-by="eflumerf" last-modified-on="ironvirt9.mshome.net" last-modification-time="20260630T155850"/>
 
 <include>
  <file path="schema/confmodel/dunedaq.schema.xml"/>
@@ -277,10 +277,10 @@
 
 <obj class="NetworkConnection" id="df_status">
  <attr name="data_type" type="string" val="DataflowStatus"/>
+ <attr name="capacity" type="u32" val="1"/>
  <attr name="send_timeout_ms" type="u32" val="10"/>
  <attr name="recv_timeout_ms" type="u32" val="10"/>
  <attr name="connection_type" type="enum" val="kSendRecv"/>
-	<attr name="capacity" type="u32" val="1"/>
  <rel name="associated_service" class="Service" id="df_status"/>
 </obj>
 

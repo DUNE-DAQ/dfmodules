@@ -63,7 +63,7 @@
 
 <oks-data>
 
-<info name="" type="" num-of-items="62" oks-format="data" oks-version="862f2957270" created-by="gjc" created-on="thinkpad" creation-time="20231116T105446" last-modified-by="eflumerf" last-modified-on="ironvirt9.IRONDOMAIN.local" last-modification-time="20241023T210032"/>
+<info name="" type="" num-of-items="70" oks-format="data" oks-version="862f2957270" created-by="gjc" created-on="thinkpad" creation-time="20231116T105446" last-modified-by="eflumerf" last-modified-on="ironvirt9.mshome.net" last-modification-time="20260630T155755"/>
 
 <include>
  <file path="schema/confmodel/dunedaq.schema.xml"/>
@@ -104,6 +104,16 @@
  <rel name="configuration" class="DFOConf" id="test"/>
 </obj>
 
+<obj class="DaqApplication" id="FakeDFApp">
+ <attr name="application_name" type="string" val="daq_application"/>
+ <rel name="runs_on" class="VirtualHost" id="vlocalhost"/>
+ <rel name="opmon_conf" class="OpMonConf" id="slow-all-monitoring"/>
+ <rel name="modules">
+  <ref class="DataWriterModule" id="dw-01"/>
+  <ref class="TRBModule" id="trb-01"/>
+ </rel>
+</obj>
+
 <obj class="DaqApplication" id="TestApp">
  <attr name="application_name" type="string" val="daq_application"/>
  <rel name="runs_on" class="VirtualHost" id="vlocalhost"/>
@@ -111,6 +121,30 @@
  <rel name="modules">
   <ref class="DFOModule" id="test"/>
  </rel>
+</obj>
+
+<obj class="DataStoreConf" id="default">
+ <attr name="type" type="string" val="HDF5DataStore"/>
+ <attr name="directory_path" type="string" val="."/>
+ <attr name="mode" type="enum" val="all-per-file"/>
+ <attr name="max_file_size" type="u64" val="4294967296"/>
+ <attr name="disable_unique_filename_suffix" type="bool" val="0"/>
+ <attr name="free_space_safety_factor" type="s32" val="5"/>
+ <rel name="file_layout_params" class="HDF5FileLayoutParams" id="default"/>
+ <rel name="filename_params" class="FilenameParams" id="default"/>
+</obj>
+
+<obj class="DataWriterConf" id="dw-01">
+ <attr name="data_storage_prescale" type="s32" val="1"/>
+ <attr name="min_write_retry_time_ms" type="s32" val="1"/>
+ <attr name="max_write_retry_time_ms" type="s32" val="1000"/>
+ <attr name="write_retry_time_increase_factor" type="s32" val="2"/>
+ <rel name="data_store_params" class="DataStoreConf" id="default"/>
+</obj>
+
+<obj class="DataWriterModule" id="dw-01">
+ <attr name="writer_identifier" type="string" val="dw-01"/>
+ <rel name="configuration" class="DataWriterConf" id="dw-01"/>
 </obj>
 
 <obj class="DetectorConfig" id="dummy-detector">
@@ -304,6 +338,14 @@
  <rel name="associated_service" class="Service" id="triginh"/>
 </obj>
 
+<obj class="NetworkConnection" id="trigrec">
+ <attr name="data_type" type="string" val="TriggerRecord"/>
+ <attr name="send_timeout_ms" type="u32" val="10"/>
+ <attr name="recv_timeout_ms" type="u32" val="10"/>
+ <attr name="connection_type" type="enum" val="kSendRecv"/>
+ <rel name="associated_service" class="Service" id="trigrec"/>
+</obj>
+
 <obj class="OpMonConf" id="slow-all-monitoring">
  <attr name="level" type="u32" val="4294967295"/>
  <attr name="interval_s" type="u32" val="10"/>
@@ -331,9 +373,9 @@
 
 <obj class="Queue" id="trigger_decision_q">
  <attr name="data_type" type="string" val="TriggerDecision"/>
+ <attr name="capacity" type="u32" val="1"/>
  <attr name="send_timeout_ms" type="u32" val="10"/>
  <attr name="recv_timeout_ms" type="u32" val="10"/>
- <attr name="capacity" type="u32" val="1"/>
  <attr name="queue_type" type="enum" val="kFollySPSCQueue"/>
 </obj>
 
@@ -363,7 +405,7 @@
 
 <obj class="Service" id="token">
  <attr name="protocol" type="string" val="tcp"/>
- <attr name="port" type="u16" val="5053"/>
+ <attr name="port" type="u16" val="5050"/>
  <attr name="eth_device_name" type="string" val="lo"/>
 </obj>
 
@@ -381,7 +423,13 @@
 
 <obj class="Service" id="triginh">
  <attr name="protocol" type="string" val="tcp"/>
- <attr name="port" type="u16" val="5050"/>
+ <attr name="port" type="u16" val="5053"/>
+ <attr name="eth_device_name" type="string" val="lo"/>
+</obj>
+
+<obj class="Service" id="trigrec">
+ <attr name="protocol" type="string" val="tcp"/>
+ <attr name="port" type="u16" val="5054"/>
  <attr name="eth_device_name" type="string" val="lo"/>
 </obj>
 
@@ -396,6 +444,21 @@
  <rel name="segment" class="Segment" id="generated-segment"/>
  <rel name="detector_configuration" class="DetectorConfig" id="dummy-detector"/>
  <rel name="opmon_uri" class="OpMonURI" id="local-opmon-uri"/>
+</obj>
+
+<obj class="TRBConf" id="trb-01">
+ <attr name="tr_queue_timeout" type="u32" val="100"/>
+ <attr name="request_queue_timeout" type="u32" val="100"/>
+ <attr name="trigger_record_timeout_ms" type="u32" val="2858"/>
+ <attr name="maximum_open_trigger_records" type="u32" val="100"/>
+</obj>
+
+<obj class="TRBModule" id="trb-01">
+ <rel name="inputs">
+  <ref class="NetworkConnection" id="trigdec_0"/>
+ </rel>
+ <rel name="configuration" class="TRBConf" id="trb-01"/>
+ <rel name="trigger_record_output" class="NetworkConnection" id="trigrec"/>
 </obj>
 
 <obj class="Variable" id="CMD_FAC">

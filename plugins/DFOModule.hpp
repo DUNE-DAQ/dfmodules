@@ -27,10 +27,10 @@
 
 #include <map>
 #include <memory>
+#include <mutex>
 #include <string>
 #include <utility>
 #include <vector>
-#include <mutex>
 
 namespace dunedaq {
 
@@ -45,9 +45,9 @@ ERS_DECLARE_ISSUE(dfmodules,
                   ((std::string)connection_name))
 ERS_DECLARE_ISSUE(dfmodules,
                   DFOModuleRunNumberMismatch,
-                  "DFOModule encountered run number mismatch: recvd ("
-                    << received_run_number << ") != " << run_number << " from " << src_app << " for trigger_number "
-                    << trig_num,
+                  "DFOModule encountered run number mismatch: recvd (" << received_run_number << ") != " << run_number
+                                                                       << " from " << src_app << " for trigger_number "
+                                                                       << trig_num,
                   ((uint32_t)received_run_number)((uint32_t)run_number)((std::string)src_app)(
                     (uint32_t)trig_num)) // NOLINT(build/unsigned)
 ERS_DECLARE_ISSUE(dfmodules,
@@ -80,23 +80,12 @@ public:
    */
   explicit DFOModule(const std::string& name);
 
-  DFOModule(const DFOModule&) = delete; ///< DFOModule is not copy-constructible
-  DFOModule& operator=(const DFOModule&) =
-    delete;                                                         ///< DFOModule is not copy-assignable
-  DFOModule(DFOModule&&) = delete;            ///< DFOModule is not move-constructible
-  DFOModule& operator=(DFOModule&&) = delete; ///< DFOModule is not move-assignable
+  DFOModule(const DFOModule&) = delete;            ///< DFOModule is not copy-constructible
+  DFOModule& operator=(const DFOModule&) = delete; ///< DFOModule is not copy-assignable
+  DFOModule(DFOModule&&) = delete;                 ///< DFOModule is not move-constructible
+  DFOModule& operator=(DFOModule&&) = delete;      ///< DFOModule is not move-assignable
 
   void init(std::shared_ptr<appfwk::ConfigurationManager> mcfg) override;
-
-protected:
-  virtual std::shared_ptr<AssignedTriggerDecision> find_slot(const dfmessages::TriggerDecision& decision);
-  // find_slot operates on a round-robin logic
-
-  using trbd_ptr_t = std::shared_ptr<TriggerRecordBuilderData>;
-  using data_structure_t = std::map<std::string, trbd_ptr_t>;
-  data_structure_t m_dataflow_availability;
-  data_structure_t::iterator m_last_assignement_it;
-  std::function<void(nlohmann::json&)> m_metadata_function;
 
 private:
   // Commands
@@ -107,14 +96,6 @@ private:
 
   void generate_opmon_data() override;
 
-  virtual void receive_trigger_complete_token(const dfmessages::TriggerDecisionToken&);
-  void receive_trigger_decision(const dfmessages::TriggerDecision&);
-  virtual bool is_busy() const;
-  bool is_empty() const;
-  size_t used_slots() const;
-  void notify_trigger_if_needed() const;
-  bool dispatch(const std::shared_ptr<AssignedTriggerDecision>& assignment);
-  virtual void assign_trigger_decision(const std::shared_ptr<AssignedTriggerDecision>& assignment);
 
   // Configuration
   const appmodel::DFOConf* m_dfo_conf;
@@ -124,56 +105,89 @@ private:
 
   // Connections
   std::shared_ptr<iomanager::SenderConcept<dfmessages::TriggerInhibit>> m_busy_sender;
-  std::string m_token_connection;
+  std::shared_ptr<iomanager::ReceiverConcept<dfmessages::DataflowStatus>> m_dataflow_status_receiver; // pub/sub
   std::string m_td_connection;
   size_t m_td_send_retries;
-  size_t m_busy_threshold;
-  size_t m_free_threshold;
-  std::vector<std::string> m_trb_conn_ids;
+
+  void receive_dataflow_status(const dfmessages::DataflowStatus&);
+  void receive_trigger_decision(const dfmessages::TriggerDecision&);
+  void notify_trigger_if_needed() const;
 
   // Coordination
+  struct ReceivedDataflowStatus
+  {
+    dfmessages::DataflowStatus status;
+    std::chrono::steady_clock::time_point received_time;
+    std::mutex status_update_mutex;
+    std::condition_variable status_update_cv;
+    std::shared_ptr<std::jthread> timeout_thread;
+    void dataflow_status_timeout_proc();
+
+    ReceivedDataflowStatus(dfmessages::DataflowStatus s)
+      : status(s)
+      , received_time(std::chrono::steady_clock::now())
+      , timeout_thread(std::make_shared<std::jthread>(std::bind(&ReceivedDataflowStatus::dataflow_status_timeout_proc), this)
+    {
+    }
+  };
+  struct AssignedTriggerDecision
+  {
+    dfmessages::TriggerDecision decision;
+    std::chrono::steady_clock::time_point assigned_time;
+    std::string connection_name;
+    AssignedTriggerDecision(dfmessages::TriggerDecision dec, std::string conn_name)
+      : decision(dec)
+      , assigned_time(std::chrono::steady_clock::now())
+      , connection_name(conn_name)
+    {
+    }
+  };
+  std::unordered_map<std::string, ReceivedDataflowStatus> m_dataflow_statuses;
+  std::unordered_map<dfmessages::trigger_number_t, AssignedTriggerDecision> m_assigned_trigger_decisions;
+
   std::atomic<bool> m_running_status{ false };
   mutable std::atomic<bool> m_last_notified_busy{ false };
-  std::chrono::steady_clock::time_point m_last_token_received;
   std::chrono::steady_clock::time_point m_last_td_received;
   mutable std::mutex m_notify_trigger_mutex;
 
   // Struct for statistic
-  struct TriggerData {
-    std::atomic<uint64_t> received{0};
-    std::atomic<uint64_t> completed{0};
+  struct TriggerData
+  {
+    std::atomic<uint64_t> received{ 0 };
+    std::atomic<uint64_t> completed{ 0 };
   };
-  static std::set<trgdataformats::TriggerCandidateData::Type>
-  unpack_types( decltype(dfmessages::TriggerDecision::trigger_type) t) {
+  static std::set<trgdataformats::TriggerCandidateData::Type> unpack_types(
+    decltype(dfmessages::TriggerDecision::trigger_type) t)
+  {
     std::set<trgdataformats::TriggerCandidateData::Type> results;
     if (t == dfmessages::TypeDefaults::s_invalid_trigger_type)
       return results;
     const std::bitset<64> bits(t);
-    for( size_t i = 0; i < bits.size(); ++i ) {
-      if ( bits[i] ) results.insert((trgdataformats::TriggerCandidateData::Type)i);
+    for (size_t i = 0; i < bits.size(); ++i) {
+      if (bits[i])
+        results.insert((trgdataformats::TriggerCandidateData::Type)i);
     }
     return results;
   }
-  
+
   // Statistics
-  std::atomic<uint64_t> m_received_tokens{ 0 };      // NOLINT (build/unsigned)
+  std::atomic<uint64_t> m_received_statuses{ 0 };      // NOLINT (build/unsigned)
   std::atomic<uint64_t> m_sent_decisions{ 0 };       // NOLINT (build/unsigned)
   std::atomic<uint64_t> m_received_decisions{ 0 };   // NOLINT (build/unsigned)
   std::atomic<uint64_t> m_waiting_for_decision{ 0 }; // NOLINT (build/unsigned)
   std::atomic<uint64_t> m_deciding_destination{ 0 }; // NOLINT (build/unsigned)
   std::atomic<uint64_t> m_forwarding_decision{ 0 };  // NOLINT (build/unsigned)
-  std::atomic<uint64_t> m_waiting_for_token{ 0 };    // NOLINT (build/unsigned)
-  std::atomic<uint64_t> m_processing_token{ 0 };     // NOLINT (build/unsigned)
   std::map<dunedaq::trgdataformats::TriggerCandidateData::Type, TriggerData> m_trigger_counters;
-  std::mutex m_trigger_counters_mutex;  // used to safely handle the map above
-  TriggerData & get_trigger_counter(trgdataformats::TriggerCandidateData::Type type) {
+  std::mutex m_trigger_counters_mutex; // used to safely handle the map above
+  TriggerData& get_trigger_counter(trgdataformats::TriggerCandidateData::Type type)
+  {
     auto it = m_trigger_counters.find(type);
-    if (it != m_trigger_counters.end()) return it->second;
-    
+    if (it != m_trigger_counters.end())
+      return it->second;
+
     std::lock_guard<std::mutex> guard(m_trigger_counters_mutex);
     return m_trigger_counters[type];
   }
-  
 };
 } // namespace dfmodules
 } // namespace dunedaq

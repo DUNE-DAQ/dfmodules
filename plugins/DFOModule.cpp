@@ -93,7 +93,7 @@ DFOModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcfg)
   }
   if (m_busy_sender == nullptr) {
     throw appfwk::MissingConnection(ERS_HERE, get_name(), datatype_to_string<dfmessages::TriggerInhibit>(), "output");
-  
+
   }
 
   m_dfo_conf = mdal->get_configuration();
@@ -196,7 +196,7 @@ DFOModule::do_stop(const CommandData_t& /*args*/)
 
   std::lock_guard<std::mutex> guard(m_trigger_counters_mutex);
   m_trigger_counters.clear();
-  
+
   TLOG() << get_name() << " successfully stopped";
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_stop() method";
 }
@@ -230,7 +230,7 @@ DFOModule::receive_trigger_decision(const dfmessages::TriggerDecision& decision)
   for ( const auto t : trigger_types ) {
     ++get_trigger_counter(t).received;
   }
-  
+
   std::chrono::steady_clock::time_point decision_assigned;
   do {
 
@@ -340,7 +340,7 @@ DFOModule::find_slot(const dfmessages::TriggerDecision& decision)
 }
 
 void
-DFOModule::generate_opmon_data() 
+DFOModule::generate_opmon_data()
 {
 
   opmon::DFOInfo info;
@@ -362,67 +362,6 @@ DFOModule::generate_opmon_data()
     auto name = dunedaq::trgdataformats::get_trigger_candidate_type_names()[type];
     publish( std::move(ti), {{"type", name}} );
    }
-}
-
-void
-DFOModule::receive_trigger_complete_token(const dfmessages::TriggerDecisionToken& token)
-{
-  if (token.run_number == 0 && token.trigger_number == 0) {
-    if (m_dataflow_availability.count(token.decision_destination) == 0) {
-      TLOG_DEBUG(TLVL_CONFIG) << "Creating dataflow availability struct for uid " << token.decision_destination;
-      auto entry = m_dataflow_availability[token.decision_destination] =
-        std::make_shared<TriggerRecordBuilderData>(token.decision_destination, m_busy_threshold, m_free_threshold);
-      register_node(token.decision_destination, entry);
-    } else {
-      TLOG() << TRBModuleAppUpdate(ERS_HERE, token.decision_destination, "Has reconnected");
-      auto app_it = m_dataflow_availability.find(token.decision_destination);
-      app_it->second->set_in_error(false);
-    }
-    return;
-  }
-
-  TLOG_DEBUG(TLVL_TDTOKEN_RECEIVED) << get_name() << " Received TriggerDecisionToken for trigger_number "
-                                    << token.trigger_number << " and run " << token.run_number
-                                    << " (current run is " << m_run_number << ")";
-  // add a check to see if the application data found
-  if (token.run_number != m_run_number) {
-    std::ostringstream oss_source;
-    oss_source << "TRB at connection " << token.decision_destination;
-    ers::error(DFOModuleRunNumberMismatch(
-      ERS_HERE, token.run_number, m_run_number, oss_source.str(), token.trigger_number));
-    return;
-  }
-
-  auto app_it = m_dataflow_availability.find(token.decision_destination);
-  // check if application data exists;
-  if (app_it == m_dataflow_availability.end()) {
-    ers::error(UnknownTokenSource(ERS_HERE, token.decision_destination));
-    return;
-  }
-
-  ++m_received_tokens;
-  auto callback_start = std::chrono::steady_clock::now();
-
-  try {
-    auto dec_ptr = app_it->second->complete_assignment(token.trigger_number, m_metadata_function);
-    auto trigger_types = unpack_types(dec_ptr->decision.trigger_type);
-    for ( const auto t : trigger_types ) ++ get_trigger_counter(t).completed;
-  } catch (AssignedTriggerDecisionNotFound const& err) {
-    ers::error(err);
-  }
-
-  if (app_it->second->is_in_error()) {
-    TLOG() << TRBModuleAppUpdate(ERS_HERE, token.decision_destination, "Has reconnected");
-    app_it->second->set_in_error(false);
-  }
-
-  notify_trigger_if_needed();
-
-  m_waiting_for_token +=
-    std::chrono::duration_cast<std::chrono::microseconds>(callback_start - m_last_token_received).count();
-  m_last_token_received = std::chrono::steady_clock::now();
-  m_processing_token +=
-    std::chrono::duration_cast<std::chrono::microseconds>(m_last_token_received - callback_start).count();
 }
 
 bool

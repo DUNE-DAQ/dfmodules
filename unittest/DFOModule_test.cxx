@@ -66,31 +66,6 @@ struct CfgFixture
 BOOST_FIXTURE_TEST_SUITE(DFOModule_test, CfgFixture)
 
 void
-send_init_token(std::string connection_name = "trigdec_0")
-{
-  dfmessages::TriggerDecisionToken token;
-  token.run_number = 0;
-  token.trigger_number = 0;
-  token.decision_destination = connection_name;
-
-  TLOG() << "Sending Init TriggerDecisionToken to DFO";
-  get_iom_sender<dfmessages::TriggerDecisionToken>("token")->send(std::move(token), iomanager::Sender::s_block);
-}
-void
-send_token(dfmessages::trigger_number_t trigger_number,
-           std::string connection_name = "trigdec_0",
-           bool different_run = false)
-{
-  dfmessages::TriggerDecisionToken token;
-  token.run_number = different_run ? 2 : 1;
-  token.trigger_number = trigger_number;
-  token.decision_destination = connection_name;
-
-  TLOG() << "Sending TriggerDecisionToken with trigger number " << trigger_number << " to DFO";
-  get_iom_sender<dfmessages::TriggerDecisionToken>("token")->send(std::move(token), iomanager::Sender::s_block);
-}
-
-void
 recv_trigdec(const dfmessages::TriggerDecision& decision)
 {
   TLOG() << "Received TriggerDecision with trigger number " << decision.trigger_number << " from DFO";
@@ -104,6 +79,11 @@ recv_triginh(const dfmessages::TriggerInhibit& inhibit)
 {
   TLOG() << "Received TriggerInhibit with busy=" << std::boolalpha << inhibit.busy << " from DFO";
   busy_signal_recvd = inhibit.busy;
+}
+
+void
+send_status(dfmessages::trigger_number_t trigger_number = 0)
+{
 }
 
 void

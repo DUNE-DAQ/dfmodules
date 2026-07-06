@@ -136,9 +136,11 @@ DataflowStatusModule::do_conf(const CommandData_t&)
   m_heartbeat_interval = std::chrono::milliseconds(m_conf->get_heartbeat_interval_ms());
   m_stop_timeout = std::chrono::milliseconds(m_conf->get_stop_timeout_ms());
   m_td_queue_timeout = std::chrono::milliseconds(m_conf->get_td_queue_timeout_ms());
+  m_snapshot_history_size = m_conf->get_snapshot_history_size();
+  m_completed_trigger_history_size = m_conf->get_completed_trigger_history_size();
+
   m_current_status.busy_threshold = m_conf->get_busy_threshold();
   m_current_status.free_threshold = m_conf->get_free_threshold();
-
   m_current_status.trigger_type_mask = static_cast<dfmessages::trigger_type_t>(m_conf->get_trigger_type_mask());
 
   auto iom = iomanager::IOManager::get();
@@ -352,6 +354,10 @@ DataflowStatusModule::receive_trigger_decision_token(const dfmessages::TriggerDe
 
     m_current_status.triggers_building.erase(token.trigger_number);
     m_current_status.triggers_writing.erase(token.trigger_number);
+    m_current_status.recently_completed_triggers.insert(token.trigger_number);
+    while (m_current_status.recently_completed_triggers.size() > m_completed_trigger_history_size) {
+      m_current_status.recently_completed_triggers.erase(m_current_status.recently_completed_triggers.begin());
+    }
 
     m_current_status.trigger_records_processed++;
     m_current_status.data_size_written += token.data_size;
