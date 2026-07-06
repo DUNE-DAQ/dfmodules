@@ -124,7 +124,7 @@ public:
     , m_writer_identifier {writer_name}
     , m_config_params { mcfg ? mcfg->get_dal<DataStoreConf>(name) : nullptr }
     , m_session { mcfg ? mcfg->get_session() : nullptr }
-    , m_compression_level { m_config_params ? m_config_params->get_compression_level() : 0 }
+    , m_compression_level { m_config_params ? m_config_params->get_compression_level() : static_cast<unsigned>(0) }
     , m_open_flags_of_open_file {0}
     , m_operational_environment { m_session ? m_session->get_detector_configuration()->get_op_env() : "unavailable" }
     , m_offline_data_stream { m_session ? m_session->get_detector_configuration()->get_offline_data_stream() : "unavailable" }
@@ -169,6 +169,53 @@ public:
   }
 
   virtual void open_new_file(const std::string& unique_filename) = 0;
+
+  // Getter functions which can be used by the implementation of open_new_file
+
+  std::string get_application_name() const noexcept {
+     return m_writer_identifier;
+  }
+
+  unsigned get_compression_level() const noexcept {
+    return m_compression_level;
+  }
+
+  const DataStoreConf& get_configuration() const noexcept {
+    return *m_config_params;
+  }
+
+  auto& get_file_handle() {
+    return m_file_handle;
+  }
+
+  size_t get_file_index() const noexcept {
+    return m_file_index.load();
+  }
+
+  const std::string& get_offline_data_stream() const noexcept {
+    return m_offline_data_stream;
+  }
+  
+  unsigned get_open_flags() const noexcept {
+    return m_open_flags_of_open_file;
+  }
+
+  const std::string& get_operational_environment() const noexcept {
+    return m_operational_environment;
+  }
+
+  bool get_run_is_for_test_purposes() const noexcept {
+    return m_run_is_for_test_purposes;
+  }
+
+  daqdataformats::run_number_t get_run_number() const noexcept {
+    return m_run_number;
+  }
+
+  const confmodel::Session& get_session() const noexcept {
+    return *m_session;
+  }
+
 
   void throw_if_insufficient_space_for_object(size_t obj_size, const std::string& obj_name) {
 
@@ -361,6 +408,7 @@ protected:
     publish(std::move(info), { { "path", m_path } });
   }
 
+private:
   std::unique_ptr<FileHandleClass> m_file_handle;
 
   daqdataformats::run_number_t m_run_number;
@@ -373,7 +421,7 @@ protected:
 
   const confmodel::Session* m_session;
 
-  unsigned m_compression_level;
+  unsigned m_compression_level; 
 
   unsigned m_open_flags_of_open_file;
 
@@ -383,8 +431,6 @@ protected:
 
   std::string m_basic_name_of_open_file;
   
-private:
-
   // Size of data being written, excluding metadata
   std::atomic<size_t> m_recorded_size;
 

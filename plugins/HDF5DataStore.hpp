@@ -32,17 +32,18 @@ namespace dunedaq::dfmodules {
 
   inline void HDF5DataStore::open_new_file(const std::string& unique_filename) {
 
+    auto& file_handle {get_file_handle()};
     try {
-      m_file_handle.reset(
-			  new hdf5libs::HDF5RawDataFile(unique_filename,
-                                        m_run_number,
-                                        m_file_index,
-                                        m_writer_identifier,
-                                        m_config_params->get_file_layout_params(),
-                                        hdf5libs::HDF5SourceIDHandler::make_source_id_geo_id_map(m_session),
-                                        m_compression_level,
+      file_handle.reset(
+			      new hdf5libs::HDF5RawDataFile(unique_filename,
+                                        get_run_number(),
+                                        get_file_index(),
+							    get_application_name(),
+							    get_configuration().get_file_layout_params(),
+							    hdf5libs::HDF5SourceIDHandler::make_source_id_geo_id_map(get_session()),
+							    get_compression_level(),
                                         ".writing",
-                                        m_open_flags_of_open_file));
+							    get_open_flags()));
     } catch (std::exception const& excpt) {
         throw FileOperationProblem(ERS_HERE, get_name(), unique_filename, excpt);
     } catch (...) { // NOLINT(runtime/exceptions)                                                                                             
@@ -50,16 +51,15 @@ namespace dunedaq::dfmodules {
         throw FileOperationProblem(ERS_HERE, get_name(), unique_filename);
     }
 
-    if (m_open_flags_of_open_file == HighFive::File::ReadOnly) {
+    if (get_open_flags() == HighFive::File::ReadOnly) {
       TLOG_DEBUG(TLVL_BASIC) << get_name() << "Opened HDF5 file read-only.";
     } else {
       TLOG_DEBUG(TLVL_BASIC) << get_name() << "Created HDF5 file (" << unique_filename << ").";
 
       // write attributes that aren't being handled by the HDF5RawDataFile right now                                                          
-      // m_file_handle->write_attribute("data_format_version",(int)m_key_translator_ptr->get_current_version());                              
-      m_file_handle->write_attribute("operational_environment", (std::string)m_operational_environment);
-      m_file_handle->write_attribute("offline_data_stream", (std::string)m_offline_data_stream);
-      m_file_handle->write_attribute("run_was_for_test_purposes", (std::string)(m_run_is_for_test_purposes ? "true" : "false"));
+      file_handle->write_attribute("operational_environment", (std::string)get_operational_environment());
+      file_handle->write_attribute("offline_data_stream", (std::string)get_offline_data_stream());
+      file_handle->write_attribute("run_was_for_test_purposes", (std::string)(get_run_is_for_test_purposes() ? "true" : "false"));
     }
   }
   
