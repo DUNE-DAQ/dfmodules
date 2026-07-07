@@ -29,6 +29,7 @@
 #include "boost/date_time/posix_time/posix_time.hpp"
 #include "boost/lexical_cast.hpp"
 
+#include <concepts>
 #include <cstdlib>
 #include <functional>
 #include <memory>
@@ -92,10 +93,25 @@ ERS_DECLARE_ISSUE_BASE(dfmodules,
 // Re-enable coverage checking LCOV_EXCL_STOP
 namespace dfmodules {
 
+template<typename T>
+concept FileHandleConcept = requires(T file_handle,
+                                     const T const_file_handle,
+                                     const daqdataformats::TriggerRecord& tr,
+                                     const daqdataformats::TimeSlice& ts)
+{
+  { file_handle.write(tr) } -> std::same_as<void>;
+  { file_handle.write(ts) } -> std::same_as<void>;
+  { file_handle.timeslice_already_exists(ts) } -> std::convertible_to<bool>;
+  { const_file_handle.get_file_name() } -> std::convertible_to<std::string>;
+  { const_file_handle.get_recorded_size() } -> std::convertible_to<size_t>;
+  { const_file_handle.get_uncompressed_raw_data_size() } -> std::convertible_to<size_t>;
+  { const_file_handle.get_total_file_size() } -> std::convertible_to<size_t>;
+};
+
 /**
  * @brief DataStoreImpl contains functionality you'd generally want in a data store irrespective of file type
  */
-  template <typename FileHandleClass, // E.g., hdf5libs::HDF5RawDataFile
+  template <FileHandleConcept FileHandleClass, // E.g., hdf5libs::HDF5RawDataFile
 	    typename DataStoreConf, // E.g., appmodel::DataStoreConf
 	    unsigned FileIOInfo> // E.g., HighFive::File::OpenOrCreate
 class DataStoreImpl : public DataStore
@@ -253,7 +269,6 @@ public:
 
     m_current_record_number = tr.get_header_ref().get_trigger_number();
 
-    // determine the filename from Storage Key + configuration parameters
     std::string full_filename = get_file_name(tr.get_header_ref().get_run_number());
 
     try {
@@ -292,7 +307,6 @@ public:
 
     m_current_record_number = ts.get_header().timeslice_number;
 
-    // determine the filename from Storage Key + configuration parameters
     std::string full_filename = get_file_name(ts.get_header().run_number);
 
     try {
@@ -458,8 +472,6 @@ private:
   const bool m_disable_unique_suffix;
   float m_free_space_safety_factor_for_write;
 
-
-  // std::unique_ptr<HDF5KeyTranslator> m_key_translator_ptr;
 
   /**
    * @brief Translates the specified input parameters into the appropriate filename.
