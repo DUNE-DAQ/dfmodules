@@ -38,8 +38,6 @@ daq_add_plugin( FakeDataProdModule          duneDAQModule LINK_LIBRARIES dfmodul
 daq_add_plugin( TPStreamWriterModule        duneDAQModule LINK_LIBRARIES dfmodules hdf5libs::hdf5libs trigger::trigger Boost::iostreams )
 
 ##############################################################################
-daq_add_unit_test( HDF5FileUtils_test       LINK_LIBRARIES dfmodules )
-
 daq_add_unit_test( HDF5Write_test           LINK_LIBRARIES dfmodules hdf5libs::hdf5libs )
 add_dependencies(  HDF5Write_test dfmodules_HDF5DataStore_duneDataStore )
 
