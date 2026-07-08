@@ -9,8 +9,9 @@
 
 #include "DFOModule.hpp"
 
-#include "dfmessages/TriggerDecisionToken.hpp"
 #include "dfmessages/TriggerInhibit.hpp"
+#include "dfmessages/DataflowStatus.hpp"
+#include "dfmessages/DataflowStatusRequest.hpp"
 #include "dfmodules/CommonIssues.hpp"
 #include "dfmodules/opmon/DFOModule.pb.h"
 #include "iomanager/IOManager.hpp"
@@ -65,12 +66,12 @@ struct CfgFixture
 
 BOOST_FIXTURE_TEST_SUITE(DFOModule_test, CfgFixture)
 
+std::vector<dfmessages::TriggerDecision> received_decisions;
 void
 recv_trigdec(const dfmessages::TriggerDecision& decision)
 {
   TLOG() << "Received TriggerDecision with trigger number " << decision.trigger_number << " from DFO";
-  std::this_thread::sleep_for(std::chrono::milliseconds(100));
-  send_token(decision.trigger_number);
+  received_decisions.push_back(decision);
 }
 
 std::atomic<bool> busy_signal_recvd = false;
@@ -81,9 +82,20 @@ recv_triginh(const dfmessages::TriggerInhibit& inhibit)
   busy_signal_recvd = inhibit.busy;
 }
 
+std::unordered_map<dfmessages::trigger_number_t, dfmessages::DataflowStatusRequest> received_status_requests;
 void
-send_status(dfmessages::trigger_number_t trigger_number = 0)
+recv_status_request(const dfmessages::DataflowStatusRequest& request)
 {
+  TLOG() << "Received DataflowStatusRequest with trigger number " << request.trigger_number << " from DFO";
+  received_status_requests[request.trigger_number] = request;
+}
+
+void
+send_status(dfmessages::DataflowStatus status)
+{
+  auto iom = iomanager::IOManager::get();
+  TLOG() << "Sending DataflowStatus with trigger number " << status.trigger_number;
+  iom->get_sender<dfmessages::DataflowStatus>("df_status")->send(std::move(status), iomanager::Sender::s_block);
 }
 
 void
@@ -135,14 +147,14 @@ BOOST_AUTO_TEST_CASE(Commands)
   dfo->execute_command("scrap", null_data);
 
   auto metric = get_dfo_info();
-  BOOST_REQUIRE_EQUAL(metric.tokens_received(), 0);
+  BOOST_REQUIRE_EQUAL(metric.statuses_received(), 0);
   BOOST_REQUIRE_EQUAL(metric.decisions_received(), 0);
   BOOST_REQUIRE_EQUAL(metric.decisions_sent(), 0);
   BOOST_REQUIRE_EQUAL(metric.forwarding_decision(), 0);
   BOOST_REQUIRE_EQUAL(metric.waiting_for_decision(), 0);
   BOOST_REQUIRE_EQUAL(metric.deciding_destination(), 0);
-  BOOST_REQUIRE_EQUAL(metric.waiting_for_token(), 0);
-  BOOST_REQUIRE_EQUAL(metric.processing_token(), 0);
+  BOOST_REQUIRE_EQUAL(metric.decisions_completed(), 0);
+  BOOST_REQUIRE_EQUAL(metric.pending_trigger_decisions(), 0);
 }
 
 BOOST_AUTO_TEST_CASE(DataFlow)
@@ -162,91 +174,121 @@ BOOST_AUTO_TEST_CASE(DataFlow)
   dec_recv->add_callback(recv_trigdec);
   auto inh_recv = iom->get_receiver<dfmessages::TriggerInhibit>("triginh");
   inh_recv->add_callback(recv_triginh);
+  auto req_recv = iom->get_receiver<dfmessages::DataflowStatusRequest>("df_status_request");
+  req_recv->add_callback(recv_status_request);
 
   send_trigdec(1, true);
-  std::this_thread::sleep_for(std::chrono::milliseconds(50));
-
-  send_token(999, "trigdec_0", true);
-  send_token(9999, "trigdec_0", true);
   std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
   // Note: Counters are reset by calling get_dfo_info!
   auto metric = get_dfo_info();
 
-  BOOST_REQUIRE_EQUAL(metric.tokens_received(), 0);
+  BOOST_REQUIRE_EQUAL(metric.statuses_received(), 0);
+  BOOST_REQUIRE_EQUAL(metric.decisions_received(), 0);
+  BOOST_REQUIRE_EQUAL(metric.decisions_sent(), 0);
+  BOOST_REQUIRE_EQUAL(metric.decisions_completed(), 0);
+  BOOST_REQUIRE_EQUAL(metric.pending_trigger_decisions(), 0);
 
   dfo->execute_command("start", start_data);
-  send_init_token();
-
   std::this_thread::sleep_for(std::chrono::milliseconds(150));
 
   metric = get_dfo_info();
-  BOOST_REQUIRE_EQUAL(metric.tokens_received(), 0);
+  BOOST_REQUIRE_EQUAL(metric.statuses_received(), 0);
   BOOST_REQUIRE_EQUAL(metric.decisions_received(), 0);
   BOOST_REQUIRE_EQUAL(metric.decisions_sent(), 0);
+  BOOST_REQUIRE_EQUAL(metric.decisions_completed(), 0);
+  BOOST_REQUIRE_EQUAL(metric.pending_trigger_decisions(), 0);
 
-  send_trigdec(2);
-  send_trigdec(3);
+  send_trigdec(1);
   std::this_thread::sleep_for(std::chrono::milliseconds(50));
-  send_trigdec(4);
+  BOOST_REQUIRE_EQUAL(busy_signal_recvd.load(), true);
 
   metric = get_dfo_info();
-  BOOST_REQUIRE_EQUAL(metric.tokens_received(), 0);
-  BOOST_REQUIRE_EQUAL(metric.decisions_received(), 2);
-  BOOST_REQUIRE_EQUAL(metric.decisions_sent(), 2);
-
-  BOOST_REQUIRE(busy_signal_recvd.load());
-  std::this_thread::sleep_for(std::chrono::milliseconds(400));
-
-  metric = get_dfo_info();
-  BOOST_REQUIRE_EQUAL(metric.tokens_received(), 3);
+  BOOST_REQUIRE_EQUAL(metric.statuses_received(), 0);
   BOOST_REQUIRE_EQUAL(metric.decisions_received(), 1);
-  BOOST_REQUIRE_EQUAL(metric.decisions_sent(), 1);
-  BOOST_REQUIRE(!busy_signal_recvd.load());
+  BOOST_REQUIRE_EQUAL(metric.decisions_sent(), 0);
+  BOOST_REQUIRE_EQUAL(metric.decisions_completed(), 0);
+  BOOST_REQUIRE_EQUAL(metric.pending_trigger_decisions(), 0);
 
+  dfmessages::DataflowStatus status;
+  status.decision_destination = "trigdec_0";
+  status.request_destination = "df_status_request";
+  status.trigger_number = 0;
+  status.run_number = 1;
+
+  status.trigger_type_mask = 0xFFFFFFFF;
+  status.is_busy = false;
+  status.busy_threshold = 1;
+  status.free_threshold = 0;
+
+  send_status(status);
+  std::this_thread::sleep_for(std::chrono::milliseconds(50));
+  BOOST_REQUIRE_EQUAL(busy_signal_recvd.load(), true);
+
+  metric = get_dfo_info();
+  BOOST_REQUIRE_EQUAL(metric.statuses_received(), 1);
+  BOOST_REQUIRE_EQUAL(metric.decisions_received(), 0);
+  BOOST_REQUIRE_EQUAL(metric.decisions_sent(), 0);
+  BOOST_REQUIRE_EQUAL(metric.decisions_completed(), 0);
+  BOOST_REQUIRE_EQUAL(metric.pending_trigger_decisions(), 0);
+
+  BOOST_REQUIRE_EQUAL(received_status_requests.size(), 1);
+  BOOST_REQUIRE(received_status_requests.find(1) != received_status_requests.end());
+  BOOST_REQUIRE_EQUAL(received_status_requests[1].reply_destination, "df_status");
+
+  status.trigger_number = 1;
+  send_status(status);
+  BOOST_REQUIRE_EQUAL(busy_signal_recvd.load(), true);
+  std::this_thread::sleep_for(std::chrono::milliseconds(150));
+  BOOST_REQUIRE_EQUAL(busy_signal_recvd.load(), false);
+
+  metric = get_dfo_info();
+  BOOST_REQUIRE_EQUAL(metric.statuses_received(), 1);
+  BOOST_REQUIRE_EQUAL(metric.decisions_received(), 0);
+  BOOST_REQUIRE_EQUAL(metric.decisions_sent(), 1);
+  BOOST_REQUIRE_EQUAL(metric.decisions_completed(), 0);
+  BOOST_REQUIRE_EQUAL(metric.pending_trigger_decisions(), 1);
+
+  BOOST_REQUIRE_EQUAL(received_decisions.size(), 1);
+  BOOST_REQUIRE_EQUAL(received_decisions[0].trigger_number, 1);
+  status.trigger_number = 0;
+  status.triggers_building.insert(1);
+  status.is_busy = true;
+  received_decisions.clear();
+
+  send_status(status);
+  std::this_thread::sleep_for(std::chrono::milliseconds(50));
+  BOOST_REQUIRE_EQUAL(busy_signal_recvd.load(), true);
+
+  metric = get_dfo_info();
+  BOOST_REQUIRE_EQUAL(metric.statuses_received(), 1);
+  BOOST_REQUIRE_EQUAL(metric.decisions_received(), 0);
+  BOOST_REQUIRE_EQUAL(metric.decisions_sent(), 0);
+  BOOST_REQUIRE_EQUAL(metric.decisions_completed(), 0);
+  BOOST_REQUIRE_EQUAL(metric.pending_trigger_decisions(), 1);
+
+  status.triggers_building.clear();
+  status.recently_completed_triggers.insert(1);
+  status.is_busy = false;
+  send_status(status);
+  std::this_thread::sleep_for(std::chrono::milliseconds(50));
+  BOOST_REQUIRE_EQUAL(busy_signal_recvd.load(), false);
+
+  metric = get_dfo_info();
+  BOOST_REQUIRE_EQUAL(metric.statuses_received(), 1);
+  BOOST_REQUIRE_EQUAL(metric.decisions_received(), 0);
+  BOOST_REQUIRE_EQUAL(metric.decisions_sent(), 0);
+  BOOST_REQUIRE_EQUAL(metric.decisions_completed(), 1);
+  BOOST_REQUIRE_EQUAL(metric.pending_trigger_decisions(), 0);
+
+  auto start_time = std::chrono::steady_clock::now();
   dfo->execute_command("drain_dataflow", null_data);
   dfo->execute_command("scrap", null_data);
+  BOOST_REQUIRE(std::chrono::steady_clock::now() - start_time < std::chrono::milliseconds(100));
 
   dec_recv->remove_callback();
   inh_recv->remove_callback();
-}
-
-BOOST_AUTO_TEST_CASE(SendTrigDecFailed)
-{
-  auto dfo = appfwk::make_module("DFOModule", "test");
-  opmgr.register_node("dfo", dfo);
-  dfo->init(cfgMgr);
-
-  appfwk::DAQModule::CommandData_t null_data;
-  appfwk::DAQModule::CommandData_t start_data;
-  start_data.emplace("run", 1);
-
-  dfo->execute_command("conf", null_data);
-
-  dfo->execute_command("start", start_data);
-
-  send_init_token("invalid_connection");
-
-  std::this_thread::sleep_for(std::chrono::milliseconds(50));
-
-  send_trigdec(1);
-  std::this_thread::sleep_for(std::chrono::milliseconds(150));
-
-  auto info = get_dfo_info();
-  BOOST_REQUIRE_EQUAL(info.tokens_received(), 0);
-  BOOST_REQUIRE_EQUAL(info.decisions_received(), 1);
-  BOOST_REQUIRE_EQUAL(info.decisions_sent(), 0);
-
-  // FWIW, tell the DFO to retry the invalid connection
-  send_token(1000, "invalid_connection");
-  std::this_thread::sleep_for(std::chrono::milliseconds(50));
-
-  // Token for unknown dataflow app
-  send_token(1000);
-  std::this_thread::sleep_for(std::chrono::milliseconds(50));
-
-  dfo->execute_command("drain_dataflow", null_data);
-  dfo->execute_command("scrap", null_data);
+  req_recv->remove_callback();
 }
 
 BOOST_AUTO_TEST_SUITE_END()

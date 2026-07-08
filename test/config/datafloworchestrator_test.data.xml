@@ -63,7 +63,7 @@
 
 <oks-data>
 
-<info name="" type="" num-of-items="70" oks-format="data" oks-version="862f2957270" created-by="gjc" created-on="thinkpad" creation-time="20231116T105446" last-modified-by="eflumerf" last-modified-on="ironvirt9.mshome.net" last-modification-time="20260630T155755"/>
+<info name="" type="" num-of-items="72" oks-format="data" oks-version="862f2957270" created-by="gjc" created-on="thinkpad" creation-time="20231116T105446" last-modified-by="eflumerf" last-modified-on="ironvirt9.mshome.net" last-modification-time="20260707T174122"/>
 
 <include>
  <file path="schema/confmodel/dunedaq.schema.xml"/>
@@ -88,18 +88,19 @@
  <attr name="general_queue_timeout_ms" type="u32" val="100"/>
  <attr name="stop_timeout_ms" type="u32" val="100"/>
  <attr name="td_send_retries" type="s32" val="5"/>
- <attr name="busy_threshold" type="s32" val="2"/>
- <attr name="free_threshold" type="s32" val="1"/>
+ <attr name="busy_threshold" type="s32" val="10"/>
+ <attr name="free_threshold" type="s32" val="5"/>
 </obj>
 
 <obj class="DFOModule" id="test">
  <rel name="inputs">
-  <ref class="NetworkConnection" id="token"/>
+  <ref class="NetworkConnection" id="df_status"/>
   <ref class="NetworkConnection" id="trigdec"/>
  </rel>
  <rel name="outputs">
   <ref class="NetworkConnection" id="triginh"/>
   <ref class="NetworkConnection" id="trigdec_0"/>
+  <ref class="NetworkConnection" id="df_status_request"/>
  </rel>
  <rel name="configuration" class="DFOConf" id="test"/>
 </obj>
@@ -306,12 +307,21 @@
  </attr>
 </obj>
 
-<obj class="NetworkConnection" id="token">
- <attr name="data_type" type="string" val="TriggerDecisionToken"/>
+<obj class="NetworkConnection" id="df_status">
+ <attr name="data_type" type="string" val="DataflowStatus"/>
+ <attr name="capacity" type="u32" val="1"/>
  <attr name="send_timeout_ms" type="u32" val="10"/>
  <attr name="recv_timeout_ms" type="u32" val="10"/>
  <attr name="connection_type" type="enum" val="kSendRecv"/>
- <rel name="associated_service" class="Service" id="token"/>
+ <rel name="associated_service" class="Service" id="df_status"/>
+</obj>
+
+<obj class="NetworkConnection" id="df_status_request">
+ <attr name="data_type" type="string" val="DataflowStatusRequest"/>
+ <attr name="send_timeout_ms" type="u32" val="10"/>
+ <attr name="recv_timeout_ms" type="u32" val="10"/>
+ <attr name="connection_type" type="enum" val="kSendRecv"/>
+ <rel name="associated_service" class="Service" id="df_status_request"/>
 </obj>
 
 <obj class="NetworkConnection" id="trigdec">
@@ -403,27 +413,33 @@
  <rel name="controller" class="RCApplication" id="my-controller"/>
 </obj>
 
-<obj class="Service" id="token">
+<obj class="Service" id="df_status">
  <attr name="protocol" type="string" val="tcp"/>
  <attr name="port" type="u16" val="5050"/>
  <attr name="eth_device_name" type="string" val="lo"/>
 </obj>
 
-<obj class="Service" id="trigdec">
+<obj class="Service" id="df_status_request">
  <attr name="protocol" type="string" val="tcp"/>
  <attr name="port" type="u16" val="5051"/>
  <attr name="eth_device_name" type="string" val="lo"/>
 </obj>
 
-<obj class="Service" id="trigdec_0">
+<obj class="Service" id="trigdec">
  <attr name="protocol" type="string" val="tcp"/>
  <attr name="port" type="u16" val="5052"/>
  <attr name="eth_device_name" type="string" val="lo"/>
 </obj>
 
-<obj class="Service" id="triginh">
+<obj class="Service" id="trigdec_0">
  <attr name="protocol" type="string" val="tcp"/>
  <attr name="port" type="u16" val="5053"/>
+ <attr name="eth_device_name" type="string" val="lo"/>
+</obj>
+
+<obj class="Service" id="triginh">
+ <attr name="protocol" type="string" val="tcp"/>
+ <attr name="port" type="u16" val="5054"/>
  <attr name="eth_device_name" type="string" val="lo"/>
 </obj>
 
