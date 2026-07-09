@@ -63,7 +63,7 @@
 
 <oks-data>
 
-<info name="" type="" num-of-items="65" oks-format="data" oks-version="862f2957270" created-by="gjc" created-on="thinkpad" creation-time="20231116T105446" last-modified-by="eflumerf" last-modified-on="ironvirt9.mshome.net" last-modification-time="20260630T155850"/>
+<info name="" type="" num-of-items="65" oks-format="data" oks-version="862f2957270" created-by="gjc" created-on="thinkpad" creation-time="20231116T105446" last-modified-by="eflumerf" last-modified-on="ironvirt9.mshome.net" last-modification-time="20260709T134840"/>
 
 <include>
  <file path="schema/confmodel/dunedaq.schema.xml"/>
@@ -114,6 +114,8 @@
  <attr name="heartbeat_interval_ms" type="u32" val="100"/>
  <attr name="stop_timeout_ms" type="u32" val="1000"/>
  <attr name="td_queue_timeout_ms" type="u32" val="1000"/>
+ <attr name="snapshot_history_size" type="u32" val="100"/>
+ <attr name="completed_trigger_history_size" type="u32" val="100"/>
 </obj>
 
 <obj class="DetectorConfig" id="dummy-detector">
