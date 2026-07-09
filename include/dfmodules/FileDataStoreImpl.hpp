@@ -1,11 +1,17 @@
 /**
  * @file FileDataStoreImpl.hpp
  *
- * An near-complete implementation of the DataStore interface which
+ *
+ * An near-complete file output focused implementation of the DataStore interface which
  * nonetheless templatizes the representation of the data file (e.g.,
  * hdf5, Root, text, etc.) and leaves a few implementation
  * details (e.g., the physical closing and reopening of data files)
  * to a derived class.
+ *
+ * To create a full implementation of DataStore, perform the following steps:
+ * -X
+ * -Y
+ * -Z
  *
  * This is part of the DUNE DAQ Application Framework, copyright 2020.
  * Licensing/copyright details are in the COPYING file that you should have
@@ -112,8 +118,7 @@ concept FileHandleConcept = requires(T file_handle,
  * @brief FileDataStoreImpl contains functionality you'd generally want in a data store irrespective of file type
  */
   template <FileHandleConcept FileHandleClass, // E.g., hdf5libs::HDF5RawDataFile
-	    typename DataStoreConf, // E.g., appmodel::DataStoreConf
-	    unsigned FileIOInfo> // E.g., HighFive::File::OpenOrCreate
+	    typename DataStoreConf> // E.g., appmodel::DataStoreConf
 class FileDataStoreImpl : public DataStore
 {
 
@@ -141,7 +146,6 @@ public:
     , m_config_params { mcfg ? mcfg->get_dal<DataStoreConf>(name) : nullptr }
     , m_session { mcfg ? mcfg->get_session() : nullptr }
     , m_compression_level { m_config_params ? m_config_params->get_compression_level() : static_cast<unsigned>(0) }
-    , m_open_flags_of_open_file {0}
     , m_operational_environment { m_session ? m_session->get_detector_configuration()->get_op_env() : "unavailable" }
     , m_offline_data_stream { m_session ? m_session->get_detector_configuration()->get_offline_data_stream() : "unavailable" }
     , m_run_is_for_test_purposes { false }
@@ -211,10 +215,6 @@ public:
   const std::string& get_offline_data_stream() const noexcept {
     return m_offline_data_stream;
   }
-  
-  unsigned get_open_flags() const noexcept {
-    return m_open_flags_of_open_file;
-  }
 
   const std::string& get_operational_environment() const noexcept {
     return m_operational_environment;
@@ -272,7 +272,7 @@ public:
     std::string full_filename = get_file_name(tr.get_header_ref().get_run_number());
 
     try {
-      open_file_if_needed(full_filename, FileIOInfo);
+      open_file_if_needed(full_filename);
     } catch (std::exception const& excpt) {
       throw FileOperationProblem(ERS_HERE, get_name(), full_filename, excpt);
     } catch (...) { // NOLINT(runtime/exceptions)
@@ -310,7 +310,7 @@ public:
     std::string full_filename = get_file_name(ts.get_header().run_number);
 
     try {
-      open_file_if_needed(full_filename, FileIOInfo);
+      open_file_if_needed(full_filename);
     } catch (std::exception const& excpt) {
       throw FileOperationProblem(ERS_HERE, get_name(), full_filename, excpt);
     } catch (...) { // NOLINT(runtime/exceptions)
@@ -437,8 +437,6 @@ private:
 
   unsigned m_compression_level; 
 
-  unsigned m_open_flags_of_open_file;
-
   const std::string m_operational_environment;
   const std::string m_offline_data_stream;
   bool m_run_is_for_test_purposes;
@@ -532,11 +530,10 @@ private:
     }
   }
 
-  void open_file_if_needed(const std::string& file_name, unsigned open_flags)
+  void open_file_if_needed(const std::string& file_name)
   {
 
-    if (m_file_handle.get() == nullptr || m_basic_name_of_open_file.compare(file_name) ||
-        m_open_flags_of_open_file != open_flags) {
+    if (m_file_handle.get() == nullptr || m_basic_name_of_open_file.compare(file_name)) {
 
       // close an existing open file
       if (m_file_handle.get() != nullptr) {
@@ -572,16 +569,14 @@ private:
       }
 
       // opening file for the first time OR something changed in the name or the way of opening the file
-      TLOG_DEBUG(TLVL_BASIC) << get_name() << ": going to open file " << unique_filename << " with open_flags "
-                             << std::to_string(open_flags);
+      TLOG_DEBUG(TLVL_BASIC) << get_name() << ": going to open file " << unique_filename;
       m_basic_name_of_open_file = file_name;
-      m_open_flags_of_open_file = open_flags;
 
       open_new_file(unique_filename);
 
     } else {
       TLOG_DEBUG(TLVL_BASIC) << get_name() << ": Pointer file to  " << m_basic_name_of_open_file
-                             << " was already opened with open_flags " << std::to_string(m_open_flags_of_open_file);
+                             << " was already opened";
     }
   }
   

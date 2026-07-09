@@ -17,8 +17,7 @@
 namespace dunedaq::dfmodules {
 
   class HDF5DataStore : public FileDataStoreImpl<hdf5libs::HDF5RawDataFile,
-					     appmodel::DataStoreConf,
-					     HighFive::File::OpenOrCreate> {
+					     appmodel::DataStoreConf> {
 
   public:
     explicit HDF5DataStore(std::string const& name,
@@ -43,7 +42,7 @@ namespace dunedaq::dfmodules {
 							    hdf5libs::HDF5SourceIDHandler::make_source_id_geo_id_map(get_session()),
 							    get_compression_level(),
                                         ".writing",
-							    get_open_flags()));
+							    HighFive::File::OpenOrCreate));
     } catch (std::exception const& excpt) {
         throw FileOperationProblem(ERS_HERE, get_name(), unique_filename, excpt);
     } catch (...) { // NOLINT(runtime/exceptions)                                                                                             
@@ -51,16 +50,12 @@ namespace dunedaq::dfmodules {
         throw FileOperationProblem(ERS_HERE, get_name(), unique_filename);
     }
 
-    if (get_open_flags() == HighFive::File::ReadOnly) {
-      TLOG_DEBUG(TLVL_BASIC) << get_name() << "Opened HDF5 file read-only.";
-    } else {
-      TLOG_DEBUG(TLVL_BASIC) << get_name() << "Created HDF5 file (" << unique_filename << ").";
+    TLOG_DEBUG(TLVL_BASIC) << get_name() << "Created HDF5 file (" << unique_filename << ").";
 
-      // write attributes that aren't being handled by the HDF5RawDataFile right now                                                          
-      file_handle->write_attribute("operational_environment", (std::string)get_operational_environment());
-      file_handle->write_attribute("offline_data_stream", (std::string)get_offline_data_stream());
-      file_handle->write_attribute("run_was_for_test_purposes", (std::string)(get_run_is_for_test_purposes() ? "true" : "false"));
-    }
+    // write attributes that aren't being handled by the HDF5RawDataFile right now
+    file_handle->write_attribute("operational_environment", (std::string)get_operational_environment());
+    file_handle->write_attribute("offline_data_stream", (std::string)get_offline_data_stream());
+    file_handle->write_attribute("run_was_for_test_purposes", (std::string)(get_run_is_for_test_purposes() ? "true" : "false"));
   }
   
 } // namespace dunedaq::dfmodules

@@ -16,11 +16,8 @@
 
 namespace dunedaq::dfmodules {
 
-  static constexpr unsigned ignored_flags {0};
-  
   class StubDataStore : public FileDataStoreImpl<dfmodules::StubDataWriter,
-					     appmodel::DataStoreConf,
-					     ignored_flags> {
+					     appmodel::DataStoreConf> {
 
   public:
     explicit StubDataStore(std::string const& name,
