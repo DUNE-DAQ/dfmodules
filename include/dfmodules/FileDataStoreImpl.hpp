@@ -1,5 +1,5 @@
 /**
- * @file DataStoreImpl.hpp
+ * @file FileDataStoreImpl.hpp
  *
  * An near-complete implementation of the DataStore interface which
  * nonetheless templatizes the representation of the data file (e.g.,
@@ -12,8 +12,8 @@
  * received with this code.
  */
 
-#ifndef DFMODULES_INCLUDE_DFMODULES_DATASTOREIMPL_HPP_
-#define DFMODULES_INCLUDE_DFMODULES_DATASTOREIMPL_HPP_
+#ifndef DFMODULES_INCLUDE_DFMODULES_FILEDATASTOREIMPL_HPP_
+#define DFMODULES_INCLUDE_DFMODULES_FILEDATASTOREIMPL_HPP_
 
 #include "dfmodules/DataStore.hpp"
 #include "dfmodules/opmon/DataStore.pb.h"
@@ -45,9 +45,9 @@ namespace dunedaq {
  * @brief Various ERS Issues for exceptional data store situations
  */
 ERS_DECLARE_ISSUE_BASE(dfmodules,
-                       DataStoreImplBadConfiguration,
+                       FileDataStoreImplBadConfiguration,
                        appfwk::GeneralDAQModuleIssue,
-                       "Construction of the DataStoreImpl base class failed due to faulty configuration",
+                       "Construction of the FileDataStoreImpl base class failed due to faulty configuration",
                        ((std::string)name),
 		       )
   
@@ -109,12 +109,12 @@ concept FileHandleConcept = requires(T file_handle,
 };
 
 /**
- * @brief DataStoreImpl contains functionality you'd generally want in a data store irrespective of file type
+ * @brief FileDataStoreImpl contains functionality you'd generally want in a data store irrespective of file type
  */
   template <FileHandleConcept FileHandleClass, // E.g., hdf5libs::HDF5RawDataFile
 	    typename DataStoreConf, // E.g., appmodel::DataStoreConf
 	    unsigned FileIOInfo> // E.g., HighFive::File::OpenOrCreate
-class DataStoreImpl : public DataStore
+class FileDataStoreImpl : public DataStore
 {
 
 public:
@@ -126,11 +126,11 @@ public:
   static constexpr size_t s_unset_record_number { std::numeric_limits<size_t>::max() };
 
   /**
-   * @brief DataStoreImpl Constructor
+   * @brief FileDataStoreImpl Constructor
    * @param name, path, filename, operationMode
    *
    */
-  explicit DataStoreImpl(std::string const& name,
+  explicit FileDataStoreImpl(std::string const& name,
                          std::shared_ptr<appfwk::ConfigurationManager> mcfg,
                          std::string const& writer_name)
     : DataStore(name)
@@ -162,7 +162,7 @@ public:
     TLOG_DEBUG(TLVL_BASIC) << get_name();
 
     if (!m_config_params || !m_session) {
-      throw DataStoreImplBadConfiguration(ERS_HERE, get_name());
+      throw FileDataStoreImplBadConfiguration(ERS_HERE, get_name());
     }
 
     if (m_operation_mode != "one-event-per-file"
@@ -254,7 +254,7 @@ public:
   }
 
   /**
-   * @brief DataStoreImpl write() 
+   * @brief FileDataStoreImpl write() 
    * Method used to write TriggerRecords into the data
    * file. Operational mode defined in the configuration file.
    *
@@ -292,7 +292,7 @@ public:
   }
 
   /**
-   * @brief DataStoreImpl write()
+   * @brief FileDataStoreImpl write()
    *
    * Method used to write TimeSlices into the data file. Operational
    * mode defined in the configuration file.
@@ -341,7 +341,7 @@ public:
   }
 
   /**
-   * @brief Informs the DataStoreImpl that writes or reads of records
+   * @brief Informs the FileDataStoreImpl that writes or reads of records
    * associated with the specified run number will soon be requested.
    * This allows the DataStore to test that the output file path is valid
    * and any other checks that are useful in advance of the first data
@@ -404,16 +404,16 @@ public:
     }
   }
 
-  DataStoreImpl(const DataStoreImpl&) = delete;
-  DataStoreImpl& operator=(const DataStoreImpl&) = delete;
-  DataStoreImpl(DataStoreImpl&&) = delete;
-  DataStoreImpl& operator=(DataStoreImpl&&) = delete;
+  FileDataStoreImpl(const FileDataStoreImpl&) = delete;
+  FileDataStoreImpl& operator=(const FileDataStoreImpl&) = delete;
+  FileDataStoreImpl(FileDataStoreImpl&&) = delete;
+  FileDataStoreImpl& operator=(FileDataStoreImpl&&) = delete;
   
 protected:
   void generate_opmon_data() override
   {
 
-    opmon::DataStoreImplInfo info;
+    opmon::FileDataStoreImplInfo info;
 
     info.set_new_bytes_output(m_new_bytes.exchange(0));
     info.set_new_written_object(m_new_objects.exchange(0));
@@ -599,4 +599,4 @@ private:
 } // namespace dfmodules
 } // namespace dunedaq
 
-#endif // DFMODULES_INCLUDE_DFMODULES_DATASTOREIMPL_HPP_
+#endif // DFMODULES_INCLUDE_DFMODULES_FILEDATASTOREIMPL_HPP_

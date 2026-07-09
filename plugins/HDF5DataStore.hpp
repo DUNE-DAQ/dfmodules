@@ -7,7 +7,7 @@
 #ifndef DFMODULES_PLUGINS_HDF5DATASTORE_HPP_
 #define DFMODULES_PLUGINS_HDF5DATASTORE_HPP_
 
-#include "dfmodules/DataStoreImpl.hpp"
+#include "dfmodules/FileDataStoreImpl.hpp"
 
 #include "appmodel/DataStoreConf.hpp"
 #include "hdf5libs/HDF5RawDataFile.hpp"
@@ -16,7 +16,7 @@
 
 namespace dunedaq::dfmodules {
 
-  class HDF5DataStore : public DataStoreImpl<hdf5libs::HDF5RawDataFile,
+  class HDF5DataStore : public FileDataStoreImpl<hdf5libs::HDF5RawDataFile,
 					     appmodel::DataStoreConf,
 					     HighFive::File::OpenOrCreate> {
 
@@ -24,7 +24,7 @@ namespace dunedaq::dfmodules {
     explicit HDF5DataStore(std::string const& name,
                          std::shared_ptr<appfwk::ConfigurationManager> mcfg,
 			   std::string const& writer_name) :
-      DataStoreImpl(name, mcfg, writer_name)
+      FileDataStoreImpl(name, mcfg, writer_name)
     {}
 
     void open_new_file(const std::string& unique_filename) override;

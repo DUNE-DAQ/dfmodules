@@ -147,7 +147,7 @@ BOOST_AUTO_TEST_SUITE(StubWrite_test)
 
 BOOST_AUTO_TEST_CASE(NullConfiguration)
 {
-  BOOST_CHECK_THROW(make_data_store("StubDataStore", "dummy", nullptr, "dummy"), dunedaq::dfmodules::DataStoreImplBadConfiguration);
+  BOOST_CHECK_THROW(make_data_store("StubDataStore", "dummy", nullptr, "dummy"), dunedaq::dfmodules::FileDataStoreImplBadConfiguration);
 }
 
 BOOST_AUTO_TEST_CASE(WriteEventFiles)

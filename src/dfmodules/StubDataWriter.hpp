@@ -18,8 +18,7 @@
 #include <set>
 #include <string>
 
-namespace dunedaq {
-namespace dfmodules {
+namespace dunedaq::dfmodules {
 
 class StubDataWriter
 {
@@ -54,7 +53,6 @@ private:
   std::set<daqdataformats::timeslice_number_t> m_written_timeslices;
 };
 
-} // namespace dfmodules
-} // namespace dunedaq
+} // namespace dunedaq::dfmodules
 
 #endif // DFMODULES_SRC_DFMODULES_STUBDATAWRITER_HPP_

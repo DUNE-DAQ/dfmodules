@@ -7,7 +7,7 @@
 #ifndef DFMODULES_PLUGINS_STUBDATASTORE_HPP_
 #define DFMODULES_PLUGINS_STUBDATASTORE_HPP_
 
-#include "dfmodules/DataStoreImpl.hpp"
+#include "dfmodules/FileDataStoreImpl.hpp"
 
 #include "appmodel/DataStoreConf.hpp"
 #include "dfmodules/StubDataWriter.hpp"
@@ -18,7 +18,7 @@ namespace dunedaq::dfmodules {
 
   static constexpr unsigned ignored_flags {0};
   
-  class StubDataStore : public DataStoreImpl<dfmodules::StubDataWriter,
+  class StubDataStore : public FileDataStoreImpl<dfmodules::StubDataWriter,
 					     appmodel::DataStoreConf,
 					     ignored_flags> {
 
@@ -26,7 +26,7 @@ namespace dunedaq::dfmodules {
     explicit StubDataStore(std::string const& name,
                          std::shared_ptr<appfwk::ConfigurationManager> mcfg,
 			   std::string const& writer_name) :
-      DataStoreImpl(name, mcfg, writer_name)
+      FileDataStoreImpl(name, mcfg, writer_name)
     {}
 
     void open_new_file(const std::string& unique_filename) override;
