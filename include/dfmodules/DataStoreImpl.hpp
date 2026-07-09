@@ -3,9 +3,9 @@
  *
  * An near-complete implementation of the DataStore interface which
  * nonetheless templatizes the representation of the data file (e.g.,
- * hdf5, root, flat ASCII, etc.) and leaves a few implementation
- * details (e.g., the closing and reopening of data files) to a
- * derived class.
+ * hdf5, Root, text, etc.) and leaves a few implementation
+ * details (e.g., the physical closing and reopening of data files)
+ * to a derived class.
  *
  * This is part of the DUNE DAQ Application Framework, copyright 2020.
  * Licensing/copyright details are in the COPYING file that you should have
