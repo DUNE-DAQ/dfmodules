@@ -160,7 +160,7 @@ BOOST_AUTO_TEST_CASE(WriteEventFiles)
   const int fragment_size = 10 + sizeof(dunedaq::daqdataformats::FragmentHeader);
 
   // delete any pre-existing files so that we start with a clean slate
-  std::string delete_pattern = "hdf5writetest.*\\.hdf5";
+  std::string delete_pattern = "stubwritetest.*\\.txt";
   delete_files_matching_pattern(file_path, delete_pattern);
 
   // create the DataStore
@@ -181,7 +181,7 @@ BOOST_AUTO_TEST_CASE(WriteEventFiles)
   data_store_ptr.reset(); // explicit destruction
 
   // check that the expected number of files was created
-  std::string search_pattern = "hdf5writetest.*\\.hdf5";
+  std::string search_pattern = "stubwritetest.*\\.txt";
   std::vector<std::string> file_list = get_files_matching_pattern(file_path, search_pattern);
   BOOST_REQUIRE_EQUAL(file_list.size(), trigger_count);
 
@@ -201,7 +201,7 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
   const int fragment_size = 10 + sizeof(dunedaq::daqdataformats::FragmentHeader);
 
   // delete any pre-existing files so that we start with a clean slate
-  std::string delete_pattern = "hdf5writetest.*\\.hdf5";
+  std::string delete_pattern = "stubwritetest.*\\.txt";
   delete_files_matching_pattern(file_path, delete_pattern);
 
   // create the DataStore
@@ -221,7 +221,7 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
   data_store_ptr.reset(); // explicit destruction
 
   // check that the expected number of files was created
-  std::string search_pattern = "hdf5writetest.*\\.hdf5";
+  std::string search_pattern = "stubwritetest.*\\.txt";
   std::vector<std::string> file_list = get_files_matching_pattern(file_path, search_pattern);
   BOOST_REQUIRE_EQUAL(file_list.size(), 1);
 
@@ -236,7 +236,7 @@ BOOST_AUTO_TEST_CASE(NoDuplicateTimeSlices)
   std::string file_path(std::filesystem::temp_directory_path());
 
   // delete any pre-existing files so that we start with a clean slate
-  std::string delete_pattern = "hdf5writetest.*\\.hdf5";
+  std::string delete_pattern = "stubwritetest.*\\.txt";
   delete_files_matching_pattern(file_path, delete_pattern);
 
   CfgFixture cfg("test-session-3-1");
@@ -253,7 +253,7 @@ BOOST_AUTO_TEST_CASE(NoDuplicateTimeSlices)
 
   data_store_ptr->write(timeslice);
 
-  std::string search_pattern = "hdf5writetest.*\\.hdf5";
+  std::string search_pattern = "stubwritetest.*\\.txt";
   std::vector<std::string> file_list = get_files_matching_pattern(file_path, search_pattern);
   BOOST_REQUIRE_EQUAL(file_list.size(), 1);
 
@@ -303,7 +303,7 @@ BOOST_AUTO_TEST_CASE(FileSizeLimitResultsInMultipleFiles)
   // With a small max_file_size, we should see multiple files created
 
   // delete any pre-existing files so that we start with a clean slate
-  std::string delete_pattern = "hdf5writetest.*\\.hdf5";
+  std::string delete_pattern = "stubwritetest.*\\.txt";
   delete_files_matching_pattern(file_path, delete_pattern);
 
   // create the DataStore
@@ -324,7 +324,7 @@ BOOST_AUTO_TEST_CASE(FileSizeLimitResultsInMultipleFiles)
   data_store_ptr.reset(); // explicit destruction
 
   // check that the expected number of files was created
-  std::string search_pattern = "hdf5writetest.*\\.hdf5";
+  std::string search_pattern = "stubwritetest.*\\.txt";
   std::vector<std::string> file_list = get_files_matching_pattern(file_path, search_pattern);
   // With very small max_file_size (100 bytes) and minimal STUB output, we should have multiple files
   BOOST_REQUIRE_EQUAL(file_list.size(), 15);
@@ -347,7 +347,7 @@ BOOST_AUTO_TEST_CASE(SmallFileSizeLimitDataBlockListWrite)
   // 5 APAs times 100000 bytes per fragment gives 500,000 bytes per TR
 
   // delete any pre-existing files so that we start with a clean slate
-  std::string delete_pattern = "hdf5writetest.*\\.hdf5";
+  std::string delete_pattern = "stubwritetest.*\\.txt";
   delete_files_matching_pattern(file_path, delete_pattern);
 
   // create the DataStore
@@ -368,7 +368,7 @@ BOOST_AUTO_TEST_CASE(SmallFileSizeLimitDataBlockListWrite)
   data_store_ptr.reset(); // explicit destruction
 
   // check that the expected number of files was created
-  std::string search_pattern = "hdf5writetest.*\\.hdf5";
+  std::string search_pattern = "stubwritetest.*\\.txt";
   std::vector<std::string> file_list = get_files_matching_pattern(file_path, search_pattern);
   // each TriggerRecord should be stored in its own file
   BOOST_REQUIRE_EQUAL(file_list.size(), 5);

@@ -120,7 +120,7 @@
 <obj class="DetectorConfig" id="dummy-detector">
  <attr name="tpg_channel_map" type="string" val="PD2HDChannelMap"/>
  <attr name="clock_speed_hz" type="u32" val="62500000"/>
- <attr name="op_env" type="string" val="hdf5writetest"/>
+ <attr name="op_env" type="string" val="stubwritetest"/>
  <attr name="offline_data_stream" type="string" val="cosmics"/>
 </obj>
 

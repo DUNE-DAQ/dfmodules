@@ -109,6 +109,7 @@ concept FileHandleConcept = requires(T file_handle,
   { file_handle.write(ts) } -> std::same_as<void>;
   { file_handle.timeslice_already_exists(ts) } -> std::convertible_to<bool>;
   { const_file_handle.get_file_name() } -> std::convertible_to<std::string>;
+  { const_file_handle.get_file_name_extension() } -> std::convertible_to<std::string>; // Don't include the "."
   { const_file_handle.get_recorded_size() } -> std::convertible_to<size_t>;
   { const_file_handle.get_uncompressed_raw_data_size() } -> std::convertible_to<size_t>;
   { const_file_handle.get_total_file_size() } -> std::convertible_to<size_t>;
@@ -496,7 +497,7 @@ private:
              << m_file_index;
 
     work_oss << "_" << m_writer_identifier;
-    work_oss << ".hdf5";
+    work_oss << "." << m_file_handle->get_file_name_extension();
     return work_oss.str();
   }
 
@@ -561,10 +562,11 @@ private:
 	std::string file_creation_timestamp = boost::posix_time::to_iso_string(boost::posix_time::from_time_t(now));
         // timestamp substring
         size_t ufn_len = unique_filename.length();
-        if (ufn_len > 6) { // len GT 6 gives us some confidence that we have at least x.hdf5
+	size_t extension_length = m_file_handle->get_file_name_extension().size() + 1; // + 1 for the "." before the extension
+        if (ufn_len > extension_length + 1) { // this gives us some confidence that we have at least one character preceding the extension (e.g., x.hdf5)
           std::string timestamp_substring = "_" + file_creation_timestamp;
           TLOG_DEBUG(TLVL_BASIC) << get_name() << ": timestamp substring for filename: " << timestamp_substring;
-          unique_filename.insert(ufn_len - 5, timestamp_substring);
+          unique_filename.insert(ufn_len - extension_length, timestamp_substring);
         }
       }
 

@@ -31,6 +31,9 @@ public:
   bool timeslice_already_exists(const daqdataformats::TimeSlice& ts) const;
 
   std::string get_file_name() const;
+  std::string get_file_name_extension() const {
+    return "txt";
+  }
   size_t get_recorded_size() const noexcept;
   size_t get_uncompressed_raw_data_size() const noexcept;
   size_t get_total_file_size() const noexcept;
