@@ -19,6 +19,7 @@
 #include "appmodel/DataStoreConf.hpp"
 #include "dfmodules/StubDataWriter.hpp"
 
+#include <memory>
 #include <string>
 
 namespace dunedaq::dfmodules {

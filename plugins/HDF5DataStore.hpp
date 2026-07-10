@@ -17,6 +17,7 @@
 #include "appmodel/DataStoreConf.hpp"
 #include "hdf5libs/HDF5RawDataFile.hpp"
 
+#include <memory>
 #include <string>
 
 namespace dunedaq::dfmodules {
@@ -58,11 +59,11 @@ namespace dunedaq::dfmodules {
     TLOG_DEBUG(TLVL_BASIC) << get_name() << "Created HDF5 file (" << unique_filename << ").";
 
     // write attributes that aren't being handled by the HDF5RawDataFile right now
-    file_handle->write_attribute("operational_environment", (std::string)get_operational_environment());
-    file_handle->write_attribute("offline_data_stream", (std::string)get_offline_data_stream());
-    file_handle->write_attribute("run_was_for_test_purposes", (std::string)(get_run_is_for_test_purposes() ? "true" : "false"));
+    file_handle->write_attribute("operational_environment", std::string(get_operational_environment()));
+    file_handle->write_attribute("offline_data_stream", std::string(get_offline_data_stream()));
+    file_handle->write_attribute("run_was_for_test_purposes", std::string(get_run_is_for_test_purposes() ? "true" : "false"));
   }
-  
+
 } // namespace dunedaq::dfmodules
 
 #endif // DFMODULES_PLUGINS_HDF5DATASTORE_HPP_

@@ -52,6 +52,7 @@
 #include <concepts>
 #include <cstdlib>
 #include <functional>
+#include <limits>
 #include <memory>
 #include <string>
 #include <sys/statvfs.h>
@@ -163,7 +164,7 @@ public:
     , m_writer_identifier {writer_name}
     , m_config_params { mcfg ? mcfg->get_dal<DataStoreConf>(name) : nullptr }
     , m_session { mcfg ? mcfg->get_session() : nullptr }
-    , m_compression_level { m_config_params ? m_config_params->get_compression_level() : static_cast<unsigned>(0) }
+    , m_compression_level { m_config_params ? m_config_params->get_compression_level() : static_cast<unsigned>(0) } // NOLINT(build/unsigned)
     , m_operational_environment { m_session ? m_session->get_detector_configuration()->get_op_env() : "unavailable" }
     , m_offline_data_stream { m_session ? m_session->get_detector_configuration()->get_offline_data_stream() : "unavailable" }
     , m_run_is_for_test_purposes { false }
@@ -210,7 +211,7 @@ public:
      return m_writer_identifier;
   }
 
-  unsigned get_compression_level() const noexcept {
+  unsigned get_compression_level() const noexcept { // NOLINT(build/unsigned)
     return m_compression_level;
   }
 
@@ -273,7 +274,7 @@ public:
    * file. Operational mode defined in the configuration file.
    *
    */
-  virtual void write(const daqdataformats::TriggerRecord& tr)
+  void write(const daqdataformats::TriggerRecord& tr) override
   {
     size_t tr_size = tr.get_total_size_bytes();
 
@@ -312,7 +313,7 @@ public:
    * mode defined in the configuration file.
    *
    */
-  virtual void write(const daqdataformats::TimeSlice& ts)
+  void write(const daqdataformats::TimeSlice& ts) override
   {
     size_t ts_size = ts.get_total_size_bytes();
     throw_if_insufficient_space_for_object(ts_size, "time slice");
@@ -364,7 +365,7 @@ public:
    * This method may throw an exception if it finds a problem.
    */
   void prepare_for_run(daqdataformats::run_number_t run_number,
-                       bool run_is_for_test_purposes)
+                       bool run_is_for_test_purposes) override
   {
     m_run_number = run_number;
     m_run_is_for_test_purposes = run_is_for_test_purposes;
@@ -400,9 +401,9 @@ public:
    * cleanup or shutdown operations that are useful once the writes or
    * reads for a given run number have finished.
    */
-  void finish_with_run(daqdataformats::run_number_t /*run_number*/)
+  void finish_with_run(daqdataformats::run_number_t /*run_number*/) override
   {
-    if (m_file_handle.get() != nullptr) {
+    if (m_file_handle) {
       std::string open_filename = m_file_handle->get_file_name();
       try {
         m_file_handle.reset();
@@ -449,7 +450,7 @@ private:
 
   const confmodel::Session* m_session;
 
-  unsigned m_compression_level; 
+  unsigned m_compression_level; // NOLINT(build/unsigned)
 
   const std::string m_operational_environment;
   const std::string m_offline_data_stream;
@@ -475,8 +476,8 @@ private:
   size_t m_current_record_number;
 
   // incremental written data
-  std::atomic<uint64_t> m_new_bytes;
-  std::atomic<uint64_t> m_new_objects;
+  std::atomic<uint64_t> m_new_bytes;   // NOLINT(build/unsigned)
+  std::atomic<uint64_t> m_new_objects; // NOLINT(build/unsigned)
 
   const std::string m_operation_mode;
   const std::string m_path;
@@ -547,10 +548,10 @@ private:
   void open_file_if_needed(const std::string& file_name)
   {
 
-    if (m_file_handle.get() == nullptr || m_basic_name_of_open_file.compare(file_name)) {
+    if (!m_file_handle || m_basic_name_of_open_file.compare(file_name)) {
 
       // close an existing open file
-      if (m_file_handle.get() != nullptr) {
+      if (m_file_handle) {
         std::string open_filename = m_file_handle->get_file_name();
         try {
           m_file_handle.reset();
@@ -571,7 +572,7 @@ private:
       // (determined inside the HDF5RawDataFile constructor) could disagree.
       std::string unique_filename = file_name;
       if (!m_disable_unique_suffix) {
-	time_t now = time(0);
+	time_t now { time(nullptr) };
 	std::string file_creation_timestamp = boost::posix_time::to_iso_string(boost::posix_time::from_time_t(now));
         // timestamp substring
         size_t ufn_len = unique_filename.length();
