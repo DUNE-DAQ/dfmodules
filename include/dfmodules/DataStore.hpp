@@ -1,8 +1,7 @@
 /**
  * @file DataStore.hpp
  *
- * This is the interface for storing and retrieving data from
- * various storage systems.
+ * This is the interface for writing data to various storage systems.
  *
  * This is part of the DUNE DAQ Application Framework, copyright 2020.
  * Licensing/copyright details are in the COPYING file that you should have
