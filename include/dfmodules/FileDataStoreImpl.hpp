@@ -9,9 +9,23 @@
  * to a derived class.
  *
  * To create a full implementation of DataStore, perform the following steps:
- * -X
- * -Y
- * -Z
+ *
+ * 1) Create a class which satisfies the constraints expressed in the
+ * FileHandleConcept below - hdflibs' HDF5RawDataFile is an example
+ *
+ * 2) Obtain an OKS configuration object which can configure both this
+ *  intermediate base class and then anything specific needed by the
+ *  class described in the previous point - e.g.,
+ *  appfwk::DataStoreConf works for the HDF5DataStore implementation
+ *
+ * 3) Create a usable data store class which public-ally derives from
+ *   FileDataStoreImpl, where FileDataStoreImpl has been parametrized
+ *   with the class described in (1) and the configuration described
+ *   in (2)
+ *
+ * 4) Implement the pure virtual open_new_file function, where the
+ *   main purpose of the implementation should be to reset the unique pointer
+ *   to a new instance of the class in (1)
  *
  * This is part of the DUNE DAQ Application Framework, copyright 2020.
  * Licensing/copyright details are in the COPYING file that you should have
@@ -99,6 +113,7 @@ ERS_DECLARE_ISSUE_BASE(dfmodules,
 // Re-enable coverage checking LCOV_EXCL_STOP
 namespace dfmodules {
 
+// A class which satisfies the FileHandleConcept should implement format-specific writes of objects
 template<typename T>
 concept FileHandleConcept = requires(T file_handle,
                                      const T const_file_handle,
@@ -116,7 +131,9 @@ concept FileHandleConcept = requires(T file_handle,
 };
 
 /**
- * @brief FileDataStoreImpl contains functionality you'd generally want in a data store irrespective of file type
+ * @brief FileDataStoreImpl contains functionality you'd generally
+ * want in a data store which writes to a file irrespective of file
+ * type
  */
   template <FileHandleConcept FileHandleClass, // E.g., hdf5libs::HDF5RawDataFile
 	    typename DataStoreConf> // E.g., appmodel::DataStoreConf

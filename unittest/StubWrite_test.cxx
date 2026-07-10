@@ -1,6 +1,13 @@
 /**
- * @file StubWrite_test.cxx Application that tests and demonstrates
- * the write functionality of the StubDataStore class.
+ * @file StubWrite_test.cxx Application that ostensibly tests and
+ * demonstrates the write functionality of the StubDataStore class,
+ * but can be more properly thought of as a test of the base class
+ * from which it inherits, FileDataStoreImpl
+ *
+ * This is heavily modeled on the HDF5Write unit tests, with
+ * adjustments where necessary (max file size different in the
+ * multiple-output-file test; no check for a ".writing" suffix for
+ * files in the process of being written to)
  *
  * This is part of the DUNE DAQ Application Framework, copyright 2020.
  * Licensing/copyright details are in the COPYING file that you should have
@@ -178,7 +185,7 @@ BOOST_AUTO_TEST_CASE(WriteEventFiles)
   for (int trigger_number = 1; trigger_number <= trigger_count; ++trigger_number)
     data_store_ptr->write(create_trigger_record(trigger_number, fragment_size, link_count * apa_count));
 
-  data_store_ptr.reset(); // explicit destruction
+  data_store_ptr.reset();
 
   // check that the expected number of files was created
   std::string search_pattern = "stubwritetest.*\\.txt";
@@ -218,7 +225,7 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
   for (int trigger_number = 1; trigger_number <= trigger_count; ++trigger_number)
     data_store_ptr->write(create_trigger_record(trigger_number, fragment_size, apa_count * link_count));
 
-  data_store_ptr.reset(); // explicit destruction
+  data_store_ptr.reset();
 
   // check that the expected number of files was created
   std::string search_pattern = "stubwritetest.*\\.txt";
@@ -299,9 +306,6 @@ BOOST_AUTO_TEST_CASE(FileSizeLimitResultsInMultipleFiles)
   const int link_count = 1;
   const int fragment_size = 10000;
 
-  // STUB format writes minimal stub (~20 bytes per trigger record)
-  // With a small max_file_size, we should see multiple files created
-
   // delete any pre-existing files so that we start with a clean slate
   std::string delete_pattern = "stubwritetest.*\\.txt";
   delete_files_matching_pattern(file_path, delete_pattern);
@@ -313,7 +317,9 @@ BOOST_AUTO_TEST_CASE(FileSizeLimitResultsInMultipleFiles)
 
   auto data_store_conf_obj = data_store_conf->config_object();
   data_store_conf_obj.set_by_val<std::string>("directory_path", file_path);
-  data_store_conf_obj.set_by_val<int>("max_file_size", 100); // Force one trigger per file
+
+  // Tiny max file size needed since each trigger record just gets a simple line of text written out
+  data_store_conf_obj.set_by_val<int>("max_file_size", 100); 
 
   auto data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.cfgMgr, "dwm-01");
   
@@ -321,7 +327,7 @@ BOOST_AUTO_TEST_CASE(FileSizeLimitResultsInMultipleFiles)
   for (int trigger_number = 1; trigger_number <= trigger_count; ++trigger_number)
     data_store_ptr->write(create_trigger_record(trigger_number, fragment_size, apa_count * link_count));
 
-  data_store_ptr.reset(); // explicit destruction
+  data_store_ptr.reset();
 
   // check that the expected number of files was created
   std::string search_pattern = "stubwritetest.*\\.txt";
@@ -365,7 +371,7 @@ BOOST_AUTO_TEST_CASE(SmallFileSizeLimitDataBlockListWrite)
   for (int trigger_number = 1; trigger_number <= trigger_count; ++trigger_number)
     data_store_ptr->write(create_trigger_record(trigger_number, fragment_size, apa_count * link_count));
 
-  data_store_ptr.reset(); // explicit destruction
+  data_store_ptr.reset();
 
   // check that the expected number of files was created
   std::string search_pattern = "stubwritetest.*\\.txt";

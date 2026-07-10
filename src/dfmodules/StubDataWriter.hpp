@@ -1,7 +1,8 @@
 /**
  * @file StubDataWriter.hpp
  *
- * A minimal implementation of the FileHandleConcept that writes one STUB line per record.
+ * A minimal implementation of the FileHandleConcept that writes one
+ * simple text line per time slice / trigger record to a text file
  *
  * This is part of the DUNE DAQ Software Suite, copyright 2020.
  * Licensing/copyright details are in the COPYING file that you should have

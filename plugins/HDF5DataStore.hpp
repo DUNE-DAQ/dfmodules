@@ -1,4 +1,9 @@
 /**
+ *
+ * @file HDF5DataStore.hpp
+ *
+ * Header for an implementation of the DataStore interface which writes out *.hdf5 files
+ *
  * This is part of the DUNE DAQ Application Framework, copyright 2020.
  * Licensing/copyright details are in the COPYING file that you should have
  * received with this code.
