@@ -193,10 +193,6 @@ public:
       throw InvalidOperationMode(ERS_HERE, get_name(), m_operation_mode);
     }
 
-    if (m_free_space_safety_factor_for_write < 1.1) {
-      m_free_space_safety_factor_for_write = 1.1;
-    }
-
     // 05-Apr-2022, KAB: added warning message when the output destination
     // is not a valid directory.
     struct statvfs vfs_results;
