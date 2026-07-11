@@ -21,7 +21,7 @@ StubDataWriter::StubDataWriter(const std::string& file_name)
   , m_total_file_size(0)
 {
   if (!m_output_file.is_open()) {
-    throw std::runtime_error("Unable to open stub output file: " + file_name);
+    throw CantOpenFile(ERS_HERE, m_file_name);
   }
 }
 
@@ -82,7 +82,7 @@ StubDataWriter::write_line(const std::string& line)
 {
   m_output_file << line << '\n';
   if (!m_output_file.good()) {
-    throw std::runtime_error("Failed to write to stub output file: " + m_file_name);
+    throw CantWriteToFile(ERS_HERE, m_file_name);
   }
 
   const size_t bytes_written = line.size() + 1;

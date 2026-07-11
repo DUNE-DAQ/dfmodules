@@ -15,9 +15,16 @@
 #include "daqdataformats/TimeSlice.hpp"
 #include "daqdataformats/TriggerRecord.hpp"
 
+#include "ers/Issue.hpp"
+
 #include <fstream>
 #include <set>
 #include <string>
+
+namespace dunedaq {
+  ERS_DECLARE_ISSUE(dfmodules, CantOpenFile, "Unable to open " << file_name, ((std::string)file_name))
+  ERS_DECLARE_ISSUE(dfmodules, CantWriteToFile, "Unable to write line to " << file_name, ((std::string)file_name))
+}
 
 namespace dunedaq::dfmodules {
 
