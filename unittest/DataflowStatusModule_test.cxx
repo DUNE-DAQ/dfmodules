@@ -80,11 +80,13 @@ struct ConnectionFixture
     iom->get_sender<dfmessages::TriggerDecision>("trigdec_dfo")->send(std::move(td), iomanager::Sender::s_block);
   }
 
-  static void send_token(dfmessages::trigger_number_t trigger_number, bool different_run = false)
+  static void send_token(
+    dfmessages::trigger_number_t trigger_number,
+    dfmessages::sequence_number_t sequence_number = 0,
+    bool different_run = false)
   {
     dfmessages::TriggerDecisionToken token;
-    token.trigger_number = trigger_number;
-    token.run_number = different_run ? 2 : 1;
+    token.trigger_id = dfmessages::TriggerId{ different_run ? 2U : 1U, trigger_number, sequence_number };
     token.writer_identifier = "test_writer";
     token.data_size = 1234;
     auto iom = iomanager::IOManager::get();
@@ -103,12 +105,16 @@ struct ConnectionFixture
     sender->send(std::move(request), iomanager::Sender::s_block);
   }
 
-  static void send_trb_completion(dfmessages::trigger_number_t trigger_number, bool different_run = false)
+  static void send_trb_completion(
+    dfmessages::trigger_number_t trigger_number,
+    dfmessages::sequence_number_t sequence_number = 0,
+    size_t trigger_record_max_sequence_number = 0,
+    bool different_run = false)
   {
     dfmessages::TRBCompletion trb_complete;
-    trb_complete.trigger_number = trigger_number;
-    trb_complete.run_number = different_run ? 2 : 1;
+    trb_complete.trigger_id = dfmessages::TriggerId{ different_run ? 2U : 1U, trigger_number, sequence_number };
     trb_complete.source_id = daqdataformats::SourceID(daqdataformats::SourceID::Subsystem::kTRBuilder, 1);
+    trb_complete.trigger_record_max_sequence_number = trigger_record_max_sequence_number;
     auto iom = iomanager::IOManager::get();
     auto sender = iom->get_sender<dfmessages::TRBCompletion>("trb_completion");
     sender->send(std::move(trb_complete), iomanager::Sender::s_block);
@@ -574,7 +580,6 @@ BOOST_AUTO_TEST_CASE(OutOfOrder)
   TLOG() << "Test case OutOfOrder END";
 }
 
-
 BOOST_AUTO_TEST_CASE(StopTimeout_Building)
 {
   TLOG() << "Test case StopTimeout_Building BEGIN";
@@ -783,6 +788,149 @@ BOOST_AUTO_TEST_CASE(StopTimeout_BuildingAndWriting)
   dec_recv->remove_callback();
   dfs_recv->remove_callback();
   TLOG() << "Test case StopTimeout_BuildingAndWriting END";
+}
+
+BOOST_AUTO_TEST_CASE(MultipleSequences)
+{
+  TLOG() << "Test case MultipleSequences BEGIN";
+  auto dfs = appfwk::make_module("DataflowStatusModule", "test");
+  opmgr.register_node("dfs", dfs);
+  dfs->init(cfgMgr);
+
+  appfwk::DAQModule::CommandData_t null_data;
+  appfwk::DAQModule::CommandData_t start_data;
+  start_data.emplace("run", 1);
+
+  auto iom = iomanager::IOManager::get();
+  ConnectionFixture::reset();
+  auto dfs_recv = iom->get_receiver<dfmessages::DataflowStatus>("df_status");
+  dfs_recv->add_callback(ConnectionFixture::receive_dataflow_status);
+  auto dec_recv = iom->get_receiver<dfmessages::TriggerDecision>("trigdec_trb");
+  dec_recv->add_callback(ConnectionFixture::receive_trigger_decision);
+
+  dfs->execute_command("conf", null_data);
+  dfs->execute_command("start", start_data);
+
+  std::this_thread::sleep_for(std::chrono::milliseconds(150));
+
+  auto metric = get_opmon_info();
+  BOOST_REQUIRE_EQUAL(metric.tokens_received(), 0);
+  BOOST_REQUIRE_EQUAL(metric.decisions_received(), 0);
+  BOOST_REQUIRE_EQUAL(metric.decisions_sent(), 0);
+
+  // Send a trigger decision that will be split into multiple sequences (e.g., sequence 0, 1, 2)
+  ConnectionFixture::send_trigdec(100);
+  std::this_thread::sleep_for(std::chrono::milliseconds(150));
+
+  BOOST_REQUIRE(ConnectionFixture::s_received_decisions.size() == 1);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.size() >= 1);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.size() == 1);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.count(100) == 1);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_writing.size() == 0);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().recently_completed_triggers.size() == 0);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().trigger_records_processed == 0);
+
+  metric = get_opmon_info();
+  BOOST_REQUIRE_EQUAL(metric.tokens_received(), 0);
+  BOOST_REQUIRE_EQUAL(metric.decisions_received(), 1);
+  BOOST_REQUIRE_EQUAL(metric.decisions_sent(), 1);
+
+  // Send first TRB completion for sequence 0, with max_sequence_number = 2
+  ConnectionFixture::send_trb_completion(100, 0, 2);
+  std::this_thread::sleep_for(std::chrono::milliseconds(150));
+
+  // Should still be building, waiting for all sequences to complete
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.size() == 1);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.count(100) == 1);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_writing.size() == 0);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().recently_completed_triggers.size() == 0);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().trigger_records_processed == 0);
+
+  metric = get_opmon_info();
+  BOOST_REQUIRE_EQUAL(metric.trb_completions_received(), 1);
+  BOOST_REQUIRE_EQUAL(metric.tokens_received(), 0);
+
+  // Send second TRB completion for sequence 1
+  ConnectionFixture::send_trb_completion(100, 1, 2);
+  std::this_thread::sleep_for(std::chrono::milliseconds(150));
+
+  // Still building, waiting for sequence 2
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.size() == 1);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.count(100) == 1);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_writing.size() == 0);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().recently_completed_triggers.size() == 0);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().trigger_records_processed == 0);
+
+  metric = get_opmon_info();
+  BOOST_REQUIRE_EQUAL(metric.trb_completions_received(), 1);
+  BOOST_REQUIRE_EQUAL(metric.tokens_received(), 0);
+
+  // Send third TRB completion for sequence 2 - all sequences now built
+  ConnectionFixture::send_trb_completion(100, 2, 2);
+  std::this_thread::sleep_for(std::chrono::milliseconds(150));
+
+  // Now should transition to writing state
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.size() == 0);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_writing.size() == 1);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_writing.count(100) == 1);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().recently_completed_triggers.size() == 0);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().trigger_records_processed == 0);
+
+  metric = get_opmon_info();
+  BOOST_REQUIRE_EQUAL(metric.trb_completions_received(), 1);
+  BOOST_REQUIRE_EQUAL(metric.tokens_received(), 0);
+
+  // Send first token for sequence 0
+  ConnectionFixture::send_token(100, 0);
+  std::this_thread::sleep_for(std::chrono::milliseconds(150));
+
+  // Still writing, waiting for all tokens
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.size() == 0);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_writing.size() == 1);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_writing.count(100) == 1);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().recently_completed_triggers.size() == 0);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().trigger_records_processed == 0);
+
+  metric = get_opmon_info();
+  BOOST_REQUIRE_EQUAL(metric.trb_completions_received(), 0);
+  BOOST_REQUIRE_EQUAL(metric.tokens_received(), 1);
+
+  // Send second token for sequence 1
+  ConnectionFixture::send_token(100, 1);
+  std::this_thread::sleep_for(std::chrono::milliseconds(150));
+
+  // Still writing, waiting for token for sequence 2
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.size() == 0);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_writing.size() == 1);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_writing.count(100) == 1);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().recently_completed_triggers.size() == 0);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().trigger_records_processed == 0);
+
+  metric = get_opmon_info();
+  BOOST_REQUIRE_EQUAL(metric.trb_completions_received(), 0);
+  BOOST_REQUIRE_EQUAL(metric.tokens_received(), 1);
+
+  // Send third token for sequence 2 - all sequences now written
+  ConnectionFixture::send_token(100, 2);
+  std::this_thread::sleep_for(std::chrono::milliseconds(150));
+
+  // Now should be completed
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.size() == 0);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_writing.size() == 0);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().recently_completed_triggers.size() == 1);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().recently_completed_triggers.count(100) == 1);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().trigger_records_processed == 1);
+
+  metric = get_opmon_info();
+  BOOST_REQUIRE_EQUAL(metric.trb_completions_received(), 0);
+  BOOST_REQUIRE_EQUAL(metric.tokens_received(), 1);
+
+  dfs->execute_command("stop", null_data);
+  dfs->execute_command("scrap", null_data);
+
+  dec_recv->remove_callback();
+  dfs_recv->remove_callback();
+  TLOG() << "Test case MultipleSequences END";
 }
 
 BOOST_AUTO_TEST_SUITE_END()

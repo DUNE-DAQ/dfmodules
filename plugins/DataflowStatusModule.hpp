@@ -90,6 +90,10 @@ private:
   // Status
   dfmessages::DataflowStatus m_current_status;
   std::map<dfmessages::trigger_number_t, dfmessages::DataflowStatus> m_status_snapshots;
+  std::map<dfmessages::trigger_number_t, std::pair<dfmessages::sequence_number_t, dfmessages::sequence_number_t>>
+    m_building_sequences;
+  std::map<dfmessages::trigger_number_t, std::pair<dfmessages::sequence_number_t, dfmessages::sequence_number_t>>
+    m_writing_sequences;
   std::mutex m_status_mutex;
   std::atomic<bool> m_status_updated;
   std::condition_variable m_status_update_cv;

@@ -63,25 +63,12 @@
 
 <oks-data>
 
-<info name="" type="" num-of-items="62" oks-format="data" oks-version="862f2957270" created-by="gjc" created-on="thinkpad" creation-time="20231116T105446" last-modified-by="eflumerf" last-modified-on="ironvirt9.mshome.net" last-modification-time="20260709T135512"/>
+<info name="" type="" num-of-items="61" oks-format="data" oks-version="862f2957270" created-by="test" created-on="test-machine" creation-time="20260707T120000" last-modified-by="eflumerf" last-modified-on="ironvirt9.mshome.net" last-modification-time="20260709T191052"/>
 
 <include>
  <file path="schema/confmodel/dunedaq.schema.xml"/>
  <file path="schema/appmodel/application.schema.xml"/>
 </include>
-
-<comments>
- <comment creation-time="20231116T122331" created-by="gjc" created-on="thinkpad" author="gjc" text="k"/>
- <comment creation-time="20231117T105205" created-by="gjc" created-on="thinkpad" author="gjc" text="ff"/>
- <comment creation-time="20231117T120703" created-by="gjc" created-on="thinkpad" author="gjc" text="n"/>
- <comment creation-time="20231117T121356" created-by="gjc" created-on="thinkpad" author="gjc" text="rename"/>
- <comment creation-time="20240105T145227" created-by="eflumerf" created-on="ironvirt9.mshome.net" author="eflumerf" text="test"/>
- <comment creation-time="20240105T154002" created-by="eflumerf" created-on="ironvirt9.mshome.net" author="eflumerf" text="Adding test connections"/>
- <comment creation-time="20240105T161451" created-by="eflumerf" created-on="ironvirt9.mshome.net" author="eflumerf" text="Fill out connections"/>
- <comment creation-time="20240105T162114" created-by="eflumerf" created-on="ironvirt9.mshome.net" author="eflumerf" text="Adding DFO Module"/>
- <comment creation-time="20240105T170629" created-by="eflumerf" created-on="ironvirt9.mshome.net" author="eflumerf" text="Update services used by network connections."/>
- <comment creation-time="20240105T174142" created-by="eflumerf" created-on="ironvirt9.mshome.net" author="eflumerf" text="Update network connection types"/>
-</comments>
 
 
 <obj class="DaqApplication" id="TestApp">
@@ -89,33 +76,8 @@
  <rel name="runs_on" class="VirtualHost" id="vlocalhost"/>
  <rel name="opmon_conf" class="OpMonConf" id="slow-all-monitoring"/>
  <rel name="modules">
-  <ref class="DataflowStatusModule" id="test"/>
+  <ref class="TRBModule" id="test"/>
  </rel>
-</obj>
-
-<obj class="DataflowStatusModule" id="test">
- <rel name="inputs">
-  <ref class="Queue" id="token"/>
-  <ref class="Queue" id="trb_completion"/>
-  <ref class="NetworkConnection" id="trigdec_dfo"/>
-  <ref class="NetworkConnection" id="df_status_request"/>
- </rel>
- <rel name="outputs">
-  <ref class="Queue" id="trigdec_trb"/>
-  <ref class="NetworkConnection" id="df_status"/>
- </rel>
- <rel name="configuration" class="DataflowStatusModuleConf" id="test"/>
-</obj>
-
-<obj class="DataflowStatusModuleConf" id="test">
- <attr name="trigger_type_mask" type="u64" val="15"/>
- <attr name="busy_threshold" type="s32" val="2"/>
- <attr name="free_threshold" type="s32" val="1"/>
- <attr name="heartbeat_interval_ms" type="u32" val="100"/>
- <attr name="stop_timeout_ms" type="u32" val="1000"/>
- <attr name="td_queue_timeout_ms" type="u32" val="1000"/>
- <attr name="snapshot_history_size" type="u32" val="100"/>
- <attr name="completed_trigger_history_size" type="u32" val="100"/>
 </obj>
 
 <obj class="DetectorConfig" id="dummy-detector">
@@ -277,29 +239,20 @@
  </attr>
 </obj>
 
-<obj class="NetworkConnection" id="df_status">
- <attr name="data_type" type="string" val="DataflowStatus"/>
- <attr name="capacity" type="u32" val="1"/>
+<obj class="NetworkConnection" id="datareq_ru0">
+ <attr name="data_type" type="string" val="DataRequest"/>
  <attr name="send_timeout_ms" type="u32" val="10"/>
  <attr name="recv_timeout_ms" type="u32" val="10"/>
  <attr name="connection_type" type="enum" val="kSendRecv"/>
- <rel name="associated_service" class="Service" id="df_status"/>
+ <rel name="associated_service" class="Service" id="datareq_ru0"/>
 </obj>
 
-<obj class="NetworkConnection" id="df_status_request">
- <attr name="data_type" type="string" val="DataflowStatusRequest"/>
+<obj class="NetworkConnection" id="fragment">
+ <attr name="data_type" type="string" val="Fragment"/>
  <attr name="send_timeout_ms" type="u32" val="10"/>
  <attr name="recv_timeout_ms" type="u32" val="10"/>
  <attr name="connection_type" type="enum" val="kSendRecv"/>
- <rel name="associated_service" class="Service" id="df_status_request"/>
-</obj>
-
-<obj class="NetworkConnection" id="trigdec_dfo">
- <attr name="data_type" type="string" val="TriggerDecision"/>
- <attr name="send_timeout_ms" type="u32" val="10"/>
- <attr name="recv_timeout_ms" type="u32" val="10"/>
- <attr name="connection_type" type="enum" val="kSendRecv"/>
- <rel name="associated_service" class="Service" id="trigdec_dfo"/>
+ <rel name="associated_service" class="Service" id="fragment"/>
 </obj>
 
 <obj class="OpMonConf" id="slow-all-monitoring">
@@ -327,22 +280,6 @@
  </attr>
 </obj>
 
-<obj class="Queue" id="token">
- <attr name="data_type" type="string" val="TriggerDecisionToken"/>
- <attr name="capacity" type="u32" val="1"/>
- <attr name="send_timeout_ms" type="u32" val="10"/>
- <attr name="recv_timeout_ms" type="u32" val="10"/>
- <attr name="queue_type" type="enum" val="kFollySPSCQueue"/>
-</obj>
-
-<obj class="Queue" id="trb_completion">
- <attr name="data_type" type="string" val="TRBCompletion"/>
- <attr name="capacity" type="u32" val="1"/>
- <attr name="send_timeout_ms" type="u32" val="10"/>
- <attr name="recv_timeout_ms" type="u32" val="10"/>
- <attr name="queue_type" type="enum" val="kFollySPSCQueue"/>
-</obj>
-
 <obj class="Queue" id="trigdec_trb">
  <attr name="data_type" type="string" val="TriggerDecision"/>
  <attr name="capacity" type="u32" val="1"/>
@@ -351,7 +288,24 @@
  <attr name="queue_type" type="enum" val="kFollySPSCQueue"/>
 </obj>
 
-<obj class="RCApplication" id="my-controller">
+<obj class="Queue" id="trigrecord">
+ <attr name="data_type" type="string" val="TriggerRecord"/>
+ <attr name="capacity" type="u32" val="1"/>
+ <attr name="send_timeout_ms" type="u32" val="10"/>
+ <attr name="recv_timeout_ms" type="u32" val="10"/>
+ <attr name="queue_type" type="enum" val="kFollySPSCQueue"/>
+</obj>
+
+	<obj class="Queue" id="trb_complete">
+		<attr name="data_type" type="string" val="TRBCompletion"/>
+		<attr name="capacity" type="u32" val="1"/>
+		<attr name="send_timeout_ms" type="u32" val="10"/>
+		<attr name="recv_timeout_ms" type="u32" val="10"/>
+		<attr name="queue_type" type="enum" val="kFollySPSCQueue"/>
+	</obj>
+
+
+	<obj class="RCApplication" id="my-controller">
  <attr name="commandline_parameters" type="string">
   <data val="file:///home/gjc/DUNE/fddaq-v4.2.0-a9/listrev/controller.json ${PORT} my-controller partition_name"/>
  </attr>
@@ -375,21 +329,15 @@
  <rel name="controller" class="RCApplication" id="my-controller"/>
 </obj>
 
-<obj class="Service" id="df_status">
+<obj class="Service" id="datareq_ru0">
  <attr name="protocol" type="string" val="tcp"/>
  <attr name="port" type="u16" val="5051"/>
  <attr name="eth_device_name" type="string" val="lo"/>
 </obj>
 
-<obj class="Service" id="df_status_request">
+<obj class="Service" id="fragment">
  <attr name="protocol" type="string" val="tcp"/>
  <attr name="port" type="u16" val="5052"/>
- <attr name="eth_device_name" type="string" val="lo"/>
-</obj>
-
-<obj class="Service" id="trigdec_dfo">
- <attr name="protocol" type="string" val="tcp"/>
- <attr name="port" type="u16" val="5053"/>
  <attr name="eth_device_name" type="string" val="lo"/>
 </obj>
 
@@ -404,6 +352,41 @@
  <rel name="segment" class="Segment" id="generated-segment"/>
  <rel name="detector_configuration" class="DetectorConfig" id="dummy-detector"/>
  <rel name="opmon_uri" class="OpMonURI" id="local-opmon-uri"/>
+</obj>
+
+<obj class="SourceIDConf" id="sid_ru0">
+ <attr name="subsystem" type="enum" val="Detector_Readout"/>
+</obj>
+
+<obj class="SourceIDToNetworkConnection" id="datareq_ru0">
+ <rel name="source_ids">
+  <ref class="SourceIDConf" id="sid_ru0"/>
+ </rel>
+ <rel name="netconn" class="NetworkConnection" id="datareq_ru0"/>
+</obj>
+
+<obj class="TRBConf" id="test">
+ <attr name="tr_queue_timeout" type="u32" val="100"/>
+ <attr name="request_queue_timeout" type="u32" val="1000"/>
+ <attr name="trigger_record_timeout_ms" type="u32" val="1000"/>
+ <attr name="maximum_open_trigger_records" type="u32" val="10"/>
+ <attr name="max_sequence_length_ticks" type="u64" val="5000"/>
+</obj>
+
+<obj class="TRBModule" id="test">
+ <rel name="inputs">
+  <ref class="Queue" id="trigdec_trb"/>
+  <ref class="NetworkConnection" id="fragment"/>
+ </rel>
+ <rel name="outputs">
+  <ref class="Queue" id="trigrecord"/>
+	 <ref class="Queue" id="trb_complete"/>
+  <ref class="NetworkConnection" id="datareq_ru0"/>
+ </rel>
+ <rel name="configuration" class="TRBConf" id="test"/>
+ <rel name="request_connections">
+  <ref class="SourceIDToNetworkConnection" id="datareq_ru0"/>
+ </rel>
 </obj>
 
 <obj class="Variable" id="CMD_FAC">

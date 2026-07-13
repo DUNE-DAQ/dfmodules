@@ -52,6 +52,9 @@ add_dependencies( DataflowStatusModule_test dfmodules_DataflowStatusModule_duneD
 
 daq_add_unit_test( DataStoreFactory_test    LINK_LIBRARIES dfmodules)
 
+daq_add_unit_test( TRBModule_test LINK_LIBRARIES dfmodules )
+add_dependencies( TRBModule_test dfmodules_TRBModule_duneDAQModule)
+
 ##############################################################################
 
 daq_install()
