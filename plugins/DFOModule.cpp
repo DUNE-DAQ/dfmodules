@@ -110,6 +110,12 @@ DFOModule::do_conf(const CommandData_t&)
 
   m_queue_timeout = std::chrono::milliseconds(m_dfo_conf->get_general_queue_timeout_ms());
   m_stop_timeout = std::chrono::milliseconds(m_dfo_conf->get_stop_timeout_ms());
+  m_request_reply_wait = std::chrono::milliseconds(m_dfo_conf->get_request_reply_wait_ms());
+  m_status_watchdog_interval = std::chrono::milliseconds(m_dfo_conf->get_status_watchdog_interval_ms());
+  m_dataflow_status_timeout = std::chrono::milliseconds(m_dfo_conf->get_dataflow_status_timeout_ms());
+
+  m_reallocate_building_triggers_on_timeout = m_dfo_conf->get_reallocate_building_triggers_on_timeout();
+  m_reallocate_writing_triggers_on_timeout = m_dfo_conf->get_reallocate_writing_triggers_on_timeout();
 
   m_td_send_retries = m_dfo_conf->get_td_send_retries();
 
@@ -154,6 +160,8 @@ DFOModule::do_start(const CommandData_t& payload)
   iom->add_callback<dfmessages::TriggerDecision>(
     m_td_connection, std::bind(&DFOModule::receive_trigger_decision, this, std::placeholders::_1));
 
+  m_status_watchdog_thread = std::make_shared<std::jthread>(std::bind_front(&DFOModule::status_watchdog_proc, this));
+
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
 }
 
@@ -177,6 +185,8 @@ DFOModule::do_stop(const CommandData_t& /*args*/)
     ++step_counter;
   }
 
+  m_status_watchdog_thread->request_stop();
+  m_status_watchdog_thread->join();
   iom->remove_callback<dfmessages::DataflowStatus>(m_status_connection);
 
   std::list<std::shared_ptr<AssignedTriggerDecision>> remnants;
@@ -414,7 +424,7 @@ DFOModule::receive_dataflow_status(const dfmessages::DataflowStatus& status)
       it->second->update(status);
     } else {
       m_dataflow_statuses[status.decision_destination] =
-        std::make_shared<ReceivedDataflowStatus>(status, std::chrono::milliseconds(5000));
+        std::make_shared<ReceivedDataflowStatus>(status, m_dataflow_status_timeout);
     }
 
     if (status.trigger_number != 0) {
@@ -526,6 +536,44 @@ DFOModule::assign_trigger_decision(const std::shared_ptr<AssignedTriggerDecision
                               << assignment->connection_name;
 
   m_assigned_trigger_decisions[assignment->decision.trigger_number] = assignment;
+}
+
+void
+DFOModule::status_watchdog_proc(std::stop_token stoken)
+{
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering status_watchdog_proc() method";
+  while (!stoken.stop_requested()) {
+    std::this_thread::sleep_for(m_status_watchdog_interval);
+    std::vector<dfmessages::TriggerDecision> triggers_to_reallocate;
+    {
+      std::lock_guard<std::mutex> guard(m_status_mutex);
+      for (auto& [name, rstatus] : m_dataflow_statuses) {
+        if (!rstatus->status_updated) {
+          ers::error(StaleDataflowStatus(ERS_HERE, name, m_dataflow_status_timeout.count()));
+          if (m_reallocate_building_triggers_on_timeout) {
+            for (auto& trigger : rstatus->status.triggers_building) {
+              ers::error(ReallocatingTrigger(ERS_HERE, trigger, name));
+              triggers_to_reallocate.push_back(m_assigned_trigger_decisions[trigger]->decision);
+              m_statuses_for_trigger.erase(trigger);
+              m_assigned_trigger_decisions.erase(trigger);
+            }
+          }
+          if (m_reallocate_writing_triggers_on_timeout) {
+            for (auto& trigger : rstatus->status.triggers_writing) {
+              ers::error(ReallocatingTrigger(ERS_HERE, trigger, name));
+              triggers_to_reallocate.push_back(m_assigned_trigger_decisions[trigger]->decision);
+              m_statuses_for_trigger.erase(trigger);
+              m_assigned_trigger_decisions.erase(trigger);
+            }
+          }
+        }
+      }
+    }
+    for (auto& trigger : triggers_to_reallocate) {
+      receive_trigger_decision(trigger);
+    }
+  }
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting status_watchdog_proc() method";
 }
 
 bool

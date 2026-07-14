@@ -100,6 +100,7 @@ DataflowStatusModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcfg)
   }
 
   m_current_status.decision_destination = m_td_connection;
+  m_current_status.request_destination = m_status_request_connection;
   m_conf = mdal->get_configuration();
   // these are just tests to check if the connections are ok
   iom->get_receiver<dfmessages::TriggerDecisionToken>(m_token_connection);
@@ -286,7 +287,7 @@ DataflowStatusModule::receive_trigger_decision(dfmessages::TriggerDecision& deci
 
     if (m_current_status.triggers_building.count(decision.trigger_number) > 0 ||
         m_current_status.triggers_writing.count(decision.trigger_number) > 0) {
-      ers::warning(DuplicateTriggerDecision(ERS_HERE, decision.trigger_number, m_current_status.run_number));
+      TLOG() << DuplicateTriggerDecision(ERS_HERE, decision.trigger_number, m_current_status.run_number);
       ++m_num_duplicate_decisions_received;
       return;
     }

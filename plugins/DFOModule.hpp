@@ -60,6 +60,16 @@ ERS_DECLARE_ISSUE(dfmodules,
                   "TriggerDecision " << trigger_number << " was assigned to DF app " << app << " that was busy with "
                                      << used_slots << " TDs",
                   ((uint32_t)trigger_number)((std::string)app)((size_t)used_slots)) // NOLINT(build/unsigned)
+
+ERS_DECLARE_ISSUE(dfmodules,
+                  StaleDataflowStatus,
+                  "No DataflowStatus received from " << app << " for " << timeout << " ms",
+                  ((std::string)app)((uint32_t)timeout)) // NOLINT(build/unsigned)
+
+    ERS_DECLARE_ISSUE(dfmodules,
+                  ReallocatingTrigger,
+                  "Reallocating trigger " << trigger << " from DF app " << app,
+                  ((uint32_t)trigger)((std::string)app)) // NOLINT(build/unsigned)
 // Re-enable coverage checking LCOV_EXCL_STOP
 
 namespace dfmodules {
@@ -99,7 +109,11 @@ private:
   std::chrono::milliseconds m_queue_timeout;
   std::chrono::microseconds m_stop_timeout;
   std::chrono::milliseconds m_request_reply_wait;
+  std::chrono::milliseconds m_status_watchdog_interval;
+  std::chrono::milliseconds m_dataflow_status_timeout;
   dunedaq::daqdataformats::run_number_t m_run_number;
+  bool m_reallocate_building_triggers_on_timeout{ false };
+  bool m_reallocate_writing_triggers_on_timeout{ false };
 
   // Connections
   std::shared_ptr<iomanager::SenderConcept<dfmessages::TriggerInhibit>> m_busy_sender;
@@ -132,11 +146,10 @@ private:
   std::atomic<bool> m_processing_td{ false };
   std::chrono::steady_clock::time_point m_last_td_received;
   mutable std::mutex m_notify_trigger_mutex;
-  std::shared_ptr<std::jthread> m_decision_watchdog_thread;
+  std::shared_ptr<std::jthread> m_status_watchdog_thread;
   std::unordered_map<dfmessages::trigger_number_t, std::shared_ptr<std::jthread>> m_decision_assignment_threads;
 
-  void trigger_decision_assignment_proc(const dfmessages::TriggerDecision& decision);
-  void trigger_decision_watchdog_proc(std::stop_token stoken);
+  void status_watchdog_proc(std::stop_token stoken);
   bool is_busy() const;
 
   // Statistics

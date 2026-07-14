@@ -63,59 +63,74 @@
 
 <oks-data>
 
-<info name="" type="" num-of-items="80" oks-format="data" oks-version="862f2957270" created-by="gjc" created-on="thinkpad" creation-time="20231116T105446" last-modified-by="eflumerf" last-modified-on="ironvirt9.mshome.net" last-modification-time="20260714T190734"/>
+<info name="" type="" num-of-items="98" oks-format="data" oks-version="862f2957270" created-by="copilot" created-on="test" creation-time="20260101T000000" last-modified-by="eflumerf" last-modified-on="ironvirt9.mshome.net" last-modification-time="20260714T191603"/>
 
 <include>
  <file path="schema/confmodel/dunedaq.schema.xml"/>
  <file path="schema/appmodel/application.schema.xml"/>
 </include>
 
-<comments>
- <comment creation-time="20231116T122331" created-by="gjc" created-on="thinkpad" author="gjc" text="k"/>
- <comment creation-time="20231117T105205" created-by="gjc" created-on="thinkpad" author="gjc" text="ff"/>
- <comment creation-time="20231117T120703" created-by="gjc" created-on="thinkpad" author="gjc" text="n"/>
- <comment creation-time="20231117T121356" created-by="gjc" created-on="thinkpad" author="gjc" text="rename"/>
- <comment creation-time="20240105T145227" created-by="eflumerf" created-on="ironvirt9.mshome.net" author="eflumerf" text="test"/>
- <comment creation-time="20240105T154002" created-by="eflumerf" created-on="ironvirt9.mshome.net" author="eflumerf" text="Adding test connections"/>
- <comment creation-time="20240105T161451" created-by="eflumerf" created-on="ironvirt9.mshome.net" author="eflumerf" text="Fill out connections"/>
- <comment creation-time="20240105T162114" created-by="eflumerf" created-on="ironvirt9.mshome.net" author="eflumerf" text="Adding DFO Module"/>
- <comment creation-time="20240105T170629" created-by="eflumerf" created-on="ironvirt9.mshome.net" author="eflumerf" text="Update services used by network connections."/>
- <comment creation-time="20240105T174142" created-by="eflumerf" created-on="ironvirt9.mshome.net" author="eflumerf" text="Update network connection types"/>
-</comments>
-
 
 <obj class="DFOConf" id="test">
  <attr name="general_queue_timeout_ms" type="u32" val="100"/>
- <attr name="stop_timeout_ms" type="u32" val="500"/>
+ <attr name="stop_timeout_ms" type="u32" val="1000"/>
  <attr name="request_reply_wait_ms" type="u32" val="100"/>
  <attr name="td_send_retries" type="s32" val="5"/>
- <attr name="reallocate_building_triggers_on_timeout" type="bool" val="0"/>
+ <attr name="reallocate_building_triggers_on_timeout" type="bool" val="1"/>
  <attr name="reallocate_writing_triggers_on_timeout" type="bool" val="0"/>
- <attr name="status_watchdog_interval_ms" type="u32" val="100"/>
+ <attr name="status_watchdog_interval_ms" type="u32" val="1000"/>
  <attr name="dataflow_status_timeout_ms" type="u32" val="5000"/>
 </obj>
 
-<obj class="DFOModule" id="test">
+<obj class="DFOModule" id="dfo1">
  <rel name="inputs">
-  <ref class="NetworkConnection" id="df_status"/>
-  <ref class="NetworkConnection" id="trigdec"/>
+  <ref class="NetworkConnection" id="dfo1_trigdec_in"/>
+  <ref class="NetworkConnection" id="dfo1_df_status"/>
  </rel>
  <rel name="outputs">
-  <ref class="NetworkConnection" id="triginh"/>
-  <ref class="NetworkConnection" id="trigdec_0"/>
-  <ref class="NetworkConnection" id="df_status_request"/>
+  <ref class="NetworkConnection" id="dfo1_triginh_out"/>
+  <ref class="NetworkConnection" id="df1_trigdec"/>
+  <ref class="NetworkConnection" id="df2_trigdec"/>
+  <ref class="NetworkConnection" id="df3_trigdec"/>
+  <ref class="NetworkConnection" id="df1_status_request"/>
+  <ref class="NetworkConnection" id="df2_status_request"/>
+  <ref class="NetworkConnection" id="df3_status_request"/>
  </rel>
  <rel name="configuration" class="DFOConf" id="test"/>
 </obj>
 
-<obj class="DaqApplication" id="FakeDFApp">
- <attr name="application_name" type="string" val="daq_application"/>
- <rel name="runs_on" class="VirtualHost" id="vlocalhost"/>
- <rel name="opmon_conf" class="OpMonConf" id="slow-all-monitoring"/>
- <rel name="modules">
-  <ref class="DataWriterModule" id="dw-01"/>
-  <ref class="TRBModule" id="trb-01"/>
+<obj class="DFOModule" id="dfo2">
+ <rel name="inputs">
+  <ref class="NetworkConnection" id="dfo2_trigdec_in"/>
+  <ref class="NetworkConnection" id="dfo2_df_status"/>
  </rel>
+ <rel name="outputs">
+  <ref class="NetworkConnection" id="dfo2_triginh_out"/>
+  <ref class="NetworkConnection" id="df1_trigdec"/>
+  <ref class="NetworkConnection" id="df2_trigdec"/>
+  <ref class="NetworkConnection" id="df3_trigdec"/>
+  <ref class="NetworkConnection" id="df1_status_request"/>
+  <ref class="NetworkConnection" id="df2_status_request"/>
+  <ref class="NetworkConnection" id="df3_status_request"/>
+ </rel>
+ <rel name="configuration" class="DFOConf" id="test"/>
+</obj>
+
+<obj class="DFOModule" id="dfo3">
+ <rel name="inputs">
+  <ref class="NetworkConnection" id="dfo3_trigdec_in"/>
+  <ref class="NetworkConnection" id="dfo3_df_status"/>
+ </rel>
+ <rel name="outputs">
+  <ref class="NetworkConnection" id="dfo3_triginh_out"/>
+  <ref class="NetworkConnection" id="df1_trigdec"/>
+  <ref class="NetworkConnection" id="df2_trigdec"/>
+  <ref class="NetworkConnection" id="df3_trigdec"/>
+  <ref class="NetworkConnection" id="df1_status_request"/>
+  <ref class="NetworkConnection" id="df2_status_request"/>
+  <ref class="NetworkConnection" id="df3_status_request"/>
+ </rel>
+ <rel name="configuration" class="DFOConf" id="test"/>
 </obj>
 
 <obj class="DaqApplication" id="TestApp">
@@ -123,32 +138,72 @@
  <rel name="runs_on" class="VirtualHost" id="vlocalhost"/>
  <rel name="opmon_conf" class="OpMonConf" id="slow-all-monitoring"/>
  <rel name="modules">
-  <ref class="DFOModule" id="test"/>
+  <ref class="DFOModule" id="dfo1"/>
+  <ref class="DFOModule" id="dfo2"/>
+  <ref class="DFOModule" id="dfo3"/>
+  <ref class="DataflowStatusModule" id="df1"/>
+  <ref class="DataflowStatusModule" id="df2"/>
+  <ref class="DataflowStatusModule" id="df3"/>
  </rel>
 </obj>
 
-<obj class="DataStoreConf" id="default">
- <attr name="type" type="string" val="HDF5DataStore"/>
- <attr name="directory_path" type="string" val="."/>
- <attr name="mode" type="enum" val="all-per-file"/>
- <attr name="max_file_size" type="u64" val="4294967296"/>
- <attr name="disable_unique_filename_suffix" type="bool" val="0"/>
- <attr name="free_space_safety_factor" type="s32" val="5"/>
- <rel name="file_layout_params" class="HDF5FileLayoutParams" id="default"/>
- <rel name="filename_params" class="FilenameParams" id="default"/>
+<obj class="DataflowStatusModule" id="df1">
+ <rel name="inputs">
+  <ref class="NetworkConnection" id="df1_trigdec"/>
+  <ref class="Queue" id="df1_token_in"/>
+  <ref class="Queue" id="df1_trb_completion_in"/>
+  <ref class="NetworkConnection" id="df1_status_request"/>
+ </rel>
+ <rel name="outputs">
+  <ref class="Queue" id="df1_trigdec_out"/>
+  <ref class="NetworkConnection" id="dfo1_df_status"/>
+  <ref class="NetworkConnection" id="dfo2_df_status"/>
+  <ref class="NetworkConnection" id="dfo3_df_status"/>
+ </rel>
+ <rel name="configuration" class="DataflowStatusModuleConf" id="test"/>
 </obj>
 
-<obj class="DataWriterConf" id="dw-01">
- <attr name="data_storage_prescale" type="s32" val="1"/>
- <attr name="min_write_retry_time_ms" type="s32" val="1"/>
- <attr name="max_write_retry_time_ms" type="s32" val="1000"/>
- <attr name="write_retry_time_increase_factor" type="s32" val="2"/>
- <rel name="data_store_params" class="DataStoreConf" id="default"/>
+<obj class="DataflowStatusModule" id="df2">
+ <rel name="inputs">
+  <ref class="NetworkConnection" id="df2_trigdec"/>
+  <ref class="Queue" id="df2_token_in"/>
+  <ref class="Queue" id="df2_trb_completion_in"/>
+  <ref class="NetworkConnection" id="df2_status_request"/>
+ </rel>
+ <rel name="outputs">
+  <ref class="Queue" id="df2_trigdec_out"/>
+  <ref class="NetworkConnection" id="dfo1_df_status"/>
+  <ref class="NetworkConnection" id="dfo2_df_status"/>
+  <ref class="NetworkConnection" id="dfo3_df_status"/>
+ </rel>
+ <rel name="configuration" class="DataflowStatusModuleConf" id="test"/>
 </obj>
 
-<obj class="DataWriterModule" id="dw-01">
- <attr name="writer_identifier" type="string" val="dw-01"/>
- <rel name="configuration" class="DataWriterConf" id="dw-01"/>
+<obj class="DataflowStatusModule" id="df3">
+ <rel name="inputs">
+  <ref class="NetworkConnection" id="df3_trigdec"/>
+  <ref class="Queue" id="df3_token_in"/>
+  <ref class="Queue" id="df3_trb_completion_in"/>
+  <ref class="NetworkConnection" id="df3_status_request"/>
+ </rel>
+ <rel name="outputs">
+  <ref class="Queue" id="df3_trigdec_out"/>
+  <ref class="NetworkConnection" id="dfo1_df_status"/>
+  <ref class="NetworkConnection" id="dfo2_df_status"/>
+  <ref class="NetworkConnection" id="dfo3_df_status"/>
+ </rel>
+ <rel name="configuration" class="DataflowStatusModuleConf" id="test"/>
+</obj>
+
+<obj class="DataflowStatusModuleConf" id="test">
+ <attr name="trigger_type_mask" type="u64" val="15"/>
+ <attr name="busy_threshold" type="s32" val="3"/>
+ <attr name="free_threshold" type="s32" val="1"/>
+ <attr name="heartbeat_interval_ms" type="u32" val="100"/>
+ <attr name="stop_timeout_ms" type="u32" val="1000"/>
+ <attr name="td_queue_timeout_ms" type="u32" val="1000"/>
+ <attr name="snapshot_history_size" type="u32" val="100"/>
+ <attr name="completed_trigger_history_size" type="u32" val="100"/>
 </obj>
 
 <obj class="DetectorConfig" id="dummy-detector">
@@ -310,120 +365,127 @@
  </attr>
 </obj>
 
-<obj class="FilenameParams" id="default">
- <attr name="file_type_prefix" type="enum" val="raw"/>
- <attr name="run_number_prefix" type="string" val="run"/>
- <attr name="digits_for_run_number" type="s32" val="6"/>
- <attr name="digits_for_file_index" type="s32" val="4"/>
- <attr name="digits_for_trigger_number" type="s32" val="6"/>
+<obj class="NetworkConnection" id="df1_status_request">
+ <attr name="data_type" type="string" val="DataflowStatusRequest"/>
+ <attr name="send_timeout_ms" type="u32" val="10"/>
+ <attr name="recv_timeout_ms" type="u32" val="10"/>
+ <attr name="connection_type" type="enum" val="kSendRecv"/>
+ <rel name="associated_service" class="Service" id="df1_status_request"/>
 </obj>
 
-<obj class="HDF5FileLayoutParams" id="default">
- <attr name="record_name_prefix" type="string" val="TriggerRecord"/>
- <attr name="digits_for_record_number" type="s32" val="5"/>
- <attr name="digits_for_sequence_number" type="s32" val="4"/>
- <attr name="record_header_dataset_name" type="string" val="TriggerRecordHeader"/>
- <attr name="raw_data_group_name" type="string" val="RawData"/>
- <attr name="view_group_name" type="string" val="Views"/>
- <rel name="path_params_list">
-  <ref class="HDF5PathParams" id="DataSelection"/>
-  <ref class="HDF5PathParams" id="HSI"/>
-  <ref class="HDF5PathParams" id="NDLArPDS"/>
-  <ref class="HDF5PathParams" id="NDLarTPC"/>
-  <ref class="HDF5PathParams" id="PDS"/>
-  <ref class="HDF5PathParams" id="TPC"/>
- </rel>
+<obj class="NetworkConnection" id="df1_trigdec">
+ <attr name="data_type" type="string" val="TriggerDecision"/>
+ <attr name="send_timeout_ms" type="u32" val="10"/>
+ <attr name="recv_timeout_ms" type="u32" val="10"/>
+ <attr name="connection_type" type="enum" val="kSendRecv"/>
+ <rel name="associated_service" class="Service" id="df1_trigdec"/>
 </obj>
 
-<obj class="HDF5PathParams" id="DataSelection">
- <attr name="detector_group_type" type="string" val="Trigger"/>
- <attr name="detector_group_name" type="string" val="DataSelection"/>
- <attr name="element_name_prefix" type="string" val="Element"/>
- <attr name="digits_for_element_number" type="s32" val="5"/>
+<obj class="NetworkConnection" id="df2_status_request">
+ <attr name="data_type" type="string" val="DataflowStatusRequest"/>
+ <attr name="send_timeout_ms" type="u32" val="10"/>
+ <attr name="recv_timeout_ms" type="u32" val="10"/>
+ <attr name="connection_type" type="enum" val="kSendRecv"/>
+ <rel name="associated_service" class="Service" id="df2_status_request"/>
 </obj>
 
-<obj class="HDF5PathParams" id="HSI">
- <attr name="detector_group_type" type="string" val="HW_Signals_Interface"/>
- <attr name="detector_group_name" type="string" val="HSI"/>
- <attr name="element_name_prefix" type="string" val="Element"/>
- <attr name="digits_for_element_number" type="s32" val="5"/>
+<obj class="NetworkConnection" id="df2_trigdec">
+ <attr name="data_type" type="string" val="TriggerDecision"/>
+ <attr name="send_timeout_ms" type="u32" val="10"/>
+ <attr name="recv_timeout_ms" type="u32" val="10"/>
+ <attr name="connection_type" type="enum" val="kSendRecv"/>
+ <rel name="associated_service" class="Service" id="df2_trigdec"/>
 </obj>
 
-<obj class="HDF5PathParams" id="NDLArPDS">
- <attr name="detector_group_type" type="string" val="Detector_Readout"/>
- <attr name="detector_group_name" type="string" val="NDLArPDS"/>
- <attr name="element_name_prefix" type="string" val="Element"/>
- <attr name="digits_for_element_number" type="s32" val="5"/>
+<obj class="NetworkConnection" id="df3_status_request">
+ <attr name="data_type" type="string" val="DataflowStatusRequest"/>
+ <attr name="send_timeout_ms" type="u32" val="10"/>
+ <attr name="recv_timeout_ms" type="u32" val="10"/>
+ <attr name="connection_type" type="enum" val="kSendRecv"/>
+ <rel name="associated_service" class="Service" id="df3_status_request"/>
 </obj>
 
-<obj class="HDF5PathParams" id="NDLarTPC">
- <attr name="detector_group_type" type="string" val="Detector_Readout"/>
- <attr name="detector_group_name" type="string" val="NDLArTPC"/>
- <attr name="element_name_prefix" type="string" val="Element"/>
- <attr name="digits_for_element_number" type="s32" val="5"/>
+<obj class="NetworkConnection" id="df3_trigdec">
+ <attr name="data_type" type="string" val="TriggerDecision"/>
+ <attr name="send_timeout_ms" type="u32" val="10"/>
+ <attr name="recv_timeout_ms" type="u32" val="10"/>
+ <attr name="connection_type" type="enum" val="kSendRecv"/>
+ <rel name="associated_service" class="Service" id="df3_trigdec"/>
 </obj>
 
-<obj class="HDF5PathParams" id="PDS">
- <attr name="detector_group_type" type="string" val="Detector_Readout"/>
- <attr name="detector_group_name" type="string" val="PDS"/>
- <attr name="element_name_prefix" type="string" val="Element"/>
- <attr name="digits_for_element_number" type="s32" val="5"/>
-</obj>
-
-<obj class="HDF5PathParams" id="TPC">
- <attr name="detector_group_type" type="string" val="Detector_Readout"/>
- <attr name="detector_group_name" type="string" val="TPC"/>
- <attr name="element_name_prefix" type="string" val="Link"/>
- <attr name="digits_for_element_number" type="s32" val="5"/>
-</obj>
-
-<obj class="NetworkConnection" id="df_status">
+<obj class="NetworkConnection" id="dfo1_df_status">
  <attr name="data_type" type="string" val="DataflowStatus"/>
  <attr name="capacity" type="u32" val="1"/>
  <attr name="send_timeout_ms" type="u32" val="10"/>
  <attr name="recv_timeout_ms" type="u32" val="10"/>
  <attr name="connection_type" type="enum" val="kSendRecv"/>
- <rel name="associated_service" class="Service" id="df_status"/>
+ <rel name="associated_service" class="Service" id="dfo1_df_status"/>
 </obj>
 
-<obj class="NetworkConnection" id="df_status_request">
- <attr name="data_type" type="string" val="DataflowStatusRequest"/>
- <attr name="send_timeout_ms" type="u32" val="10"/>
- <attr name="recv_timeout_ms" type="u32" val="10"/>
- <attr name="connection_type" type="enum" val="kSendRecv"/>
- <rel name="associated_service" class="Service" id="df_status_request"/>
-</obj>
-
-<obj class="NetworkConnection" id="trigdec">
+<obj class="NetworkConnection" id="dfo1_trigdec_in">
  <attr name="data_type" type="string" val="TriggerDecision"/>
  <attr name="send_timeout_ms" type="u32" val="10"/>
  <attr name="recv_timeout_ms" type="u32" val="10"/>
  <attr name="connection_type" type="enum" val="kSendRecv"/>
- <rel name="associated_service" class="Service" id="trigdec"/>
+ <rel name="associated_service" class="Service" id="dfo1_trigdec_in"/>
 </obj>
 
-<obj class="NetworkConnection" id="trigdec_0">
- <attr name="data_type" type="string" val="TriggerDecision"/>
- <attr name="send_timeout_ms" type="u32" val="10"/>
- <attr name="recv_timeout_ms" type="u32" val="10"/>
- <attr name="connection_type" type="enum" val="kSendRecv"/>
- <rel name="associated_service" class="Service" id="trigdec_0"/>
-</obj>
-
-<obj class="NetworkConnection" id="triginh">
+<obj class="NetworkConnection" id="dfo1_triginh_out">
  <attr name="data_type" type="string" val="TriggerInhibit"/>
  <attr name="send_timeout_ms" type="u32" val="10"/>
  <attr name="recv_timeout_ms" type="u32" val="10"/>
  <attr name="connection_type" type="enum" val="kSendRecv"/>
- <rel name="associated_service" class="Service" id="triginh"/>
+ <rel name="associated_service" class="Service" id="dfo1_triginh_out"/>
 </obj>
 
-<obj class="NetworkConnection" id="trigrec">
- <attr name="data_type" type="string" val="TriggerRecord"/>
+<obj class="NetworkConnection" id="dfo2_df_status">
+ <attr name="data_type" type="string" val="DataflowStatus"/>
+ <attr name="capacity" type="u32" val="1"/>
  <attr name="send_timeout_ms" type="u32" val="10"/>
  <attr name="recv_timeout_ms" type="u32" val="10"/>
  <attr name="connection_type" type="enum" val="kSendRecv"/>
- <rel name="associated_service" class="Service" id="trigrec"/>
+ <rel name="associated_service" class="Service" id="dfo2_df_status"/>
+</obj>
+
+<obj class="NetworkConnection" id="dfo2_trigdec_in">
+ <attr name="data_type" type="string" val="TriggerDecision"/>
+ <attr name="send_timeout_ms" type="u32" val="10"/>
+ <attr name="recv_timeout_ms" type="u32" val="10"/>
+ <attr name="connection_type" type="enum" val="kSendRecv"/>
+ <rel name="associated_service" class="Service" id="dfo2_trigdec_in"/>
+</obj>
+
+<obj class="NetworkConnection" id="dfo2_triginh_out">
+ <attr name="data_type" type="string" val="TriggerInhibit"/>
+ <attr name="send_timeout_ms" type="u32" val="10"/>
+ <attr name="recv_timeout_ms" type="u32" val="10"/>
+ <attr name="connection_type" type="enum" val="kSendRecv"/>
+ <rel name="associated_service" class="Service" id="dfo2_triginh_out"/>
+</obj>
+
+<obj class="NetworkConnection" id="dfo3_df_status">
+ <attr name="data_type" type="string" val="DataflowStatus"/>
+ <attr name="capacity" type="u32" val="1"/>
+ <attr name="send_timeout_ms" type="u32" val="10"/>
+ <attr name="recv_timeout_ms" type="u32" val="10"/>
+ <attr name="connection_type" type="enum" val="kSendRecv"/>
+ <rel name="associated_service" class="Service" id="dfo3_df_status"/>
+</obj>
+
+<obj class="NetworkConnection" id="dfo3_trigdec_in">
+ <attr name="data_type" type="string" val="TriggerDecision"/>
+ <attr name="send_timeout_ms" type="u32" val="10"/>
+ <attr name="recv_timeout_ms" type="u32" val="10"/>
+ <attr name="connection_type" type="enum" val="kSendRecv"/>
+ <rel name="associated_service" class="Service" id="dfo3_trigdec_in"/>
+</obj>
+
+<obj class="NetworkConnection" id="dfo3_triginh_out">
+ <attr name="data_type" type="string" val="TriggerInhibit"/>
+ <attr name="send_timeout_ms" type="u32" val="10"/>
+ <attr name="recv_timeout_ms" type="u32" val="10"/>
+ <attr name="connection_type" type="enum" val="kSendRecv"/>
+ <rel name="associated_service" class="Service" id="dfo3_triginh_out"/>
 </obj>
 
 <obj class="OpMonConf" id="slow-all-monitoring">
@@ -451,7 +513,71 @@
  </attr>
 </obj>
 
-<obj class="Queue" id="trigger_decision_q">
+<obj class="Queue" id="df1_token_in">
+ <attr name="data_type" type="string" val="TriggerDecisionToken"/>
+ <attr name="capacity" type="u32" val="1"/>
+ <attr name="send_timeout_ms" type="u32" val="10"/>
+ <attr name="recv_timeout_ms" type="u32" val="10"/>
+ <attr name="queue_type" type="enum" val="kFollySPSCQueue"/>
+</obj>
+
+<obj class="Queue" id="df1_trb_completion_in">
+ <attr name="data_type" type="string" val="TRBCompletion"/>
+ <attr name="capacity" type="u32" val="1"/>
+ <attr name="send_timeout_ms" type="u32" val="10"/>
+ <attr name="recv_timeout_ms" type="u32" val="10"/>
+ <attr name="queue_type" type="enum" val="kFollySPSCQueue"/>
+</obj>
+
+<obj class="Queue" id="df1_trigdec_out">
+ <attr name="data_type" type="string" val="TriggerDecision"/>
+ <attr name="capacity" type="u32" val="1"/>
+ <attr name="send_timeout_ms" type="u32" val="10"/>
+ <attr name="recv_timeout_ms" type="u32" val="10"/>
+ <attr name="queue_type" type="enum" val="kFollySPSCQueue"/>
+</obj>
+
+<obj class="Queue" id="df2_token_in">
+ <attr name="data_type" type="string" val="TriggerDecisionToken"/>
+ <attr name="capacity" type="u32" val="1"/>
+ <attr name="send_timeout_ms" type="u32" val="10"/>
+ <attr name="recv_timeout_ms" type="u32" val="10"/>
+ <attr name="queue_type" type="enum" val="kFollySPSCQueue"/>
+</obj>
+
+<obj class="Queue" id="df2_trb_completion_in">
+ <attr name="data_type" type="string" val="TRBCompletion"/>
+ <attr name="capacity" type="u32" val="1"/>
+ <attr name="send_timeout_ms" type="u32" val="10"/>
+ <attr name="recv_timeout_ms" type="u32" val="10"/>
+ <attr name="queue_type" type="enum" val="kFollySPSCQueue"/>
+</obj>
+
+<obj class="Queue" id="df2_trigdec_out">
+ <attr name="data_type" type="string" val="TriggerDecision"/>
+ <attr name="capacity" type="u32" val="1"/>
+ <attr name="send_timeout_ms" type="u32" val="10"/>
+ <attr name="recv_timeout_ms" type="u32" val="10"/>
+ <attr name="queue_type" type="enum" val="kFollySPSCQueue"/>
+</obj>
+
+<obj class="Queue" id="df3_token_in">
+ <attr name="data_type" type="string" val="TriggerDecisionToken"/>
+ <attr name="capacity" type="u32" val="1"/>
+ <attr name="send_timeout_ms" type="u32" val="10"/>
+ <attr name="recv_timeout_ms" type="u32" val="10"/>
+ <attr name="queue_type" type="enum" val="kFollySPSCQueue"/>
+</obj>
+
+<obj class="Queue" id="df3_trb_completion_in">
+ <attr name="data_type" type="string" val="TRBCompletion"/>
+ <attr name="capacity" type="u32" val="1"/>
+ <attr name="send_timeout_ms" type="u32" val="10"/>
+ <attr name="recv_timeout_ms" type="u32" val="10"/>
+ <attr name="queue_type" type="enum" val="kFollySPSCQueue"/>
+</obj>
+
+<obj class="Queue" id="df3_trigdec_out">
  <attr name="data_type" type="string" val="TriggerDecision"/>
  <attr name="capacity" type="u32" val="1"/>
  <attr name="send_timeout_ms" type="u32" val="10"/>
@@ -483,39 +609,93 @@
  <rel name="controller" class="RCApplication" id="my-controller"/>
 </obj>
 
-<obj class="Service" id="df_status">
+<obj class="Service" id="df1_status_request">
  <attr name="protocol" type="string" val="tcp"/>
  <attr name="port" type="u16" val="5050"/>
  <attr name="eth_device_name" type="string" val="lo"/>
 </obj>
 
-<obj class="Service" id="df_status_request">
+<obj class="Service" id="df1_trigdec">
  <attr name="protocol" type="string" val="tcp"/>
  <attr name="port" type="u16" val="5051"/>
  <attr name="eth_device_name" type="string" val="lo"/>
 </obj>
 
-<obj class="Service" id="trigdec">
+<obj class="Service" id="df2_status_request">
  <attr name="protocol" type="string" val="tcp"/>
  <attr name="port" type="u16" val="5052"/>
  <attr name="eth_device_name" type="string" val="lo"/>
 </obj>
 
-<obj class="Service" id="trigdec_0">
+<obj class="Service" id="df2_trigdec">
  <attr name="protocol" type="string" val="tcp"/>
  <attr name="port" type="u16" val="5053"/>
  <attr name="eth_device_name" type="string" val="lo"/>
 </obj>
 
-<obj class="Service" id="triginh">
+<obj class="Service" id="df3_status_request">
  <attr name="protocol" type="string" val="tcp"/>
  <attr name="port" type="u16" val="5054"/>
  <attr name="eth_device_name" type="string" val="lo"/>
 </obj>
 
-<obj class="Service" id="trigrec">
+<obj class="Service" id="df3_trigdec">
  <attr name="protocol" type="string" val="tcp"/>
- <attr name="port" type="u16" val="5054"/>
+ <attr name="port" type="u16" val="5055"/>
+ <attr name="eth_device_name" type="string" val="lo"/>
+</obj>
+
+<obj class="Service" id="dfo1_df_status">
+ <attr name="protocol" type="string" val="tcp"/>
+ <attr name="port" type="u16" val="5056"/>
+ <attr name="eth_device_name" type="string" val="lo"/>
+</obj>
+
+<obj class="Service" id="dfo1_trigdec_in">
+ <attr name="protocol" type="string" val="tcp"/>
+ <attr name="port" type="u16" val="5057"/>
+ <attr name="eth_device_name" type="string" val="lo"/>
+</obj>
+
+<obj class="Service" id="dfo1_triginh_out">
+ <attr name="protocol" type="string" val="tcp"/>
+ <attr name="port" type="u16" val="5058"/>
+ <attr name="eth_device_name" type="string" val="lo"/>
+</obj>
+
+<obj class="Service" id="dfo2_df_status">
+ <attr name="protocol" type="string" val="tcp"/>
+ <attr name="port" type="u16" val="5059"/>
+ <attr name="eth_device_name" type="string" val="lo"/>
+</obj>
+
+<obj class="Service" id="dfo2_trigdec_in">
+ <attr name="protocol" type="string" val="tcp"/>
+ <attr name="port" type="u16" val="5060"/>
+ <attr name="eth_device_name" type="string" val="lo"/>
+</obj>
+
+<obj class="Service" id="dfo2_triginh_out">
+ <attr name="protocol" type="string" val="tcp"/>
+ <attr name="port" type="u16" val="5061"/>
+ <attr name="eth_device_name" type="string" val="lo"/>
+</obj>
+
+<obj class="Service" id="dfo3_df_status">
+ <attr name="protocol" type="string" val="tcp"/>
+ <attr name="port" type="u16" val="5062"/>
+ <attr name="eth_device_name" type="string" val="lo"/>
+</obj>
+
+<obj class="Service" id="dfo3_trigdec_in">
+ <attr name="protocol" type="string" val="tcp"/>
+ <attr name="port" type="u16" val="5063"/>
+ <attr name="eth_device_name" type="string" val="lo"/>
+</obj>
+
+<obj class="Service" id="dfo3_triginh_out">
+ <attr name="protocol" type="string" val="tcp"/>
+ <attr name="port" type="u16" val="5064"/>
  <attr name="eth_device_name" type="string" val="lo"/>
 </obj>
 
@@ -530,21 +710,6 @@
  <rel name="segment" class="Segment" id="generated-segment"/>
  <rel name="detector_configuration" class="DetectorConfig" id="dummy-detector"/>
  <rel name="opmon_uri" class="OpMonURI" id="local-opmon-uri"/>
-</obj>
-
-<obj class="TRBConf" id="trb-01">
- <attr name="tr_queue_timeout" type="u32" val="100"/>
- <attr name="request_queue_timeout" type="u32" val="100"/>
- <attr name="trigger_record_timeout_ms" type="u32" val="2858"/>
- <attr name="trb_complete_timeout" type="u32" val="1000"/>
- <attr name="maximum_open_trigger_records" type="u32" val="100"/>
-</obj>
-
-<obj class="TRBModule" id="trb-01">
- <rel name="inputs">
-  <ref class="NetworkConnection" id="trigdec_0"/>
- </rel>
- <rel name="configuration" class="TRBConf" id="trb-01"/>
 </obj>
 
 <obj class="Variable" id="CMD_FAC">

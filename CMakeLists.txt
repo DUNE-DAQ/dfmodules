@@ -50,6 +50,9 @@ add_dependencies( DFOModule_test dfmodules_DFOModule_duneDAQModule)
 daq_add_unit_test( DataflowStatusModule_test LINK_LIBRARIES dfmodules )
 add_dependencies( DataflowStatusModule_test dfmodules_DataflowStatusModule_duneDAQModule)
 
+daq_add_unit_test( DFOProtocol_test LINK_LIBRARIES dfmodules )
+add_dependencies( DFOProtocol_test dfmodules_DFOModule_duneDAQModule dfmodules_DataflowStatusModule_duneDAQModule)
+
 daq_add_unit_test( DataStoreFactory_test    LINK_LIBRARIES dfmodules)
 
 daq_add_unit_test( TRBModule_test LINK_LIBRARIES dfmodules )
