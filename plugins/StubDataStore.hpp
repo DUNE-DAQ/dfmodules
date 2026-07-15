@@ -37,6 +37,10 @@ namespace dunedaq::dfmodules {
 
     void open_new_file(const std::string& unique_filename) override;
 
+    // This getter function and its underlying member serve no purpose
+    // other than to demonstrate how you can add parameters specific
+    // to your implementation of DataStore
+
     int get_derivval() const { return m_derivval; }
 
   private:

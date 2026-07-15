@@ -1,31 +1,29 @@
 /**
  * @file FileDataStoreImpl.hpp
  *
+ * The base class for file-output-focused implementations of the
+ * DataStore interface
  *
- * An near-complete file output focused implementation of the DataStore interface which
- * nonetheless templatizes the representation of the data file (e.g.,
- * hdf5, Root, text, etc.) and leaves a few implementation
- * details (e.g., the physical closing and reopening of data files)
- * to a derived class.
- *
- * To create a full implementation of DataStore, perform the following steps:
+ * To create such an implementation, perform the following steps:
  *
  * 1) Create a class which satisfies the constraints expressed in the
- * FileHandleConcept below - hdflibs' HDF5RawDataFile is an example
+ * FileHandleConcept below - this package's StubDataWriter is an example
  *
- * 2) Obtain an OKS configuration object which can configure both this
- *  intermediate base class and then anything specific needed by the
- *  class described in the previous point - e.g.,
- *  appmodel::DataStoreConf works for the HDF5DataStore implementation
+ * 2) Declare a data store plugin which public-ally derives from
+ * FileDataStoreImpl, where FileDataStoreImpl has been parametrized
+ * with the class described in (1). In this package, StubDataStore is an example.
  *
- * 3) Create a usable data store class which public-ally derives from
- *   FileDataStoreImpl, where FileDataStoreImpl has been parametrized
- *   with the class described in (1) and the configuration described
- *   in (2)
+ * 3) Implement the pure virtual open_new_file function, where the
+ * main purpose of the implementation should be to reset the
+ * FileDataStoreImpl's unique pointer data member to a new instance of
+ * the class in (1)
  *
- * 4) Implement the pure virtual open_new_file function, where the
- *   main purpose of the implementation should be to reset the unique pointer
- *   to a new instance of the class in (1)
+ * 4) In the (likely) event that the open_new_file implementation
+ * needs configurable parameters which aren't already available in
+ * appmodel::DataStoreConf, create an OKS schema class which derives
+ * from appmodel::DataStoreConf as a superclass and adds parameters as
+ * needed. See appmodel::DataStoreConfTestDeriv in the appmodel
+ * package, and how it's used by StubDataStore
  *
  * This is part of the DUNE DAQ Application Framework, copyright 2020.
  * Licensing/copyright details are in the COPYING file that you should have
@@ -135,9 +133,9 @@ concept FileHandleConcept = requires(T file_handle,
 /**
  * @brief FileDataStoreImpl contains functionality you'd generally
  * want in a data store which writes to a file irrespective of file
- * type
+ * type. See top of its header file for details. 
  */
-  template <FileHandleConcept FileHandleClass> // E.g., hdf5libs::HDF5RawDataFile
+template <FileHandleConcept FileHandleClass> // E.g., StubDataWriter
 class FileDataStoreImpl : public DataStore
 {
 
