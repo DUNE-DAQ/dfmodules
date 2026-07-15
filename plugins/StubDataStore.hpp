@@ -16,7 +16,7 @@
 
 #include "dfmodules/FileDataStoreImpl.hpp"
 
-#include "appmodel/DataStoreConf.hpp"
+#include "appmodel/DataStoreConfTestDeriv.hpp"
 #include "dfmodules/StubDataWriter.hpp"
 
 #include <memory>
@@ -24,17 +24,24 @@
 
 namespace dunedaq::dfmodules {
 
-  class StubDataStore : public FileDataStoreImpl<dfmodules::StubDataWriter,
-					     appmodel::DataStoreConf> {
+  class StubDataStore : public FileDataStoreImpl<dfmodules::StubDataWriter> {
 
   public:
     explicit StubDataStore(std::string const& name,
                          std::shared_ptr<appfwk::ConfigurationManager> mcfg,
 			   std::string const& writer_name) :
-      FileDataStoreImpl(name, mcfg, writer_name)
+      FileDataStoreImpl(name, mcfg, writer_name),
+      m_sds_config { mcfg ? mcfg->get_dal<appmodel::DataStoreConfTestDeriv>(name) : nullptr },
+      m_derivval { m_sds_config ? m_sds_config->get_derivval() : std::numeric_limits<int>::max() }
     {}
 
     void open_new_file(const std::string& unique_filename) override;
+
+    int get_derivval() const { return m_derivval; }
+
+  private:
+    const appmodel::DataStoreConfTestDeriv* m_sds_config; 
+    const int m_derivval;
   };
 
   inline void StubDataStore::open_new_file(const std::string& unique_filename) {

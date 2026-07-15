@@ -25,6 +25,7 @@
 #include "confmodel/DetectorConfig.hpp"
 #include "confmodel/Session.hpp"
 #include "appmodel/DataStoreConf.hpp"
+#include "appmodel/DataStoreConfTestDeriv.hpp"
 #include "detdataformats/DetID.hpp"
 
 #define BOOST_TEST_MODULE StubWrite_test // NOLINT
@@ -155,6 +156,21 @@ BOOST_AUTO_TEST_SUITE(StubWrite_test)
 BOOST_AUTO_TEST_CASE(NullConfiguration)
 {
   BOOST_CHECK_THROW(make_data_store("StubDataStore", "dummy", nullptr, "dummy"), dunedaq::dfmodules::FileDataStoreImplBadConfiguration);
+}
+
+BOOST_AUTO_TEST_CASE(CheckDerivation)
+{
+  CfgFixture cfg("test-session-3-1");
+  auto data_writer_conf = cfg.cfgMgr->get_dal<dunedaq::appmodel::DataWriterModule>("dwm-01")->get_configuration();
+  auto data_store_conf = data_writer_conf->get_data_store_params();
+
+  auto data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.cfgMgr, "dwm-01");
+  BOOST_REQUIRE(data_store_ptr != nullptr);
+  
+  const auto stub_data_store_ptr {dynamic_cast<const dunedaq::dfmodules::StubDataStore*>(data_store_ptr.get())};
+  BOOST_REQUIRE(stub_data_store_ptr != nullptr);
+  
+  BOOST_REQUIRE_EQUAL(stub_data_store_ptr->get_derivval(), 773); // 773 should be the value in the config
 }
 
 BOOST_AUTO_TEST_CASE(WriteEventFiles)

@@ -22,8 +22,7 @@
 
 namespace dunedaq::dfmodules {
 
-  class HDF5DataStore : public FileDataStoreImpl<hdf5libs::HDF5RawDataFile,
-					     appmodel::DataStoreConf> {
+  class HDF5DataStore : public FileDataStoreImpl<hdf5libs::HDF5RawDataFile> {
 
   public:
     explicit HDF5DataStore(std::string const& name,

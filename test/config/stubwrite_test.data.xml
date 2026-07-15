@@ -94,14 +94,14 @@
  </rel>
 </obj>
 
-<obj class="DataStoreConf" id="default">
+<obj class="DataStoreConfTestDeriv" id="default">
  <attr name="type" type="string" val="StubDataStore"/>
  <attr name="directory_path" type="string" val="."/>
  <attr name="mode" type="enum" val="all-per-file"/>
  <attr name="max_file_size" type="u64" val="4294967296"/>
  <attr name="disable_unique_filename_suffix" type="bool" val="0"/>
  <attr name="free_space_safety_factor" type="s32" val="5"/>
-<!-- <rel name="file_layout_params" class="HDF5FileLayoutParams" id="default"/> -->
+ <attr name="derivval" type="s32" val="773"/>
  <rel name="filename_params" class="FilenameParams" id="default"/>
 </obj>
 
@@ -110,7 +110,7 @@
  <attr name="min_write_retry_time_ms" type="s32" val="1"/>
  <attr name="max_write_retry_time_ms" type="s32" val="1000"/>
  <attr name="write_retry_time_increase_factor" type="s32" val="2"/>
- <rel name="data_store_params" class="DataStoreConf" id="default"/>
+ <rel name="data_store_params" class="DataStoreConfTestDeriv" id="default"/>
 </obj>
 
 <obj class="DataWriterModule" id="dwm-01">

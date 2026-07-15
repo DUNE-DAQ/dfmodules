@@ -16,7 +16,7 @@
  * 2) Obtain an OKS configuration object which can configure both this
  *  intermediate base class and then anything specific needed by the
  *  class described in the previous point - e.g.,
- *  appfwk::DataStoreConf works for the HDF5DataStore implementation
+ *  appmodel::DataStoreConf works for the HDF5DataStore implementation
  *
  * 3) Create a usable data store class which public-ally derives from
  *   FileDataStoreImpl, where FileDataStoreImpl has been parametrized
@@ -38,6 +38,7 @@
 #include "dfmodules/DataStore.hpp"
 #include "dfmodules/opmon/DataStore.pb.h"
 
+#include "appmodel/DataStoreConf.hpp"
 #include "appmodel/FilenameParams.hpp"
 #include "confmodel/DetectorConfig.hpp"
 #include "confmodel/Session.hpp"
@@ -136,8 +137,7 @@ concept FileHandleConcept = requires(T file_handle,
  * want in a data store which writes to a file irrespective of file
  * type
  */
-  template <FileHandleConcept FileHandleClass, // E.g., hdf5libs::HDF5RawDataFile
-	    typename DataStoreConf> // E.g., appmodel::DataStoreConf
+  template <FileHandleConcept FileHandleClass> // E.g., hdf5libs::HDF5RawDataFile
 class FileDataStoreImpl : public DataStore
 {
 
@@ -162,7 +162,7 @@ public:
     , m_run_number {0}
     , m_file_index {0}
     , m_writer_identifier {writer_name}
-    , m_config_params { mcfg ? mcfg->get_dal<DataStoreConf>(name) : nullptr }
+    , m_config_params { mcfg ? mcfg->get_dal<appmodel::DataStoreConf>(name) : nullptr }
     , m_session { mcfg ? mcfg->get_session() : nullptr }
     , m_compression_level { m_config_params ? m_config_params->get_compression_level() : static_cast<unsigned>(0) } // NOLINT(build/unsigned)
     , m_operational_environment { m_session ? m_session->get_detector_configuration()->get_op_env() : "unavailable" }
@@ -215,7 +215,7 @@ public:
     return m_compression_level;
   }
 
-  const DataStoreConf& get_configuration() const noexcept {
+  const appmodel::DataStoreConf& get_configuration() const noexcept {
     return *m_config_params;
   }
 
@@ -446,7 +446,7 @@ private:
   std::atomic<size_t> m_file_index;
   const std::string m_writer_identifier;
 
-  const DataStoreConf* m_config_params;
+  const appmodel::DataStoreConf* m_config_params;
 
   const confmodel::Session* m_session;
 
