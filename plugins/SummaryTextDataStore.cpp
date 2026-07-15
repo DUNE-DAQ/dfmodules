@@ -4,6 +4,6 @@
  * received with this code.                                                     
  */
 
-#include "StubDataStore.hpp"
+#include "SummaryTextDataStore.hpp"
 
-DEFINE_DUNE_DATA_STORE(dunedaq::dfmodules::StubDataStore)
+DEFINE_DUNE_DATA_STORE(dunedaq::dfmodules::SummaryTextDataStore)

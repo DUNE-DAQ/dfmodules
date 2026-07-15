@@ -1,6 +1,6 @@
 /**
  *
- * @file StubDataStore.hpp
+ * @file SummaryTextDataStore.hpp
  *
  * Header for an implementation of the DataStore interface which
  * writes out simple text files; intended for unit testing /
@@ -11,23 +11,23 @@
  * received with this code.
  */
 
-#ifndef DFMODULES_PLUGINS_STUBDATASTORE_HPP_
-#define DFMODULES_PLUGINS_STUBDATASTORE_HPP_
+#ifndef DFMODULES_PLUGINS_SUMMARYTEXTDATASTORE_HPP_
+#define DFMODULES_PLUGINS_SUMMARYTEXTDATASTORE_HPP_
 
 #include "dfmodules/FileDataStoreImpl.hpp"
 
 #include "appmodel/DataStoreConfTestDeriv.hpp"
-#include "dfmodules/StubDataWriter.hpp"
+#include "dfmodules/SummaryTextDataWriter.hpp"
 
 #include <memory>
 #include <string>
 
 namespace dunedaq::dfmodules {
 
-  class StubDataStore : public FileDataStoreImpl<dfmodules::StubDataWriter> {
+  class SummaryTextDataStore : public FileDataStoreImpl<dfmodules::SummaryTextDataWriter> {
 
   public:
-    explicit StubDataStore(std::string const& name,
+    explicit SummaryTextDataStore(std::string const& name,
                          std::shared_ptr<appfwk::ConfigurationManager> mcfg,
 			   std::string const& writer_name) :
       FileDataStoreImpl(name, mcfg, writer_name),
@@ -48,12 +48,12 @@ namespace dunedaq::dfmodules {
     const int m_derivval;
   };
 
-  inline void StubDataStore::open_new_file(const std::string& unique_filename) {
+  inline void SummaryTextDataStore::open_new_file(const std::string& unique_filename) {
 
     auto& file_handle {get_file_handle()};
     try {
       file_handle.reset(
-			new dfmodules::StubDataWriter(unique_filename)
+			new dfmodules::SummaryTextDataWriter(unique_filename)
 			);
     } catch (std::exception const& excpt) {
         throw FileOperationProblem(ERS_HERE, get_name(), unique_filename, excpt);
@@ -66,5 +66,5 @@ namespace dunedaq::dfmodules {
   }
 } // namespace dunedaq::dfmodules
 
-#endif // DFMODULES_PLUGINS_STUBDATASTORE_HPP_
+#endif // DFMODULES_PLUGINS_SUMMARYTEXTDATASTORE_HPP_
 

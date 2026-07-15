@@ -7,11 +7,11 @@
  * To create such an implementation, perform the following steps:
  *
  * 1) Create a class which satisfies the constraints expressed in the
- * FileHandleConcept below - this package's StubDataWriter is an example
+ * FileHandleConcept below - this package's SummaryTextDataWriter is an example
  *
  * 2) Declare a data store plugin which public-ally derives from
  * FileDataStoreImpl, where FileDataStoreImpl has been parametrized
- * with the class described in (1). In this package, StubDataStore is an example.
+ * with the class described in (1). In this package, SummaryTextDataStore is an example.
  *
  * 3) Implement the pure virtual open_new_file function, where the
  * main purpose of the implementation should be to reset the
@@ -23,7 +23,7 @@
  * appmodel::DataStoreConf, create an OKS schema class which derives
  * from appmodel::DataStoreConf as a superclass and adds parameters as
  * needed. See appmodel::DataStoreConfTestDeriv in the appmodel
- * package, and how it's used by StubDataStore
+ * package, and how it's used by SummaryTextDataStore
  *
  * This is part of the DUNE DAQ Application Framework, copyright 2020.
  * Licensing/copyright details are in the COPYING file that you should have
@@ -135,7 +135,7 @@ concept FileHandleConcept = requires(T file_handle,
  * want in a data store which writes to a file irrespective of file
  * type. See top of its header file for details. 
  */
-template <FileHandleConcept FileHandleClass> // E.g., StubDataWriter
+template <FileHandleConcept FileHandleClass> // E.g., SummaryTextDataWriter
 class FileDataStoreImpl : public DataStore
 {
 

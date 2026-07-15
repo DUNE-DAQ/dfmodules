@@ -1,6 +1,6 @@
 /**
- * @file StubWrite_test.cxx Application that ostensibly tests and
- * demonstrates the write functionality of the StubDataStore class,
+ * @file SummaryTextWrite_test.cxx Application that ostensibly tests and
+ * demonstrates the write functionality of the SummaryTextDataStore class,
  * but can be more properly thought of as a test of the base class
  * from which it inherits, FileDataStoreImpl
  *
@@ -16,8 +16,8 @@
 
 #include "dfmodules/DataStore.hpp"
 
-// We need the actual StubDataStore.hpp plugin header so the unit tests can access its exceptions
-#include "../plugins/StubDataStore.hpp" // NOLINT(build/include_path)
+// We need the actual SummaryTextDataStore.hpp plugin header so the unit tests can access its exceptions
+#include "../plugins/SummaryTextDataStore.hpp" // NOLINT(build/include_path)
 
 #include "appmodel/DataWriterModule.hpp"
 #include "appmodel/DataWriterConf.hpp"
@@ -28,7 +28,7 @@
 #include "appmodel/DataStoreConfTestDeriv.hpp"
 #include "detdataformats/DetID.hpp"
 
-#define BOOST_TEST_MODULE StubWrite_test // NOLINT
+#define BOOST_TEST_MODULE SummaryTextWrite_test // NOLINT
 
 #include "boost/test/unit_test.hpp"
 
@@ -151,11 +151,11 @@ struct CfgFixture
   std::shared_ptr<dunedaq::appfwk::ConfigurationManager> cfgMgr;
 };
 
-BOOST_AUTO_TEST_SUITE(StubWrite_test)
+BOOST_AUTO_TEST_SUITE(SummaryTextWrite_test)
 
 BOOST_AUTO_TEST_CASE(NullConfiguration)
 {
-  BOOST_CHECK_THROW(make_data_store("StubDataStore", "dummy", nullptr, "dummy"), dunedaq::dfmodules::FileDataStoreImplBadConfiguration);
+  BOOST_CHECK_THROW(make_data_store("SummaryTextDataStore", "dummy", nullptr, "dummy"), dunedaq::dfmodules::FileDataStoreImplBadConfiguration);
 }
 
 BOOST_AUTO_TEST_CASE(CheckDerivation)
@@ -166,10 +166,10 @@ BOOST_AUTO_TEST_CASE(CheckDerivation)
 
   auto data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.cfgMgr, "dwm-01");
   BOOST_REQUIRE(data_store_ptr != nullptr);
-  
-  const auto stub_data_store_ptr {dynamic_cast<const dunedaq::dfmodules::StubDataStore*>(data_store_ptr.get())};
+
+  const auto stub_data_store_ptr {dynamic_cast<const dunedaq::dfmodules::SummaryTextDataStore*>(data_store_ptr.get())};
   BOOST_REQUIRE(stub_data_store_ptr != nullptr);
-  
+
   BOOST_REQUIRE_EQUAL(stub_data_store_ptr->get_derivval(), 773); // 773 should be the value in the config
 }
 
@@ -348,7 +348,7 @@ BOOST_AUTO_TEST_CASE(FileSizeLimitResultsInMultipleFiles)
   // check that the expected number of files was created
   std::string search_pattern = "stubwritetest.*\\.txt";
   std::vector<std::string> file_list = get_files_matching_pattern(file_path, search_pattern);
-  // With very small max_file_size (100 bytes) and minimal STUB output, we should have multiple files
+  // With very small max_file_size (100 bytes) and minimal SUMMARYTEXT output, we should have multiple files
   BOOST_REQUIRE_EQUAL(file_list.size(), 15);
 
   // clean up the files that were created

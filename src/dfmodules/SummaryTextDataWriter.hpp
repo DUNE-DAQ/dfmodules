@@ -1,5 +1,5 @@
 /**
- * @file StubDataWriter.hpp
+ * @file SummaryTextDataWriter.hpp
  *
  * A minimal implementation of the FileHandleConcept that writes one
  * simple text line per time slice / trigger record to a text file
@@ -9,8 +9,8 @@
  * received with this code.
  */
 
-#ifndef DFMODULES_SRC_DFMODULES_STUBDATAWRITER_HPP_
-#define DFMODULES_SRC_DFMODULES_STUBDATAWRITER_HPP_
+#ifndef DFMODULES_SRC_DFMODULES_SUMMARYTEXTDATAWRITER_HPP_
+#define DFMODULES_SRC_DFMODULES_SUMMARYTEXTDATAWRITER_HPP_
 
 #include "daqdataformats/TimeSlice.hpp"
 #include "daqdataformats/TriggerRecord.hpp"
@@ -28,10 +28,10 @@ namespace dunedaq {
 
 namespace dunedaq::dfmodules {
 
-class StubDataWriter
+class SummaryTextDataWriter
 {
 public:
-  explicit StubDataWriter(const std::string& file_name);
+  explicit SummaryTextDataWriter(const std::string& file_name);
 
   void write(const daqdataformats::TriggerRecord& tr);
   void write(const daqdataformats::TimeSlice& ts);
@@ -46,12 +46,12 @@ public:
   size_t get_uncompressed_raw_data_size() const noexcept;
   size_t get_total_file_size() const noexcept;
 
-  ~StubDataWriter();
+  ~SummaryTextDataWriter();
 
-  StubDataWriter(const StubDataWriter&) = delete;
-  StubDataWriter& operator=(const StubDataWriter&) = delete;
-  StubDataWriter(StubDataWriter&&) = delete;
-  StubDataWriter& operator=(StubDataWriter&&) = delete;
+  SummaryTextDataWriter(const SummaryTextDataWriter&) = delete;
+  SummaryTextDataWriter& operator=(const SummaryTextDataWriter&) = delete;
+  SummaryTextDataWriter(SummaryTextDataWriter&&) = delete;
+  SummaryTextDataWriter& operator=(SummaryTextDataWriter&&) = delete;
   
 private:
   void write_line(const std::string& line);
@@ -66,4 +66,4 @@ private:
 
 } // namespace dunedaq::dfmodules
 
-#endif // DFMODULES_SRC_DFMODULES_STUBDATAWRITER_HPP_
+#endif // DFMODULES_SRC_DFMODULES_SUMMARYTEXTDATAWRITER_HPP_

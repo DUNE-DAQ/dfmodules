@@ -95,7 +95,7 @@
 </obj>
 
 <obj class="DataStoreConfTestDeriv" id="default">
- <attr name="type" type="string" val="StubDataStore"/>
+ <attr name="type" type="string" val="SummaryTextDataStore"/>
  <attr name="directory_path" type="string" val="."/>
  <attr name="mode" type="enum" val="all-per-file"/>
  <attr name="max_file_size" type="u64" val="4294967296"/>
