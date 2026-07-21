@@ -106,11 +106,12 @@ conf_dict.dro_map_config.n_apps = number_of_readout_apps
 conf_dict.op_env = "integtest"
 conf_dict.config_session_name= "maxfilesize"
 conf_dict.tpg_enabled = True
-conf_dict.fake_hsi_enabled = True
 conf_dict.frame_file = (
     "asset://?checksum=dd156b4895f1b06a06b6ff38e37bd798"  # WIBEth All Zeros
 )
 conf_dict.remove_hdf5_files = True
+utility_functions.enable_fake_hsi_trigger(conf_dict, trigger_rate=10.0,
+                                          readout_window_before_ticks=52000, readout_window_after_ticks=1000)
 
 conf_dict.config_substitutions.append(
     data_classes.attribute_substitution(
@@ -125,32 +126,6 @@ conf_dict.config_substitutions.append(
     )
 )
 
-conf_dict.config_substitutions.append(
-    data_classes.attribute_substitution(
-        obj_class="FakeHSIEventGeneratorConf",
-        updates={"trigger_rate": 10.0},
-    )
-)
-
-conf_dict.config_substitutions.append(
-    data_classes.attribute_substitution(
-        obj_class="HSISignalWindow",
-        updates={
-            "time_before": 1000,
-            "time_after": 500,
-        },
-    )
-)
-conf_dict.config_substitutions.append(
-    data_classes.attribute_substitution(
-        obj_class="TCReadoutMap",
-        obj_id = "def-hsi-tc-map",
-        updates={
-            "time_before": 52000,
-            "time_after": 1000,
-        },
-    )
-)
 conf_dict.config_substitutions.append(
     data_classes.attribute_substitution(
         obj_class="DataStoreConf",
