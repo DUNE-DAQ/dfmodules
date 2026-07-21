@@ -70,6 +70,7 @@ private:
   bool m_warn_user_when_tardy_tps_are_discarded;
   double m_accumulation_interval_seconds;
   std::string m_writer_identifier;
+  bool m_data_storage_is_enabled;
 
   // Queue sources and sinks
   using source_t = iomanager::ReceiverConcept<trigger::TPSet>;
