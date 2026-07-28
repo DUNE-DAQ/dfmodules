@@ -15,9 +15,9 @@
 #include "appmodel/TPStreamWriterModule.hpp"
 #include "confmodel/Connection.hpp"
 #include "confmodel/Session.hpp"
-#include "iomanager/IOManager.hpp"
 #include "daqdataformats/Fragment.hpp"
 #include "daqdataformats/Types.hpp"
+#include "iomanager/IOManager.hpp"
 #include "logging/Logging.hpp"
 #include "rcif/cmd/Nljs.hpp"
 
@@ -69,7 +69,8 @@ TPStreamWriterModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcfg)
 }
 
 void
-TPStreamWriterModule::generate_opmon_data() {
+TPStreamWriterModule::generate_opmon_data()
+{
   opmon::TPStreamWriterInfo info;
 
   info.set_heartbeat_tpsets_received(m_heartbeat_tpsets.exchange(0));
@@ -92,16 +93,17 @@ TPStreamWriterModule::do_conf(const CommandData_t&)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_conf() method";
   m_accumulation_interval_ticks = m_tp_writer_conf->get_tp_accumulation_interval();
-  m_accumulation_inactivity_time_before_write =
-    std::chrono::milliseconds(static_cast<int>(1000*m_tp_writer_conf->get_tp_accumulation_inactivity_time_before_write_sec()));
+  m_accumulation_inactivity_time_before_write = std::chrono::milliseconds(
+    static_cast<int>(1000 * m_tp_writer_conf->get_tp_accumulation_inactivity_time_before_write_sec()));
   m_warn_user_when_tardy_tps_are_discarded = m_tp_writer_conf->get_warn_user_when_tardy_tps_are_discarded();
-  m_accumulation_interval_seconds = ((double) m_accumulation_interval_ticks) / 62500000.0;
+  m_accumulation_interval_seconds = ((double)m_accumulation_interval_ticks) / 62500000.0;
 
   // create the DataStore instance here
   try {
     m_data_writer = make_data_store(m_tp_writer_conf->get_data_store_params()->get_type(),
                                     m_tp_writer_conf->get_data_store_params()->UID(),
-                                    m_module_configuration, m_writer_identifier);
+                                    m_module_configuration,
+                                    m_writer_identifier);
     register_node("data_writer", m_data_writer);
   } catch (const ers::Issue& excpt) {
     throw UnableToConfigure(ERS_HERE, get_name(), excpt);
@@ -187,7 +189,8 @@ TPStreamWriterModule::do_work(std::atomic<bool>& running_flag)
   daqdataformats::timestamp_t first_timestamp = 0;
   daqdataformats::timestamp_t last_timestamp = 0;
 
-  TPBundleHandler tp_bundle_handler(m_accumulation_interval_ticks, m_run_number, m_accumulation_inactivity_time_before_write);
+  TPBundleHandler tp_bundle_handler(
+    m_accumulation_interval_ticks, m_run_number, m_accumulation_inactivity_time_before_write);
 
   bool possible_pending_data = true;
   size_t largest_timeslice_number = 0;
@@ -203,8 +206,9 @@ TPStreamWriterModule::do_work(std::atomic<bool>& running_flag)
       }
 
       TLOG_DEBUG(21) << "Number of TPs in TPSet is " << tpset.objects.size() << ", Source ID is " << tpset.origin
-                     << ", seqno is " << tpset.seqno << ", start timestamp is " << tpset.start_time << ", run number is "
-                     << tpset.run_number << ", slice id is " << (tpset.start_time / m_accumulation_interval_ticks);
+                     << ", seqno is " << tpset.seqno << ", start timestamp is " << tpset.start_time
+                     << ", run number is " << tpset.run_number << ", slice id is "
+                     << (tpset.start_time / m_accumulation_interval_ticks);
 
       // 30-Mar-2022, KAB: added test for matching run number.  This is to avoid getting
       // confused by TPSets that happen to be leftover in transit from one run to the
@@ -256,7 +260,8 @@ TPStreamWriterModule::do_work(std::atomic<bool>& running_flag)
         size_t retry_wait_usec = 1000;
         do {
           should_retry = false;
-          size_t number_of_tps = (timeslice_ptr->get_sum_of_fragment_payload_sizes() / sizeof(trgdataformats::TriggerPrimitive));
+          size_t number_of_tps =
+            (timeslice_ptr->get_sum_of_fragment_payload_sizes() / sizeof(trgdataformats::TriggerPrimitive));
           try {
             m_data_writer->write(*timeslice_ptr);
             ++m_timeslices_written;
@@ -282,15 +287,15 @@ TPStreamWriterModule::do_work(std::atomic<bool>& running_flag)
               std::ostringstream sid_list;
               bool first_frag = true;
               for (auto const& frag_ptr : timeslice_ptr->get_fragments_ref()) {
-                if (first_frag) {first_frag = false;}
-                else {sid_list << ",";}
+                if (first_frag) {
+                  first_frag = false;
+                } else {
+                  sid_list << ",";
+                }
                 sid_list << frag_ptr->get_element_id().to_string();
               }
-              ers::warning(TardyTPsDiscarded(ERS_HERE,
-                                             get_name(),
-                                             sid_list.str(),
-                                             timeslice_ptr->get_header().timeslice_number,
-                                             seconds_too_late));
+              ers::warning(TardyTPsDiscarded(
+                ERS_HERE, get_name(), sid_list.str(), timeslice_ptr->get_header().timeslice_number, seconds_too_late));
             }
           } catch (const std::exception& excpt) {
             m_tps_discarded += number_of_tps;
@@ -302,7 +307,7 @@ TPStreamWriterModule::do_work(std::atomic<bool>& running_flag)
                                           excpt));
           }
         } while (should_retry && running_flag.load());
-      }  // if (m_data_storage_is_enabled) {
+      } // if (m_data_storage_is_enabled) {
     }
 
     if (first_timestamp == 0) {

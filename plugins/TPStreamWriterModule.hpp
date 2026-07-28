@@ -15,11 +15,11 @@
 
 #include "appfwk/DAQModule.hpp"
 #include "appmodel/TPStreamWriterConf.hpp"
-#include "iomanager/Receiver.hpp"
 #include "daqdataformats/TimeSlice.hpp"
+#include "iomanager/Receiver.hpp"
+#include "logging/Logging.hpp" // NOTE: if ISSUES ARE DECLARED BEFORE include logging/Logging.hpp, TLOG_DEBUG<<issue wont work.
 #include "trigger/TPSet.hpp"
 #include "utilities/WorkerThread.hpp"
-#include "logging/Logging.hpp" // NOTE: if ISSUES ARE DECLARED BEFORE include logging/Logging.hpp, TLOG_DEBUG<<issue wont work.
 
 #include <memory>
 #include <string>
@@ -39,10 +39,11 @@ public:
    */
   explicit TPStreamWriterModule(const std::string& name);
 
-  TPStreamWriterModule(const TPStreamWriterModule&) = delete;            ///< TPStreamWriterModule is not copy-constructible
-  TPStreamWriterModule& operator=(const TPStreamWriterModule&) = delete; ///< TPStreamWriterModule is not copy-assignable
-  TPStreamWriterModule(TPStreamWriterModule&&) = delete;                 ///< TPStreamWriterModule is not move-constructible
-  TPStreamWriterModule& operator=(TPStreamWriterModule&&) = delete;      ///< TPStreamWriterModule is not move-assignable
+  TPStreamWriterModule(const TPStreamWriterModule&) = delete; ///< TPStreamWriterModule is not copy-constructible
+  TPStreamWriterModule& operator=(const TPStreamWriterModule&) =
+    delete;                                                         ///< TPStreamWriterModule is not copy-assignable
+  TPStreamWriterModule(TPStreamWriterModule&&) = delete;            ///< TPStreamWriterModule is not move-constructible
+  TPStreamWriterModule& operator=(TPStreamWriterModule&&) = delete; ///< TPStreamWriterModule is not move-assignable
 
   void init(std::shared_ptr<appfwk::ConfigurationManager> mcfg) override;
   void generate_opmon_data() override;
@@ -80,17 +81,17 @@ private:
   std::shared_ptr<DataStore> m_data_writer;
 
   // Metrics
-  std::atomic<uint64_t> m_heartbeat_tpsets = { 0 };   // NOLINT(build/unsigned)
-  std::atomic<uint64_t> m_tpsets_with_tps = { 0 };    // NOLINT(build/unsigned)
-  std::atomic<uint64_t> m_tps_received = { 0 };       // NOLINT(build/unsigned)
-  std::atomic<uint64_t> m_tps_written = { 0 };        // NOLINT(build/unsigned)
-  std::atomic<uint64_t> m_tps_discarded = { 0 };      // NOLINT(build/unsigned)
-  std::atomic<uint64_t> m_timeslices_written = { 0 }; // NOLINT(build/unsigned)
-  std::atomic<uint64_t> m_bytes_output = { 0 };       // NOLINT(build/unsigned)
-  std::atomic<double>   m_tardy_timeslice_max_seconds = { 0.0 }; // NOLINT(build/unsigned)
-  std::atomic<uint64_t> m_total_tps_received = { 0 }; // NOLINT(build/unsigned)
-  std::atomic<uint64_t> m_total_tps_written = { 0 };  // NOLINT(build/unsigned)
-  std::atomic<uint64_t> m_total_tps_discarded = { 0 };// NOLINT(build/unsigned)
+  std::atomic<uint64_t> m_heartbeat_tpsets = { 0 };            // NOLINT(build/unsigned)
+  std::atomic<uint64_t> m_tpsets_with_tps = { 0 };             // NOLINT(build/unsigned)
+  std::atomic<uint64_t> m_tps_received = { 0 };                // NOLINT(build/unsigned)
+  std::atomic<uint64_t> m_tps_written = { 0 };                 // NOLINT(build/unsigned)
+  std::atomic<uint64_t> m_tps_discarded = { 0 };               // NOLINT(build/unsigned)
+  std::atomic<uint64_t> m_timeslices_written = { 0 };          // NOLINT(build/unsigned)
+  std::atomic<uint64_t> m_bytes_output = { 0 };                // NOLINT(build/unsigned)
+  std::atomic<double> m_tardy_timeslice_max_seconds = { 0.0 }; // NOLINT(build/unsigned)
+  std::atomic<uint64_t> m_total_tps_received = { 0 };          // NOLINT(build/unsigned)
+  std::atomic<uint64_t> m_total_tps_written = { 0 };           // NOLINT(build/unsigned)
+  std::atomic<uint64_t> m_total_tps_discarded = { 0 };         // NOLINT(build/unsigned)
 };
 } // namespace dfmodules
 
@@ -112,8 +113,8 @@ ERS_DECLARE_ISSUE_BASE(dfmodules,
 ERS_DECLARE_ISSUE_BASE(dfmodules,
                        TardyTPsDiscarded,
                        appfwk::GeneralDAQModuleIssue,
-                       "Tardy TPs from SourceIDs [" << sid_list << "] were discarded from TimeSlice number "
-                       << trnum << " (~" << sec_too_late << " sec too late)",
+                       "Tardy TPs from SourceIDs [" << sid_list << "] were discarded from TimeSlice number " << trnum
+                                                    << " (~" << sec_too_late << " sec too late)",
                        ((std::string)name),
                        ((std::string)sid_list)((size_t)trnum)((float)sec_too_late))
 
