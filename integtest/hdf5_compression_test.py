@@ -124,7 +124,9 @@ conf_dict.dro_map_config.n_apps = number_of_readout_apps
 conf_dict.op_env = "integtest"
 conf_dict.config_session_name= "hdf5compression"
 conf_dict.tpg_enabled = True
-conf_dict.fake_hsi_enabled = True
+utility_functions.enable_fake_hsi_trigger(conf_dict, trigger_rate=10.0,
+                                          readout_window_before_ticks=120000,
+                                          readout_window_after_ticks=1000)
 conf_dict.dro_map_config.det_id = 2  # det_id = 2 for kHD_PDS
 conf_dict.frame_file = "asset://?checksum=a8990a9eb3a505d4ded62dfdfa9e2681"  # run 36012 DAPHNE data
 #conf_dict.frame_file = "file:///home/nfs/biery/dunedaq/12MayFDv5.3.2DevInstrUpdate/sourcecode/dfmodules/integtest/np02vdcoldbox_run035227_sample_hd_pds.bin"
@@ -138,32 +140,6 @@ conf_dict.config_substitutions.append(
     )
 )
 
-conf_dict.config_substitutions.append(
-    data_classes.attribute_substitution(
-        obj_class="FakeHSIEventGeneratorConf",
-        updates={"trigger_rate": 10.0},
-    )
-)
-
-conf_dict.config_substitutions.append(
-    data_classes.attribute_substitution(
-        obj_class="HSISignalWindow",
-        updates={
-            "time_before": 1000,
-            "time_after": 500,
-        },
-    )
-)
-conf_dict.config_substitutions.append(
-    data_classes.attribute_substitution(
-        obj_class="TCReadoutMap",
-        obj_id = "def-hsi-tc-map",
-        updates={
-            "time_before": 120000,
-            "time_after": 1000,
-        },
-    )
-)
 conf_dict.config_substitutions.append(
     data_classes.attribute_substitution(
         obj_class="DataStoreConf",

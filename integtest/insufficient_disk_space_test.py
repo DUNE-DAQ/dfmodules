@@ -98,18 +98,10 @@ conf_dict.tpg_enabled = False
 conf_dict.n_df_apps = number_of_dataflow_apps
 conf_dict.fake_hsi_enabled = False
 conf_dict.remove_hdf5_files = True
-
-conf_dict.config_substitutions.append(
-    data_classes.attribute_substitution(
-        obj_class="RandomTCMakerConf",
-        updates={
-            "trigger_rate_hz": trigger_rate,
-            "candidate_backshift_ts": 0,
-            "candidate_window_before_ts": readout_window_time_before,
-            "candidate_window_after_ts": readout_window_time_after
-        },
-    )
-)
+utility_functions.set_rtcm_trigger_params(conf_dict, trigger_rate=trigger_rate,
+                                          readout_window_backshift_ticks=0,
+                                          readout_window_before_ticks=readout_window_time_before,
+                                          readout_window_after_ticks=readout_window_time_after)
 
 conf_dict.config_substitutions.append(
     data_classes.attribute_substitution(
