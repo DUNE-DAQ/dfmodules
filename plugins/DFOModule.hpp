@@ -15,9 +15,9 @@
 
 #include "appmodel/DFOConf.hpp"
 
+#include "dfmessages/DataflowStatus.hpp"
 #include "dfmessages/TriggerDecision.hpp"
 #include "dfmessages/TriggerInhibit.hpp"
-#include "dfmessages/DataflowStatus.hpp"
 
 #include "iomanager/Sender.hpp"
 
@@ -32,44 +32,80 @@
 namespace dunedaq {
 
 // Disable coverage checking LCOV_EXCL_START
-ERS_DECLARE_ISSUE(dfmodules,
-                  TRBModuleAppUpdate,
-                  "TRBModule app " << connection_name << ": " << message,
-                  ((std::string)connection_name)((std::string)message))
-ERS_DECLARE_ISSUE(dfmodules,
-                  UnknownTokenSource,
-                  "Token from unknown source: " << connection_name,
-                  ((std::string)connection_name))
-ERS_DECLARE_ISSUE(dfmodules,
-                  DFOModuleRunNumberMismatch,
-                  "DFOModule encountered run number mismatch: recvd (" << received_run_number << ") != " << run_number
-                                                                       << " from " << src_app << " for trigger_number "
-                                                                       << trig_num,
-                  ((uint32_t)received_run_number)((uint32_t)run_number)((std::string)src_app)(
-                    (uint32_t)trig_num)) // NOLINT(build/unsigned)
-ERS_DECLARE_ISSUE(dfmodules,
-                  IncompleteTriggerDecision,
-                  "TriggerDecision " << trigger_number << " didn't complete within timeout in run " << run_number,
-                  ((uint32_t)trigger_number)((uint32_t)run_number)) // NOLINT(build/unsigned)
-ERS_DECLARE_ISSUE(dfmodules,
-                  UnableToAssign,
-                  "TriggerDecision " << trigger_number << " could not be assigned",
-                  ((uint32_t)trigger_number)) // NOLINT(build/unsigned)
-ERS_DECLARE_ISSUE(dfmodules,
-                  AssignedToBusyApp,
-                  "TriggerDecision " << trigger_number << " was assigned to DF app " << app << " that was busy with "
-                                     << used_slots << " TDs",
-                  ((uint32_t)trigger_number)((std::string)app)((size_t)used_slots)) // NOLINT(build/unsigned)
+ERS_DECLARE_ISSUE_BASE(dfmodules,
+                       TRBModuleAppUpdate,
+                       appfwk::GeneralDAQModuleIssue,
+                       "TRBModule app " << connection_name << ": " << message,
+                       ((std::string)name),
+                       ((std::string)connection_name)((std::string)message))
 
-ERS_DECLARE_ISSUE(dfmodules,
-                  StaleDataflowStatus,
-                  "No DataflowStatus received from " << app << " for " << timeout << " ms",
-                  ((std::string)app)((uint32_t)timeout)) // NOLINT(build/unsigned)
+ERS_DECLARE_ISSUE_BASE(dfmodules,
+                       UnknownTokenSource,
+                       appfwk::GeneralDAQModuleIssue,
+                       "Token from unknown source: " << connection_name,
+                       ((std::string)name),
+                       ((std::string)connection_name))
 
-    ERS_DECLARE_ISSUE(dfmodules,
-                  ReallocatingTrigger,
-                  "Reallocating trigger " << trigger << " from DF app " << app,
-                  ((uint32_t)trigger)((std::string)app)) // NOLINT(build/unsigned)
+ERS_DECLARE_ISSUE_BASE(dfmodules,
+                       DFOModuleRunNumberMismatch,
+                       appfwk::GeneralDAQModuleIssue,
+                       "DFOModule encountered run number mismatch: recvd ("
+                         << received_run_number << ") != " << run_number << " from " << src_app
+                         << " for trigger_number " << trig_num,
+                       ((std::string)name),
+                       ((uint32_t)received_run_number)((uint32_t)run_number)((std::string)src_app)(
+                         (uint32_t)trig_num)) // NOLINT(build/unsigned)
+
+ERS_DECLARE_ISSUE_BASE(dfmodules,
+                       IncompleteTriggerDecision,
+                       appfwk::GeneralDAQModuleIssue,
+                       "TriggerDecision " << trigger_number << " didn't complete within timeout in run " << run_number,
+                       ((std::string)name),
+                       ((uint32_t)trigger_number)((uint32_t)run_number)) // NOLINT(build/unsigned)
+
+ERS_DECLARE_ISSUE_BASE(dfmodules,
+                       UnexpectedTriggerDecision,
+                       appfwk::GeneralDAQModuleIssue,
+                       "TriggerDecision " << trigger_number << " has been reported by " << app
+                                          << " with no TriggerDecision message received",
+                       ((std::string)name),
+                       ((uint32_t)trigger_number)((std::string)app)) // NOLINT(build/unsigned)
+
+ERS_DECLARE_ISSUE_BASE(dfmodules,
+                       LostTriggerDecision,
+                       appfwk::GeneralDAQModuleIssue,
+                       "TriggerDecision " << trigger_number << " was lost while being processed by " << app,
+                       ((std::string)name),
+                       ((uint32_t)trigger_number)((std::string)app)) // NOLINT(build/unsigned)
+
+ERS_DECLARE_ISSUE_BASE(dfmodules,
+                       UnableToAssign,
+                       appfwk::GeneralDAQModuleIssue,
+                       "TriggerDecision " << trigger_number << " could not be assigned",
+                       ((std::string)name),
+                       ((uint32_t)trigger_number)) // NOLINT(build/unsigned)
+
+ERS_DECLARE_ISSUE_BASE(dfmodules,
+                       AssignedToBusyApp,
+                       appfwk::GeneralDAQModuleIssue,
+                       "TriggerDecision " << trigger_number << " was assigned to DF app " << app
+                                          << " that was busy with " << used_slots << " TDs",
+                       ((std::string)name),
+                       ((uint32_t)trigger_number)((std::string)app)((size_t)used_slots)) // NOLINT(build/unsigned)
+
+ERS_DECLARE_ISSUE_BASE(dfmodules,
+                       StaleDataflowStatus,
+                       appfwk::GeneralDAQModuleIssue,
+                       "No DataflowStatus received from " << app << " for " << timeout << " ms",
+                       ((std::string)name),
+                       ((std::string)app)((uint32_t)timeout)) // NOLINT(build/unsigned)
+
+ERS_DECLARE_ISSUE_BASE(dfmodules,
+                       ReallocatingTrigger,
+                       appfwk::GeneralDAQModuleIssue,
+                       "Reallocating trigger " << trigger << " from DF app " << app,
+                       ((std::string)name),
+                       ((uint32_t)trigger)((std::string)app)) // NOLINT(build/unsigned)
 // Re-enable coverage checking LCOV_EXCL_STOP
 
 namespace dfmodules {
@@ -103,7 +139,6 @@ private:
 
   void generate_opmon_data() override;
 
-
   // Configuration
   const appmodel::DFOConf* m_dfo_conf;
   std::chrono::milliseconds m_queue_timeout;
@@ -126,7 +161,7 @@ private:
   void receive_trigger_decision(const dfmessages::TriggerDecision&);
   void notify_trigger_if_needed() const;
 
-  bool send_status_requests(dfmessages::trigger_number_t trigger);
+  bool send_status_requests(dfmessages::trigger_number_t trigger, size_t iteration);
   bool dispatch(const std::shared_ptr<AssignedTriggerDecision>& assignment);
 
   // Dataflow application selection algorithm
@@ -138,8 +173,10 @@ private:
   std::mutex m_status_mutex;
   std::condition_variable m_status_cv;
   std::unordered_map<std::string, std::shared_ptr<ReceivedDataflowStatus>> m_dataflow_statuses;
-  std::unordered_map<dfmessages::trigger_number_t, std::unordered_map<std::string, dfmessages::DataflowStatus>> m_statuses_for_trigger;
-  std::unordered_map<dfmessages::trigger_number_t, std::shared_ptr<AssignedTriggerDecision>> m_assigned_trigger_decisions;
+  std::unordered_map<dfmessages::trigger_number_t, std::unordered_map<std::string, dfmessages::DataflowStatus>>
+    m_statuses_for_trigger;
+  std::unordered_map<dfmessages::trigger_number_t, std::shared_ptr<AssignedTriggerDecision>>
+    m_assigned_trigger_decisions;
 
   std::atomic<bool> m_running_status{ false };
   mutable std::atomic<bool> m_last_notified_busy{ false };
@@ -153,10 +190,10 @@ private:
   bool is_busy() const;
 
   // Statistics
-  std::atomic<uint64_t> m_received_statuses{ 0 };      // NOLINT (build/unsigned)
+  std::atomic<uint64_t> m_received_statuses{ 0 };    // NOLINT (build/unsigned)
   std::atomic<uint64_t> m_sent_decisions{ 0 };       // NOLINT (build/unsigned)
   std::atomic<uint64_t> m_received_decisions{ 0 };   // NOLINT (build/unsigned)
-  std::atomic<uint64_t> m_completed_decisions{ 0 }; // NOLINT(build/unsigned)
+  std::atomic<uint64_t> m_completed_decisions{ 0 };  // NOLINT(build/unsigned)
   std::atomic<uint64_t> m_waiting_for_decision{ 0 }; // NOLINT (build/unsigned)
   std::atomic<uint64_t> m_deciding_destination{ 0 }; // NOLINT (build/unsigned)
   std::atomic<uint64_t> m_forwarding_decision{ 0 };  // NOLINT (build/unsigned)

@@ -160,6 +160,18 @@ DataflowStatusModule::do_start(const CommandData_t& payload)
 
   m_current_status.run_number = payload.value<dunedaq::daqdataformats::run_number_t>("run", 0);
 
+  {
+    std::lock_guard<std::mutex> lock(m_status_mutex);
+    m_status_snapshots.clear();
+    m_building_sequences.clear();
+    m_writing_sequences.clear();
+    m_current_status.triggers_building.clear();
+    m_current_status.triggers_writing.clear();
+    m_current_status.recently_completed_triggers.clear();
+    m_current_status.trigger_records_processed = 0;
+    m_current_status.data_size_written = 0;
+  }
+
   // 19-Dec-2024, KAB: check that TriggerDecision senders are ready to send. This is done
   // so that the IOManager infrastructure fetches the necessary connection details from
   // the ConnectivityService at 'start' time, instead of the first time that the sender
@@ -259,9 +271,11 @@ DataflowStatusModule::receive_status_request(const dfmessages::DataflowStatusReq
 
   {
     std::unique_lock<std::mutex> lock(m_status_mutex);
-    if (m_status_snapshots.count(request.trigger_number) == 0) {
+    if (m_status_snapshots.count(request.trigger_number) == 0 || request.iteration_number > m_status_snapshots[request.trigger_number].iteration_number) {
       m_status_snapshots[request.trigger_number] = m_current_status;
       m_status_snapshots[request.trigger_number].trigger_number = request.trigger_number;
+      m_status_snapshots[request.trigger_number].iteration_number = request.iteration_number;
+
       while (m_status_snapshots.size() > m_snapshot_history_size) {
         m_status_snapshots.erase(m_status_snapshots.begin());
       }
@@ -287,7 +301,7 @@ DataflowStatusModule::receive_trigger_decision(dfmessages::TriggerDecision& deci
 
     if (m_current_status.triggers_building.count(decision.trigger_number) > 0 ||
         m_current_status.triggers_writing.count(decision.trigger_number) > 0) {
-      TLOG() << DuplicateTriggerDecision(ERS_HERE, decision.trigger_number, m_current_status.run_number);
+      TLOG() << DuplicateTriggerDecision(ERS_HERE, get_name(), decision.trigger_number, m_current_status.run_number);
       ++m_num_duplicate_decisions_received;
       return;
     }
@@ -319,7 +333,8 @@ DataflowStatusModule::receive_trb_completion(const dfmessages::TRBCompletion& co
   {
     std::lock_guard<std::mutex> lock(m_status_mutex);
     if (!m_current_status.triggers_building.count(completion.trigger_id.trigger_number)) {
-      ers::error(UnexpectedTRBCompletion(ERS_HERE, completion.trigger_id.trigger_number, m_current_status.run_number));
+      ers::error(UnexpectedTRBCompletion(
+        ERS_HERE, get_name(), completion.trigger_id.trigger_number, m_current_status.run_number));
       ++m_num_unexpected_trb_completions_received;
       return;
     }
@@ -372,13 +387,15 @@ DataflowStatusModule::receive_trigger_decision_token(const dfmessages::TriggerDe
     std::unique_lock<std::mutex> lock(m_status_mutex);
     if (m_current_status.triggers_writing.count(token.trigger_id.trigger_number) == 0 &&
         m_current_status.triggers_building.count(token.trigger_id.trigger_number) == 0) {
-      ers::error(UnexpectedTriggerDecisionToken(ERS_HERE, token.trigger_id.trigger_number, m_current_status.run_number));
+      ers::error(UnexpectedTriggerDecisionToken(
+        ERS_HERE, get_name(), token.trigger_id.trigger_number, m_current_status.run_number));
       ++m_num_unexpected_trigger_decision_tokens_received;
       return;
     }
     if (m_current_status.triggers_writing.count(token.trigger_id.trigger_number) == 0 &&
         m_current_status.triggers_building.count(token.trigger_id.trigger_number) == 1) {
-      ers::warning(UnexpectedTriggerDecisionToken(ERS_HERE, token.trigger_id.trigger_number, m_current_status.run_number));
+      ers::warning(UnexpectedTriggerDecisionToken(
+        ERS_HERE, get_name(), token.trigger_id.trigger_number, m_current_status.run_number));
       ++m_num_early_trigger_decision_tokens_received;
     }
     ++m_num_trigger_decision_tokens_received;
@@ -434,14 +451,16 @@ DataflowStatusModule::send_dataflow_status_update(std::string const& destination
       if (it != m_status_snapshots.end()) {
         status_to_send = it->second;
       } else {
-        TLOG() << get_name() << ": No snapshot found for trigger number " << trigger_number
-               << ". Sending current status instead.";
+        ers::warning(SnapshotNotFound(ERS_HERE, get_name(),trigger_number));
         status_to_send = m_current_status;
       }
     }
   }
 
   status_to_send.trigger_number = trigger_number;
+  TLOG_DEBUG(TLVL_SEND_STATE) << get_name()
+                              << ": Sending DataflowStatus, trigger_number: " << status_to_send.trigger_number
+                              << ", is_busy: " << status_to_send.is_busy;
   auto iom = iomanager::IOManager::get();
   auto sender = iom->get_sender<dfmessages::DataflowStatus>(destination);
   if (sender) {

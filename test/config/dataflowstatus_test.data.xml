@@ -114,7 +114,7 @@
  <attr name="heartbeat_interval_ms" type="u32" val="100"/>
  <attr name="stop_timeout_ms" type="u32" val="1000"/>
  <attr name="td_queue_timeout_ms" type="u32" val="1000"/>
- <attr name="snapshot_history_size" type="u32" val="100"/>
+	<attr name="snapshot_timeout_ms" type="u32" val="1000"/>
  <attr name="completed_trigger_history_size" type="u32" val="100"/>
 </obj>
 

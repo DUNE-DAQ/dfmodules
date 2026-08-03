@@ -65,6 +65,13 @@ ERS_DECLARE_ISSUE_BASE(dfmodules,
                        ((std::string)name),
                        ((size_t)run_number))
 
+ERS_DECLARE_ISSUE_BASE(dfmodules,
+                  DuplicateTriggerDecision,
+                  appfwk::GeneralDAQModuleIssue,
+                  "Received duplicate TriggerDecision message for trigger number " << trigger_number << " in run "
+                                                                                        << run_number,
+                       ((std::string)name),
+                  ((uint32_t)trigger_number)((uint32_t)run_number))
 /**
  * @brief Data Request sender lookup failed
  */

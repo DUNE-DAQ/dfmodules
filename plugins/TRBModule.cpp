@@ -715,7 +715,7 @@ TRBModule::send_trigger_record(const dfmessages::TriggerId& id)
   } // if m_mon_receiver
 
   bool wasSentSuccessfully = false;
-  auto max_seq_num = temp_record->get_header_ref().get_max_sequence_number();
+  auto max_seq_num = static_cast<dfmessages::sequence_number_t>(temp_record->get_header_ref().get_max_sequence_number());
   do {
     try {
       m_trigger_record_output->send(std::move(temp_record), m_tr_queue_timeout);

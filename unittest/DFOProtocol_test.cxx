@@ -391,13 +391,13 @@ BOOST_AUTO_TEST_CASE(StableAlgorithmOptimalConditions)
 
   BOOST_REQUIRE_EQUAL(dfo1_metrics.decisions_received(), 9);
   BOOST_REQUIRE_EQUAL(dfo2_metrics.decisions_received(), 9);
-  BOOST_REQUIRE_EQUAL(dfo2_metrics.decisions_received(), 9);
+  BOOST_REQUIRE_EQUAL(dfo3_metrics.decisions_received(), 9);
   BOOST_REQUIRE_EQUAL(dfo1_metrics.decisions_sent(), 9);
   BOOST_REQUIRE_EQUAL(dfo2_metrics.decisions_sent(), 9);
-  BOOST_REQUIRE_EQUAL(dfo2_metrics.decisions_sent(), 9);
+  BOOST_REQUIRE_EQUAL(dfo3_metrics.decisions_sent(), 9);
   BOOST_REQUIRE_EQUAL(dfo1_metrics.decisions_completed(), 0);
   BOOST_REQUIRE_EQUAL(dfo2_metrics.decisions_completed(), 0);
-  BOOST_REQUIRE_EQUAL(dfo2_metrics.decisions_completed(), 0);
+  BOOST_REQUIRE_EQUAL(dfo3_metrics.decisions_completed(), 0);
 
   BOOST_REQUIRE_EQUAL(df1_metrics.decisions_received(), df1_triggers.size());
   BOOST_REQUIRE_EQUAL(df2_metrics.decisions_received(), df2_triggers.size());
@@ -455,13 +455,13 @@ BOOST_AUTO_TEST_CASE(StableAlgorithmOptimalConditions)
 
   BOOST_REQUIRE_EQUAL(dfo1_metrics.decisions_received(), 0);
   BOOST_REQUIRE_EQUAL(dfo2_metrics.decisions_received(), 0);
-  BOOST_REQUIRE_EQUAL(dfo2_metrics.decisions_received(), 0);
+  BOOST_REQUIRE_EQUAL(dfo3_metrics.decisions_received(), 0);
   BOOST_REQUIRE_EQUAL(dfo1_metrics.decisions_sent(), 0);
   BOOST_REQUIRE_EQUAL(dfo2_metrics.decisions_sent(), 0);
-  BOOST_REQUIRE_EQUAL(dfo2_metrics.decisions_sent(), 0);
+  BOOST_REQUIRE_EQUAL(dfo3_metrics.decisions_sent(), 0);
   BOOST_REQUIRE_EQUAL(dfo1_metrics.decisions_completed(), 9);
   BOOST_REQUIRE_EQUAL(dfo2_metrics.decisions_completed(), 9);
-  BOOST_REQUIRE_EQUAL(dfo2_metrics.decisions_completed(), 9);
+  BOOST_REQUIRE_EQUAL(dfo3_metrics.decisions_completed(), 9);
 
   BOOST_REQUIRE_EQUAL(df1_metrics.decisions_received(), 0);
   BOOST_REQUIRE_EQUAL(df2_metrics.decisions_received(), 0);
@@ -641,13 +641,13 @@ BOOST_AUTO_TEST_CASE(AllDFOsAgreeOnAssignments)
 
   BOOST_REQUIRE_EQUAL(dfo1_metrics.decisions_received(), 6);
   BOOST_REQUIRE_EQUAL(dfo2_metrics.decisions_received(), 6);
-  BOOST_REQUIRE_EQUAL(dfo2_metrics.decisions_received(), 6);
+  BOOST_REQUIRE_EQUAL(dfo3_metrics.decisions_received(), 6);
   BOOST_REQUIRE_EQUAL(dfo1_metrics.decisions_sent(), 6);
   BOOST_REQUIRE_EQUAL(dfo2_metrics.decisions_sent(), 6);
-  BOOST_REQUIRE_EQUAL(dfo2_metrics.decisions_sent(), 6);
+  BOOST_REQUIRE_EQUAL(dfo3_metrics.decisions_sent(), 6);
   BOOST_REQUIRE_EQUAL(dfo1_metrics.decisions_completed(), 0);
   BOOST_REQUIRE_EQUAL(dfo2_metrics.decisions_completed(), 0);
-  BOOST_REQUIRE_EQUAL(dfo2_metrics.decisions_completed(), 0);
+  BOOST_REQUIRE_EQUAL(dfo3_metrics.decisions_completed(), 0);
 
   BOOST_REQUIRE_EQUAL(df1_metrics.decisions_received(), df1_triggers.size());
   BOOST_REQUIRE_EQUAL(df2_metrics.decisions_received(), df2_triggers.size());
@@ -705,13 +705,13 @@ BOOST_AUTO_TEST_CASE(AllDFOsAgreeOnAssignments)
 
   BOOST_REQUIRE_EQUAL(dfo1_metrics.decisions_received(), 0);
   BOOST_REQUIRE_EQUAL(dfo2_metrics.decisions_received(), 0);
-  BOOST_REQUIRE_EQUAL(dfo2_metrics.decisions_received(), 0);
+  BOOST_REQUIRE_EQUAL(dfo3_metrics.decisions_received(), 0);
   BOOST_REQUIRE_EQUAL(dfo1_metrics.decisions_sent(), 0);
   BOOST_REQUIRE_EQUAL(dfo2_metrics.decisions_sent(), 0);
-  BOOST_REQUIRE_EQUAL(dfo2_metrics.decisions_sent(), 0);
+  BOOST_REQUIRE_EQUAL(dfo3_metrics.decisions_sent(), 0);
   BOOST_REQUIRE_EQUAL(dfo1_metrics.decisions_completed(), 6);
   BOOST_REQUIRE_EQUAL(dfo2_metrics.decisions_completed(), 6);
-  BOOST_REQUIRE_EQUAL(dfo2_metrics.decisions_completed(), 6);
+  BOOST_REQUIRE_EQUAL(dfo3_metrics.decisions_completed(), 6);
 
   BOOST_REQUIRE_EQUAL(df1_metrics.decisions_received(), 0);
   BOOST_REQUIRE_EQUAL(df2_metrics.decisions_received(), 0);
@@ -910,13 +910,13 @@ BOOST_AUTO_TEST_CASE(DelayedDFOStillMatchesAssignments)
 
   BOOST_REQUIRE_EQUAL(dfo1_metrics.decisions_received(), 6);
   BOOST_REQUIRE_EQUAL(dfo2_metrics.decisions_received(), 6);
-  BOOST_REQUIRE_EQUAL(dfo2_metrics.decisions_received(), 6);
+  BOOST_REQUIRE_EQUAL(dfo3_metrics.decisions_received(), 6);
   BOOST_REQUIRE_EQUAL(dfo1_metrics.decisions_sent(), 6);
   BOOST_REQUIRE_EQUAL(dfo2_metrics.decisions_sent(), 6);
-  BOOST_REQUIRE_EQUAL(dfo2_metrics.decisions_sent(), 6);
+  BOOST_REQUIRE_EQUAL(dfo3_metrics.decisions_sent(), 0); // DFO3 has status information for received triggers
   BOOST_REQUIRE_EQUAL(dfo1_metrics.decisions_completed(), 0);
   BOOST_REQUIRE_EQUAL(dfo2_metrics.decisions_completed(), 0);
-  BOOST_REQUIRE_EQUAL(dfo2_metrics.decisions_completed(), 0);
+  BOOST_REQUIRE_EQUAL(dfo3_metrics.decisions_completed(), 0);
 
   BOOST_REQUIRE_EQUAL(df1_metrics.decisions_received(), df1_triggers.size());
   BOOST_REQUIRE_EQUAL(df2_metrics.decisions_received(), df2_triggers.size());
@@ -927,18 +927,18 @@ BOOST_AUTO_TEST_CASE(DelayedDFOStillMatchesAssignments)
   BOOST_REQUIRE_EQUAL(df1_metrics.trb_completions_received(), 0);
   BOOST_REQUIRE_EQUAL(df2_metrics.trb_completions_received(), 0);
   BOOST_REQUIRE_EQUAL(df3_metrics.trb_completions_received(), 0);
-  BOOST_REQUIRE_EQUAL(df1_metrics.requests_received(), 6 * 3);
-  BOOST_REQUIRE_EQUAL(df2_metrics.requests_received(), 6 * 3);
-  BOOST_REQUIRE_EQUAL(df3_metrics.requests_received(), 6 * 3);
+  BOOST_REQUIRE_EQUAL(df1_metrics.requests_received(), 6 * 2);
+  BOOST_REQUIRE_EQUAL(df2_metrics.requests_received(), 6 * 2);
+  BOOST_REQUIRE_EQUAL(df3_metrics.requests_received(), 6 * 2);
   BOOST_REQUIRE(df1_metrics.status_messages_sent() >= 1);
   BOOST_REQUIRE(df2_metrics.status_messages_sent() >= 1);
   BOOST_REQUIRE(df3_metrics.status_messages_sent() >= 1);
   BOOST_REQUIRE_EQUAL(df1_metrics.decisions_sent(), df1_triggers.size());
   BOOST_REQUIRE_EQUAL(df2_metrics.decisions_sent(), df2_triggers.size());
   BOOST_REQUIRE_EQUAL(df3_metrics.decisions_sent(), df3_triggers.size());
-  BOOST_REQUIRE_EQUAL(df1_metrics.duplicate_decisions_received(), df1_triggers.size() * 2);
-  BOOST_REQUIRE_EQUAL(df2_metrics.duplicate_decisions_received(), df2_triggers.size() * 2);
-  BOOST_REQUIRE_EQUAL(df3_metrics.duplicate_decisions_received(), df3_triggers.size() * 2);
+  BOOST_REQUIRE_EQUAL(df1_metrics.duplicate_decisions_received(), df1_triggers.size() * 1);
+  BOOST_REQUIRE_EQUAL(df2_metrics.duplicate_decisions_received(), df2_triggers.size() * 1);
+  BOOST_REQUIRE_EQUAL(df3_metrics.duplicate_decisions_received(), df3_triggers.size() * 1);
 
   for (const auto& trig : df1_triggers) {
     send_trb_completion("df1", trig);
@@ -973,13 +973,13 @@ BOOST_AUTO_TEST_CASE(DelayedDFOStillMatchesAssignments)
 
   BOOST_REQUIRE_EQUAL(dfo1_metrics.decisions_received(), 0);
   BOOST_REQUIRE_EQUAL(dfo2_metrics.decisions_received(), 0);
-  BOOST_REQUIRE_EQUAL(dfo2_metrics.decisions_received(), 0);
+  BOOST_REQUIRE_EQUAL(dfo3_metrics.decisions_received(), 0);
   BOOST_REQUIRE_EQUAL(dfo1_metrics.decisions_sent(), 0);
   BOOST_REQUIRE_EQUAL(dfo2_metrics.decisions_sent(), 0);
-  BOOST_REQUIRE_EQUAL(dfo2_metrics.decisions_sent(), 0);
+  BOOST_REQUIRE_EQUAL(dfo3_metrics.decisions_sent(), 0);
   BOOST_REQUIRE_EQUAL(dfo1_metrics.decisions_completed(), 6);
   BOOST_REQUIRE_EQUAL(dfo2_metrics.decisions_completed(), 6);
-  BOOST_REQUIRE_EQUAL(dfo2_metrics.decisions_completed(), 6);
+  BOOST_REQUIRE_EQUAL(dfo3_metrics.decisions_completed(), 6);
 
   BOOST_REQUIRE_EQUAL(df1_metrics.decisions_received(), 0);
   BOOST_REQUIRE_EQUAL(df2_metrics.decisions_received(), 0);

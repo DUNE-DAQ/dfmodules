@@ -10,13 +10,13 @@
 #define DFMODULES_PLUGINS_DATAFLOWSTATUSMODULE_HPP_
 
 #include "appfwk/DAQModule.hpp"
+#include "appmodel/DataflowStatusModuleConf.hpp"
 #include "dfmessages/DataflowStatus.hpp"
 #include "dfmessages/DataflowStatusRequest.hpp"
 #include "dfmessages/TRBCompletion.hpp"
 #include "dfmessages/TriggerDecision.hpp"
 #include "dfmessages/TriggerDecisionToken.hpp"
 #include "utilities/WorkerThread.hpp"
-#include "appmodel/DataflowStatusModuleConf.hpp"
 
 #include <atomic>
 #include <memory>
@@ -26,21 +26,29 @@
 namespace dunedaq {
 
 // Disable coverage checking LCOV_EXCL_START
-ERS_DECLARE_ISSUE(dfmodules,
-                  DuplicateTriggerDecision,
-                  "Received duplicate TriggerDecision message for trigger number " << trigger_number << " in run "
-                                                                                   << run_number,
-                  ((uint32_t)trigger_number)((uint32_t)run_number))
-ERS_DECLARE_ISSUE(dfmodules,
-                  UnexpectedTRBCompletion,
-                  "Received TRBCompletion message for trigger number " << trigger_number << " in run " << run_number
-                                                                       << " which is not in the building list",
-                  ((uint32_t)trigger_number)((uint32_t)run_number))
-ERS_DECLARE_ISSUE(dfmodules,
-                  UnexpectedTriggerDecisionToken,
-                  "Received TriggerDecisionToken message for trigger number "
-                    << trigger_number << " in run " << run_number << " which is not in the writing list",
-                  ((uint32_t)trigger_number)((uint32_t)run_number))
+
+ERS_DECLARE_ISSUE_BASE(dfmodules,
+                       UnexpectedTRBCompletion,
+                       appfwk::GeneralDAQModuleIssue,
+                       "Received TRBCompletion message for trigger number "
+                         << trigger_number << " in run " << run_number << " which is not in the building list",
+                       ((std::string)name),
+                       ((uint32_t)trigger_number)((uint32_t)run_number))
+
+ERS_DECLARE_ISSUE_BASE(dfmodules,
+                       UnexpectedTriggerDecisionToken,
+                       appfwk::GeneralDAQModuleIssue,
+                       "Received TriggerDecisionToken message for trigger number "
+                         << trigger_number << " in run " << run_number << " which is not in the writing list",
+                       ((std::string)name),
+                       ((uint32_t)trigger_number)((uint32_t)run_number))
+
+ERS_DECLARE_ISSUE_BASE(dfmodules,
+                       SnapshotNotFound,
+                       appfwk::GeneralDAQModuleIssue,
+                       "No snapshot found for trigger number " << trigger_number << ". Sending current status instead.",
+                       ((std::string)name),
+                       ((uint32_t)trigger_number))
 // Re-enable coverage checking LCOV_EXCL_STOP
 namespace dfmodules {
 
@@ -51,7 +59,8 @@ public:
   virtual ~DataflowStatusModule();
 
   DataflowStatusModule(const DataflowStatusModule&) = delete; ///< DataflowStatusModule is not copy-constructible
-  DataflowStatusModule& operator=(const DataflowStatusModule&) = delete; ///< DataflowStatusModule is not copy-assignable
+  DataflowStatusModule& operator=(const DataflowStatusModule&) =
+    delete;                                                         ///< DataflowStatusModule is not copy-assignable
   DataflowStatusModule(DataflowStatusModule&&) = delete;            ///< DataflowStatusModule is not move-constructible
   DataflowStatusModule& operator=(DataflowStatusModule&&) = delete; ///< DataflowStatusModule is not move-assignable
 

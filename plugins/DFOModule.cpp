@@ -189,13 +189,16 @@ DFOModule::do_stop(const CommandData_t& /*args*/)
   m_status_watchdog_thread->join();
   iom->remove_callback<dfmessages::DataflowStatus>(m_status_connection);
 
-  std::list<std::shared_ptr<AssignedTriggerDecision>> remnants;
-  for (auto& td : m_assigned_trigger_decisions) {
-    remnants.push_back(td.second);
-  }
+  {
+    std::lock_guard<std::mutex> status_lock(m_status_mutex);
+    std::list<std::shared_ptr<AssignedTriggerDecision>> remnants;
+    for (auto& td : m_assigned_trigger_decisions) {
+      remnants.push_back(td.second);
+    }
 
-  for (auto& r : remnants) {
-    ers::error(IncompleteTriggerDecision(ERS_HERE, r->decision.trigger_number, m_run_number));
+    for (auto& r : remnants) {
+      ers::error(IncompleteTriggerDecision(ERS_HERE, get_name(), r->decision.trigger_number, m_run_number));
+    }
   }
 
   std::lock_guard<std::mutex> guard(m_trigger_counters_mutex);
@@ -223,27 +226,45 @@ DFOModule::receive_trigger_decision(const dfmessages::TriggerDecision& decision)
                                     << decision.trigger_number << " and run " << decision.run_number
                                     << " (current run is " << m_run_number << ")";
   if (decision.run_number != m_run_number) {
-    ers::error(DFOModuleRunNumberMismatch(ERS_HERE, decision.run_number, m_run_number, "MLT", decision.trigger_number));
+    ers::error(DFOModuleRunNumberMismatch(
+      ERS_HERE, get_name(), decision.run_number, m_run_number, "MLT", decision.trigger_number));
     return;
   }
 
   auto decision_received = std::chrono::steady_clock::now();
   ++m_received_decisions;
-  m_processing_td.store(true);
+
   auto trigger_types = DFOTriggerCounter::unpack_types(decision.trigger_type);
   for (const auto t : trigger_types) {
     ++get_trigger_counter(t).received;
   }
 
-  std::chrono::steady_clock::time_point decision_assigned;
-  do {
+  {
+    std::lock_guard<std::mutex> lk(m_status_mutex);
+    if (m_assigned_trigger_decisions.find(decision.trigger_number) != m_assigned_trigger_decisions.end()) {
+      if (m_assigned_trigger_decisions[decision.trigger_number]->decision.trigger_timestamp ==
+          dfmessages::TypeDefaults::s_invalid_timestamp) {
+        TLOG() << "Received trigger decision for in progress trigger_number " << decision.trigger_number
+               << " on connection " << m_assigned_trigger_decisions[decision.trigger_number]->connection_name;
+        m_assigned_trigger_decisions[decision.trigger_number]->decision = decision;
+      } else {
+        ers::error(DuplicateTriggerDecision(ERS_HERE, get_name(), decision.trigger_number, m_run_number));
+      }
+      return;
+    }
+  }
 
-    send_status_requests(decision.trigger_number);
+  m_processing_td.store(true);
+
+  std::chrono::steady_clock::time_point decision_assigned;
+  size_t iteration = 0;
+  do {
+    send_status_requests(decision.trigger_number, iteration++);
 
     auto assignment = find_slot(decision);
 
     if (assignment == nullptr) { // this can happen if all application are in error state
-      ers::error(UnableToAssign(ERS_HERE, decision.trigger_number));
+      ers::error(UnableToAssign(ERS_HERE, get_name(), decision.trigger_number));
       usleep(5000);
       notify_trigger_if_needed();
       continue;
@@ -260,7 +281,8 @@ DFOModule::receive_trigger_decision(const dfmessages::TriggerDecision& decision)
                                         << " to connection " << assignment->connection_name;
       break;
     } else {
-      ers::error(TRBModuleAppUpdate(ERS_HERE, assignment->connection_name, "Could not send Trigger Decision"));
+      ers::error(
+        TRBModuleAppUpdate(ERS_HERE, get_name(), assignment->connection_name, "Could not send Trigger Decision"));
       // Mark this DF app status as stale so it won't be selected again
       auto it = m_dataflow_statuses.find(assignment->connection_name);
       if (it != m_dataflow_statuses.end()) {
@@ -355,7 +377,7 @@ DFOModule::notify_trigger_if_needed() const
     } catch (const ers::Issue& excpt) {
       std::ostringstream oss_warn;
       oss_warn << "Send with sender \"" << m_busy_sender->get_name() << "\" failed";
-      ers::warning(iomanager::OperationFailed(ERS_HERE, oss_warn.str(), excpt));
+      ers::warning(iomanager::OperationFailed(ERS_HERE, get_name(), oss_warn.str(), excpt));
     }
 
   } while (!wasSentSuccessfully && m_running_status.load());
@@ -387,7 +409,7 @@ DFOModule::dispatch(const std::shared_ptr<AssignedTriggerDecision>& assignment)
     } catch (const ers::Issue& excpt) {
       std::ostringstream oss_warn;
       oss_warn << "Send to connection \"" << assignment->connection_name << "\" failed";
-      ers::warning(iomanager::OperationFailed(ERS_HERE, oss_warn.str(), excpt));
+      ers::warning(iomanager::OperationFailed(ERS_HERE, get_name(), oss_warn.str(), excpt));
     }
 
     retries--;
@@ -428,7 +450,27 @@ DFOModule::receive_dataflow_status(const dfmessages::DataflowStatus& status)
     }
 
     if (status.trigger_number != 0) {
-      m_statuses_for_trigger[status.trigger_number][status.decision_destination] = status;
+      if (m_statuses_for_trigger.count(status.trigger_number) == 0 ||
+          m_statuses_for_trigger[status.trigger_number].count(status.decision_destination) == 0 ||
+          m_statuses_for_trigger[status.trigger_number][status.decision_destination].iteration_number <
+            status.iteration_number) {
+        m_statuses_for_trigger[status.trigger_number][status.decision_destination] = status;
+      }
+    }
+
+    for (auto& trigger : status.triggers_building) {
+      if (!m_assigned_trigger_decisions.count(trigger)) {
+        ers::warning(UnexpectedTriggerDecision(ERS_HERE, get_name(), trigger, status.decision_destination));
+        m_assigned_trigger_decisions[trigger] = std::make_shared<AssignedTriggerDecision>(
+          dfmessages::TriggerDecision(trigger, status.run_number), status.decision_destination);
+      }
+    }
+    for (auto& trigger : status.triggers_writing) {
+      if (!m_assigned_trigger_decisions.count(trigger)) {
+        ers::warning(UnexpectedTriggerDecision(ERS_HERE, get_name(), trigger, status.decision_destination));
+        m_assigned_trigger_decisions[trigger] = std::make_shared<AssignedTriggerDecision>(
+          dfmessages::TriggerDecision(trigger, status.run_number), status.decision_destination);
+      }
     }
 
     for (auto& trigger : status.recently_completed_triggers) {
@@ -535,6 +577,7 @@ DFOModule::assign_trigger_decision(const std::shared_ptr<AssignedTriggerDecision
   TLOG_DEBUG(TLVL_WORK_STEPS) << "Assigning trigger_number " << assignment->decision.trigger_number << " to "
                               << assignment->connection_name;
 
+  std::lock_guard<std::mutex> lk(m_status_mutex);
   m_assigned_trigger_decisions[assignment->decision.trigger_number] = assignment;
 }
 
@@ -549,10 +592,15 @@ DFOModule::status_watchdog_proc(std::stop_token stoken)
       std::lock_guard<std::mutex> guard(m_status_mutex);
       for (auto& [name, rstatus] : m_dataflow_statuses) {
         if (!rstatus->status_updated) {
-          ers::error(StaleDataflowStatus(ERS_HERE, name, m_dataflow_status_timeout.count()));
+          ers::error(StaleDataflowStatus(ERS_HERE, get_name(), name, m_dataflow_status_timeout.count()));
           if (m_reallocate_building_triggers_on_timeout) {
             for (auto& trigger : rstatus->status.triggers_building) {
-              ers::error(ReallocatingTrigger(ERS_HERE, trigger, name));
+              if (m_assigned_trigger_decisions[trigger]->decision.trigger_timestamp ==
+                  dfmessages::TypeDefaults::s_invalid_timestamp) {
+                ers::error(LostTriggerDecision(ERS_HERE, get_name(), trigger, name));
+                continue;
+              }
+              ers::error(ReallocatingTrigger(ERS_HERE, get_name(), trigger, name));
               triggers_to_reallocate.push_back(m_assigned_trigger_decisions[trigger]->decision);
               m_statuses_for_trigger.erase(trigger);
               m_assigned_trigger_decisions.erase(trigger);
@@ -560,7 +608,12 @@ DFOModule::status_watchdog_proc(std::stop_token stoken)
           }
           if (m_reallocate_writing_triggers_on_timeout) {
             for (auto& trigger : rstatus->status.triggers_writing) {
-              ers::error(ReallocatingTrigger(ERS_HERE, trigger, name));
+              if (m_assigned_trigger_decisions[trigger]->decision.trigger_timestamp ==
+                  dfmessages::TypeDefaults::s_invalid_timestamp) {
+                ers::error(LostTriggerDecision(ERS_HERE, get_name(), trigger, name));
+                continue;
+              }
+              ers::error(ReallocatingTrigger(ERS_HERE, get_name(), trigger, name));
               triggers_to_reallocate.push_back(m_assigned_trigger_decisions[trigger]->decision);
               m_statuses_for_trigger.erase(trigger);
               m_assigned_trigger_decisions.erase(trigger);
@@ -577,7 +630,7 @@ DFOModule::status_watchdog_proc(std::stop_token stoken)
 }
 
 bool
-DFOModule::send_status_requests(dfmessages::trigger_number_t trigger)
+DFOModule::send_status_requests(dfmessages::trigger_number_t trigger, size_t iteration)
 {
   std::set<std::string> destinations_to_request;
   {
@@ -592,6 +645,7 @@ DFOModule::send_status_requests(dfmessages::trigger_number_t trigger)
   dfmessages::DataflowStatusRequest request;
   request.run_number = m_run_number;
   request.trigger_number = trigger;
+  request.iteration_number = iteration;
   request.reply_destination = m_status_connection;
 
   for (auto& dest : destinations_to_request) {
@@ -604,7 +658,7 @@ DFOModule::send_status_requests(dfmessages::trigger_number_t trigger)
     } catch (const ers::Issue& excpt) {
       std::ostringstream oss_warn;
       oss_warn << "Send of DataflowStatusRequest to connection \"" << dest << "\" failed";
-      ers::warning(iomanager::OperationFailed(ERS_HERE, oss_warn.str(), excpt));
+      ers::warning(iomanager::OperationFailed(ERS_HERE, get_name(), oss_warn.str(), excpt));
     }
   }
 
