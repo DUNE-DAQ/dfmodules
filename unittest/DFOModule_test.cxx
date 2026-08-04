@@ -137,6 +137,11 @@ BOOST_AUTO_TEST_CASE(Commands)
   opmgr.register_node("dfo", dfo);
   dfo->init(cfgMgr);
 
+  // start sends a TriggerInhibit
+  auto iom = iomanager::IOManager::get();
+  auto inh_recv = iom->get_receiver<dfmessages::TriggerInhibit>("triginh");
+  inh_recv->add_callback(recv_triginh);
+
   appfwk::DAQModule::CommandData_t null_data;
   appfwk::DAQModule::CommandData_t start_data;
   start_data.emplace("run", 1);
