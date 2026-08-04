@@ -162,6 +162,8 @@ DFOModule::do_start(const CommandData_t& payload)
 
   m_status_watchdog_thread = std::make_shared<std::jthread>(std::bind_front(&DFOModule::status_watchdog_proc, this));
 
+  notify_trigger_if_needed();
+
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
 }
 
@@ -361,16 +363,17 @@ DFOModule::notify_trigger_if_needed() const
   // has changed.
   std::lock_guard<std::mutex> guard(m_notify_trigger_mutex);
 
+  static bool first = true; // Always send one TriggerInhibit message at the start of a run
   bool busy = is_busy();
-  if (busy == m_last_notified_busy.load())
+  if (!first && busy == m_last_notified_busy.load())
     return;
 
   bool wasSentSuccessfully = false;
 
   do {
     try {
-      dfmessages::TriggerInhibit message{ busy, m_run_number };
-      m_busy_sender->send(std::move(message), m_queue_timeout);
+      dfmessages::TriggerInhibit message{ busy, m_run_number, m_td_connection };
+      m_busy_sender->send(std::move(message), first ? ipm::Sender::s_block : m_queue_timeout);
       wasSentSuccessfully = true;
       TLOG_DEBUG(TLVL_NOTIFY_TRIGGER) << get_name() << " Sent BUSY status " << busy << " to trigger in run "
                                       << m_run_number;
@@ -383,6 +386,7 @@ DFOModule::notify_trigger_if_needed() const
   } while (!wasSentSuccessfully && m_running_status.load());
 
   m_last_notified_busy.store(busy);
+  first = false;
 }
 
 bool
@@ -460,7 +464,7 @@ DFOModule::receive_dataflow_status(const dfmessages::DataflowStatus& status)
 
     for (auto& trigger : status.triggers_building) {
       if (!m_assigned_trigger_decisions.count(trigger)) {
-        ers::warning(UnexpectedTriggerDecision(ERS_HERE, get_name(), trigger, status.decision_destination));
+        ers::info(UnexpectedTriggerDecision(ERS_HERE, get_name(), trigger, status.decision_destination));
         m_assigned_trigger_decisions[trigger] = std::make_shared<AssignedTriggerDecision>(
           dfmessages::TriggerDecision(trigger, status.run_number), status.decision_destination);
       }

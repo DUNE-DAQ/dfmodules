@@ -33,21 +33,21 @@ check_for_logfile_errors = True
 
 # Default values for validation parameters
 number_of_dataflow_apps = 3
-number_of_data_producers = 1
-number_of_readout_apps = 1
-trigger_rate = 1.0
+number_of_data_producers = 4
+number_of_readout_apps = 2
+trigger_rate = 4.0
 expected_number_of_data_files = number_of_dataflow_apps
 check_for_logfile_errors = True
 expected_event_count = run_duration * trigger_rate / number_of_dataflow_apps
 expected_event_count_tolerance = expected_event_count / 10
-ta_prescale = 100
+ta_prescale = 1000
 
 wibeth_frag_params = {
     "fragment_type_description": "WIBEth",
     "fragment_type": "WIBEth",
-    "expected_fragment_count": (number_of_data_producers * number_of_readout_apps),
+    "expected_fragment_count": number_of_readout_apps * number_of_data_producers,
     "min_size_bytes": 7272,
-    "max_size_bytes": 14472,
+    "max_size_bytes": 28872,
 }
 # sizes: 128 is for one TC with zero TAs inside it (72+56)
 #        208 is for one TC with one TA inside it (72+56+80)
@@ -59,53 +59,41 @@ triggercandidate_frag_params = {
     "min_size_bytes": 128,
     "max_size_bytes": 264,
     "debug_mask": 0x0,
-    "frag_sizes_by_TC_type": {
-        "kPrescale": {"min_size_bytes": 208, "max_size_bytes": 264},
-        "kRandom": {"min_size_bytes": 128, "max_size_bytes": 264},
-        "default": {"min_size_bytes": 128, "max_size_bytes": 264},
-    },
-}
-# sizes:  72 is for an empty TA fragment
-#        184 is for one TA with one TP inside it (72+88+24)
-#        296 is for two TAs with one TP in each of them (72+88+24+88+24)
-#        408 is for three TAs with one TP in each of them (72+88+24+88+24+88+24)
-triggeractivity_frag_params = {
-    "fragment_type_description": "Trigger Activity",
-    "fragment_type": "Trigger_Activity",
-    "expected_fragment_count": 1,
-    "min_size_bytes": 72,
-    "max_size_bytes": 408,
-    "debug_mask": 0x0,
-    "frag_sizes_by_TC_type": {
-        "kPrescale": {"min_size_bytes": 184, "max_size_bytes": 408},
-        "kRandom": {"min_size_bytes": 72, "max_size_bytes": 296},
-        "default": {"min_size_bytes": 72, "max_size_bytes": 408},
-    },
+    "frag_sizes_by_TC_type": {"kPrescale": {"min_size_bytes": 208, "max_size_bytes": 264},
+                                "kRandom": {"min_size_bytes": 128, "max_size_bytes": 264},
+                                "default": {"min_size_bytes": 128, "max_size_bytes": 264} }
 }
 # sizes:  72 is for an empty TP fragment
-#        144 is for a fragment with three TPs in it (72+24+24+24)
+#        168 is for a fragment with four TPs in it (72+24+24+24+24)
 triggerprimitive_frag_params = {
     "fragment_type_description": "Trigger Primitive",
     "fragment_type": "Trigger_Primitive",
-    "expected_fragment_count": number_of_readout_apps * 3,
+    "expected_fragment_count": 3 * number_of_readout_apps,
     "min_size_bytes": 72,
-    "max_size_bytes": 144,
+    "max_size_bytes": 168,
 }
+# 03-Jul-2025, KAB: changing the default max size from 72 to 100 to handle cases in which there
+# was a Random or Prescale trigger along with a coincidental HSI event within the readout window.
 hsi_frag_params = {
     "fragment_type_description": "HSI",
     "fragment_type": "Hardware_Signal",
-    "expected_fragment_count": 0,
+    "expected_fragment_count": 1,
     "min_size_bytes": 72,
     "max_size_bytes": 100,
+    "frag_sizes_by_TC_type": {"kTiming": {"min_size_bytes": 100, "max_size_bytes": 100},
+                              "default": {"min_size_bytes":  72, "max_size_bytes": 100} }
 }
 ignored_logfile_problems = {
     "-controller": [
-        "Worker with pid \\d+ was terminated due to signal 1",
-        "Connection '.*' not found on the application registry",
     ],
-    "connectivity-service": [
+    "local-connection-server": [
         "errorlog: -",
     ],
+    # 04-Mar-2026, KAB: added the absl::InitializeLog warning message to the ignored list for
+    # all DAQ processes, given that we currently don't have a way suppress it at its source.
+    r".*": [
+        r"WARNING: All log messages before absl::InitializeLog\(\) is called are written to STDERR"
+    ]
 }
 
 # Determine if this computer has enough resources for these tests
@@ -124,8 +112,16 @@ resource_validator.free_disk_space_needs(
 ### Config setup
 common_config_obj = data_classes.integtest_params_for_predefined_dunedaq_config()
 common_config_obj.op_env = "test"
-common_config_obj.tpg_enabled = False
 common_config_obj.predefined_config_db ="config/daqsystemtest/example-configs.data.xml"
+
+common_config_obj.config_substitutions.append(
+    data_classes.attribute_substitution(
+        obj_class="TCDataProcessor",     # 12-Nov-2025, KAB: turned off the merging of
+        obj_id="def-tc-processor",       # overlapping TCs so that we get more consistent
+        updates={                        # numbers of TriggerRecords in the output files.
+            "merge_overlapping_tcs": False
+        },)
+)
 
 # Get default config
 multidfo_local_conf = copy.deepcopy(common_config_obj)
@@ -139,32 +135,32 @@ killed_df_conf = copy.deepcopy(multidfo_local_conf)
 
 stopped_dfo_conf.system_signal_configs = [
     data_classes.system_signal_config(
-        application_label="dfo-02", signal=data_classes.PosixSignal.SIGSTOP, delay_s=5
+        application_label="dfo-02", signal=data_classes.PosixSignal.SIGSTOP, delay_s=25
     ),
     data_classes.system_signal_config(
-        application_label="dfo-02", signal=data_classes.PosixSignal.SIGCONT, delay_s=10
+        application_label="dfo-02", signal=data_classes.PosixSignal.SIGCONT, delay_s=30
     ),
 ]
 
 
 killed_dfo_conf.system_signal_configs = [
     data_classes.system_signal_config(
-        application_label="dfo-02", signal=data_classes.PosixSignal.SIGKILL, delay_s=5
+        application_label="dfo-02", signal=data_classes.PosixSignal.SIGKILL, delay_s=25
     ),
 ]
 
 stopped_df_conf.system_signal_configs = [
     data_classes.system_signal_config(
-        application_label="df-02", signal=data_classes.PosixSignal.SIGSTOP, delay_s=5
+        application_label="df-02", signal=data_classes.PosixSignal.SIGSTOP, delay_s=25
     ),
     data_classes.system_signal_config(
-        application_label="df-02", signal=data_classes.PosixSignal.SIGCONT, delay_s=10
+        application_label="df-02", signal=data_classes.PosixSignal.SIGCONT, delay_s=30
     ),
 ]
 
 killed_df_conf.system_signal_configs = [
     data_classes.system_signal_config(
-        application_label="df-02", signal=data_classes.PosixSignal.SIGKILL, delay_s=5
+        application_label="df-02", signal=data_classes.PosixSignal.SIGKILL, delay_s=25
     ),
 ]
 
@@ -178,14 +174,11 @@ confgen_arguments = {
 }
 
 # The commands to run in dunerc, as a list
-dunerc_command_list = "boot conf".split()
-dunerc_command_list += (
-    "start ".split()
-    + "--run-number 101 enable-triggers wait ".split()
+dunerc_command_list = (
+    "boot wait 2 conf start --run-number 101 wait 1 enable-triggers wait ".split()
     + [str(run_duration)]
-    + "disable-triggers drain-dataflow wait 2 stop-trigger-sources wait 2 stop wait 2".split()
+    + "disable-triggers wait 2 drain-dataflow wait 2 stop-trigger-sources stop scrap terminate".split()
 )
-dunerc_command_list += "scrap terminate".split()
 
 
 ### Tests
@@ -210,27 +203,22 @@ def test_data_files(run_dunerc):
     low_number_of_files = expected_number_of_data_files
     high_number_of_files = expected_number_of_data_files
     fragment_check_list = [triggercandidate_frag_params, hsi_frag_params, wibeth_frag_params]
-    if run_dunerc.confgen_config.tpg_enabled:
-        local_expected_event_count += (
-            (6250 / ta_prescale)
-            * number_of_data_producers
-            * number_of_readout_apps
-            * run_duration
-            / (100 * number_of_dataflow_apps)
-        )
-        local_event_count_tolerance += (
-            (250 / ta_prescale)
-            * number_of_data_producers
-            * number_of_readout_apps
-            * run_duration
-            / (100 * number_of_dataflow_apps)
-        )
-        fragment_check_list.append(triggerprimitive_frag_params)
-        fragment_check_list.append(triggeractivity_frag_params)
-    else:
-        low_number_of_files -= number_of_dataflow_apps
-        if low_number_of_files < 1:
-            low_number_of_files = 1
+
+    local_expected_event_count += (
+        (6250.0 / ta_prescale)
+        * number_of_data_producers
+        * number_of_readout_apps
+        * run_duration
+        / (100 * number_of_dataflow_apps)
+    )
+    local_event_count_tolerance += (
+        (250.0 / ta_prescale)
+        * number_of_data_producers
+        * number_of_readout_apps
+        * run_duration
+        / (100 * number_of_dataflow_apps)
+    )
+    fragment_check_list.append(triggerprimitive_frag_params)
     nontrig_fragment_check_list = [hsi_frag_params, wibeth_frag_params]
 
     # Run some tests on the output data file
