@@ -133,7 +133,7 @@ concept FileHandleConcept = requires(T file_handle,
 /**
  * @brief FileDataStoreImpl contains functionality you'd generally
  * want in a data store which writes to a file irrespective of file
- * type. See top of its header file for details. 
+ * type. See top of this header file for details.
  */
 template <FileHandleConcept FileHandleClass> // E.g., SummaryTextDataWriter
 class FileDataStoreImpl : public DataStore
@@ -245,27 +245,6 @@ public:
     return *m_session;
   }
 
-
-  void throw_if_insufficient_space_for_object(size_t obj_size, const std::string& obj_name) {
-
-    size_t current_free_space = get_free_space(m_path);
-
-    if (current_free_space < (m_free_space_safety_factor_for_write * obj_size)) {
-      std::ostringstream msg_oss;
-      msg_oss << "a safety factor of " << m_free_space_safety_factor_for_write << " times the " << obj_name << " size";
-      InsufficientDiskSpace issue(ERS_HERE,
-                                  get_name(),
-                                  m_path,
-                                  current_free_space,
-                                  (m_free_space_safety_factor_for_write * obj_size),
-                                  msg_oss.str());
-      assert(m_file_handle);
-      std::string msg =
-        "writing a " + obj_name + " to file" + m_file_handle->get_file_name();
-      throw RetryableDataStoreProblem(ERS_HERE, get_name(), msg, issue);
-    }
-  }
-
   /**
    * @brief FileDataStoreImpl write() 
    * Method used to write TriggerRecords into the data
@@ -278,7 +257,7 @@ public:
 
     throw_if_insufficient_space_for_object(tr_size, "trigger record");
 
-    increment_file_index_if_needed(tr_size, tr.get_header_ref().get_trigger_number());
+    increment_file_index_if_needed(tr_size, tr.get_header_ref().get_trigger_number(), m_current_record_number);
 
     m_current_record_number = tr.get_header_ref().get_trigger_number();
 
@@ -316,7 +295,7 @@ public:
     size_t ts_size = ts.get_total_size_bytes();
     throw_if_insufficient_space_for_object(ts_size, "time slice");
 
-    increment_file_index_if_needed(ts_size, ts.get_header().timeslice_number);
+    increment_file_index_if_needed(ts_size, ts.get_header().timeslice_number, m_current_record_number);
 
     m_current_record_number = ts.get_header().timeslice_number;
 
@@ -425,7 +404,6 @@ public:
 protected:
   void generate_opmon_data() override
   {
-
     opmon::FileDataStoreImplInfo info;
 
     info.set_new_bytes_output(m_new_bytes.exchange(0));
@@ -436,85 +414,18 @@ protected:
   }
 
 private:
-  std::unique_ptr<FileHandleClass> m_file_handle;
 
-  daqdataformats::run_number_t m_run_number;
+  // Translates various available parameters (directory path, file extension, etc.) into the appropriate filename.
+  std::string get_file_name(daqdataformats::run_number_t run_number) const;
 
-  // Total number of generated files
-  std::atomic<size_t> m_file_index;
-  const std::string m_writer_identifier;
+  // Throws a RetryableDataStoreProblem if (size of the object)*(free space safety factor) exceeds available space in m_path
+  void throw_if_insufficient_space_for_object(size_t obj_size, const std::string& obj_name) const;
 
-  const appmodel::DataStoreConf* m_config_params;
-
-  const confmodel::Session* m_session;
-
-  unsigned m_compression_level; // NOLINT(build/unsigned)
-
-  const std::string m_operational_environment;
-  const std::string m_offline_data_stream;
-  bool m_run_is_for_test_purposes;
-
-  std::string m_basic_name_of_open_file;
+  // Available space in the path whose name is passed to get_free_space
+  size_t get_free_space(const std::string& the_path) const;
   
-  // Size of data being written, excluding metadata
-  std::atomic<size_t> m_recorded_size;
-
-  // Theoretical, "uncompressed" size of data being written, excluding metadata
-  std::atomic<size_t> m_uncompressed_raw_data_size;
-
-  // Used for tracking the "delta" of the current write
-  std::atomic<size_t> m_previous_file_size = 0;
-
-  // Total size of the file, including raw data, metadata, and free space
-  std::atomic<size_t> m_total_file_size;
-
-  // Record number for the record that is currently being written out
-  // This is only useful for long-readout windows, in which there may
-  // be multiple calls to write()
-  size_t m_current_record_number;
-
-  // incremental written data
-  std::atomic<uint64_t> m_new_bytes;   // NOLINT(build/unsigned)
-  std::atomic<uint64_t> m_new_objects; // NOLINT(build/unsigned)
-
-  const std::string m_operation_mode;
-  const std::string m_path;
-  const size_t m_max_file_size;
-  const bool m_disable_unique_suffix;
-  float m_free_space_safety_factor_for_write;
-
-
-  /**
-   * @brief Translates the specified input parameters into the appropriate filename.
-   */
-  std::string get_file_name(daqdataformats::run_number_t run_number)
-  {
-    std::ostringstream work_oss;
-    work_oss << m_config_params->get_directory_path();
-    if (work_oss.str().length() > 0) {
-      work_oss << "/";
-    }
-    work_oss << m_operational_environment + "_" + m_config_params->get_filename_params()->get_file_type_prefix();
-    if (work_oss.str().length() > 0) {
-      work_oss << "_";
-    }
-
-    work_oss << m_config_params->get_filename_params()->get_run_number_prefix();
-    work_oss << std::setw(m_config_params->get_filename_params()->get_digits_for_run_number()) << std::setfill('0')
-             << run_number;
-    work_oss << "_";
-
-    work_oss << m_config_params->get_filename_params()->get_file_index_prefix();
-    work_oss << std::setw(m_config_params->get_filename_params()->get_digits_for_file_index()) << std::setfill('0')
-             << m_file_index;
-
-    work_oss << "_" << m_writer_identifier;
-    work_oss << "." << m_file_handle->get_file_name_extension();
-    return work_oss.str();
-  }
-
-  // Check if a new file should be opened for the record
-  void increment_file_index_if_needed(size_t size_of_object_to_write, size_t object_record_number)
+  // Check if a new file should be opened for the record and increment m_file_index if so
+  void increment_file_index_if_needed(const size_t size_of_object_to_write, const size_t object_record_number, const size_t current_record_number)
   {
     float compression_factor {1.0};
 
@@ -536,8 +447,8 @@ private:
 
     // JCF, 06-27-2026: TODO: probably need to reset m_recorded_size, etc., as is done right above
     if (m_operation_mode == "one-event-per-file" &&
-	m_current_record_number != s_unset_record_number &&
-	m_current_record_number != object_record_number) {
+	current_record_number != s_unset_record_number &&
+	current_record_number != object_record_number) {
       ++m_file_index;
       return;
     }
@@ -593,19 +504,59 @@ private:
                              << " was already opened";
     }
   }
+
+  std::unique_ptr<FileHandleClass> m_file_handle;
+
+  daqdataformats::run_number_t m_run_number;
+
+  // Total number of generated files
+  std::atomic<size_t> m_file_index;
+  const std::string m_writer_identifier;
+
+  const appmodel::DataStoreConf* m_config_params;
+
+  const confmodel::Session* m_session;
+
+  unsigned m_compression_level; // NOLINT(build/unsigned)
+
+  const std::string m_operational_environment;
+  const std::string m_offline_data_stream;
+  bool m_run_is_for_test_purposes;
+
+  std::string m_basic_name_of_open_file;
   
-  size_t get_free_space(const std::string& the_path)
-  {
-    struct statvfs vfs_results;
-    int retval = statvfs(the_path.c_str(), &vfs_results);
-    if (retval != 0) {
-      return 0;
-    }
-    return vfs_results.f_bsize * vfs_results.f_bavail;
-  }
+  // Size of data being written, excluding metadata
+  std::atomic<size_t> m_recorded_size;
+
+  // Theoretical, "uncompressed" size of data being written, excluding metadata
+  std::atomic<size_t> m_uncompressed_raw_data_size;
+
+  // Used for tracking the "delta" of the current write
+  std::atomic<size_t> m_previous_file_size = 0;
+
+  // Total size of the file, including raw data, metadata, and free space
+  std::atomic<size_t> m_total_file_size;
+
+  // Record number for the record that is currently being written out
+  // This is only useful for long-readout windows, in which there may
+  // be multiple calls to write()
+  size_t m_current_record_number;
+
+  // incremental written data
+  std::atomic<uint64_t> m_new_bytes;   // NOLINT(build/unsigned)
+  std::atomic<uint64_t> m_new_objects; // NOLINT(build/unsigned)
+
+  const std::string m_operation_mode;
+  const std::string m_path;
+  const size_t m_max_file_size;
+  const bool m_disable_unique_suffix;
+  float m_free_space_safety_factor_for_write;
+
 };
   
 } // namespace dfmodules
 } // namespace dunedaq
+
+#include "detail/FileDataStoreImpl.hxx"
 
 #endif // DFMODULES_INCLUDE_DFMODULES_FILEDATASTOREIMPL_HPP_
