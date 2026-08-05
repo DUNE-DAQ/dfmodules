@@ -5,8 +5,8 @@ import re
 
 import integrationtest.data_file_checks as data_file_checks
 import integrationtest.log_file_checks as log_file_checks
-import integrationtest.basic_checks as basic_checks
 import integrationtest.data_classes as data_classes
+import integrationtest.utility_functions as utility_functions
 from integrationtest.verbosity_helper import IntegtestVerbosityLevels
 
 import functools
@@ -67,17 +67,8 @@ conf_dict.config_session_name= "trmonrequestor"
 conf_dict.tpg_enabled = False
 conf_dict.trmon_app_enabled = True
 conf_dict.n_df_apps = number_of_dataflow_apps
-
-
-substitution = data_classes.attribute_substitution(
-    obj_id="random-tc-generator",
-    obj_class="RandomTCMakerConf",
-    updates={
-        "trigger_rate_hz": trigger_rate,
-        "candidate_backshift_ts": 0,
-    },
-)
-conf_dict.config_substitutions.append(substitution)
+utility_functions.set_rtcm_trigger_params(conf_dict, trigger_rate=trigger_rate,
+                                          readout_window_backshift_ticks=0)
 
 substitution = data_classes.attribute_substitution(
     obj_id="tr_mon_dw-01",
@@ -105,7 +96,7 @@ dunerc_command_list += " scrap terminate".split()
 # The tests themselves
 def test_dunerc_success(run_dunerc, caplog):
     # checks for run control success, problems during pytest setup, etc.
-    basic_checks.basic_checks(run_dunerc, caplog, print_test_name=False)
+    utility_functions.basic_checks(run_dunerc, caplog, print_test_name=False)
 
 
 def test_log_files(run_dunerc):

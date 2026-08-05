@@ -91,9 +91,9 @@
 </obj>
 
 <obj class="AVXThresholdProcessor" id="tpg-threshold-proc">
- <attr name="plane0" type="u16" val="100"/>
- <attr name="plane1" type="u16" val="100"/>
- <attr name="plane2" type="u16" val="100"/>
+ <attr name="plane0" type="s16" val="100"/>
+ <attr name="plane1" type="s16" val="100"/>
+ <attr name="plane2" type="s16" val="100"/>
 </obj>
 
 <obj class="DPDKReaderConf" id="def-emu-nic-receiver-conf">
@@ -365,90 +365,114 @@
  <rel name="net_senders">
   <ref class="FakeDataSender" id="det-streams-1-1"/>
  </rel>
+ <rel name="net_receiver" class="FakeDataReceiver" id="dataRec-0"/>
 </obj>
 
 <obj class="NetworkDetectorToDaqConnection" id="det-1-2">
  <rel name="net_senders">
   <ref class="FakeDataSender" id="det-streams-1-2"/>
  </rel>
+ <rel name="net_receiver" class="FakeDataReceiver" id="dataRec-0"/>
 </obj>
 
 <obj class="NetworkDetectorToDaqConnection" id="det-1-3">
  <rel name="net_senders">
   <ref class="FakeDataSender" id="det-streams-1-3"/>
  </rel>
+ <rel name="net_receiver" class="FakeDataReceiver" id="dataRec-0"/>
 </obj>
 
 <obj class="NetworkDetectorToDaqConnection" id="det-1-4">
  <rel name="net_senders">
   <ref class="FakeDataSender" id="det-streams-1-4"/>
  </rel>
+ <rel name="net_receiver" class="FakeDataReceiver" id="dataRec-0"/>
 </obj>
 
 <obj class="NetworkDetectorToDaqConnection" id="det-1-5">
  <rel name="net_senders">
   <ref class="FakeDataSender" id="det-streams-1-5"/>
  </rel>
+ <rel name="net_receiver" class="FakeDataReceiver" id="dataRec-0"/>
 </obj>
 
 <obj class="NetworkDetectorToDaqConnection" id="det-10-1">
  <rel name="net_senders">
   <ref class="FakeDataSender" id="det-streams-10-1"/>
  </rel>
+ <rel name="net_receiver" class="FakeDataReceiver" id="dataRec-0"/>
 </obj>
 
 <obj class="NetworkDetectorToDaqConnection" id="det-10-2">
  <rel name="net_senders">
   <ref class="FakeDataSender" id="det-streams-10-2"/>
  </rel>
+ <rel name="net_receiver" class="FakeDataReceiver" id="dataRec-0"/>
 </obj>
 
 <obj class="NetworkDetectorToDaqConnection" id="det-10-3">
  <rel name="net_senders">
   <ref class="FakeDataSender" id="det-streams-10-3"/>
  </rel>
+ <rel name="net_receiver" class="FakeDataReceiver" id="dataRec-0"/>
 </obj>
 
 <obj class="NetworkDetectorToDaqConnection" id="det-10-4">
  <rel name="net_senders">
   <ref class="FakeDataSender" id="det-streams-10-4"/>
  </rel>
+ <rel name="net_receiver" class="FakeDataReceiver" id="dataRec-0"/>
 </obj>
 
 <obj class="NetworkDetectorToDaqConnection" id="det-10-5">
  <rel name="net_senders">
   <ref class="FakeDataSender" id="det-streams-10-5"/>
  </rel>
+ <rel name="net_receiver" class="FakeDataReceiver" id="dataRec-0"/>
+</obj>
+
+<obj class="FakeDataReceiver" id="dataRec-0">
+ <rel name="uses" class="NetworkInterface" id="nic-0"/>
+</obj>
+
+<obj class="NetworkInterface" id="nic-0">
+ <attr name="mac_address" type="string" val="00:00:00:00:00:00"/>
+ <attr name="network_name" type="enum" val="Control"/>
 </obj>
 
 <obj class="FakeDataSender" id="det-streams-1-1">
  <rel name="streams">
   <ref class="DetectorStream" id="dummyStream-1-1"/>
  </rel>
+ <rel name="uses" class="NetworkInterface" id="nic-0"/>
 </obj>
 
 <obj class="FakeDataSender" id="det-streams-1-2">
  <rel name="streams">
   <ref class="DetectorStream" id="dummyStream-2-1"/>
  </rel>
+ <rel name="uses" class="NetworkInterface" id="nic-0"/>
 </obj>
 
 <obj class="FakeDataSender" id="det-streams-1-3">
  <rel name="streams">
   <ref class="DetectorStream" id="dummyStream-3-1"/>
  </rel>
+ <rel name="uses" class="NetworkInterface" id="nic-0"/>
 </obj>
 
 <obj class="FakeDataSender" id="det-streams-1-4">
  <rel name="streams">
   <ref class="DetectorStream" id="dummyStream-4-1"/>
  </rel>
+ <rel name="uses" class="NetworkInterface" id="nic-0"/>
 </obj>
 
 <obj class="FakeDataSender" id="det-streams-1-5">
  <rel name="streams">
   <ref class="DetectorStream" id="dummyStream-5-1"/>
  </rel>
+ <rel name="uses" class="NetworkInterface" id="nic-0"/>
 </obj>
 
 <obj class="FakeDataSender" id="det-streams-10-1">
@@ -464,6 +488,7 @@
   <ref class="DetectorStream" id="dummyStream-1-9"/>
   <ref class="DetectorStream" id="dummyStream-1-10"/>
  </rel>
+ <rel name="uses" class="NetworkInterface" id="nic-0"/>
 </obj>
 
 <obj class="FakeDataSender" id="det-streams-10-2">
@@ -479,6 +504,7 @@
   <ref class="DetectorStream" id="dummyStream-2-9"/>
   <ref class="DetectorStream" id="dummyStream-2-10"/>
  </rel>
+ <rel name="uses" class="NetworkInterface" id="nic-0"/>
 </obj>
 
 <obj class="FakeDataSender" id="det-streams-10-3">
@@ -494,6 +520,7 @@
   <ref class="DetectorStream" id="dummyStream-3-9"/>
   <ref class="DetectorStream" id="dummyStream-3-10"/>
  </rel>
+ <rel name="uses" class="NetworkInterface" id="nic-0"/>
 </obj>
 
 <obj class="FakeDataSender" id="det-streams-10-4">
@@ -509,6 +536,7 @@
   <ref class="DetectorStream" id="dummyStream-4-9"/>
   <ref class="DetectorStream" id="dummyStream-4-10"/>
  </rel>
+ <rel name="uses" class="NetworkInterface" id="nic-0"/>
 </obj>
 
 <obj class="FakeDataSender" id="det-streams-10-5">
@@ -524,6 +552,7 @@
   <ref class="DetectorStream" id="dummyStream-5-9"/>
   <ref class="DetectorStream" id="dummyStream-5-10"/>
  </rel>
+ <rel name="uses" class="NetworkInterface" id="nic-0"/>
 </obj>
 
 <obj class="GeoId" id="dummyGeoId-1-1">
@@ -870,6 +899,12 @@
  </attr>
 </obj>
 
+<obj class="SamplesOverThresholdMinima" id="def-sot-minima">
+ <attr name="sot_minimum_plane0" type="u16" val="1"/>
+ <attr name="sot_minimum_plane1" type="u16" val="1"/>
+ <attr name="sot_minimum_plane2" type="u16" val="1"/>
+</obj>
+
 <obj class="TPCRawDataProcessor" id="def-wib-processor">
  <attr name="queue_sizes" type="u32" val="10000"/>
  <attr name="thread_names_prefix" type="string" val="postproc-"/>
@@ -879,6 +914,16 @@
   <ref class="AVXFrugalPedestalSubtractProcessor" id="tpg-pedsub-proc"/>
   <ref class="AVXThresholdProcessor" id="tpg-threshold-proc"/>
  </rel>
+ <rel name="sot_minima" class="SamplesOverThresholdMinima" id="def-sot-minima"/>
+</obj>
+
+<obj class="FragmentAggregatorConf" id="frag-agg-01">
+ <attr name="fragment_send_timeout_ms" type="u32" val="1000"/>
+</obj>
+
+<obj class="DataMoveCallbackDescriptor" id="wib-eth-raw-input">
+ <attr name="uid_base" type="string" val="raw_input_"/>
+ <attr name="data_type" type="string" val="WIBEthFrame"/>
 </obj>
 
 <obj class="ReadoutApplication" id="ru-3-1">
@@ -895,6 +940,8 @@
  <rel name="uses" class="RoHwConfig" id="rohw-1"/>
  <rel name="link_handler" class="DataHandlerConf" id="def-link-handler"/>
  <rel name="data_reader" class="DPDKReaderConf" id="def-emu-nic-receiver-conf"/>
+ <rel name="fragment_aggregator" class="FragmentAggregatorConf" id="frag-agg-01"/>
+ <rel name="callback_desc" class="DataMoveCallbackDescriptor" id="wib-eth-raw-input"/>
 </obj>
 
 <obj class="ReadoutApplication" id="ru-5-1">
@@ -913,6 +960,8 @@
  <rel name="uses" class="RoHwConfig" id="rohw-1"/>
  <rel name="link_handler" class="DataHandlerConf" id="def-link-handler"/>
  <rel name="data_reader" class="DPDKReaderConf" id="def-emu-nic-receiver-conf"/>
+ <rel name="fragment_aggregator" class="FragmentAggregatorConf" id="frag-agg-01"/>
+ <rel name="callback_desc" class="DataMoveCallbackDescriptor" id="wib-eth-raw-input"/>
 </obj>
 
 <obj class="ReadoutApplication" id="ru-5-10">
@@ -931,6 +980,8 @@
  <rel name="uses" class="RoHwConfig" id="rohw-1"/>
  <rel name="link_handler" class="DataHandlerConf" id="def-link-handler"/>
  <rel name="data_reader" class="DPDKReaderConf" id="def-emu-nic-receiver-conf"/>
+ <rel name="fragment_aggregator" class="FragmentAggregatorConf" id="frag-agg-01"/>
+ <rel name="callback_desc" class="DataMoveCallbackDescriptor" id="wib-eth-raw-input"/>
 </obj>
 
 <obj class="RequestHandler" id="def-data-request-handler">
