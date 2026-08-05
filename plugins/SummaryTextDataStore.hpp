@@ -19,6 +19,7 @@
 #include "appmodel/DataStoreConfTestDeriv.hpp"
 #include "dfmodules/SummaryTextDataWriter.hpp"
 
+#include <limits>
 #include <memory>
 #include <string>
 

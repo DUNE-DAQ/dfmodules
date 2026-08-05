@@ -117,7 +117,7 @@ create_trigger_record(int trig_num, int fragment_size, int element_count)
     fh.sequence_number = 0;
     fh.fragment_type =
       static_cast<dunedaq::daqdataformats::fragment_type_t>(dunedaq::daqdataformats::FragmentType::kWIB);
-    fh.detector_id = static_cast<uint16_t>(dunedaq::detdataformats::DetID::Subdetector::kHD_TPC);
+    fh.detector_id = static_cast<uint16_t>(dunedaq::detdataformats::DetID::Subdetector::kHD_TPC); // NOLINT(build/unsigned)
     fh.element_id = dunedaq::daqdataformats::SourceID(stype_to_use, ele_num);
     std::unique_ptr<dunedaq::daqdataformats::Fragment> frag_ptr(
       new dunedaq::daqdataformats::Fragment(dummy_data, fragment_size));
@@ -133,7 +133,7 @@ create_trigger_record(int trig_num, int fragment_size, int element_count)
 
 struct CfgFixture
 {
-  CfgFixture(std::string sessionName)
+  explicit CfgFixture(std::string sessionName)
   {
     TLOG_DEBUG(4) << "Creating CfgFixture";
     setenv("DUNEDAQ_SESSION", sessionName.c_str(), 1);
@@ -167,7 +167,7 @@ BOOST_AUTO_TEST_CASE(CheckDerivation)
   auto data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.cfgMgr, "dwm-01");
   BOOST_REQUIRE(data_store_ptr != nullptr);
 
-  const auto stub_data_store_ptr {dynamic_cast<const dunedaq::dfmodules::SummaryTextDataStore*>(data_store_ptr.get())};
+  const auto stub_data_store_ptr {dynamic_cast<const dunedaq::dfmodules::SummaryTextDataStore*>(data_store_ptr.get())}; // NOLINT(runtime/rtti)
   BOOST_REQUIRE(stub_data_store_ptr != nullptr);
 
   BOOST_REQUIRE_EQUAL(stub_data_store_ptr->get_derivval(), 773); // 773 should be the value in the config
