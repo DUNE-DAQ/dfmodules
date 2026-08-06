@@ -24,7 +24,7 @@
 namespace dunedaq {
   ERS_DECLARE_ISSUE(dfmodules, CantOpenFile, "Unable to open " << file_name, ((std::string)file_name))
   ERS_DECLARE_ISSUE(dfmodules, CantWriteToFile, "Unable to write line to " << file_name, ((std::string)file_name))
-}
+} // namespace dunedaq
 
 namespace dunedaq::dfmodules {
 
