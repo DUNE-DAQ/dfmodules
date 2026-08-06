@@ -359,7 +359,7 @@ DFOModule::generate_opmon_data()
     opmon::TriggerInfo ti;
     ti.set_received(counts.received.exchange(0));
     ti.set_completed(counts.completed.exchange(0));
-    auto name = dunedaq::trgdataformats::get_trigger_candidate_type_names()[type];
+    auto name = dunedaq::trgdataformats::trigger_candidate_type_to_string(type);
     publish( std::move(ti), {{"type", name}} );
    }
 }
