@@ -22,8 +22,8 @@
  * needs configurable parameters which aren't already available in
  * appmodel::DataStoreConf, create an OKS schema class which derives
  * from appmodel::DataStoreConf as a superclass and adds parameters as
- * needed. See appmodel::DataStoreConfTestDeriv in the appmodel
- * package, and how it's used by SummaryTextDataStore
+ * needed. See DataStoreConfTestDeriv in this package, and how it's
+ * used by SummaryTextDataStore
  *
  * This is part of the DUNE DAQ Application Framework, copyright 2020.
  * Licensing/copyright details are in the COPYING file that you should have

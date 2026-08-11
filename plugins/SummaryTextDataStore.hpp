@@ -16,7 +16,7 @@
 
 #include "dfmodules/FileDataStoreImpl.hpp"
 
-#include "appmodel/DataStoreConfTestDeriv.hpp"
+#include "dfmodules/DataStoreConfTestDeriv.hpp"
 #include "dfmodules/SummaryTextDataWriter.hpp"
 
 #include <limits>
@@ -32,7 +32,7 @@ namespace dunedaq::dfmodules {
                          std::shared_ptr<appfwk::ConfigurationManager> mcfg,
 			   std::string const& writer_name) :
       FileDataStoreImpl(name, mcfg, writer_name),
-      m_sds_config { mcfg ? mcfg->get_dal<appmodel::DataStoreConfTestDeriv>(name) : nullptr },
+      m_sds_config { mcfg ? mcfg->get_dal<DataStoreConfTestDeriv>(name) : nullptr },
       m_derivval { m_sds_config ? m_sds_config->get_derivval() : std::numeric_limits<int>::max() }
     {}
 
@@ -45,7 +45,7 @@ namespace dunedaq::dfmodules {
     int get_derivval() const { return m_derivval; }
 
   private:
-    const appmodel::DataStoreConfTestDeriv* m_sds_config; 
+    const DataStoreConfTestDeriv* m_sds_config; 
     const int m_derivval;
   };
 

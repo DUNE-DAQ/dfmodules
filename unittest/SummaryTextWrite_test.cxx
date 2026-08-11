@@ -15,6 +15,7 @@
  */
 
 #include "dfmodules/DataStore.hpp"
+#include "dfmodules/DataStoreConfTestDeriv.hpp"
 
 // We need the actual SummaryTextDataStore.hpp plugin header so the unit tests can access its exceptions
 #include "../plugins/SummaryTextDataStore.hpp" // NOLINT(build/include_path)
@@ -25,7 +26,6 @@
 #include "confmodel/DetectorConfig.hpp"
 #include "confmodel/Session.hpp"
 #include "appmodel/DataStoreConf.hpp"
-#include "appmodel/DataStoreConfTestDeriv.hpp"
 #include "detdataformats/DetID.hpp"
 
 #define BOOST_TEST_MODULE SummaryTextWrite_test // NOLINT

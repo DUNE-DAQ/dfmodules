@@ -18,6 +18,7 @@ find_package(triggeralgs REQUIRED)
 find_package(trigger REQUIRED)
 find_package(Boost COMPONENTS iostreams unit_test_framework REQUIRED)
 
+daq_add_dal_library(datastore_derived.schema.xml DEP_PKGS appmodel confmodel)
 
 daq_protobuf_codegen( opmon/*.proto )
 
@@ -26,7 +27,7 @@ daq_add_library( TriggerInhibitAgent.cpp TriggerRecordBuilderData.cpp TPBundleHa
                  LINK_LIBRARIES 
                  opmonlib::opmonlib ers::ers HighFive appfwk::appfwk logging::logging stdc++fs dfmessages::dfmessages utilities::utilities trigger::trigger detdataformats::detdataformats trgdataformats::trgdataformats)
 
-daq_add_plugin( SummaryTextDataStore     duneDataStore LINK_LIBRARIES dfmodules )
+daq_add_plugin( SummaryTextDataStore     duneDataStore LINK_LIBRARIES dfmodules dfmodules_dal)
 daq_add_plugin( HDF5DataStore     duneDataStore LINK_LIBRARIES dfmodules hdf5libs::hdf5libs stdc++fs)
 
 daq_add_plugin( FragmentAggregatorModule    duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager )
