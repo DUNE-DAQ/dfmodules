@@ -13,12 +13,13 @@ find_package(opmonlib REQUIRED)
 find_package(iomanager REQUIRED)
 find_package(detdataformats REQUIRED)
 find_package(trgdataformats REQUIRED)
+find_package(conffwk REQUIRED)
 
 find_package(triggeralgs REQUIRED)
 find_package(trigger REQUIRED)
 find_package(Boost COMPONENTS iostreams unit_test_framework REQUIRED)
 
-daq_add_dal_library(datastore_derived.schema.xml DEP_PKGS appmodel confmodel)
+daq_add_dal_library(datastore_derived.schema.xml TEST DEP_PKGS appmodel confmodel)
 
 daq_protobuf_codegen( opmon/*.proto )
 
