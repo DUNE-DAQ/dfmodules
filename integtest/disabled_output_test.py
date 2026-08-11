@@ -100,17 +100,12 @@ conf_dict.dro_map_config.n_streams = number_of_data_producers
 conf_dict.op_env = "integtest"
 conf_dict.config_session_name= "disabled"
 conf_dict.tpg_enabled = False
+utility_functions.set_rtcm_trigger_params(conf_dict, trigger_rate=trigger_rate)
 # We accept the default values for all of the other integtest config parameters
 # (defined in integrationtest/src/integrationtest/data_classes.py), including the "frame_file",
 # which is the data file that is used to emulated the data. The current default for that field
 # specifies a set of WIBEth frames from a relatively recent run at EHN1.)
 
-conf_dict.config_substitutions.append(
-    data_classes.attribute_substitution(
-        obj_class="RandomTCMakerConf",
-        updates={"trigger_rate_hz": trigger_rate},
-    )
-)
 conf_dict.config_substitutions.append(
     data_classes.attribute_substitution(
         obj_class="TCDataProcessor",
@@ -203,8 +198,12 @@ def test_data_files(run_dunerc):
     all_ok = True
     # Run some tests on the output data file
     all_ok &= len(run_dunerc.data_files) == expected_number_of_data_files
+    if all_ok:
+        if run_dunerc.verbosity_helper.compare_level(IntegtestVerbosityLevels.drunc_transitions):
+            print(f"\N{WHITE HEAVY CHECK MARK} The correct number of raw data files was found ({expected_number_of_data_files})")
+    else:
+        print(f"\N{POLICE CARS REVOLVING LIGHT} An incorrect number of raw data files was found, expected {expected_number_of_data_files}, found {len(run_dunerc.data_files)} \N{POLICE CARS REVOLVING LIGHT}")
 
-    all_ok = True
     for idx in range(len(run_dunerc.data_files)):
         data_file = data_file_checks.DataFile(run_dunerc.data_files[idx], run_dunerc.verbosity_helper)
         all_ok &= data_file_checks.sanity_check(data_file)
@@ -219,4 +218,21 @@ def test_data_files(run_dunerc):
             all_ok &= data_file_checks.check_fragment_sizes(
                 data_file, fragment_check_list[jdx]
             )
+    assert all_ok
+
+
+def test_tpstream_files(run_dunerc):
+    tpstream_files = run_dunerc.tpset_files
+    expected_number_of_tpstream_files = expected_number_of_data_files
+    if not run_dunerc.confgen_config.tpg_enabled:
+        expected_number_of_tpstream_files = 0
+
+    print("")
+    all_ok = len(tpstream_files) == expected_number_of_tpstream_files
+    if all_ok:
+        if run_dunerc.verbosity_helper.compare_level(IntegtestVerbosityLevels.drunc_transitions):
+            print(f"\N{WHITE HEAVY CHECK MARK} The correct number of TP-stream data files was found ({expected_number_of_tpstream_files})")
+    else:
+        print(f"\N{POLICE CARS REVOLVING LIGHT} An incorrect number of TP-stream data files was found, expected {expected_number_of_tpstream_files}, found {len(tpstream_files)} \N{POLICE CARS REVOLVING LIGHT}")
+
     assert all_ok
