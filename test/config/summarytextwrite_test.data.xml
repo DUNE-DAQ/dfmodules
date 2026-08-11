@@ -68,7 +68,7 @@
 <include>
  <file path="schema/confmodel/dunedaq.schema.xml"/>
  <file path="schema/appmodel/application.schema.xml"/>
-<!-- <file path="test/config/hdf5write_test_hwmap.data.xml"/> -->
+ <file path="test/schema/dfmodules/datastore_derived.schema.xml">
 </include>
 
 <comments>
