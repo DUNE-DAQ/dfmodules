@@ -197,6 +197,7 @@ DFOModule::do_stop(const CommandData_t& /*args*/)
     for (auto& td : m_assigned_trigger_decisions) {
       remnants.push_back(td.second);
     }
+    m_assigned_trigger_decisions.clear();
 
     for (auto& r : remnants) {
       ers::error(IncompleteTriggerDecision(ERS_HERE, get_name(), r->decision.trigger_number, m_run_number));
