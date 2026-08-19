@@ -336,8 +336,8 @@ DataWriterModule::receive_trigger_record(std::unique_ptr<daqdataformats::Trigger
                                 << " onto the relevant output queue";
     dfmessages::TriggerDecisionToken token;
     token.trigger_id = dfmessages::TriggerId{ m_run_number,
-                                              trigger_record_ptr->get_header_ref().get_trigger_number(),
-                                              trigger_record_ptr->get_header_ref().get_sequence_number() };
+                                              trigger_record_ptr->get_header_ref().get_trigger_number() };
+    token.sequence_number = trigger_record_ptr->get_header_ref().get_sequence_number();
     token.writer_identifier = m_writer_identifier;
 
     bool wasSentSuccessfully = false;

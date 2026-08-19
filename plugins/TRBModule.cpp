@@ -318,7 +318,7 @@ TRBModule::flush_trigger_records()
   // //--------------------------------------------------
 
   // create all possible trigger record
-  std::vector<dfmessages::TriggerId> triggers;
+  std::vector<TriggerRecordId> triggers;
   for (const auto& entry : m_trigger_records) {
     triggers.push_back(entry.first);
   }
@@ -352,8 +352,8 @@ TRBModule::fragments_callback(std::unique_ptr<daqdataformats::Fragment>& temp_fr
                                     << temp_fragment->get_sequence_number() << " from "
                                     << temp_fragment->get_element_id();
 
-  dfmessages::TriggerId temp_id(*temp_fragment);
-  std::vector<dfmessages::TriggerId> complete;
+  TriggerRecordId temp_id(dfmessages::TriggerId(*temp_fragment), temp_fragment->get_sequence_number());
+  std::vector<TriggerRecordId> complete;
   bool requested = false;
 
   { // Begin mutex block
@@ -383,7 +383,7 @@ TRBModule::fragments_callback(std::unique_ptr<daqdataformats::Fragment>& temp_fr
       --m_pending_fragment_counter;
     } else {
       ers::error(UnexpectedFragment(
-        ERS_HERE, temp_id, temp_fragment->get_fragment_type_code(), temp_fragment->get_element_id()));
+        ERS_HERE, temp_id.trigger_id, temp_id.sequence_number, temp_fragment->get_fragment_type_code(), temp_fragment->get_element_id()));
       ++m_unexpected_fragments;
     }
 
@@ -463,7 +463,7 @@ TRBModule::trigger_decision_callback(dfmessages::TriggerDecision& td)
 }
 
 TRBModule::trigger_record_ptr_t
-TRBModule::extract_trigger_record(const dfmessages::TriggerId& id)
+TRBModule::extract_trigger_record(const TriggerRecordId& id)
 {
   std::unique_lock<std::mutex> lk(m_trigger_records_mutex);
   auto it = m_trigger_records.extract(id);
@@ -491,7 +491,7 @@ TRBModule::extract_trigger_record(const dfmessages::TriggerId& id)
     m_pending_fragment_counter -= missing_fragments;
     temp->get_header_ref().set_status_bit(TriggerRecordStatusBits::kIncomplete, true);
 
-    ers::error(IncompleteTriggerRecord(ERS_HERE, (m_stop_requested.load() ? "at Stop time " : ""), id,
+    ers::error(IncompleteTriggerRecord(ERS_HERE, (m_stop_requested.load() ? "at Stop time " : ""), id.trigger_id, id.sequence_number,
                                        temp->get_fragments_ref().size(),
                                        temp->get_header_ref().get_num_requested_components()));
   }
@@ -559,13 +559,13 @@ TRBModule::create_trigger_records_and_dispatch(const dfmessages::TriggerDecision
     // The code keeps them.
 
     // create the book entry
-    dfmessages::TriggerId slice_id(td, sequence);
+    TriggerRecordId slice_id(dfmessages::TriggerId(td), sequence);
     {
       std::unique_lock<std::mutex> lk(m_trigger_records_mutex);
       m_open_trigger_record_cv.wait(lk, [&] { return m_trigger_records.size() < m_max_open_trigger_records; });
       auto it = m_trigger_records.find(slice_id);
       if (it != m_trigger_records.end()) {
-        ers::error(DuplicatedTriggerDecision(ERS_HERE, slice_id));
+        ers::error(DuplicatedTriggerDecision(ERS_HERE, slice_id.trigger_id, slice_id.sequence_number));
         ++m_duplicated_trigger_ids;
         continue;
       }
@@ -668,7 +668,7 @@ TRBModule::dispatch_data_requests(dfmessages::DataRequest dr, const daqdataforma
 }
 
 bool
-TRBModule::send_trigger_record(const dfmessages::TriggerId& id)
+TRBModule::send_trigger_record(const TriggerRecordId& id)
 {
 
   trigger_record_ptr_t temp_record(extract_trigger_record(id));
@@ -729,10 +729,10 @@ TRBModule::send_trigger_record(const dfmessages::TriggerId& id)
   if (!wasSentSuccessfully) {
     ++m_abandoned_trigger_records;
     m_lost_fragments += temp_record->get_fragments_ref().size();
-    ers::error(dunedaq::dfmodules::AbandonedTriggerDecision(ERS_HERE, id));
+    ers::error(dunedaq::dfmodules::AbandonedTriggerRecord(ERS_HERE, id.trigger_id, id.sequence_number));
   }
 
-  dfmessages::TRBCompletion completion_msg{ id, m_this_trb_source_id, max_seq_num };
+  dfmessages::TRBCompletion completion_msg{ id.trigger_id, id.sequence_number, m_this_trb_source_id, max_seq_num };
   m_trb_complete_output->try_send(std::move(completion_msg), m_trb_complete_timeout);
 
   return wasSentSuccessfully;
@@ -751,7 +751,7 @@ TRBModule::check_stale_requests()
   if (m_trigger_timeout.count() > 0) {
 
       TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Checking for stale trigger records";
-    std::vector<dfmessages::TriggerId> stale_triggers;
+    std::vector<TriggerRecordId> stale_triggers;
     {
       std::lock_guard<std::mutex> lk(m_trigger_records_mutex);
       for (auto it = m_trigger_records.begin(); it != m_trigger_records.end(); ++it) {
@@ -762,7 +762,7 @@ TRBModule::check_stale_requests()
 
         if (tr_time > m_trigger_timeout) {
 
-          ers::error(TimedOutTriggerDecision(ERS_HERE, it->first, tr.get_header_ref().get_trigger_timestamp()));
+          ers::error(TimedOutTriggerDecision(ERS_HERE, it->first.trigger_id, tr.get_header_ref().get_trigger_timestamp()));
 
           // mark trigger record for seding
           stale_triggers.push_back(it->first);

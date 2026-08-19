@@ -173,9 +173,9 @@ private:
   std::mutex m_status_mutex;
   std::condition_variable m_status_cv;
   std::unordered_map<std::string, std::shared_ptr<ReceivedDataflowStatus>> m_dataflow_statuses;
-  std::unordered_map<dfmessages::trigger_number_t, std::unordered_map<std::string, dfmessages::DataflowStatus>>
+  std::unordered_map<dfmessages::TriggerId, std::unordered_map<std::string, dfmessages::DataflowStatus>>
     m_statuses_for_trigger;
-  std::unordered_map<dfmessages::trigger_number_t, std::shared_ptr<AssignedTriggerDecision>>
+  std::unordered_map<dfmessages::TriggerId, std::shared_ptr<AssignedTriggerDecision>>
     m_assigned_trigger_decisions;
 
   std::atomic<bool> m_running_status{ false };
@@ -184,7 +184,7 @@ private:
   std::chrono::steady_clock::time_point m_last_td_received;
   mutable std::mutex m_notify_trigger_mutex;
   std::shared_ptr<std::jthread> m_status_watchdog_thread;
-  std::unordered_map<dfmessages::trigger_number_t, std::shared_ptr<std::jthread>> m_decision_assignment_threads;
+  std::unordered_map<dfmessages::TriggerId, std::shared_ptr<std::jthread>> m_decision_assignment_threads;
 
   void status_watchdog_proc(std::stop_token stoken);
   bool is_busy() const;

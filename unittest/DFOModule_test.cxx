@@ -86,15 +86,15 @@ std::unordered_map<dfmessages::trigger_number_t, dfmessages::DataflowStatusReque
 void
 recv_status_request(const dfmessages::DataflowStatusRequest& request)
 {
-  TLOG() << "Received DataflowStatusRequest with trigger number " << request.trigger_number << " from DFO";
-  received_status_requests[request.trigger_number] = request;
+  TLOG() << "Received DataflowStatusRequest with trigger number " << request.trigger_id.trigger_number << " from DFO";
+  received_status_requests[request.trigger_id.trigger_number] = request;
 }
 
 void
 send_status(dfmessages::DataflowStatus status)
 {
   auto iom = iomanager::IOManager::get();
-  TLOG() << "Sending DataflowStatus with trigger number " << status.trigger_number;
+  TLOG() << "Sending DataflowStatus with trigger number " << status.trigger_id.trigger_number;
   iom->get_sender<dfmessages::DataflowStatus>("df_status")->send(std::move(status), iomanager::Sender::s_block);
 }
 
@@ -218,8 +218,8 @@ BOOST_AUTO_TEST_CASE(DataFlow)
   dfmessages::DataflowStatus status;
   status.decision_destination = "trigdec_0";
   status.request_destination = "df_status_request";
-  status.trigger_number = 0;
-  status.run_number = 1;
+  status.trigger_id.trigger_number = 0;
+  status.trigger_id.run_number = 1;
 
   status.trigger_type_mask = 0xFFFFFFFF;
   status.is_busy = false;
@@ -241,7 +241,7 @@ BOOST_AUTO_TEST_CASE(DataFlow)
   BOOST_REQUIRE(received_status_requests.find(1) != received_status_requests.end());
   BOOST_REQUIRE_EQUAL(received_status_requests[1].reply_destination, "df_status");
 
-  status.trigger_number = 1;
+  status.trigger_id.trigger_number = 1;
   send_status(status);
   BOOST_REQUIRE_EQUAL(busy_signal_recvd.load(), true);
   std::this_thread::sleep_for(std::chrono::milliseconds(150));
@@ -256,8 +256,8 @@ BOOST_AUTO_TEST_CASE(DataFlow)
 
   BOOST_REQUIRE_EQUAL(received_decisions.size(), 1);
   BOOST_REQUIRE_EQUAL(received_decisions[0].trigger_number, 1);
-  status.trigger_number = 0;
-  status.triggers_building.insert(1);
+  status.trigger_id.trigger_number = 0;
+  status.triggers_building.insert({ 1, 1 });
   status.is_busy = true;
   received_decisions.clear();
 
@@ -273,7 +273,7 @@ BOOST_AUTO_TEST_CASE(DataFlow)
   BOOST_REQUIRE_EQUAL(metric.pending_trigger_decisions(), 1);
 
   status.triggers_building.clear();
-  status.recently_completed_triggers.insert(1);
+  status.recently_completed_triggers.insert({ 1, 1 });
   status.is_busy = false;
   send_status(status);
   std::this_thread::sleep_for(std::chrono::milliseconds(50));
@@ -342,8 +342,8 @@ BOOST_AUTO_TEST_CASE(DelayedStatusResponse)
   dfmessages::DataflowStatus status;
   status.decision_destination = "trigdec_0";
   status.request_destination = "df_status_request";
-  status.trigger_number = 0;
-  status.run_number = 1;
+  status.trigger_id.trigger_number = 0;
+  status.trigger_id.run_number = 1;
   status.trigger_type_mask = 0xFFFFFFFF;
   status.is_busy = false;
   status.busy_threshold = 1;
@@ -368,7 +368,7 @@ BOOST_AUTO_TEST_CASE(DelayedStatusResponse)
   BOOST_REQUIRE_EQUAL(metric.pending_trigger_decisions(), 0);
 
   // Now send the delayed status response for trigger 10
-  status.trigger_number = 10;
+  status.trigger_id.trigger_number = 10;
   send_status(status);
   std::this_thread::sleep_for(std::chrono::milliseconds(150));
 
@@ -382,14 +382,14 @@ BOOST_AUTO_TEST_CASE(DelayedStatusResponse)
   BOOST_REQUIRE_EQUAL(received_decisions[0].trigger_number, 10);
 
   // Complete the trigger
-  status.trigger_number = 0;
-  status.triggers_building.insert(10);
+  status.trigger_id.trigger_number = 0;
+  status.triggers_building.insert({ 1, 10 });
   status.is_busy = true;
   send_status(status);
   std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
   status.triggers_building.clear();
-  status.recently_completed_triggers.insert(10);
+  status.recently_completed_triggers.insert({ 1, 10 });
   status.is_busy = false;
   send_status(status);
   std::this_thread::sleep_for(std::chrono::milliseconds(50));
@@ -439,8 +439,8 @@ BOOST_AUTO_TEST_CASE(UnresponsiveDFAppRecovery)
   dfmessages::DataflowStatus status;
   status.decision_destination = "trigdec_0";
   status.request_destination = "df_status_request";
-  status.trigger_number = 0;
-  status.run_number = 1;
+  status.trigger_id.trigger_number = 0;
+  status.trigger_id.run_number = 1;
   status.trigger_type_mask = 0xFFFFFFFF;
   status.is_busy = false;
   status.busy_threshold = 2;
@@ -457,7 +457,7 @@ BOOST_AUTO_TEST_CASE(UnresponsiveDFAppRecovery)
   BOOST_REQUIRE_EQUAL(metric.decisions_received(), 1);
 
   // Respond with status for trigger 30
-  status.trigger_number = 30;
+  status.trigger_id.trigger_number = 30;
   send_status(status);
   std::this_thread::sleep_for(std::chrono::milliseconds(150));
 
@@ -469,8 +469,8 @@ BOOST_AUTO_TEST_CASE(UnresponsiveDFAppRecovery)
   BOOST_REQUIRE_EQUAL(metric.pending_trigger_decisions(), 1);
 
   // Mark trigger 30 as building
-  status.trigger_number = 0;
-  status.triggers_building.insert(30);
+  status.trigger_id.trigger_number = 0;
+  status.triggers_building.insert({ 1, 30 });
   send_status(status);
   std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
@@ -501,9 +501,9 @@ BOOST_AUTO_TEST_CASE(UnresponsiveDFAppRecovery)
   BOOST_REQUIRE_EQUAL(busy_signal_recvd.load(), true);
 
   // Now simulate recovery: the DF app becomes responsive again with fresh heartbeat
-  status.trigger_number = 0;
+  status.trigger_id.trigger_number = 0;
   status.triggers_building.clear(); // Clear the stale state
-  status.triggers_building.insert(30); // Still building trigger 30
+  status.triggers_building.insert({ 1, 30 }); // Still building trigger 30
   status.is_busy = false;
   send_status(status);
   std::this_thread::sleep_for(std::chrono::milliseconds(50));
@@ -513,7 +513,7 @@ BOOST_AUTO_TEST_CASE(UnresponsiveDFAppRecovery)
   BOOST_REQUIRE(received_status_requests.find(31) != received_status_requests.end());
 
   // Respond to status request for trigger 31
-  status.trigger_number = 31;
+  status.trigger_id.trigger_number = 31;
   send_status(status);
   std::this_thread::sleep_for(std::chrono::milliseconds(150));
 
@@ -533,14 +533,14 @@ BOOST_AUTO_TEST_CASE(UnresponsiveDFAppRecovery)
   BOOST_REQUIRE_EQUAL(metric.pending_trigger_decisions(), 2);
 
   // Complete both triggers
-  status.trigger_number = 0;
-  status.triggers_building.insert(31);
+  status.trigger_id.trigger_number = 0;
+  status.triggers_building.insert({ 1, 31 });
   send_status(status);
   std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
   status.triggers_building.clear();
-  status.recently_completed_triggers.insert(30);
-  status.recently_completed_triggers.insert(31);
+  status.recently_completed_triggers.insert({ 1, 30 });
+  status.recently_completed_triggers.insert({ 1, 31 });
   send_status(status);
   std::this_thread::sleep_for(std::chrono::milliseconds(50));
 

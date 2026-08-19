@@ -230,7 +230,8 @@ send_trb_completion(const std::string& df_module,
   auto iom = iomanager::IOManager::get();
 
   dfmessages::TRBCompletion completion;
-  completion.trigger_id = dfmessages::TriggerId{ 1, trigger_number, sequence_number };
+  completion.trigger_id = dfmessages::TriggerId{ 1, trigger_number };
+  completion.sequence_number = sequence_number;
   completion.source_id = daqdataformats::SourceID(daqdataformats::SourceID::Subsystem::kTRBuilder, 1);
   completion.trigger_record_max_sequence_number = max_sequence_number;
 
@@ -247,7 +248,8 @@ send_token(const std::string& df_module,
   auto iom = iomanager::IOManager::get();
 
   dfmessages::TriggerDecisionToken token;
-  token.trigger_id = dfmessages::TriggerId{ 1, trigger_number, sequence_number };
+  token.trigger_id = dfmessages::TriggerId{ 1, trigger_number };
+  token.sequence_number = sequence_number;
   token.writer_identifier = "test_writer";
   token.data_size = 1234;
 

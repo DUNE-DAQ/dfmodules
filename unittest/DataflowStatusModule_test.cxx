@@ -82,11 +82,12 @@ struct ConnectionFixture
 
   static void send_token(
     dfmessages::trigger_number_t trigger_number,
-    dfmessages::sequence_number_t sequence_number = 0,
+    dfmessages::sequence_number_t sequence_number = dfmessages::TypeDefaults::s_invalid_sequence_number,
     bool different_run = false)
   {
     dfmessages::TriggerDecisionToken token;
-    token.trigger_id = dfmessages::TriggerId{ different_run ? 2U : 1U, trigger_number, sequence_number };
+    token.trigger_id = dfmessages::TriggerId{ different_run ? 2U : 1U, trigger_number };
+    token.sequence_number = sequence_number;
     token.writer_identifier = "test_writer";
     token.data_size = 1234;
     auto iom = iomanager::IOManager::get();
@@ -97,8 +98,7 @@ struct ConnectionFixture
   static void send_dataflow_status_request(dfmessages::trigger_number_t trigger_number, bool different_run = false)
   {
     dfmessages::DataflowStatusRequest request;
-    request.trigger_number = trigger_number;
-    request.run_number = different_run ? 2 : 1;
+    request.trigger_id = dfmessages::TriggerId{ different_run ? 2U : 1U, trigger_number };
     request.reply_destination = "df_status";
     auto iom = iomanager::IOManager::get();
     auto sender = iom->get_sender<dfmessages::DataflowStatusRequest>("df_status_request");
@@ -107,12 +107,13 @@ struct ConnectionFixture
 
   static void send_trb_completion(
     dfmessages::trigger_number_t trigger_number,
-    dfmessages::sequence_number_t sequence_number = 0,
+    dfmessages::sequence_number_t sequence_number = dfmessages::TypeDefaults::s_invalid_sequence_number,
     size_t trigger_record_max_sequence_number = 0,
     bool different_run = false)
   {
     dfmessages::TRBCompletion trb_complete;
-    trb_complete.trigger_id = dfmessages::TriggerId{ different_run ? 2U : 1U, trigger_number, sequence_number };
+    trb_complete.trigger_id = dfmessages::TriggerId{ different_run ? 2U : 1U, trigger_number };
+    trb_complete.sequence_number = sequence_number;
     trb_complete.source_id = daqdataformats::SourceID(daqdataformats::SourceID::Subsystem::kTRBuilder, 1);
     trb_complete.trigger_record_max_sequence_number = trigger_record_max_sequence_number;
     auto iom = iomanager::IOManager::get();
@@ -123,13 +124,13 @@ struct ConnectionFixture
   static std::vector<dfmessages::DataflowStatus> s_received_statuses;
   static void receive_dataflow_status(const dfmessages::DataflowStatus& status)
   {
-    TLOG() << "Received DataflowStatus with trigger number " << status.trigger_number;
+    TLOG() << "Received DataflowStatus with trigger ID " << status.trigger_id;
     s_received_statuses.push_back(status);
   }
   static std::vector<dfmessages::TriggerDecision> s_received_decisions;
   static void receive_trigger_decision(const dfmessages::TriggerDecision& decision)
   {
-    TLOG() << "Received TriggerDecision with trigger number " << decision.trigger_number;
+    TLOG() << "Received TriggerDecision with trigger number " << decision.trigger_number << " and run number " << decision.run_number;
     s_received_decisions.push_back(decision);
   }
 
@@ -259,8 +260,8 @@ BOOST_AUTO_TEST_CASE(DataFlow)
   BOOST_REQUIRE(ConnectionFixture::s_received_decisions.size() == 2);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.size() >= 2);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.size() == 2);
-  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.count(2) == 1);
-  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.count(3) == 1);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.count({ 1, 2 }) == 1);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.count({ 1, 3 }) == 1);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_writing.size() == 0);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().recently_completed_triggers.size() == 0);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().trigger_records_processed == 0);
@@ -281,10 +282,10 @@ BOOST_AUTO_TEST_CASE(DataFlow)
   ConnectionFixture::send_trb_completion(3);
   std::this_thread::sleep_for(std::chrono::milliseconds(150));
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.size() == 2);
-  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.count(2) == 1);
-  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.count(4) == 1);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.count({ 1, 2 }) == 1);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.count({ 1, 4 }) == 1);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_writing.size() == 1);
-  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_writing.count(3) == 1);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_writing.count({ 1, 3 }) == 1);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().recently_completed_triggers.size() == 0);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().trigger_records_processed == 0);
 
@@ -297,11 +298,11 @@ BOOST_AUTO_TEST_CASE(DataFlow)
   ConnectionFixture::send_token(3);
   std::this_thread::sleep_for(std::chrono::milliseconds(150));
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.size() == 2);
-  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.count(2) == 1);
-  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.count(4) == 1);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.count({ 1, 2 }) == 1);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.count({ 1, 4 }) == 1);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_writing.size() == 0);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().recently_completed_triggers.size() == 1);
-  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().recently_completed_triggers.count(3) == 1);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().recently_completed_triggers.count({ 1, 3 }) == 1);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().trigger_records_processed == 1);
 
   metric = get_opmon_info();
@@ -315,10 +316,10 @@ BOOST_AUTO_TEST_CASE(DataFlow)
   std::this_thread::sleep_for(std::chrono::milliseconds(150));
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.size() == 0);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_writing.size() == 2);
-  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_writing.count(2) == 1);
-  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_writing.count(4) == 1);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_writing.count({ 1, 2 }) == 1);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_writing.count({ 1, 4 }) == 1);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().recently_completed_triggers.size() == 1);
-  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().recently_completed_triggers.count(3) == 1);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().recently_completed_triggers.count({ 1, 3 }) == 1);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().trigger_records_processed == 1);
 
   metric = get_opmon_info();
@@ -333,9 +334,9 @@ BOOST_AUTO_TEST_CASE(DataFlow)
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.size() == 0);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_writing.size() == 0);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().recently_completed_triggers.size() == 3);
-  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().recently_completed_triggers.count(2) == 1);
-  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().recently_completed_triggers.count(3) == 1);
-  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().recently_completed_triggers.count(4) == 1);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().recently_completed_triggers.count({ 1, 2 }) == 1);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().recently_completed_triggers.count({ 1, 3 }) == 1);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().recently_completed_triggers.count({ 1, 4 }) == 1);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().trigger_records_processed == 3);
 
   metric = get_opmon_info();
@@ -408,15 +409,15 @@ BOOST_AUTO_TEST_CASE(Requests)
 
   dunedaq::dfmessages::DataflowStatus expected_status;
   for (const auto& status : ConnectionFixture::s_received_statuses) {
-    if (status.trigger_number == 1) {
+    if (status.trigger_id.trigger_number == 1) {
       expected_status = status;
       break;
     }
   }
 
-  BOOST_REQUIRE(expected_status.trigger_number != dfmessages::TypeDefaults::s_invalid_trigger_number);
-  BOOST_REQUIRE_EQUAL(expected_status.trigger_number, 1);
-  BOOST_REQUIRE_EQUAL(expected_status.run_number, 1);
+  BOOST_REQUIRE(expected_status.trigger_id.trigger_number != dfmessages::TypeDefaults::s_invalid_trigger_number);
+  BOOST_REQUIRE_EQUAL(expected_status.trigger_id.trigger_number, 1);
+  BOOST_REQUIRE_EQUAL(expected_status.trigger_id.run_number, 1);
   BOOST_REQUIRE_EQUAL(expected_status.triggers_building.size(), 0);
   BOOST_REQUIRE_EQUAL(expected_status.triggers_writing.size(), 0);
 
@@ -494,7 +495,7 @@ BOOST_AUTO_TEST_CASE(OutOfOrder)
   BOOST_REQUIRE(ConnectionFixture::s_received_decisions.size() == 1);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.size() >= 1);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.size() == 1);
-  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.count(1) == 1);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.count({ 1, 1 }) == 1);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_writing.size() == 0);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().recently_completed_triggers.size() == 0);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().trigger_records_processed == 0);
@@ -513,7 +514,7 @@ BOOST_AUTO_TEST_CASE(OutOfOrder)
   BOOST_REQUIRE(ConnectionFixture::s_received_decisions.size() == 1);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.size() >= 1);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.size() == 1);
-  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.count(1) == 1);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.count({ 1, 1 }) == 1);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_writing.size() == 0);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().recently_completed_triggers.size() == 0);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().trigger_records_processed == 0);
@@ -536,7 +537,7 @@ BOOST_AUTO_TEST_CASE(OutOfOrder)
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.size() == 0);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_writing.size() == 0);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().recently_completed_triggers.size() == 1);
-  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().recently_completed_triggers.count(1) == 1);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().recently_completed_triggers.count({ 1, 1 }) == 1);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().trigger_records_processed == 1);
 
   metric = get_opmon_info();
@@ -558,7 +559,7 @@ BOOST_AUTO_TEST_CASE(OutOfOrder)
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.size() == 0);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_writing.size() == 0);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().recently_completed_triggers.size() == 1);
-  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().recently_completed_triggers.count(1) == 1);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().recently_completed_triggers.count({ 1, 1 }) == 1);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().trigger_records_processed == 1);
 
   metric = get_opmon_info();
@@ -615,8 +616,8 @@ BOOST_AUTO_TEST_CASE(StopTimeout_Building)
   BOOST_REQUIRE(ConnectionFixture::s_received_decisions.size() == 2);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.size() >= 2);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.size() == 2);
-  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.count(2) == 1);
-  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.count(3) == 1);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.count({ 1, 2 }) == 1);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.count({ 1, 3 }) == 1);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_writing.size() == 0);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().recently_completed_triggers.size() == 0);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().trigger_records_processed == 0);
@@ -674,8 +675,8 @@ BOOST_AUTO_TEST_CASE(StopTimeout_Writing)
   BOOST_REQUIRE(ConnectionFixture::s_received_decisions.size() == 2);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.size() >= 2);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.size() == 2);
-  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.count(2) == 1);
-  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.count(3) == 1);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.count({ 1, 2 }) == 1);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.count({ 1, 3 }) == 1);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_writing.size() == 0);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().recently_completed_triggers.size() == 0);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().trigger_records_processed == 0);
@@ -690,8 +691,8 @@ BOOST_AUTO_TEST_CASE(StopTimeout_Writing)
   std::this_thread::sleep_for(std::chrono::milliseconds(150));
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.size() == 0);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_writing.size() == 2);
-  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_writing.count(2) == 1);
-  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_writing.count(3) == 1);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_writing.count({ 1, 2 }) == 1);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_writing.count({ 1, 3 }) == 1);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().recently_completed_triggers.size() == 0);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().trigger_records_processed == 0);
 
@@ -749,8 +750,8 @@ BOOST_AUTO_TEST_CASE(StopTimeout_BuildingAndWriting)
   BOOST_REQUIRE(ConnectionFixture::s_received_decisions.size() == 2);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.size() >= 2);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.size() == 2);
-  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.count(2) == 1);
-  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.count(3) == 1);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.count({ 1, 2 }) == 1);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.count({ 1, 3 }) == 1);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_writing.size() == 0);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().recently_completed_triggers.size() == 0);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().trigger_records_processed == 0);
@@ -763,9 +764,9 @@ BOOST_AUTO_TEST_CASE(StopTimeout_BuildingAndWriting)
   ConnectionFixture::send_trb_completion(2);
   std::this_thread::sleep_for(std::chrono::milliseconds(150));
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.size() == 1);
-  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.count(3) == 1);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.count({ 1, 3 }) == 1);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_writing.size() == 1);
-  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_writing.count(2) == 1);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_writing.count({ 1, 2 }) == 1);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().recently_completed_triggers.size() == 0);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().trigger_records_processed == 0);
 
@@ -825,7 +826,7 @@ BOOST_AUTO_TEST_CASE(MultipleSequences)
   BOOST_REQUIRE(ConnectionFixture::s_received_decisions.size() == 1);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.size() >= 1);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.size() == 1);
-  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.count(100) == 1);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.count({ 1, 100 }) == 1);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_writing.size() == 0);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().recently_completed_triggers.size() == 0);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().trigger_records_processed == 0);
@@ -841,7 +842,7 @@ BOOST_AUTO_TEST_CASE(MultipleSequences)
 
   // Should still be building, waiting for all sequences to complete
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.size() == 1);
-  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.count(100) == 1);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.count({ 1, 100 }) == 1);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_writing.size() == 0);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().recently_completed_triggers.size() == 0);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().trigger_records_processed == 0);
@@ -856,7 +857,7 @@ BOOST_AUTO_TEST_CASE(MultipleSequences)
 
   // Still building, waiting for sequence 2
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.size() == 1);
-  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.count(100) == 1);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.count({ 1, 100 }) == 1);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_writing.size() == 0);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().recently_completed_triggers.size() == 0);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().trigger_records_processed == 0);
@@ -872,7 +873,7 @@ BOOST_AUTO_TEST_CASE(MultipleSequences)
   // Now should transition to writing state
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.size() == 0);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_writing.size() == 1);
-  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_writing.count(100) == 1);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_writing.count({ 1, 100 }) == 1);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().recently_completed_triggers.size() == 0);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().trigger_records_processed == 0);
 
@@ -887,7 +888,7 @@ BOOST_AUTO_TEST_CASE(MultipleSequences)
   // Still writing, waiting for all tokens
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.size() == 0);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_writing.size() == 1);
-  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_writing.count(100) == 1);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_writing.count({ 1, 100 }) == 1);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().recently_completed_triggers.size() == 0);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().trigger_records_processed == 0);
 
@@ -902,7 +903,7 @@ BOOST_AUTO_TEST_CASE(MultipleSequences)
   // Still writing, waiting for token for sequence 2
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.size() == 0);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_writing.size() == 1);
-  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_writing.count(100) == 1);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_writing.count({ 1, 100 }) == 1);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().recently_completed_triggers.size() == 0);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().trigger_records_processed == 0);
 
@@ -918,7 +919,7 @@ BOOST_AUTO_TEST_CASE(MultipleSequences)
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.size() == 0);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_writing.size() == 0);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().recently_completed_triggers.size() == 1);
-  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().recently_completed_triggers.count(100) == 1);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().recently_completed_triggers.count({ 1, 100 }) == 1);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().trigger_records_processed == 1);
 
   metric = get_opmon_info();

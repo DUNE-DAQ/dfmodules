@@ -9,25 +9,25 @@
 #ifndef DFMODULES_PLUGINS_TRIGGERRECORDBUILDER_HPP_
 #define DFMODULES_PLUGINS_TRIGGERRECORDBUILDER_HPP_
 
+#include "appmodel/ReadoutApplication.hpp"
+#include "appmodel/SmartDaqApplication.hpp"
 #include "appmodel/TRBConf.hpp"
 #include "daqdataformats/Fragment.hpp"
 #include "daqdataformats/SourceID.hpp"
 #include "daqdataformats/TriggerRecord.hpp"
 #include "daqdataformats/Types.hpp"
-#include "appmodel/ReadoutApplication.hpp"
-#include "dfmessages/TriggerId.hpp"
-#include "appmodel/SmartDaqApplication.hpp"
 #include "dfmessages/DataRequest.hpp"
 #include "dfmessages/TRBCompletion.hpp"
 #include "dfmessages/TRMonRequest.hpp"
 #include "dfmessages/TriggerDecision.hpp"
+#include "dfmessages/TriggerId.hpp"
 #include "dfmessages/Types.hpp"
 
 #include "appfwk/DAQModule.hpp"
-#include "utilities/WorkerThread.hpp"
-#include "iomanager/Sender.hpp"
 #include "iomanager/Receiver.hpp"
+#include "iomanager/Sender.hpp"
 #include "logging/Logging.hpp" // NOTE: if ISSUES ARE DECLARED BEFORE include logging/Logging.hpp, TLOG_DEBUG<<issue wont work.
+#include "utilities/WorkerThread.hpp"
 
 #include "dfmodules/opmon/TRBModule.pb.h"
 
@@ -69,10 +69,12 @@ ERS_DECLARE_ISSUE(dfmodules,               ///< Namespace
  */
 ERS_DECLARE_ISSUE(dfmodules,          ///< Namespace
                   UnexpectedFragment, ///< Issue class name
-                  "Unexpected Fragment for triggerID " << trigger_id << ", type " << fragment_type << ", " << source_id,
-                  ((dfmessages::TriggerId)trigger_id)               ///< Message parameters
+                  "Unexpected Fragment for triggerID " << trigger_id << ", sequence " << sequence_number << ", type "
+                                                       << fragment_type << ", " << source_id,
+                  ((dfmessages::TriggerId)trigger_id)              ///< Message parameters
+                  ((dfmessages::sequence_number_t)sequence_number) ///< Message parameters
                   ((daqdataformats::fragment_type_t)fragment_type) ///< Message parameters
-                  ((daqdataformats::SourceID)source_id)                  ///< Message parameters
+                  ((daqdataformats::SourceID)source_id)            ///< Message parameters
 )
 
 /**
@@ -80,27 +82,34 @@ ERS_DECLARE_ISSUE(dfmodules,          ///< Namespace
  */
 ERS_DECLARE_ISSUE(dfmodules,                 ///< Namespace
                   DuplicatedTriggerDecision, ///< Issue class name
-                  "Duplicated trigger ID " << trigger_id,
+                  "Duplicated trigger ID " << trigger_id << ", sequence " << sequence_number,
                   ((dfmessages::TriggerId)trigger_id) ///< Message parameters
+                  ((dfmessages::sequence_number_t)sequence_number) ///< Message parameters
 )
 
 /**
  * @brief Abandoned TR
  */
 ERS_DECLARE_ISSUE(dfmodules,                ///< Namespace
-                  AbandonedTriggerDecision, ///< Issue class name
+                  AbandonedTriggerRecord, ///< Issue class name
                   "trigger ID " << trigger_id << " could not be sent to writing and it's lost",
                   ((dfmessages::TriggerId)trigger_id) ///< Message parameters
+                  ((dfmessages::sequence_number_t)sequence_number) ///< Message parameters
 )
 
 /**
  * @brief Incomplete TR
  */
-ERS_DECLARE_ISSUE(dfmodules,                ///< Namespace
-                  IncompleteTriggerRecord , ///< Issue class name
-                  "sending incomplete TriggerRecord downstream " << optional_stop_time_phrase << " (trigger/run_number=" << id << ", " << num_frags_present << " of " << num_components_requested << " fragments included)",
-                  ((std::string)optional_stop_time_phrase)((dfmessages::TriggerId)id)((int)num_frags_present)(
-                    (int)num_components_requested) ///< Message parameters
+ERS_DECLARE_ISSUE(dfmodules,               ///< Namespace
+                  IncompleteTriggerRecord, ///< Issue class name
+                  "sending incomplete TriggerRecord downstream "
+                    << optional_stop_time_phrase << " (trigger/run_number=" << id << " (seq " << sequence_number
+                    << "), " << num_frags_present << " of " << num_components_requested << " fragments included)",
+                  ((std::string)optional_stop_time_phrase)         ///< Message parameters
+                  ((dfmessages::TriggerId)id)                      ///< Message parameters
+                  ((dfmessages::sequence_number_t)sequence_number) ///< Message parameters
+                  ((int)num_frags_present)                         ///< Message parameters
+                  ((int)num_components_requested)                  ///< Message parameters
 )
 
 /**
@@ -108,9 +117,9 @@ ERS_DECLARE_ISSUE(dfmodules,                ///< Namespace
  */
 ERS_DECLARE_ISSUE(dfmodules,           ///< Namespace
                   MissingConnectionID, ///< Issue class name
-                  "No connection ID was found for connection name \"" << conn_name
-                  << "\" in the conn_ref list that was provided at 'init' time.",
-                  ((std::string)conn_name)                   ///< Message parameters
+                  "No connection ID was found for connection name \""
+                    << conn_name << "\" in the conn_ref list that was provided at 'init' time.",
+                  ((std::string)conn_name) ///< Message parameters
 )
 
 namespace dfmodules {
@@ -130,17 +139,32 @@ public:
    */
   explicit TRBModule(const std::string& name);
 
-  TRBModule(const TRBModule&) = delete; ///< TRBModule is not copy-constructible
-  TRBModule& operator=(const TRBModule&) =
-    delete;                                                         ///< TRBModule is not copy-assignable
-  TRBModule(TRBModule&&) = delete;            ///< TRBModule is not move-constructible
-  TRBModule& operator=(TRBModule&&) = delete; ///< TRBModule is not move-assignable
+  TRBModule(const TRBModule&) = delete;            ///< TRBModule is not copy-constructible
+  TRBModule& operator=(const TRBModule&) = delete; ///< TRBModule is not copy-assignable
+  TRBModule(TRBModule&&) = delete;                 ///< TRBModule is not move-constructible
+  TRBModule& operator=(TRBModule&&) = delete;      ///< TRBModule is not move-assignable
 
   void init(std::shared_ptr<appfwk::ConfigurationManager> mcfg) override;
 
   void generate_opmon_data() override;
 
 protected:
+    struct TriggerRecordId
+    {
+      dfmessages::TriggerId trigger_id;
+      dfmessages::sequence_number_t sequence_number;
+      bool operator<(const TriggerRecordId& other) const
+      {
+        return std::tie(trigger_id, sequence_number) < std::tie(other.trigger_id, other.sequence_number);
+      }
+
+      friend std::ostream& operator<<(std::ostream& out, const TriggerRecordId& id) noexcept
+      {
+        out << id.trigger_id.trigger_number << "." << id.sequence_number << "/" << id.trigger_id.run_number;
+        return out;
+      }
+  };
+
   using trigger_decision_receiver_t = iomanager::ReceiverConcept<dfmessages::TriggerDecision>;
   using data_req_sender_t = iomanager::SenderConcept<dfmessages::DataRequest>;
   using fragment_receiver_t = iomanager::ReceiverConcept<std::unique_ptr<daqdataformats::Fragment>>;
@@ -152,17 +176,16 @@ protected:
   void trigger_decision_callback(dfmessages::TriggerDecision& td);
   void fragments_callback(std::unique_ptr<daqdataformats::Fragment>& frag);
 
-  trigger_record_ptr_t extract_trigger_record(const dfmessages::TriggerId&);
+  trigger_record_ptr_t extract_trigger_record(const TriggerRecordId&);
   // build_trigger_record will allocate memory and then orphan it to the caller
   // via the returned pointer Plese note that the method will destroy the memory
   // saved in the bookkeeping map
 
   unsigned int create_trigger_records_and_dispatch(const dfmessages::TriggerDecision&);
 
-  bool dispatch_data_requests(dfmessages::DataRequest,
-                              const daqdataformats::SourceID&);
+  bool dispatch_data_requests(dfmessages::DataRequest, const daqdataformats::SourceID&);
 
-  bool send_trigger_record(const dfmessages::TriggerId&);
+  bool send_trigger_record(const TriggerRecordId &);
   // this creates a trigger record and send it
 
   bool check_stale_requests();
@@ -178,7 +201,7 @@ private:
   void do_stop(const CommandData_t&);
 
   // Monitoring callback
-  void tr_requested(const dfmessages::TRMonRequest &);
+  void tr_requested(const dfmessages::TRMonRequest&);
 
   // Threading
   std::atomic<bool> m_stop_requested;
@@ -200,13 +223,15 @@ private:
   std::shared_ptr<trigger_record_sender_t> m_trigger_record_output;
   std::shared_ptr<trb_complete_sender_t> m_trb_complete_output;
   mutable std::mutex m_map_sourceid_connections_mutex;
-  std::map<daqdataformats::SourceID, std::shared_ptr<data_req_sender_t>> m_map_sourceid_connections; ///< Mappinng between SourceID and connections
+  std::map<daqdataformats::SourceID, std::shared_ptr<data_req_sender_t>>
+    m_map_sourceid_connections; ///< Mappinng between SourceID and connections
 
   // bookeeping
   using clock_type = std::chrono::steady_clock;
   std::mutex m_trigger_records_mutex;
   clock_type::time_point m_last_bookkeeping{};
-  std::map<dfmessages::TriggerId, std::pair<clock_type::time_point, trigger_record_ptr_t>> m_trigger_records;
+  std::map<TriggerRecordId, std::pair<clock_type::time_point, trigger_record_ptr_t>>
+    m_trigger_records;
   std::condition_variable m_open_trigger_record_cv;
 
   // Data request properties
@@ -243,7 +268,6 @@ private:
   mutable std::atomic<metric_counter_type> m_data_request_width = { 0 };         // in between calls
   mutable std::atomic<metric_counter_type> m_td_processing_us = { 0 };           // in between calls
   mutable std::atomic<metric_counter_type> m_fragment_processing_us = { 0 };     // in between calls
-
 
   mutable std::atomic<metric_counter_type> m_trmon_request_counter = { 0 };
   mutable std::atomic<metric_counter_type> m_trmon_sent_counter = { 0 };
