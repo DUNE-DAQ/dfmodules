@@ -525,14 +525,14 @@
 
 <obj class="VirtualHost" id="connectionservice">
  <rel name="uses">
-  <ref class="ProcessingResource" id="cpus"/>
+  <ref class="HostCores" id="cpus"/>
  </rel>
  <rel name="runs_on" class="PhysicalHost" id="localhost"/>
 </obj>
 
 <obj class="VirtualHost" id="controller">
  <rel name="uses">
-  <ref class="ProcessingResource" id="cpus"/>
+  <ref class="HostCores" id="cpus"/>
  </rel>
  <rel name="runs_on" class="PhysicalHost" id="localhost"/>
 </obj>
