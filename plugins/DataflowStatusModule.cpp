@@ -376,13 +376,19 @@ DataflowStatusModule::receive_trb_completion(const dfmessages::TRBCompletion& co
 void
 DataflowStatusModule::receive_trigger_decision_token(const dfmessages::TriggerDecisionToken& token)
 {
-  TLOG_DEBUG(TLVL_TRIGDEC_RECEIVED) << get_name() << " Received TriggerDecisionToken for trigger_number "
-                                    << token.trigger_id.trigger_number << " and run " << token.trigger_id.run_number
+  TLOG_DEBUG(TLVL_TRIGDEC_RECEIVED) << get_name() << " Received TriggerDecisionToken for trigger/sequence number "
+                                    << token.trigger_id.trigger_number << "/" << token.sequence_number << " and run " << token.trigger_id.run_number
                                     << " (current run is "
                                     << m_current_status.trigger_id.run_number << ")";
 
   {
     std::unique_lock<std::mutex> lock(m_status_mutex);
+
+    // If it is a sequenced trigger, we can say we're both building and writing at the same time
+    if (!m_current_status.triggers_writing.count(token.trigger_id) && m_writing_sequences.count(token.trigger_id)) {
+      m_current_status.triggers_writing.insert(token.trigger_id);
+    }
+
     if (m_current_status.triggers_writing.count(token.trigger_id) == 0 &&
         m_current_status.triggers_building.count(token.trigger_id) == 0) {
       ers::error(UnexpectedTriggerDecisionToken(
@@ -407,7 +413,7 @@ DataflowStatusModule::receive_trigger_decision_token(const dfmessages::TriggerDe
                                                << token.trigger_id.trigger_number << " have been written.";
       } else {
         TLOG_DEBUG(TLVL_TRIGCOMPLETE_RECEIVED)
-          << get_name() << " Received Topen for sequence " << token.sequence_number
+          << get_name() << " Received Token for sequence " << token.sequence_number
           << " of trigger number " << token.trigger_id.trigger_number
           << ". Total completed sequences: " << m_writing_sequences[token.trigger_id].first
           << " of " << m_writing_sequences[token.trigger_id].second + 1;
