@@ -340,8 +340,10 @@ DFOModule::generate_opmon_data()
 bool
 DFOModule::is_busy() const
 {
-  if (m_processing_td.load())
+  if (m_processing_td.load()) {
+    TLOG(TLVL_NOTIFY_TRIGGER) << get_name() << " is busy processing a TriggerDecision";
     return true; // DFO is busy processing a TriggerDecision
+  }
 
   for (auto& dfapp : m_dataflow_statuses) {
     if (!dfapp.second->status_updated.load())
@@ -350,9 +352,14 @@ DFOModule::is_busy() const
     // Check if this DF app is not busy (has available slots)
     size_t occupied = dfapp.second->status.triggers_building.size() + dfapp.second->status.triggers_writing.size();
     if (!dfapp.second->status.is_busy && occupied < dfapp.second->status.busy_threshold) {
+      TLOG(TLVL_NOTIFY_TRIGGER) << get_name() << " is not busy: DF app " << dfapp.first
+                                << " has available slots (occupied: " << occupied
+                                << ", busy_threshold: " << dfapp.second->status.busy_threshold << ")";
       return false; // At least one DF app is available
     }
   }
+  
+  TLOG(TLVL_NOTIFY_TRIGGER) << get_name() << " is busy: all DF apps are either busy or have stale statuses";
   return true; // All DF apps are busy
 }
 
