@@ -490,7 +490,10 @@ DFOModule::receive_dataflow_status(const dfmessages::DataflowStatus& status)
       m_assigned_trigger_decisions.erase(trigger);
     }
   }
-  notify_trigger_if_needed();
+  // Notify will occur at the end of TD processing
+  if (!m_processing_td.load()) {
+    notify_trigger_if_needed();
+  }
   m_status_cv.notify_all();
 }
 
