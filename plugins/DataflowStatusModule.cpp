@@ -262,8 +262,9 @@ DataflowStatusModule::do_scrap(const CommandData_t& /*args*/)
 void
 DataflowStatusModule::receive_status_request(const dfmessages::DataflowStatusRequest& request)
 {
-  TLOG_DEBUG(TLVL_TRIGDEC_RECEIVED) << get_name() << " Received DataflowStatusRequest for run " << request.trigger_id.run_number
-                                    << " (current run is " << m_current_status.trigger_id.run_number << ")";
+  TLOG_DEBUG(TLVL_TRIGDEC_RECEIVED) << get_name() << " Received DataflowStatusRequest for run "
+                                    << request.trigger_id.run_number << " (current run is "
+                                    << m_current_status.trigger_id.run_number << ")";
   if (request.trigger_id.run_number != m_current_status.trigger_id.run_number) {
     return;
   }
@@ -302,9 +303,10 @@ DataflowStatusModule::receive_trigger_decision(dfmessages::TriggerDecision& deci
   {
     std::unique_lock<std::mutex> lock(m_status_mutex);
 
-    if (m_current_status.triggers_building.count({decision.run_number, decision.trigger_number}) > 0 ||
+    if (m_current_status.triggers_building.count({ decision.run_number, decision.trigger_number }) > 0 ||
         m_current_status.triggers_writing.count({ decision.run_number, decision.trigger_number }) > 0) {
-      TLOG() << DuplicateTriggerDecision(ERS_HERE, get_name(), decision.trigger_number, m_current_status.trigger_id.run_number);
+      TLOG() << DuplicateTriggerDecision(
+        ERS_HERE, get_name(), decision.trigger_number, m_current_status.trigger_id.run_number);
       ++m_num_duplicate_decisions_received;
       return;
     }
@@ -324,10 +326,9 @@ DataflowStatusModule::receive_trigger_decision(dfmessages::TriggerDecision& deci
 void
 DataflowStatusModule::receive_trb_completion(const dfmessages::TRBCompletion& completion)
 {
-  TLOG_DEBUG(TLVL_TRIGCOMPLETE_RECEIVED) << get_name() << " Received TRBCompletion for trigger/sequence number "
-                                         << completion.trigger_id.trigger_number << "/"
-                                         << completion.sequence_number << " and run "
-                                         << completion.trigger_id.run_number << " (current run is "
+  TLOG_DEBUG(TLVL_TRIGCOMPLETE_RECEIVED) << get_name() << " Received TRBCompletion for trigger record "
+                                         << completion.trigger_id.trigger_number << "." << completion.sequence_number
+                                         << "/" << completion.trigger_id.run_number << " (current run is "
                                          << m_current_status.trigger_id.run_number << ")";
 
   {
@@ -345,22 +346,21 @@ DataflowStatusModule::receive_trb_completion(const dfmessages::TRBCompletion& co
       if (m_building_sequences.count(completion.trigger_id) > 0) {
         m_building_sequences[completion.trigger_id].first++;
       } else {
-        m_building_sequences[completion.trigger_id] =
-          std::make_pair(1, completion.trigger_record_max_sequence_number);
-        m_writing_sequences[completion.trigger_id] =
-          std::make_pair(0, completion.trigger_record_max_sequence_number);
+        m_building_sequences[completion.trigger_id] = std::make_pair(1, completion.trigger_record_max_sequence_number);
+        m_writing_sequences[completion.trigger_id] = std::make_pair(0, completion.trigger_record_max_sequence_number);
       }
 
-      if (m_building_sequences[completion.trigger_id].first ==
-          m_building_sequences[completion.trigger_id].second + 1) {
-        TLOG_DEBUG(TLVL_TRIGCOMPLETE_RECEIVED) << get_name() << " All sequences for trigger number "
-                                               << completion.trigger_id.trigger_number << " have been built.";
+      if (m_building_sequences[completion.trigger_id].first == m_building_sequences[completion.trigger_id].second + 1) {
+        TLOG_DEBUG(TLVL_TRIGCOMPLETE_RECEIVED)
+          << get_name() << " Received TRBCompletion for trigger record " << completion.trigger_id.trigger_number << "."
+          << completion.sequence_number << "/" << completion.trigger_id.run_number
+          << ". All sequences have been built.";
       } else {
         TLOG_DEBUG(TLVL_TRIGCOMPLETE_RECEIVED)
-          << get_name() << " Received TRBComplete for sequence " << completion.sequence_number
-          << " of trigger number " << completion.trigger_id.trigger_number
-          << ". Total completed sequences: " << m_building_sequences[completion.trigger_id].first
-          << " of " << m_building_sequences[completion.trigger_id].second + 1;
+          << get_name() << " Received TRBCompletion for trigger record " << completion.trigger_id.trigger_number << "."
+          << completion.sequence_number << "/" << completion.trigger_id.run_number
+          << ". Total completed sequences: " << m_building_sequences[completion.trigger_id].first << " of "
+          << m_building_sequences[completion.trigger_id].second + 1;
         return;
       }
     }
@@ -376,9 +376,9 @@ DataflowStatusModule::receive_trb_completion(const dfmessages::TRBCompletion& co
 void
 DataflowStatusModule::receive_trigger_decision_token(const dfmessages::TriggerDecisionToken& token)
 {
-  TLOG_DEBUG(TLVL_TRIGDEC_RECEIVED) << get_name() << " Received TriggerDecisionToken for trigger/sequence number "
-                                    << token.trigger_id.trigger_number << "/" << token.sequence_number << " and run " << token.trigger_id.run_number
-                                    << " (current run is "
+  TLOG_DEBUG(TLVL_TRIGDEC_RECEIVED) << get_name() << " Received TriggerDecisionToken for trigger record "
+                                    << token.trigger_id.trigger_number << "." << token.sequence_number << "/"
+                                    << token.trigger_id.run_number << " (current run is "
                                     << m_current_status.trigger_id.run_number << ")";
 
   {
@@ -407,16 +407,18 @@ DataflowStatusModule::receive_trigger_decision_token(const dfmessages::TriggerDe
     if (m_writing_sequences.count(token.trigger_id) > 0) {
       m_writing_sequences[token.trigger_id].first++;
 
-      if (m_writing_sequences[token.trigger_id].first ==
-          m_writing_sequences[token.trigger_id].second + 1) {
-        TLOG_DEBUG(TLVL_TRIGCOMPLETE_RECEIVED) << get_name() << " All sequences for trigger number "
-                                               << token.trigger_id.trigger_number << " have been written.";
+      if (m_writing_sequences[token.trigger_id].first == m_writing_sequences[token.trigger_id].second + 1) {
+        TLOG_DEBUG(TLVL_TRIGCOMPLETE_RECEIVED)
+          << get_name() << " Received TriggerDecisionToken for trigger record " << token.trigger_id.trigger_number
+          << "."
+          << token.sequence_number << "/" << token.trigger_id.run_number
+          << ". All sequences have been written.";
       } else {
         TLOG_DEBUG(TLVL_TRIGCOMPLETE_RECEIVED)
-          << get_name() << " Received Token for sequence " << token.sequence_number
-          << " of trigger number " << token.trigger_id.trigger_number
-          << ". Total completed sequences: " << m_writing_sequences[token.trigger_id].first
-          << " of " << m_writing_sequences[token.trigger_id].second + 1;
+          << get_name() << " Received TriggerDecisionToken for trigger record " << token.trigger_id.trigger_number << "."
+          << token.sequence_number << "/" << token.trigger_id.run_number
+          << ". Total completed sequences: " << m_writing_sequences[token.trigger_id].first << " of "
+          << m_writing_sequences[token.trigger_id].second + 1;
         return;
       }
     }
@@ -455,16 +457,15 @@ DataflowStatusModule::send_dataflow_status_update(std::string const& destination
       if (it != m_status_snapshots.end()) {
         status_to_send = it->second;
       } else {
-        ers::warning(SnapshotNotFound(ERS_HERE, get_name(),trigger_number));
+        ers::warning(SnapshotNotFound(ERS_HERE, get_name(), trigger_number));
         status_to_send = m_current_status;
       }
     }
   }
 
   status_to_send.trigger_id.trigger_number = trigger_number;
-  TLOG_DEBUG(TLVL_SEND_STATE) << get_name()
-                              << ": Sending DataflowStatus, trigger_number: " << status_to_send.trigger_id.trigger_number
-                              << ", is_busy: " << status_to_send.is_busy;
+  TLOG_DEBUG(TLVL_SEND_STATE) << get_name() << ": Sending DataflowStatus, trigger_number: "
+                              << status_to_send.trigger_id.trigger_number << ", is_busy: " << status_to_send.is_busy;
   auto iom = iomanager::IOManager::get();
   auto sender = iom->get_sender<dfmessages::DataflowStatus>(destination);
   if (sender) {
