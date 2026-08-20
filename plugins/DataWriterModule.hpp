@@ -98,7 +98,6 @@ private:
   std::atomic<uint64_t> m_writing_us = { 0 };           // NOLINT(build/unsigned)
 
   // Other
-  std::map<daqdataformats::trigger_number_t, size_t> m_seqno_counts;
 
   inline double elapsed_seconds(std::chrono::steady_clock::time_point then,
                                 std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now()) const

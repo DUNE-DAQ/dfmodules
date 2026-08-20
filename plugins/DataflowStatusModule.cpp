@@ -294,6 +294,8 @@ DataflowStatusModule::receive_trigger_decision(dfmessages::TriggerDecision& deci
                                     << decision.trigger_number << " and run " << decision.run_number
                                     << " (current run is " << m_current_status.trigger_id.run_number << ")";
   if (decision.run_number != m_current_status.trigger_id.run_number) {
+    ers::error(TriggerDecisionIncorrectRun(
+      ERS_HERE, get_name(), decision.trigger_number, decision.run_number, m_current_status.trigger_id.run_number));
     return;
   }
 
@@ -327,9 +329,6 @@ DataflowStatusModule::receive_trb_completion(const dfmessages::TRBCompletion& co
                                          << completion.sequence_number << " and run "
                                          << completion.trigger_id.run_number << " (current run is "
                                          << m_current_status.trigger_id.run_number << ")";
-  if (completion.trigger_id.run_number != m_current_status.trigger_id.run_number) {
-    return;
-  }
 
   {
     std::lock_guard<std::mutex> lock(m_status_mutex);
@@ -381,9 +380,7 @@ DataflowStatusModule::receive_trigger_decision_token(const dfmessages::TriggerDe
                                     << token.trigger_id.trigger_number << " and run " << token.trigger_id.run_number
                                     << " (current run is "
                                     << m_current_status.trigger_id.run_number << ")";
-  if (token.trigger_id.run_number != m_current_status.trigger_id.run_number) {
-    return;
-  }
+
   {
     std::unique_lock<std::mutex> lock(m_status_mutex);
     if (m_current_status.triggers_writing.count(token.trigger_id) == 0 &&
