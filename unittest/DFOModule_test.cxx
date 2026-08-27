@@ -44,7 +44,12 @@ struct CfgFixture
     std::string appName = "TestApp";
     std::string sessionName = "partition_name";
     cfgMgr = std::make_shared<dunedaq::appfwk::ConfigurationManager>(oksConfig, appName, sessionName);
-    get_iomanager()->configure(sessionName, "localhost", cfgMgr->get_queues(), cfgMgr->get_networkconnections(), nullptr, opmgr);
+    get_iomanager()->configure(sessionName,
+                               cfgMgr->get_queues(),
+                               cfgMgr->get_networkconnections(),
+                               cfgMgr->get_connection_overrides(),
+                               nullptr,
+                               opmgr);
   }
   ~CfgFixture() { get_iomanager()->reset(); }
 
