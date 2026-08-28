@@ -20,8 +20,8 @@ namespace dunedaq::dfmodules {
 
 struct DFOTriggerCounter
 {
-  std::atomic<uint64_t> received{ 0 };
-  std::atomic<uint64_t> completed{ 0 };
+  std::atomic<uint64_t> received{ 0 }; // NOLINT
+  std::atomic<uint64_t> completed{ 0 }; // NOLINT
 
   static std::set<trgdataformats::TriggerCandidateData::Type> unpack_types(
     decltype(dfmessages::TriggerDecision::trigger_type) t)
@@ -32,7 +32,7 @@ struct DFOTriggerCounter
     const std::bitset<64> bits(t);
     for (size_t i = 0; i < bits.size(); ++i) {
       if (bits[i])
-        results.insert((trgdataformats::TriggerCandidateData::Type)i);
+        results.insert(static_cast<trgdataformats::TriggerCandidateData::Type>(i));
     }
     return results;
   }

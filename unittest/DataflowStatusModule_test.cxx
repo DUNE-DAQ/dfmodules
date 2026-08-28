@@ -119,7 +119,7 @@ struct ConnectionFixture
     trb_complete.trigger_record_max_sequence_number = trigger_record_max_sequence_number;
     auto iom = iomanager::IOManager::get();
     auto sender = iom->get_sender<dfmessages::TRBCompletion>("trb_completion");
-    sender->send(std::move(trb_complete), iomanager::Sender::s_block);
+    sender->send(std::move(trb_complete), iomanager::Sender::s_block); // NOLINT
   }
 
   static std::vector<dfmessages::DataflowStatus> s_received_statuses;

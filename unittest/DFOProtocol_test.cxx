@@ -206,7 +206,7 @@ dfo3_recv_inhibit(const dfmessages::TriggerInhibit& inhibit)
 }
 
 static void
-send_trigdec_to_all_dfos(dfmessages::trigger_number_t trigger_number, uint32_t run_number = 1)
+send_trigdec_to_all_dfos(dfmessages::trigger_number_t trigger_number, dfmessages::run_number_t run_number = 1) // NOLINT
 {
   auto iom = iomanager::IOManager::get();
 
@@ -239,7 +239,7 @@ send_trb_completion(const std::string& df_module,
   completion.trigger_record_max_sequence_number = max_sequence_number;
 
   auto sender = iom->get_sender<dfmessages::TRBCompletion>(df_module + "_trb_completion_in");
-  sender->send(std::move(completion), iomanager::Sender::s_block);
+  sender->send(std::move(completion), iomanager::Sender::s_block); // NOLINT
   TLOG() << "Sent TRBCompletion for trigger " << trigger_number << " to " << df_module;
 }
 

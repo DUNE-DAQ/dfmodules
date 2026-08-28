@@ -733,7 +733,7 @@ TRBModule::send_trigger_record(const TriggerRecordId& id)
   }
 
   dfmessages::TRBCompletion completion_msg{ id.trigger_id, id.sequence_number, m_this_trb_source_id, max_seq_num };
-  m_trb_complete_output->try_send(std::move(completion_msg), m_trb_complete_timeout);
+  m_trb_complete_output->try_send(std::move(completion_msg), m_trb_complete_timeout); // NOLINT
 
   return wasSentSuccessfully;
 }
