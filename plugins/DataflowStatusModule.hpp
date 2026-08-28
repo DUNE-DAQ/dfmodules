@@ -19,9 +19,11 @@
 #include "utilities/WorkerThread.hpp"
 
 #include <atomic>
+#include <map>
 #include <memory>
 #include <set>
 #include <string>
+#include <utility>
 
 namespace dunedaq {
 
@@ -33,7 +35,7 @@ ERS_DECLARE_ISSUE_BASE(dfmodules,
                        "Received TriggerDecision message for trigger number "
                          << trigger_number << " in run " << run_number << " which is not the current run (" << current_run << ")",
                        ((std::string)name),
-                       ((uint32_t)trigger_number)((uint32_t)run_number)((uint32_t)current_run))
+                       ((uint32_t)trigger_number)((uint32_t)run_number)((uint32_t)current_run)) // NOLINT
 
 ERS_DECLARE_ISSUE_BASE(dfmodules,
                        UnexpectedTRBCompletion,
@@ -41,7 +43,7 @@ ERS_DECLARE_ISSUE_BASE(dfmodules,
                        "Received TRBCompletion message for trigger number "
                          << trigger_number << " in run " << run_number << " which is not in the building list",
                        ((std::string)name),
-                       ((uint32_t)trigger_number)((uint32_t)run_number))
+                       ((uint32_t)trigger_number)((uint32_t)run_number)) // NOLINT
 
 ERS_DECLARE_ISSUE_BASE(dfmodules,
                        UnexpectedTriggerDecisionToken,
@@ -49,14 +51,14 @@ ERS_DECLARE_ISSUE_BASE(dfmodules,
                        "Received TriggerDecisionToken message for trigger number "
                          << trigger_number << " in run " << run_number << " which is not in the writing list",
                        ((std::string)name),
-                       ((uint32_t)trigger_number)((uint32_t)run_number))
+                       ((uint32_t)trigger_number)((uint32_t)run_number)) // NOLINT
 
 ERS_DECLARE_ISSUE_BASE(dfmodules,
                        SnapshotNotFound,
                        appfwk::GeneralDAQModuleIssue,
                        "No snapshot found for trigger number " << trigger_number << ". Sending current status instead.",
                        ((std::string)name),
-                       ((uint32_t)trigger_number))
+                       ((uint32_t)trigger_number)) // NOLINT
 // Re-enable coverage checking LCOV_EXCL_STOP
 namespace dfmodules {
 

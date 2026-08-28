@@ -17,6 +17,7 @@
 #include "iomanager/IOManager.hpp"
 #include "logging/Logging.hpp"
 
+#include <algorithm>
 #include <chrono>
 #include <cstdlib>
 #include <future>
@@ -24,6 +25,7 @@
 #include <list>
 #include <map>
 #include <memory>
+#include <set>
 #include <string>
 #include <thread>
 #include <utility>
@@ -358,7 +360,7 @@ DFOModule::is_busy() const
       return false; // At least one DF app is available
     }
   }
-  
+
   TLOG(TLVL_NOTIFY_TRIGGER) << get_name() << " is busy: all DF apps are either busy or have stale statuses";
   return true; // All DF apps are busy
 }
