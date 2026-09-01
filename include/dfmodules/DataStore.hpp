@@ -1,8 +1,7 @@
 /**
  * @file DataStore.hpp
  *
- * This is the interface for storing and retrieving data from
- * various storage systems.
+ * This is the interface for writing data to various storage systems.
  *
  * This is part of the DUNE DAQ Application Framework, copyright 2020.
  * Licensing/copyright details are in the COPYING file that you should have
@@ -89,17 +88,6 @@ ERS_DECLARE_ISSUE(dfmodules,
                   ((std::string)mod_name)((std::string)description))
 /// @endcond LCOV_EXCL_STOP
 
-/**
- * @brief An ERS Issue for DataStore problems in which it is
- * not clear whether retrying the operation might succeed or not.
- * @cond Doxygen doesn't like ERS macros LCOV_EXCL_START
- */
-ERS_DECLARE_ISSUE(dfmodules,
-                  GeneralDataStoreProblem,
-                  "Module " << mod_name << ": A problem was encountered when " << description,
-                  ((std::string)mod_name)((std::string)description))
-/// @endcond LCOV_EXCL_STOP
-
 namespace dfmodules {
 
 /**
@@ -120,12 +108,15 @@ public:
   /**
    * @brief Writes the TriggerRecord into the DataStore.
    * @param tr TriggerRecord to write.
+   * @throws RetryableDataStoreProblem
    */
   virtual void write(const daqdataformats::TriggerRecord& tr) = 0;
 
   /**
    * @brief Writes the TimeSlice into the DataStore.
    * @param ts TimeSlice to write.
+   * @throws RetryableDataStoreProblem
+   * @throws IgnorableDataStoreProblem
    */
   virtual void write(const daqdataformats::TimeSlice& ts) = 0;
 

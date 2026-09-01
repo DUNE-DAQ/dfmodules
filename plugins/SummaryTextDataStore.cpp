@@ -4,6 +4,6 @@
  * received with this code.                                                     
  */
 
-#include "HDF5DataStore.hpp"
+#include "SummaryTextDataStore.hpp"
 
-DEFINE_DUNE_DATA_STORE(dunedaq::dfmodules::HDF5DataStore)
+DEFINE_DUNE_DATA_STORE(dunedaq::dfmodules::SummaryTextDataStore)
