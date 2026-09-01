@@ -144,7 +144,7 @@ conf_dict.config_substitutions.append(
     data_classes.attribute_substitution(
         obj_class="StreamEmulationParameters",
         obj_id="stream-emu",
-        updates={"TP_rate_per_channel": 5},
+        updates={"TP_rate_per_channel": 4.75},
     )
 )
 
