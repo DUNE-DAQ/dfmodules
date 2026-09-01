@@ -5,20 +5,19 @@ package dunedaq.dfmodules.opmon;
 
 // regular metric published byt the DFO
 message DFOInfo {
+  // status metrics
+  uint64 pending_trigger_decisions = 1; // Present number of TriggerDecisions being worked on by the dataflow
 
-  // counters 
-  uint64 tokens_received = 1;
-  uint64 decisions_received = 2;
-  uint64 decisions_sent = 3;
+  // counters
+  uint64 statuses_received = 20;
+  uint64 decisions_received = 21;
+  uint64 decisions_sent = 22;
+  uint64 decisions_completed = 23;
 
   // time management of the decision thread
-  uint64 waiting_for_decision = 10 ; // Time spent waiting on Trigger Decisions, in microseconds
-  uint64 deciding_destination = 11 ; // Time spent making a decision on the receving DF app, in microseconds
-  uint64 forwarding_decision = 12  ; // Time spent sending the Trigger Decision to TRBs, in microseconds
-
-  // time management of the token thread
-  uint64 waiting_for_token = 15 ; // Time spent waiting in token thread for tokens, in microseconds
-  uint64 processing_token = 16 ; // Time spent in token thread updating data structure, in microseconds
+  uint64 waiting_for_decision = 30 ; // Time spent waiting on Trigger Decisions, in microseconds
+  uint64 deciding_destination = 31 ; // Time spent making a decision on the receving DF app, in microseconds
+  uint64 forwarding_decision = 32  ; // Time spent sending the Trigger Decision to TRBs, in microseconds
 
 }
 

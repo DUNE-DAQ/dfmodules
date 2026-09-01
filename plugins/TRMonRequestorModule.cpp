@@ -173,7 +173,7 @@ TRMonRequestorModule::do_stop(const CommandData_t& /*args*/)
 void
 TRMonRequestorModule::token_callback(const dfmessages::TriggerDecisionToken& token)
 {
-  if (token.run_number == *m_run_number) {
+  if (token.trigger_id.run_number == *m_run_number) {
     m_token_count++;
   }
 }
