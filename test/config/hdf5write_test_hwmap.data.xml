@@ -63,7 +63,7 @@
 
 <oks-data>
 
-<info name="" type="" num-of-items="136" oks-format="data" oks-version="862f2957270" created-by="gjc" created-on="thinkpad" creation-time="20231116T105446" last-modified-by="eflumerf" last-modified-on="ironvirt9.IRONDOMAIN.local" last-modification-time="20241023T204135"/>
+<info name="" type="" num-of-items="141" oks-format="data" oks-version="862f2957270" created-by="gjc" created-on="thinkpad" creation-time="20231116T105446" last-modified-by="eflumerf" last-modified-on="ironvirt9.mshome.net" last-modification-time="20260827T192751"/>
 
 <include>
  <file path="schema/confmodel/dunedaq.schema.xml"/>
@@ -87,10 +87,12 @@
 
 
 <obj class="AVXFrugalPedestalSubtractProcessor" id="tpg-pedsub-proc">
+ <attr name="metric_collect_time_sample_period" type="u64" val="256"/>
  <attr name="accum_limit" type="u8" val="10"/>
 </obj>
 
 <obj class="AVXThresholdProcessor" id="tpg-threshold-proc">
+ <attr name="metric_collect_time_sample_period" type="u64" val="256"/>
  <attr name="plane0" type="s16" val="100"/>
  <attr name="plane1" type="s16" val="100"/>
  <attr name="plane2" type="s16" val="100"/>
@@ -106,9 +108,16 @@
  <attr name="template_for" type="class" val="FDDataHandlerModule"/>
  <attr name="input_data_type" type="string" val="WIBEthFrame"/>
  <attr name="generate_timesync" type="bool" val="1"/>
+ <attr name="post_processing_delay_min_wait" type="u64" val="1"/>
+ <attr name="post_processing_delay_max_wait" type="u64" val="5"/>
  <rel name="request_handler" class="RequestHandler" id="def-data-request-handler"/>
  <rel name="latency_buffer" class="LatencyBuffer" id="def-latency-buf"/>
  <rel name="data_processor" class="TPCRawDataProcessor" id="def-wib-processor"/>
+</obj>
+
+<obj class="DataMoveCallbackDescriptor" id="wib-eth-raw-input">
+ <attr name="uid_base" type="string" val="raw_input_"/>
+ <attr name="data_type" type="string" val="WIBEthFrame"/>
 </obj>
 
 <obj class="DetectorStream" id="dummyStream-1-1">
@@ -361,83 +370,8 @@
  <rel name="geo_id" class="GeoId" id="dummyGeoId-5-9"/>
 </obj>
 
-<obj class="NetworkDetectorToDaqConnection" id="det-1-1">
- <rel name="net_senders">
-  <ref class="FakeDataSender" id="det-streams-1-1"/>
- </rel>
- <rel name="net_receiver" class="FakeDataReceiver" id="dataRec-0"/>
-</obj>
-
-<obj class="NetworkDetectorToDaqConnection" id="det-1-2">
- <rel name="net_senders">
-  <ref class="FakeDataSender" id="det-streams-1-2"/>
- </rel>
- <rel name="net_receiver" class="FakeDataReceiver" id="dataRec-0"/>
-</obj>
-
-<obj class="NetworkDetectorToDaqConnection" id="det-1-3">
- <rel name="net_senders">
-  <ref class="FakeDataSender" id="det-streams-1-3"/>
- </rel>
- <rel name="net_receiver" class="FakeDataReceiver" id="dataRec-0"/>
-</obj>
-
-<obj class="NetworkDetectorToDaqConnection" id="det-1-4">
- <rel name="net_senders">
-  <ref class="FakeDataSender" id="det-streams-1-4"/>
- </rel>
- <rel name="net_receiver" class="FakeDataReceiver" id="dataRec-0"/>
-</obj>
-
-<obj class="NetworkDetectorToDaqConnection" id="det-1-5">
- <rel name="net_senders">
-  <ref class="FakeDataSender" id="det-streams-1-5"/>
- </rel>
- <rel name="net_receiver" class="FakeDataReceiver" id="dataRec-0"/>
-</obj>
-
-<obj class="NetworkDetectorToDaqConnection" id="det-10-1">
- <rel name="net_senders">
-  <ref class="FakeDataSender" id="det-streams-10-1"/>
- </rel>
- <rel name="net_receiver" class="FakeDataReceiver" id="dataRec-0"/>
-</obj>
-
-<obj class="NetworkDetectorToDaqConnection" id="det-10-2">
- <rel name="net_senders">
-  <ref class="FakeDataSender" id="det-streams-10-2"/>
- </rel>
- <rel name="net_receiver" class="FakeDataReceiver" id="dataRec-0"/>
-</obj>
-
-<obj class="NetworkDetectorToDaqConnection" id="det-10-3">
- <rel name="net_senders">
-  <ref class="FakeDataSender" id="det-streams-10-3"/>
- </rel>
- <rel name="net_receiver" class="FakeDataReceiver" id="dataRec-0"/>
-</obj>
-
-<obj class="NetworkDetectorToDaqConnection" id="det-10-4">
- <rel name="net_senders">
-  <ref class="FakeDataSender" id="det-streams-10-4"/>
- </rel>
- <rel name="net_receiver" class="FakeDataReceiver" id="dataRec-0"/>
-</obj>
-
-<obj class="NetworkDetectorToDaqConnection" id="det-10-5">
- <rel name="net_senders">
-  <ref class="FakeDataSender" id="det-streams-10-5"/>
- </rel>
- <rel name="net_receiver" class="FakeDataReceiver" id="dataRec-0"/>
-</obj>
-
 <obj class="FakeDataReceiver" id="dataRec-0">
  <rel name="uses" class="NetworkInterface" id="nic-0"/>
-</obj>
-
-<obj class="NetworkInterface" id="nic-0">
- <attr name="mac_address" type="string" val="00:00:00:00:00:00"/>
- <attr name="network_name" type="enum" val="Control"/>
 </obj>
 
 <obj class="FakeDataSender" id="det-streams-1-1">
@@ -553,6 +487,10 @@
   <ref class="DetectorStream" id="dummyStream-5-10"/>
  </rel>
  <rel name="uses" class="NetworkInterface" id="nic-0"/>
+</obj>
+
+<obj class="FragmentAggregatorConf" id="frag-agg-01">
+ <attr name="fragment_send_timeout_ms" type="u32" val="1000"/>
 </obj>
 
 <obj class="GeoId" id="dummyGeoId-1-1">
@@ -870,6 +808,15 @@
  <attr name="slot_id" type="u32" val="4"/>
 </obj>
 
+<obj class="HostCores" id="cpus">
+ <attr name="cpu_cores" type="u16">
+  <data val="0"/>
+  <data val="1"/>
+  <data val="2"/>
+  <data val="3"/>
+ </attr>
+</obj>
+
 <obj class="LatencyBuffer" id="def-latency-buf">
  <attr name="size" type="u32" val="139008"/>
  <attr name="numa_aware" type="bool" val="1"/>
@@ -879,6 +826,81 @@
  <attr name="preallocation" type="bool" val="1"/>
 </obj>
 
+<obj class="NetworkDetectorToDaqConnection" id="det-1-1">
+ <rel name="net_senders">
+  <ref class="FakeDataSender" id="det-streams-1-1"/>
+ </rel>
+ <rel name="net_receiver" class="FakeDataReceiver" id="dataRec-0"/>
+</obj>
+
+<obj class="NetworkDetectorToDaqConnection" id="det-1-2">
+ <rel name="net_senders">
+  <ref class="FakeDataSender" id="det-streams-1-2"/>
+ </rel>
+ <rel name="net_receiver" class="FakeDataReceiver" id="dataRec-0"/>
+</obj>
+
+<obj class="NetworkDetectorToDaqConnection" id="det-1-3">
+ <rel name="net_senders">
+  <ref class="FakeDataSender" id="det-streams-1-3"/>
+ </rel>
+ <rel name="net_receiver" class="FakeDataReceiver" id="dataRec-0"/>
+</obj>
+
+<obj class="NetworkDetectorToDaqConnection" id="det-1-4">
+ <rel name="net_senders">
+  <ref class="FakeDataSender" id="det-streams-1-4"/>
+ </rel>
+ <rel name="net_receiver" class="FakeDataReceiver" id="dataRec-0"/>
+</obj>
+
+<obj class="NetworkDetectorToDaqConnection" id="det-1-5">
+ <rel name="net_senders">
+  <ref class="FakeDataSender" id="det-streams-1-5"/>
+ </rel>
+ <rel name="net_receiver" class="FakeDataReceiver" id="dataRec-0"/>
+</obj>
+
+<obj class="NetworkDetectorToDaqConnection" id="det-10-1">
+ <rel name="net_senders">
+  <ref class="FakeDataSender" id="det-streams-10-1"/>
+ </rel>
+ <rel name="net_receiver" class="FakeDataReceiver" id="dataRec-0"/>
+</obj>
+
+<obj class="NetworkDetectorToDaqConnection" id="det-10-2">
+ <rel name="net_senders">
+  <ref class="FakeDataSender" id="det-streams-10-2"/>
+ </rel>
+ <rel name="net_receiver" class="FakeDataReceiver" id="dataRec-0"/>
+</obj>
+
+<obj class="NetworkDetectorToDaqConnection" id="det-10-3">
+ <rel name="net_senders">
+  <ref class="FakeDataSender" id="det-streams-10-3"/>
+ </rel>
+ <rel name="net_receiver" class="FakeDataReceiver" id="dataRec-0"/>
+</obj>
+
+<obj class="NetworkDetectorToDaqConnection" id="det-10-4">
+ <rel name="net_senders">
+  <ref class="FakeDataSender" id="det-streams-10-4"/>
+ </rel>
+ <rel name="net_receiver" class="FakeDataReceiver" id="dataRec-0"/>
+</obj>
+
+<obj class="NetworkDetectorToDaqConnection" id="det-10-5">
+ <rel name="net_senders">
+  <ref class="FakeDataSender" id="det-streams-10-5"/>
+ </rel>
+ <rel name="net_receiver" class="FakeDataReceiver" id="dataRec-0"/>
+</obj>
+
+<obj class="NetworkInterface" id="nic-0">
+ <attr name="mac_address" type="string" val="00:00:00:00:00:00"/>
+ <attr name="network_name" type="enum" val="Control"/>
+</obj>
+
 <obj class="OpMonConf" id="slow-all-monitoring">
  <attr name="level" type="u32" val="4294967295"/>
  <attr name="interval_s" type="u32" val="10"/>
@@ -886,61 +908,25 @@
 
 <obj class="PhysicalHost" id="localhost">
  <rel name="contains">
-  <ref class="ProcessingResource" id="cpus"/>
+  <ref class="HostCores" id="cpus"/>
  </rel>
-</obj>
-
-<obj class="ProcessingResource" id="cpus">
- <attr name="cpu_cores" type="u16">
-  <data val="0"/>
-  <data val="1"/>
-  <data val="2"/>
-  <data val="3"/>
- </attr>
-</obj>
-
-<obj class="SamplesOverThresholdMinima" id="def-sot-minima">
- <attr name="sot_minimum_plane0" type="u16" val="1"/>
- <attr name="sot_minimum_plane1" type="u16" val="1"/>
- <attr name="sot_minimum_plane2" type="u16" val="1"/>
-</obj>
-
-<obj class="TPCRawDataProcessor" id="def-wib-processor">
- <attr name="queue_sizes" type="u32" val="10000"/>
- <attr name="thread_names_prefix" type="string" val="postproc-"/>
- <attr name="latency_monitoring" type="bool" val="1"/>
- <attr name="channel_map" type="string" val="PD2HDChannelMap"/>
- <rel name="processing_steps">
-  <ref class="AVXFrugalPedestalSubtractProcessor" id="tpg-pedsub-proc"/>
-  <ref class="AVXThresholdProcessor" id="tpg-threshold-proc"/>
- </rel>
- <rel name="sot_minima" class="SamplesOverThresholdMinima" id="def-sot-minima"/>
-</obj>
-
-<obj class="FragmentAggregatorConf" id="frag-agg-01">
- <attr name="fragment_send_timeout_ms" type="u32" val="1000"/>
-</obj>
-
-<obj class="DataMoveCallbackDescriptor" id="wib-eth-raw-input">
- <attr name="uid_base" type="string" val="raw_input_"/>
- <attr name="data_type" type="string" val="WIBEthFrame"/>
 </obj>
 
 <obj class="ReadoutApplication" id="ru-3-1">
  <attr name="application_name" type="string" val="daq_application"/>
  <attr name="tp_generation_enabled" type="bool" val="1"/>
  <attr name="ta_generation_enabled" type="bool" val="1"/>
- <rel name="detector_connections">
-  <ref class="NetworkDetectorToDaqConnection" id="det-1-1"/>
-  <ref class="NetworkDetectorToDaqConnection" id="det-1-2"/>
-  <ref class="NetworkDetectorToDaqConnection" id="det-1-3"/>
- </rel>
  <rel name="runs_on" class="VirtualHost" id="vlocalhost"/>
  <rel name="opmon_conf" class="OpMonConf" id="slow-all-monitoring"/>
  <rel name="uses" class="RoHwConfig" id="rohw-1"/>
  <rel name="link_handler" class="DataHandlerConf" id="def-link-handler"/>
  <rel name="data_reader" class="DPDKReaderConf" id="def-emu-nic-receiver-conf"/>
  <rel name="fragment_aggregator" class="FragmentAggregatorConf" id="frag-agg-01"/>
+ <rel name="detector_connections">
+  <ref class="NetworkDetectorToDaqConnection" id="det-1-1"/>
+  <ref class="NetworkDetectorToDaqConnection" id="det-1-2"/>
+  <ref class="NetworkDetectorToDaqConnection" id="det-1-3"/>
+ </rel>
  <rel name="callback_desc" class="DataMoveCallbackDescriptor" id="wib-eth-raw-input"/>
 </obj>
 
@@ -948,6 +934,12 @@
  <attr name="application_name" type="string" val="daq_application"/>
  <attr name="tp_generation_enabled" type="bool" val="1"/>
  <attr name="ta_generation_enabled" type="bool" val="1"/>
+ <rel name="runs_on" class="VirtualHost" id="vlocalhost"/>
+ <rel name="opmon_conf" class="OpMonConf" id="slow-all-monitoring"/>
+ <rel name="uses" class="RoHwConfig" id="rohw-1"/>
+ <rel name="link_handler" class="DataHandlerConf" id="def-link-handler"/>
+ <rel name="data_reader" class="DPDKReaderConf" id="def-emu-nic-receiver-conf"/>
+ <rel name="fragment_aggregator" class="FragmentAggregatorConf" id="frag-agg-01"/>
  <rel name="detector_connections">
   <ref class="NetworkDetectorToDaqConnection" id="det-1-1"/>
   <ref class="NetworkDetectorToDaqConnection" id="det-1-2"/>
@@ -955,12 +947,6 @@
   <ref class="NetworkDetectorToDaqConnection" id="det-1-4"/>
   <ref class="NetworkDetectorToDaqConnection" id="det-1-5"/>
  </rel>
- <rel name="runs_on" class="VirtualHost" id="vlocalhost"/>
- <rel name="opmon_conf" class="OpMonConf" id="slow-all-monitoring"/>
- <rel name="uses" class="RoHwConfig" id="rohw-1"/>
- <rel name="link_handler" class="DataHandlerConf" id="def-link-handler"/>
- <rel name="data_reader" class="DPDKReaderConf" id="def-emu-nic-receiver-conf"/>
- <rel name="fragment_aggregator" class="FragmentAggregatorConf" id="frag-agg-01"/>
  <rel name="callback_desc" class="DataMoveCallbackDescriptor" id="wib-eth-raw-input"/>
 </obj>
 
@@ -968,6 +954,12 @@
  <attr name="application_name" type="string" val="daq_application"/>
  <attr name="tp_generation_enabled" type="bool" val="1"/>
  <attr name="ta_generation_enabled" type="bool" val="1"/>
+ <rel name="runs_on" class="VirtualHost" id="vlocalhost"/>
+ <rel name="opmon_conf" class="OpMonConf" id="slow-all-monitoring"/>
+ <rel name="uses" class="RoHwConfig" id="rohw-1"/>
+ <rel name="link_handler" class="DataHandlerConf" id="def-link-handler"/>
+ <rel name="data_reader" class="DPDKReaderConf" id="def-emu-nic-receiver-conf"/>
+ <rel name="fragment_aggregator" class="FragmentAggregatorConf" id="frag-agg-01"/>
  <rel name="detector_connections">
   <ref class="NetworkDetectorToDaqConnection" id="det-10-1"/>
   <ref class="NetworkDetectorToDaqConnection" id="det-10-2"/>
@@ -975,12 +967,6 @@
   <ref class="NetworkDetectorToDaqConnection" id="det-10-4"/>
   <ref class="NetworkDetectorToDaqConnection" id="det-10-5"/>
  </rel>
- <rel name="runs_on" class="VirtualHost" id="vlocalhost"/>
- <rel name="opmon_conf" class="OpMonConf" id="slow-all-monitoring"/>
- <rel name="uses" class="RoHwConfig" id="rohw-1"/>
- <rel name="link_handler" class="DataHandlerConf" id="def-link-handler"/>
- <rel name="data_reader" class="DPDKReaderConf" id="def-emu-nic-receiver-conf"/>
- <rel name="fragment_aggregator" class="FragmentAggregatorConf" id="frag-agg-01"/>
  <rel name="callback_desc" class="DataMoveCallbackDescriptor" id="wib-eth-raw-input"/>
 </obj>
 
@@ -996,6 +982,12 @@
 <obj class="RoHwConfig" id="rohw-1">
 </obj>
 
+<obj class="SamplesOverThresholdMinima" id="def-sot-minima">
+ <attr name="sot_minimum_plane0" type="u16" val="1"/>
+ <attr name="sot_minimum_plane1" type="u16" val="1"/>
+ <attr name="sot_minimum_plane2" type="u16" val="1"/>
+</obj>
+
 <obj class="StreamEmulationParameters" id="stream-emu">
  <attr name="data_file_name" type="string" val="/cvmfs/dunedaq.opensciencegrid.org/assets/files/d/d/1/wibeth_output_all_zeros.bin"/>
  <attr name="input_file_size_limit" type="u32" val="1000000"/>
@@ -1006,9 +998,23 @@
  <attr name="TP_rate_per_channel" type="float" val="1"/>
 </obj>
 
+<obj class="TPCRawDataProcessor" id="def-wib-processor">
+ <attr name="queue_sizes" type="u32" val="10000"/>
+ <attr name="thread_names_prefix" type="string" val="postproc-"/>
+ <attr name="latency_monitoring" type="bool" val="1"/>
+ <attr name="channel_map" type="string" val="PD2HDChannelMap"/>
+ <attr name="frame_count_limit" type="u32" val="100"/>
+ <attr name="metric_collect_opmon_period" type="u32" val="100000"/>
+ <rel name="processing_steps">
+  <ref class="AVXFrugalPedestalSubtractProcessor" id="tpg-pedsub-proc"/>
+  <ref class="AVXThresholdProcessor" id="tpg-threshold-proc"/>
+ </rel>
+ <rel name="sot_minima" class="SamplesOverThresholdMinima" id="def-sot-minima"/>
+</obj>
+
 <obj class="VirtualHost" id="vlocalhost">
  <rel name="uses">
-  <ref class="ProcessingResource" id="cpus"/>
+  <ref class="HostCores" id="cpus"/>
  </rel>
  <rel name="runs_on" class="PhysicalHost" id="localhost"/>
 </obj>
