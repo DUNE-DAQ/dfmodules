@@ -63,7 +63,7 @@
 
 <oks-data>
 
-<info name="" type="" num-of-items="80" oks-format="data" oks-version="862f2957270" created-by="gjc" created-on="thinkpad" creation-time="20231116T105446" last-modified-by="eflumerf" last-modified-on="ironvirt9.mshome.net" last-modification-time="20260714T190734"/>
+<info name="" type="" num-of-items="62" oks-format="data" oks-version="862f2957270" created-by="gjc" created-on="thinkpad" creation-time="20231116T105446" last-modified-by="eflumerf" last-modified-on="ironvirt9.mshome.net" last-modification-time="20260827T192751"/>
 
 <include>
  <file path="schema/confmodel/dunedaq.schema.xml"/>
@@ -377,6 +377,15 @@
  <attr name="digits_for_element_number" type="s32" val="5"/>
 </obj>
 
+<obj class="HostCores" id="cpus">
+ <attr name="cpu_cores" type="u16">
+  <data val="0"/>
+  <data val="1"/>
+  <data val="2"/>
+  <data val="3"/>
+ </attr>
+</obj>
+
 <obj class="NetworkConnection" id="df_status">
  <attr name="data_type" type="string" val="DataflowStatus"/>
  <attr name="capacity" type="u32" val="1"/>
@@ -438,17 +447,8 @@
 
 <obj class="PhysicalHost" id="localhost">
  <rel name="contains">
-  <ref class="ProcessingResource" id="cpus"/>
+  <ref class="HostCores" id="cpus"/>
  </rel>
-</obj>
-
-<obj class="ProcessingResource" id="cpus">
- <attr name="cpu_cores" type="u16">
-  <data val="0"/>
-  <data val="1"/>
-  <data val="2"/>
-  <data val="3"/>
- </attr>
 </obj>
 
 <obj class="Queue" id="trigger_decision_q">
@@ -642,21 +642,21 @@
 
 <obj class="VirtualHost" id="connectionservice">
  <rel name="uses">
-  <ref class="ProcessingResource" id="cpus"/>
+  <ref class="HostCores" id="cpus"/>
  </rel>
  <rel name="runs_on" class="PhysicalHost" id="localhost"/>
 </obj>
 
 <obj class="VirtualHost" id="controller">
  <rel name="uses">
-  <ref class="ProcessingResource" id="cpus"/>
+  <ref class="HostCores" id="cpus"/>
  </rel>
  <rel name="runs_on" class="PhysicalHost" id="localhost"/>
 </obj>
 
 <obj class="VirtualHost" id="vlocalhost">
  <rel name="uses">
-  <ref class="ProcessingResource" id="cpus"/>
+  <ref class="HostCores" id="cpus"/>
  </rel>
  <rel name="runs_on" class="PhysicalHost" id="localhost"/>
 </obj>
