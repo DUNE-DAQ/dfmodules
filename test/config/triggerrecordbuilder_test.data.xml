@@ -63,7 +63,7 @@
 
 <oks-data>
 
-<info name="" type="" num-of-items="61" oks-format="data" oks-version="862f2957270" created-by="test" created-on="test-machine" creation-time="20260707T120000" last-modified-by="eflumerf" last-modified-on="ironvirt9.mshome.net" last-modification-time="20260709T191052"/>
+<info name="" type="" num-of-items="62" oks-format="data" oks-version="862f2957270" created-by="test" created-on="test-machine" creation-time="20260707T120000" last-modified-by="eflumerf" last-modified-on="ironvirt9.mshome.net" last-modification-time="20260910T142912"/>
 
 <include>
  <file path="schema/confmodel/dunedaq.schema.xml"/>
@@ -239,6 +239,15 @@
  </attr>
 </obj>
 
+<obj class="HostCores" id="cpus">
+ <attr name="cpu_cores" type="u16">
+  <data val="0"/>
+  <data val="1"/>
+  <data val="2"/>
+  <data val="3"/>
+ </attr>
+</obj>
+
 <obj class="NetworkConnection" id="datareq_ru0">
  <attr name="data_type" type="string" val="DataRequest"/>
  <attr name="send_timeout_ms" type="u32" val="10"/>
@@ -267,17 +276,16 @@
 
 <obj class="PhysicalHost" id="localhost">
  <rel name="contains">
-  <ref class="ProcessingResource" id="cpus"/>
+  <ref class="HostCores" id="cpus"/>
  </rel>
 </obj>
 
-<obj class="ProcessingResource" id="cpus">
- <attr name="cpu_cores" type="u16">
-  <data val="0"/>
-  <data val="1"/>
-  <data val="2"/>
-  <data val="3"/>
- </attr>
+<obj class="Queue" id="trb_complete">
+ <attr name="data_type" type="string" val="TRBCompletion"/>
+ <attr name="capacity" type="u32" val="1"/>
+ <attr name="send_timeout_ms" type="u32" val="10"/>
+ <attr name="recv_timeout_ms" type="u32" val="10"/>
+ <attr name="queue_type" type="enum" val="kFollySPSCQueue"/>
 </obj>
 
 <obj class="Queue" id="trigdec_trb">
@@ -296,16 +304,7 @@
  <attr name="queue_type" type="enum" val="kFollySPSCQueue"/>
 </obj>
 
-	<obj class="Queue" id="trb_complete">
-		<attr name="data_type" type="string" val="TRBCompletion"/>
-		<attr name="capacity" type="u32" val="1"/>
-		<attr name="send_timeout_ms" type="u32" val="10"/>
-		<attr name="recv_timeout_ms" type="u32" val="10"/>
-		<attr name="queue_type" type="enum" val="kFollySPSCQueue"/>
-	</obj>
-
-
-	<obj class="RCApplication" id="my-controller">
+<obj class="RCApplication" id="my-controller">
  <attr name="commandline_parameters" type="string">
   <data val="file:///home/gjc/DUNE/fddaq-v4.2.0-a9/listrev/controller.json ${PORT} my-controller partition_name"/>
  </attr>
@@ -369,8 +368,9 @@
  <attr name="tr_queue_timeout" type="u32" val="100"/>
  <attr name="request_queue_timeout" type="u32" val="1000"/>
  <attr name="trigger_record_timeout_ms" type="u32" val="1000"/>
+ <attr name="trb_complete_timeout" type="u32" val="1000"/>
+ <attr name="max_sequence_length_ticks" type="s64" val="5000"/>
  <attr name="maximum_open_trigger_records" type="u32" val="10"/>
- <attr name="max_sequence_length_ticks" type="u64" val="5000"/>
 </obj>
 
 <obj class="TRBModule" id="test">
@@ -380,7 +380,7 @@
  </rel>
  <rel name="outputs">
   <ref class="Queue" id="trigrecord"/>
-	 <ref class="Queue" id="trb_complete"/>
+  <ref class="Queue" id="trb_complete"/>
   <ref class="NetworkConnection" id="datareq_ru0"/>
  </rel>
  <rel name="configuration" class="TRBConf" id="test"/>
@@ -484,21 +484,21 @@
 
 <obj class="VirtualHost" id="connectionservice">
  <rel name="uses">
-  <ref class="ProcessingResource" id="cpus"/>
+  <ref class="HostCores" id="cpus"/>
  </rel>
  <rel name="runs_on" class="PhysicalHost" id="localhost"/>
 </obj>
 
 <obj class="VirtualHost" id="controller">
  <rel name="uses">
-  <ref class="ProcessingResource" id="cpus"/>
+  <ref class="HostCores" id="cpus"/>
  </rel>
  <rel name="runs_on" class="PhysicalHost" id="localhost"/>
 </obj>
 
 <obj class="VirtualHost" id="vlocalhost">
  <rel name="uses">
-  <ref class="ProcessingResource" id="cpus"/>
+  <ref class="HostCores" id="cpus"/>
  </rel>
  <rel name="runs_on" class="PhysicalHost" id="localhost"/>
 </obj>
