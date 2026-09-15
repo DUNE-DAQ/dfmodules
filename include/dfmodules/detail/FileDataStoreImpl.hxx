@@ -53,9 +53,8 @@ namespace dunedaq::dfmodules {
                                   current_free_space,
                                   (m_free_space_safety_factor_for_write * obj_size),
                                   msg_oss.str());
-      assert(m_file_handle);
       std::string msg =
-        "writing a " + obj_name + " to file" + m_file_handle->get_file_name();
+        "writing a " + obj_name + " to file" + (m_file_handle ? " " + m_file_handle->get_file_name() : "");
       throw RetryableDataStoreProblem(ERS_HERE, get_name(), msg, issue);
     }
   }
