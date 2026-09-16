@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="ASCII"?>
+<?xml version="1.0" encoding="TEXT"?>
 
 <!-- oks-data version 2.2 -->
 
@@ -63,12 +63,12 @@
 
 <oks-data>
 
-<info name="" type="" num-of-items="62" oks-format="data" oks-version="862f2957270" created-by="gjc" created-on="thinkpad" creation-time="20231116T105446" last-modified-by="eflumerf" last-modified-on="ironvirt9.mshome.net" last-modification-time="20260827T192751"/>
+<info name="" type="" num-of-items="62" oks-format="data" oks-version="862f2957270" created-by="gjc" created-on="thinkpad" creation-time="20231116T105446" last-modified-by="eflumerf" last-modified-on="ironvirt9.IRONDOMAIN.local" last-modification-time="20241023T204135"/>
 
 <include>
  <file path="schema/confmodel/dunedaq.schema.xml"/>
  <file path="schema/appmodel/application.schema.xml"/>
- <file path="test/config/hdf5write_test_hwmap.data.xml"/>
+ <file path="test/schema/dfmodules/datastore_derived.schema.xml">
 </include>
 
 <comments>
@@ -94,14 +94,14 @@
  </rel>
 </obj>
 
-<obj class="DataStoreConf" id="default">
- <attr name="type" type="string" val="HDF5DataStore"/>
+<obj class="DataStoreConfTestDeriv" id="default">
+ <attr name="type" type="string" val="SummaryTextDataStore"/>
  <attr name="directory_path" type="string" val="."/>
  <attr name="mode" type="enum" val="all-per-file"/>
  <attr name="max_file_size" type="u64" val="4294967296"/>
  <attr name="disable_unique_filename_suffix" type="bool" val="0"/>
  <attr name="free_space_safety_factor" type="s32" val="5"/>
- <rel name="file_layout_params" class="HDF5FileLayoutParams" id="default"/>
+ <attr name="derivval" type="s32" val="773"/>
  <rel name="filename_params" class="FilenameParams" id="default"/>
 </obj>
 
@@ -110,7 +110,7 @@
  <attr name="min_write_retry_time_ms" type="s32" val="1"/>
  <attr name="max_write_retry_time_ms" type="s32" val="1000"/>
  <attr name="write_retry_time_increase_factor" type="s32" val="2"/>
- <rel name="data_store_params" class="DataStoreConf" id="default"/>
+ <rel name="data_store_params" class="DataStoreConfTestDeriv" id="default"/>
 </obj>
 
 <obj class="DataWriterModule" id="dwm-01">
@@ -120,7 +120,7 @@
 <obj class="DetectorConfig" id="dummy-detector">
  <attr name="tpg_channel_map" type="string" val="PD2HDChannelMap"/>
  <attr name="clock_speed_hz" type="u32" val="62500000"/>
- <attr name="op_env" type="string" val="hdf5writetest"/>
+ <attr name="op_env" type="string" val="stubwritetest"/>
  <attr name="offline_data_stream" type="string" val="cosmics"/>
 </obj>
 
@@ -310,9 +310,9 @@
 
 <obj class="Queue" id="trigger_record_q">
  <attr name="data_type" type="string" val="TriggerRecord"/>
- <attr name="capacity" type="u32" val="1"/>
  <attr name="send_timeout_ms" type="u32" val="10"/>
  <attr name="recv_timeout_ms" type="u32" val="10"/>
+ <attr name="capacity" type="u32" val="1"/>
  <attr name="queue_type" type="enum" val="kFollySPSCQueue"/>
 </obj>
 
@@ -525,14 +525,14 @@
 
 <obj class="VirtualHost" id="connectionservice">
  <rel name="uses">
-  <ref class="HostCores" id="cpus"/>
+  <ref class="ProcessingResource" id="cpus"/>
  </rel>
  <rel name="runs_on" class="PhysicalHost" id="localhost"/>
 </obj>
 
 <obj class="VirtualHost" id="controller">
  <rel name="uses">
-  <ref class="HostCores" id="cpus"/>
+  <ref class="ProcessingResource" id="cpus"/>
  </rel>
  <rel name="runs_on" class="PhysicalHost" id="localhost"/>
 </obj>

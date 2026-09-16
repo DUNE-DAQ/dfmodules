@@ -1,6 +1,13 @@
 /**
- * @file HDF5Write_test.cxx Application that tests and demonstrates
- * the write functionality of the HDF5DataStore class.
+ * @file SummaryTextWrite_test.cxx Application that ostensibly tests and
+ * demonstrates the write functionality of the SummaryTextDataStore class,
+ * but can be more properly thought of as a test of the base class
+ * from which it inherits, FileDataStoreImpl
+ *
+ * This is heavily modeled on the HDF5Write unit tests, with
+ * adjustments where necessary (max file size different in the
+ * multiple-output-file test; no check for a ".writing" suffix for
+ * files in the process of being written to)
  *
  * This is part of the DUNE DAQ Application Framework, copyright 2020.
  * Licensing/copyright details are in the COPYING file that you should have
@@ -8,9 +15,10 @@
  */
 
 #include "dfmodules/DataStore.hpp"
+#include "dfmodules/DataStoreConfTestDeriv.hpp"
 
-// We need the actual HDF5DataStore.hpp plugin header so the unit tests can access its exceptions
-#include "../plugins/HDF5DataStore.hpp" // NOLINT(build/include_path)
+// We need the actual SummaryTextDataStore.hpp plugin header so the unit tests can access its exceptions
+#include "../plugins/SummaryTextDataStore.hpp" // NOLINT(build/include_path)
 
 #include "appmodel/DataWriterModule.hpp"
 #include "appmodel/DataWriterConf.hpp"
@@ -20,7 +28,7 @@
 #include "appmodel/DataStoreConf.hpp"
 #include "detdataformats/DetID.hpp"
 
-#define BOOST_TEST_MODULE HDF5Write_test // NOLINT
+#define BOOST_TEST_MODULE SummaryTextWrite_test // NOLINT
 
 #include "boost/test/unit_test.hpp"
 
@@ -109,7 +117,7 @@ create_trigger_record(int trig_num, int fragment_size, int element_count)
     fh.sequence_number = 0;
     fh.fragment_type =
       static_cast<dunedaq::daqdataformats::fragment_type_t>(dunedaq::daqdataformats::FragmentType::kWIB);
-    fh.detector_id = static_cast<uint16_t>(dunedaq::detdataformats::DetID::Subdetector::kHD_TPC);
+    fh.detector_id = static_cast<uint16_t>(dunedaq::detdataformats::DetID::Subdetector::kHD_TPC); // NOLINT(build/unsigned)
     fh.element_id = dunedaq::daqdataformats::SourceID(stype_to_use, ele_num);
     std::unique_ptr<dunedaq::daqdataformats::Fragment> frag_ptr(
       new dunedaq::daqdataformats::Fragment(dummy_data, fragment_size));
@@ -125,11 +133,11 @@ create_trigger_record(int trig_num, int fragment_size, int element_count)
 
 struct CfgFixture
 {
-  CfgFixture(std::string sessionName)
+  explicit CfgFixture(std::string sessionName)
   {
     TLOG_DEBUG(4) << "Creating CfgFixture";
     setenv("DUNEDAQ_SESSION", sessionName.c_str(), 1);
-    std::string oksConfig = "oksconflibs:test/config/hdf5write_test.data.xml";
+    std::string oksConfig = "oksconflibs:test/config/stubwrite_test.data.xml";
     std::string appName = "TestApp";
     cfgMgr = std::make_shared<dunedaq::appfwk::ConfigurationManager>(oksConfig, appName, sessionName);
     TLOG_DEBUG(4) << "Done with CfgFixture";
@@ -143,11 +151,26 @@ struct CfgFixture
   std::shared_ptr<dunedaq::appfwk::ConfigurationManager> cfgMgr;
 };
 
-BOOST_AUTO_TEST_SUITE(HDF5Write_test)
+BOOST_AUTO_TEST_SUITE(SummaryTextWrite_test)
 
 BOOST_AUTO_TEST_CASE(NullConfiguration)
 {
-  BOOST_CHECK_THROW(make_data_store("HDF5DataStore", "dummy", nullptr, "dummy"), dunedaq::dfmodules::FileDataStoreImplBadConfiguration);
+  BOOST_CHECK_THROW(make_data_store("SummaryTextDataStore", "dummy", nullptr, "dummy"), dunedaq::dfmodules::FileDataStoreImplBadConfiguration);
+}
+
+BOOST_AUTO_TEST_CASE(CheckDerivation)
+{
+  CfgFixture cfg("test-session-3-1");
+  auto data_writer_conf = cfg.cfgMgr->get_dal<dunedaq::appmodel::DataWriterModule>("dwm-01")->get_configuration();
+  auto data_store_conf = data_writer_conf->get_data_store_params();
+
+  auto data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.cfgMgr, "dwm-01");
+  BOOST_REQUIRE(data_store_ptr != nullptr);
+
+  const auto stub_data_store_ptr {dynamic_cast<const dunedaq::dfmodules::SummaryTextDataStore*>(data_store_ptr.get())}; // NOLINT(runtime/rtti)
+  BOOST_REQUIRE(stub_data_store_ptr != nullptr);
+
+  BOOST_REQUIRE_EQUAL(stub_data_store_ptr->get_derivval(), 773); // 773 should be the value in the config
 }
 
 BOOST_AUTO_TEST_CASE(WriteEventFiles)
@@ -160,7 +183,7 @@ BOOST_AUTO_TEST_CASE(WriteEventFiles)
   const int fragment_size = 10 + sizeof(dunedaq::daqdataformats::FragmentHeader);
 
   // delete any pre-existing files so that we start with a clean slate
-  std::string delete_pattern = "hdf5writetest.*\\.hdf5";
+  std::string delete_pattern = "stubwritetest.*\\.txt";
   delete_files_matching_pattern(file_path, delete_pattern);
 
   // create the DataStore
@@ -178,10 +201,10 @@ BOOST_AUTO_TEST_CASE(WriteEventFiles)
   for (int trigger_number = 1; trigger_number <= trigger_count; ++trigger_number)
     data_store_ptr->write(create_trigger_record(trigger_number, fragment_size, link_count * apa_count));
 
-  data_store_ptr.reset(); // explicit destruction
+  data_store_ptr.reset();
 
   // check that the expected number of files was created
-  std::string search_pattern = "hdf5writetest.*\\.hdf5";
+  std::string search_pattern = "stubwritetest.*\\.txt";
   std::vector<std::string> file_list = get_files_matching_pattern(file_path, search_pattern);
   BOOST_REQUIRE_EQUAL(file_list.size(), trigger_count);
 
@@ -201,7 +224,7 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
   const int fragment_size = 10 + sizeof(dunedaq::daqdataformats::FragmentHeader);
 
   // delete any pre-existing files so that we start with a clean slate
-  std::string delete_pattern = "hdf5writetest.*\\.hdf5";
+  std::string delete_pattern = "stubwritetest.*\\.txt";
   delete_files_matching_pattern(file_path, delete_pattern);
 
   // create the DataStore
@@ -218,58 +241,12 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
   for (int trigger_number = 1; trigger_number <= trigger_count; ++trigger_number)
     data_store_ptr->write(create_trigger_record(trigger_number, fragment_size, apa_count * link_count));
 
-  data_store_ptr.reset(); // explicit destruction
+  data_store_ptr.reset();
 
   // check that the expected number of files was created
-  std::string search_pattern = "hdf5writetest.*\\.hdf5";
+  std::string search_pattern = "stubwritetest.*\\.txt";
   std::vector<std::string> file_list = get_files_matching_pattern(file_path, search_pattern);
   BOOST_REQUIRE_EQUAL(file_list.size(), 1);
-
-  // clean up the files that were created
-  file_list = delete_files_matching_pattern(file_path, delete_pattern);
-  delete_files_matching_pattern(file_path, "HardwareMap.*\\.txt");
-  BOOST_REQUIRE_EQUAL(file_list.size(), 1);
-}
-
-BOOST_AUTO_TEST_CASE(CheckWritingSuffix)
-{
-  std::string file_path(std::filesystem::temp_directory_path());
-
-  const int trigger_count = 5;
-  const int apa_count = 3;
-  const int link_count = 1;
-  const int fragment_size = 10 + sizeof(dunedaq::daqdataformats::FragmentHeader);
-
-  // delete any pre-existing files so that we start with a clean slate
-  std::string delete_pattern = "hdf5writetest.*\\.hdf5";
-  delete_files_matching_pattern(file_path, delete_pattern);
-
-  // create the DataStore
-  CfgFixture cfg("test-session-3-1");
-  auto data_writer_conf = cfg.cfgMgr->get_dal<dunedaq::appmodel::DataWriterModule>("dwm-01")->get_configuration();
-  auto data_store_conf = data_writer_conf->get_data_store_params();
-
-  auto data_store_conf_obj = data_store_conf->config_object();
-  data_store_conf_obj.set_by_val<std::string>("directory_path", file_path);
-
-  auto data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.cfgMgr, "dwm-01");
-  
-  // write several events, each with several fragments
-  for (int trigger_number = 1; trigger_number <= trigger_count; ++trigger_number) {
-    data_store_ptr->write(create_trigger_record(trigger_number, fragment_size, apa_count * link_count));
-
-    // check that the .writing file is there
-    std::string search_pattern = "hdf5writetest.*\\.writing";
-    std::vector<std::string> file_list = get_files_matching_pattern(file_path, search_pattern);
-    BOOST_REQUIRE_EQUAL(file_list.size(), 1);
-  }
-
-  data_store_ptr.reset(); // explicit destruction
-
-  // check that the expected number of files was created
-  std::string search_pattern = "hdf5writetest.*\\.writing";
-  std::vector<std::string> file_list = get_files_matching_pattern(file_path, search_pattern);
-  BOOST_REQUIRE_EQUAL(file_list.size(), 0);
 
   // clean up the files that were created
   file_list = delete_files_matching_pattern(file_path, delete_pattern);
@@ -280,6 +257,10 @@ BOOST_AUTO_TEST_CASE(CheckWritingSuffix)
 BOOST_AUTO_TEST_CASE(NoDuplicateTimeSlices)
 {
   std::string file_path(std::filesystem::temp_directory_path());
+
+  // delete any pre-existing files so that we start with a clean slate
+  std::string delete_pattern = "stubwritetest.*\\.txt";
+  delete_files_matching_pattern(file_path, delete_pattern);
 
   CfgFixture cfg("test-session-3-1");
   auto data_writer_conf = cfg.cfgMgr->get_dal<dunedaq::appmodel::DataWriterModule>("dwm-01")->get_configuration();
@@ -295,13 +276,13 @@ BOOST_AUTO_TEST_CASE(NoDuplicateTimeSlices)
 
   data_store_ptr->write(timeslice);
 
-  std::string search_pattern = "hdf5writetest.*\\.writing";
+  std::string search_pattern = "stubwritetest.*\\.txt";
   std::vector<std::string> file_list = get_files_matching_pattern(file_path, search_pattern);
   BOOST_REQUIRE_EQUAL(file_list.size(), 1);
 
   BOOST_CHECK_THROW(data_store_ptr->write(identical_timeslice), dunedaq::dfmodules::IgnorableDataStoreProblem);
 
-  delete_files_matching_pattern(file_path, "hdf5writetest.*\\.hdf5");
+  delete_files_matching_pattern(file_path, delete_pattern);
 }
 
 BOOST_AUTO_TEST_CASE(WriteToBadOutputArea)
@@ -338,14 +319,11 @@ BOOST_AUTO_TEST_CASE(FileSizeLimitResultsInMultipleFiles)
 
   const int trigger_count = 15;
   const int apa_count = 5;
-  const int link_count = 10;
+  const int link_count = 1;
   const int fragment_size = 10000;
 
-  // 5 APAs times 10 links times 10000 bytes per fragment gives 500,000 bytes per TR
-  // So, 15 TRs would give 7,500,000 bytes total.
-
   // delete any pre-existing files so that we start with a clean slate
-  std::string delete_pattern = "hdf5writetest.*\\.hdf5";
+  std::string delete_pattern = "stubwritetest.*\\.txt";
   delete_files_matching_pattern(file_path, delete_pattern);
 
   // create the DataStore
@@ -355,7 +333,9 @@ BOOST_AUTO_TEST_CASE(FileSizeLimitResultsInMultipleFiles)
 
   auto data_store_conf_obj = data_store_conf->config_object();
   data_store_conf_obj.set_by_val<std::string>("directory_path", file_path);
-  data_store_conf_obj.set_by_val<int>("max_file_size", 3000000); // goal is 6 events per file
+
+  // Tiny max file size needed since each trigger record just gets a simple line of text written out
+  data_store_conf_obj.set_by_val<int>("max_file_size", 100); 
 
   auto data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.cfgMgr, "dwm-01");
   
@@ -363,18 +343,18 @@ BOOST_AUTO_TEST_CASE(FileSizeLimitResultsInMultipleFiles)
   for (int trigger_number = 1; trigger_number <= trigger_count; ++trigger_number)
     data_store_ptr->write(create_trigger_record(trigger_number, fragment_size, apa_count * link_count));
 
-  data_store_ptr.reset(); // explicit destruction
+  data_store_ptr.reset();
 
   // check that the expected number of files was created
-  std::string search_pattern = "hdf5writetest.*\\.hdf5";
+  std::string search_pattern = "stubwritetest.*\\.txt";
   std::vector<std::string> file_list = get_files_matching_pattern(file_path, search_pattern);
-  // 7,500,000 bytes stored in files of size 3,000,000 should result in three files.
-  BOOST_REQUIRE_EQUAL(file_list.size(), 3);
+  // With very small max_file_size (100 bytes) and minimal SUMMARYTEXT output, we should have multiple files
+  BOOST_REQUIRE_EQUAL(file_list.size(), 15);
 
   // clean up the files that were created
   file_list = delete_files_matching_pattern(file_path, delete_pattern);
   delete_files_matching_pattern(file_path, "HardwareMap.*\\.txt");
-  BOOST_REQUIRE_EQUAL(file_list.size(), 3);
+  BOOST_REQUIRE_EQUAL(file_list.size(), 15);
 }
 
 BOOST_AUTO_TEST_CASE(SmallFileSizeLimitDataBlockListWrite)
@@ -389,7 +369,7 @@ BOOST_AUTO_TEST_CASE(SmallFileSizeLimitDataBlockListWrite)
   // 5 APAs times 100000 bytes per fragment gives 500,000 bytes per TR
 
   // delete any pre-existing files so that we start with a clean slate
-  std::string delete_pattern = "hdf5writetest.*\\.hdf5";
+  std::string delete_pattern = "stubwritetest.*\\.txt";
   delete_files_matching_pattern(file_path, delete_pattern);
 
   // create the DataStore
@@ -407,10 +387,10 @@ BOOST_AUTO_TEST_CASE(SmallFileSizeLimitDataBlockListWrite)
   for (int trigger_number = 1; trigger_number <= trigger_count; ++trigger_number)
     data_store_ptr->write(create_trigger_record(trigger_number, fragment_size, apa_count * link_count));
 
-  data_store_ptr.reset(); // explicit destruction
+  data_store_ptr.reset();
 
   // check that the expected number of files was created
-  std::string search_pattern = "hdf5writetest.*\\.hdf5";
+  std::string search_pattern = "stubwritetest.*\\.txt";
   std::vector<std::string> file_list = get_files_matching_pattern(file_path, search_pattern);
   // each TriggerRecord should be stored in its own file
   BOOST_REQUIRE_EQUAL(file_list.size(), 5);
