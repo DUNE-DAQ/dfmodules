@@ -137,7 +137,7 @@ struct CfgFixture
   {
     TLOG_DEBUG(4) << "Creating CfgFixture";
     setenv("DUNEDAQ_SESSION", sessionName.c_str(), 1);
-    std::string oksConfig = "oksconflibs:test/config/stubwrite_test.data.xml";
+    std::string oksConfig = "oksconflibs:test/config/summarytextwrite_test.data.xml";
     std::string appName = "TestApp";
     cfgMgr = std::make_shared<dunedaq::appfwk::ConfigurationManager>(oksConfig, appName, sessionName);
     TLOG_DEBUG(4) << "Done with CfgFixture";
