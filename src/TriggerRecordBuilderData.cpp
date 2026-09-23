@@ -33,7 +33,8 @@ TriggerRecordBuilderData::TriggerRecordBuilderData(std::string connection_name, 
   , m_is_busy(false)
   , m_in_error(false)
   , m_connection_name(connection_name)
-{}
+{
+}
 
 TriggerRecordBuilderData::TriggerRecordBuilderData(std::string connection_name,
                                                    size_t busy_threshold,
@@ -104,8 +105,7 @@ TriggerRecordBuilderData::complete_assignment(daqdataformats::trigger_number_t t
     metadata_fun(m_metadata);
 
   ++m_complete_counter;
-  auto completion_time =
-    std::chrono::duration_cast<std::chrono::microseconds>(now - dec_ptr->assigned_time);
+  auto completion_time = std::chrono::duration_cast<std::chrono::microseconds>(now - dec_ptr->assigned_time);
   if (completion_time.count() < m_min_complete_time.load())
     m_min_complete_time.store(completion_time.count());
   if (completion_time.count() > m_max_complete_time.load())
@@ -113,11 +113,11 @@ TriggerRecordBuilderData::complete_assignment(daqdataformats::trigger_number_t t
 
   opmon::TRCompleteInfo i;
   i.set_completion_time(completion_time.count());
-  i.set_tr_number( dec_ptr->decision.trigger_number );
-  i.set_run_number( dec_ptr->decision.run_number );
-  i.set_trigger_type( dec_ptr->decision.trigger_type );
-  publish( std::move(i), {}, opmonlib::to_level(opmonlib::EntryOpMonLevel::kEventDriven) );
-  
+  i.set_tr_number(dec_ptr->decision.trigger_number);
+  i.set_run_number(dec_ptr->decision.run_number);
+  i.set_trigger_type(dec_ptr->decision.trigger_type);
+  publish(std::move(i), {}, opmonlib::to_level(opmonlib::EntryOpMonLevel::kEventDriven));
+
   return dec_ptr;
 }
 
@@ -166,10 +166,10 @@ TriggerRecordBuilderData::add_assignment(std::shared_ptr<AssignedTriggerDecision
 }
 
 void
-TriggerRecordBuilderData::generate_opmon_data() 
+TriggerRecordBuilderData::generate_opmon_data()
 {
   metric_t info;
-  info.set_min_time_since_assignment( std::numeric_limits<time_counter_t>::max() );
+  info.set_min_time_since_assignment(std::numeric_limits<time_counter_t>::max());
   info.set_max_time_since_assignment(0);
 
   time_counter_t time = 0;
@@ -187,22 +187,22 @@ TriggerRecordBuilderData::generate_opmon_data()
       info.set_max_time_since_assignment(us_since_assignment.count());
   }
   lk.unlock();
-  
+
   info.set_total_time_since_assignment(time);
 
   // estimate of the capcity
   auto completed_trigger_records = m_complete_counter.exchange(0);
-  if ( completed_trigger_records > 0 ) {
-    m_last_average_time = 1e-6*0.5*(m_min_complete_time.exchange(0) + m_max_complete_time.exchange(0)); // in seconds     
+  if (completed_trigger_records > 0) {
+    m_last_average_time =
+      1e-6 * 0.5 * (m_min_complete_time.exchange(0) + m_max_complete_time.exchange(0)); // in seconds
   }
 
-  if ( m_last_average_time > 0. ) {
+  if (m_last_average_time > 0.) {
     // prediction rate metrics
-    info.set_capacity_rate( 0.5*(m_busy_threshold.load()+m_free_threshold.load())/m_last_average_time );
+    info.set_capacity_rate(0.5 * (m_busy_threshold.load() + m_free_threshold.load()) / m_last_average_time);
   }
-  
+
   publish(std::move(info));
-  
 }
 
 std::chrono::microseconds
