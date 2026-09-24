@@ -137,14 +137,13 @@ TPBundleHandler::add_tpset(trigger::TPSet&& tpset)
   if (tsidx_from_begin_time <= m_slice_index_offset) {
     auto lk = std::lock_guard<std::mutex>(m_accumulator_map_mutex);
     int64_t diff = static_cast<int64_t>(tsidx_from_begin_time) - static_cast<int64_t>(m_slice_index_offset);
-    if (! m_one_or_more_time_slices_have_aged_out) {
-      TLOG() << "Updating the slice numbers of existing accumulators by " << (1-diff);
+    if (!m_one_or_more_time_slices_have_aged_out) {
+      TLOG() << "Updating the slice numbers of existing accumulators by " << (1 - diff);
       for (auto& [local_tsidx, local_accum] : m_timeslice_accumulators) {
         local_accum.update_slice_number(1 - diff);
       }
       m_slice_index_offset -= (1 - diff);
-    }
-    else {
+    } else {
       ers::warning(TardyTPSetReceived(ERS_HERE, tpset.origin.id, tpset.start_time, diff));
       return;
     }
@@ -155,10 +154,8 @@ TPBundleHandler::add_tpset(trigger::TPSet&& tpset)
     {
       auto lk = std::lock_guard<std::mutex>(m_accumulator_map_mutex);
       if (m_timeslice_accumulators.count(tsidx) == 0) {
-        TimeSliceAccumulator accum(tsidx * m_slice_interval,
-                                   (tsidx + 1) * m_slice_interval,
-                                   tsidx - m_slice_index_offset,
-                                   m_run_number);
+        TimeSliceAccumulator accum(
+          tsidx * m_slice_interval, (tsidx + 1) * m_slice_interval, tsidx - m_slice_index_offset, m_run_number);
         m_timeslice_accumulators[tsidx] = accum;
       }
     }
@@ -199,7 +196,9 @@ TPBundleHandler::get_properly_aged_timeslices()
     m_timeslice_accumulators.erase(tsidx);
   }
 
-  if (list_of_timeslices.size() > 0) {m_one_or_more_time_slices_have_aged_out = true;}
+  if (list_of_timeslices.size() > 0) {
+    m_one_or_more_time_slices_have_aged_out = true;
+  }
   return list_of_timeslices;
 }
 

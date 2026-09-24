@@ -14,10 +14,10 @@
 
 #include "daqdataformats/TimeSlice.hpp"
 #include "daqdataformats/Types.hpp"
-#include "trgdataformats/TriggerPrimitive.hpp"
 #include "ers/Issue.hpp"
-#include "trigger/TPSet.hpp"
 #include "logging/Logging.hpp" // NOTE: if ISSUES ARE DECLARED BEFORE include logging/Logging.hpp, TLOG_DEBUG<<issue wont work.
+#include "trgdataformats/TriggerPrimitive.hpp"
+#include "trigger/TPSet.hpp"
 
 #include <chrono>
 #include <map>
@@ -44,8 +44,8 @@ ERS_DECLARE_ISSUE(dfmodules,
 ERS_DECLARE_ISSUE(dfmodules,
                   TardyTPSetReceived,
                   "Received a TPSet with a timestamp that is too early compared to ones that have already "
-                  << "been processed, sourceid=" << tpset_source_id << ", start_time=" << tpset_start_time
-                  << ", the calculated timeslice_id is " << tsid,
+                    << "been processed, sourceid=" << tpset_source_id << ", start_time=" << tpset_start_time
+                    << ", the calculated timeslice_id is " << tsid,
                   ((size_t)tpset_source_id)((daqdataformats::timestamp_t)tpset_start_time)((int64_t)tsid))
 // Re-enable coverage checking LCOV_EXCL_STOP
 
@@ -94,10 +94,7 @@ public:
     return m_update_time;
   }
 
-  void update_slice_number(int delta)
-  {
-    m_slice_number += delta;
-  }
+  void update_slice_number(int delta) { m_slice_number += delta; }
 
 private:
   daqdataformats::timestamp_t m_begin_time;

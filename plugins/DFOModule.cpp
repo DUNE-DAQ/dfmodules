@@ -93,7 +93,6 @@ DFOModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcfg)
   }
   if (m_busy_sender == nullptr) {
     throw appfwk::MissingConnection(ERS_HERE, get_name(), datatype_to_string<dfmessages::TriggerInhibit>(), "output");
-  
   }
 
   m_dfo_conf = mdal->get_configuration();
@@ -149,7 +148,8 @@ DFOModule::do_start(const CommandData_t& payload)
     auto sender = iom->get_sender<dfmessages::TriggerDecision>(trb_conn);
     if (sender != nullptr) {
       bool is_ready = sender->is_ready_for_sending(std::chrono::milliseconds(100));
-      TLOG_DEBUG(0) << "The TriggerDecision sender for " << trb_conn << " " << (is_ready ? "is" : "is not") << " ready.";
+      TLOG_DEBUG(0) << "The TriggerDecision sender for " << trb_conn << " " << (is_ready ? "is" : "is not")
+                    << " ready.";
     }
   }
   iom->add_callback<dfmessages::TriggerDecisionToken>(
@@ -196,7 +196,7 @@ DFOModule::do_stop(const CommandData_t& /*args*/)
 
   std::lock_guard<std::mutex> guard(m_trigger_counters_mutex);
   m_trigger_counters.clear();
-  
+
   TLOG() << get_name() << " successfully stopped";
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_stop() method";
 }
@@ -219,18 +219,17 @@ DFOModule::receive_trigger_decision(const dfmessages::TriggerDecision& decision)
                                     << decision.trigger_number << " and run " << decision.run_number
                                     << " (current run is " << m_run_number << ")";
   if (decision.run_number != m_run_number) {
-    ers::error(DFOModuleRunNumberMismatch(
-      ERS_HERE, decision.run_number, m_run_number, "MLT", decision.trigger_number));
+    ers::error(DFOModuleRunNumberMismatch(ERS_HERE, decision.run_number, m_run_number, "MLT", decision.trigger_number));
     return;
   }
 
   auto decision_received = std::chrono::steady_clock::now();
   ++m_received_decisions;
   auto trigger_types = unpack_types(decision.trigger_type);
-  for ( const auto t : trigger_types ) {
+  for (const auto t : trigger_types) {
     ++get_trigger_counter(t).received;
   }
-  
+
   std::chrono::steady_clock::time_point decision_assigned;
   do {
 
@@ -255,8 +254,7 @@ DFOModule::receive_trigger_decision(const dfmessages::TriggerDecision& decision)
                                         << " to connection " << assignment->connection_name;
       break;
     } else {
-      ers::error(
-        TRBModuleAppUpdate(ERS_HERE, assignment->connection_name, "Could not send Trigger Decision"));
+      ers::error(TRBModuleAppUpdate(ERS_HERE, assignment->connection_name, "Could not send Trigger Decision"));
       m_dataflow_availability[assignment->connection_name]->set_in_error(true);
     }
 
@@ -340,11 +338,11 @@ DFOModule::find_slot(const dfmessages::TriggerDecision& decision)
 }
 
 void
-DFOModule::generate_opmon_data() 
+DFOModule::generate_opmon_data()
 {
 
   opmon::DFOInfo info;
-  info.set_tokens_received( m_received_tokens.exchange(0) );
+  info.set_tokens_received(m_received_tokens.exchange(0));
   info.set_decisions_sent(m_sent_decisions.exchange(0));
   info.set_decisions_received(m_received_decisions.exchange(0));
   info.set_waiting_for_decision(m_waiting_for_decision.exchange(0));
@@ -352,16 +350,16 @@ DFOModule::generate_opmon_data()
   info.set_forwarding_decision(m_forwarding_decision.exchange(0));
   info.set_waiting_for_token(m_waiting_for_token.exchange(0));
   info.set_processing_token(m_processing_token.exchange(0));
-  publish( std::move(info) );
+  publish(std::move(info));
 
-  std::lock_guard<std::mutex>	guard(m_trigger_counters_mutex);
-  for ( auto & [type, counts] : m_trigger_counters ) {
+  std::lock_guard<std::mutex> guard(m_trigger_counters_mutex);
+  for (auto& [type, counts] : m_trigger_counters) {
     opmon::TriggerInfo ti;
     ti.set_received(counts.received.exchange(0));
     ti.set_completed(counts.completed.exchange(0));
     auto name = dunedaq::trgdataformats::get_trigger_candidate_type_names()[type];
-    publish( std::move(ti), {{"type", name}} );
-   }
+    publish(std::move(ti), { { "type", name } });
+  }
 }
 
 void
@@ -382,14 +380,14 @@ DFOModule::receive_trigger_complete_token(const dfmessages::TriggerDecisionToken
   }
 
   TLOG_DEBUG(TLVL_TDTOKEN_RECEIVED) << get_name() << " Received TriggerDecisionToken for trigger_number "
-                                    << token.trigger_number << " and run " << token.run_number
-                                    << " (current run is " << m_run_number << ")";
+                                    << token.trigger_number << " and run " << token.run_number << " (current run is "
+                                    << m_run_number << ")";
   // add a check to see if the application data found
   if (token.run_number != m_run_number) {
     std::ostringstream oss_source;
     oss_source << "TRB at connection " << token.decision_destination;
-    ers::error(DFOModuleRunNumberMismatch(
-      ERS_HERE, token.run_number, m_run_number, oss_source.str(), token.trigger_number));
+    ers::error(
+      DFOModuleRunNumberMismatch(ERS_HERE, token.run_number, m_run_number, oss_source.str(), token.trigger_number));
     return;
   }
 
@@ -406,7 +404,8 @@ DFOModule::receive_trigger_complete_token(const dfmessages::TriggerDecisionToken
   try {
     auto dec_ptr = app_it->second->complete_assignment(token.trigger_number, m_metadata_function);
     auto trigger_types = unpack_types(dec_ptr->decision.trigger_type);
-    for ( const auto t : trigger_types ) ++ get_trigger_counter(t).completed;
+    for (const auto t : trigger_types)
+      ++get_trigger_counter(t).completed;
   } catch (AssignedTriggerDecisionNotFound const& err) {
     ers::error(err);
   }

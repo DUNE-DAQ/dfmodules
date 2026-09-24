@@ -11,17 +11,17 @@
 
 #include "appfwk/DAQModule.hpp"
 #include "appmodel/TRMonRequestorConf.hpp"
-#include "iomanager/IOManager.hpp"
-#include "dfmessages/TriggerDecisionToken.hpp"
 #include "dfmessages/TRMonRequest.hpp"
-#include "utilities/WorkerThread.hpp"
+#include "dfmessages/TriggerDecisionToken.hpp"
 #include "dfmodules/opmon/TRMonRequestorModule.pb.h"
+#include "iomanager/IOManager.hpp"
+#include "utilities/WorkerThread.hpp"
 
 #include <atomic>
-#include <memory>
 #include <chrono>
-#include <string>
 #include <map>
+#include <memory>
+#include <string>
 
 namespace dunedaq::dfmodules {
 class TRMonRequestorModule : public appfwk::DAQModule
@@ -44,7 +44,6 @@ public:
   void generate_opmon_data() override;
 
 protected:
-
   using token_receiver_t = iomanager::ReceiverConcept<dfmessages::TriggerDecisionToken>;
   using trmon_sender_t = iomanager::SenderConcept<dfmessages::TRMonRequest>;
 
@@ -82,8 +81,9 @@ private:
   std::shared_ptr<token_receiver_t> m_token_receiver;
 
   // Monitoring
-  using const_metric_counter_t = std::invoke_result<decltype(&dunedaq::dfmodules::opmon::TRMonRequestorInfo::trigger_records_requested),
-						    dunedaq::dfmodules::opmon::TRMonRequestorInfo>::type;
+  using const_metric_counter_t =
+    std::invoke_result<decltype(&dunedaq::dfmodules::opmon::TRMonRequestorInfo::trigger_records_requested),
+                       dunedaq::dfmodules::opmon::TRMonRequestorInfo>::type;
   using metric_counter_t = std::remove_const<const_metric_counter_t>::type;
   std::atomic<metric_counter_t> m_trigger_records_requested{ 0 };
 };

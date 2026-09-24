@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.12)
-project(dfmodules VERSION 6.0.1)
+project(dfmodules VERSION 6.0.2)
 
 find_package(daq-cmake REQUIRED)
 daq_setup_environment()
@@ -23,10 +23,10 @@ daq_protobuf_codegen( opmon/*.proto )
 
 ##############################################################################
 daq_add_library( TriggerInhibitAgent.cpp TriggerRecordBuilderData.cpp TPBundleHandler.cpp
-                 LINK_LIBRARIES 
+                 LINK_LIBRARIES
                  opmonlib::opmonlib ers::ers HighFive appfwk::appfwk logging::logging stdc++fs dfmessages::dfmessages utilities::utilities trigger::trigger detdataformats::detdataformats trgdataformats::trgdataformats)
 
-      
+
 daq_add_plugin( HDF5DataStore     duneDataStore LINK_LIBRARIES dfmodules hdf5libs::hdf5libs stdc++fs)
 
 daq_add_plugin( FragmentAggregatorModule    duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager )

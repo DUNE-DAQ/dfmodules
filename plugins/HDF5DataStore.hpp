@@ -193,10 +193,11 @@ public:
     if (m_compression_level != 0 && m_recorded_size != 0) {
       // Without compression, the uncompressed raw data size is approximately the total file size, so it
       // serves as an approximation of what would have been written without compression
-      float compression_factor = (float) m_file_handle->get_uncompressed_raw_data_size() / m_file_handle->get_total_file_size();
+      float compression_factor =
+        (float)m_file_handle->get_uncompressed_raw_data_size() / m_file_handle->get_total_file_size();
       size_of_next_write = tr_size / compression_factor;
     }
-    if (! increment_file_index_if_needed(size_of_next_write)) {
+    if (!increment_file_index_if_needed(size_of_next_write)) {
       if (m_operation_mode == "one-event-per-file") {
         if (m_current_record_number != std::numeric_limits<size_t>::max() &&
             tr.get_header_ref().get_trigger_number() != m_current_record_number) {
@@ -260,10 +261,11 @@ public:
     if (m_compression_level != 0 && m_recorded_size != 0) {
       // Without compression, the uncompressed raw data size is approximately the total file size, so it
       // serves as an approximation of what would have been written without compression
-      float compression_factor = (float) m_file_handle->get_uncompressed_raw_data_size() / m_file_handle->get_total_file_size();
+      float compression_factor =
+        (float)m_file_handle->get_uncompressed_raw_data_size() / m_file_handle->get_total_file_size();
       size_of_next_write = ts_size / compression_factor;
     }
-    if (! increment_file_index_if_needed(size_of_next_write)) {
+    if (!increment_file_index_if_needed(size_of_next_write)) {
       if (m_operation_mode == "one-event-per-file") {
         if (m_current_record_number != std::numeric_limits<size_t>::max() &&
             ts.get_header().timeslice_number != m_current_record_number) {
@@ -310,8 +312,7 @@ public:
    *
    * This method may throw an exception if it finds a problem.
    */
-  void prepare_for_run(daqdataformats::run_number_t run_number,
-                       bool run_is_for_test_purposes)
+  void prepare_for_run(daqdataformats::run_number_t run_number, bool run_is_for_test_purposes)
   {
     m_run_number = run_number;
     m_run_is_for_test_purposes = run_is_for_test_purposes;
@@ -499,8 +500,8 @@ private:
       // (determined inside the HDF5RawDataFile constructor) could disagree.
       std::string unique_filename = file_name;
       if (!m_disable_unique_suffix) {
-	time_t now = time(0);
-	std::string file_creation_timestamp = boost::posix_time::to_iso_string(boost::posix_time::from_time_t(now));
+        time_t now = time(0);
+        std::string file_creation_timestamp = boost::posix_time::to_iso_string(boost::posix_time::from_time_t(now));
         // timestamp substring
         size_t ufn_len = unique_filename.length();
         if (ufn_len > 6) { // len GT 6 gives us some confidence that we have at least x.hdf5
@@ -542,7 +543,8 @@ private:
         // m_file_handle->write_attribute("data_format_version",(int)m_key_translator_ptr->get_current_version());
         m_file_handle->write_attribute("operational_environment", (std::string)m_operational_environment);
         m_file_handle->write_attribute("offline_data_stream", (std::string)m_offline_data_stream);
-        m_file_handle->write_attribute("run_was_for_test_purposes", (std::string)(m_run_is_for_test_purposes ? "true" : "false"));
+        m_file_handle->write_attribute("run_was_for_test_purposes",
+                                       (std::string)(m_run_is_for_test_purposes ? "true" : "false"));
       }
     } else {
       TLOG_DEBUG(TLVL_BASIC) << get_name() << ": Pointer file to  " << m_basic_name_of_open_file
