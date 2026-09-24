@@ -7,8 +7,8 @@
  * received with this code.
  */
 
-#include "opmonlib/TestOpMonManager.hpp"
 #include "dfmodules/TriggerRecordBuilderData.hpp"
+#include "opmonlib/TestOpMonManager.hpp"
 
 #define BOOST_TEST_MODULE TriggerRecordBuilderData_test // NOLINT
 
@@ -110,10 +110,10 @@ BOOST_AUTO_TEST_CASE(Assignments)
   BOOST_REQUIRE_EQUAL(trbd_p->used_slots(), 0);
 
   auto latency =
-    std::chrono::duration_cast<std::chrono::microseconds>(complete_time - assignment->assigned_time)
-      .count();
+    std::chrono::duration_cast<std::chrono::microseconds>(complete_time - assignment->assigned_time).count();
 
-  BOOST_REQUIRE_CLOSE(static_cast<double>(trbd_p->average_latency(start_time).count()), static_cast<double>(latency), 5);
+  BOOST_REQUIRE_CLOSE(
+    static_cast<double>(trbd_p->average_latency(start_time).count()), static_cast<double>(latency), 5);
 
   auto null_got_assignment = trbd_p->get_assignment(2);
   BOOST_REQUIRE_EQUAL(null_got_assignment, nullptr);
@@ -125,7 +125,6 @@ BOOST_AUTO_TEST_CASE(Assignments)
   auto remnants = trbd_p->flush();
   BOOST_REQUIRE_EQUAL(trbd_p->used_slots(), 0);
   BOOST_REQUIRE_EQUAL(remnants.size(), 1);
-  
 }
 
 BOOST_AUTO_TEST_CASE(Exceptions)
@@ -184,7 +183,5 @@ BOOST_AUTO_TEST_CASE(Exceptions)
   BOOST_REQUIRE_EXCEPTION(
     trbd.add_assignment(err_assignment), NoSlotsAvailable, [](NoSlotsAvailable const&) { return true; });
 }
-
-
 
 BOOST_AUTO_TEST_SUITE_END()

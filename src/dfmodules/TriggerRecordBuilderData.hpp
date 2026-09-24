@@ -17,9 +17,9 @@
 #include "dfmodules/opmon/TRBuilderData.pb.h"
 
 #include "ers/Issue.hpp"
+#include "logging/Logging.hpp" // NOTE: if ISSUES ARE DECLARED BEFORE include logging/Logging.hpp, TLOG_DEBUG<<issue wont work.
 #include "nlohmann/json.hpp"
 #include "opmonlib/MonitorableObject.hpp"
-#include "logging/Logging.hpp" // NOTE: if ISSUES ARE DECLARED BEFORE include logging/Logging.hpp, TLOG_DEBUG<<issue wont work.
 
 #include <atomic>
 #include <chrono>
@@ -61,7 +61,8 @@ struct AssignedTriggerDecision
     : decision(dec)
     , assigned_time(std::chrono::steady_clock::now())
     , connection_name(conn_name)
-  {}
+  {
+  }
 };
 
 class TriggerRecordBuilderData : public opmonlib::MonitorableObject
@@ -77,7 +78,7 @@ public:
   TriggerRecordBuilderData& operator=(TriggerRecordBuilderData&&) = delete;
 
   ~TriggerRecordBuilderData() = default;
-  
+
   bool is_busy() const { return m_in_error || m_is_busy; }
   size_t used_slots() const { return m_assigned_trigger_decisions.size(); }
 
@@ -118,12 +119,12 @@ private:
 
   // monitoring
   using metric_t = dunedaq::dfmodules::opmon::DFApplicationInfo;
-  using const_time_counter_t = std::invoke_result<decltype(&metric_t::min_time_since_assignment),
-						  metric_t>::type;
+  using const_time_counter_t = std::invoke_result<decltype(&metric_t::min_time_since_assignment), metric_t>::type;
   using time_counter_t = std::remove_const<const_time_counter_t>::type;
   std::atomic<uint32_t> m_complete_counter{ 0 };
-  std::atomic<time_counter_t> m_min_complete_time{ std::numeric_limits<time_counter_t>::max() }, m_max_complete_time{ 0 };  // in us
-  double m_last_average_time{0.};
+  std::atomic<time_counter_t> m_min_complete_time{ std::numeric_limits<time_counter_t>::max() },
+    m_max_complete_time{ 0 }; // in us
+  double m_last_average_time{ 0. };
 };
 } // namespace dfmodules
 } // namespace dunedaq

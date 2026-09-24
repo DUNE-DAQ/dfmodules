@@ -10,8 +10,8 @@
 #include "dfmodules/CommonIssues.hpp"
 #include "dfmodules/opmon/FragmentAggregatorModule.pb.h"
 
-#include "appmodel/FragmentAggregatorModule.hpp"
 #include "appmodel/FragmentAggregatorConf.hpp"
+#include "appmodel/FragmentAggregatorModule.hpp"
 #include "confmodel/Connection.hpp"
 #include "confmodel/QueueWithSourceId.hpp"
 #include "daqdataformats/FragmentHeader.hpp"
