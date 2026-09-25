@@ -102,6 +102,8 @@ utility_functions.set_rtcm_trigger_params(conf_dict, trigger_rate=trigger_rate,
                                           readout_window_backshift_ticks=0,
                                           readout_window_before_ticks=readout_window_time_before,
                                           readout_window_after_ticks=readout_window_time_after)
+conf_dict.trace_debug_levels = {"fast": {"DataWriterModule": 10, "DFOModule": 10, "DFOModule": 10,
+                                         "DFOModule": 10, "DFOModule": 24}}
 
 conf_dict.config_substitutions.append(
     data_classes.attribute_substitution(
