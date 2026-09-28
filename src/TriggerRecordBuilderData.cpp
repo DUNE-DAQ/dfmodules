@@ -15,6 +15,7 @@
 #include "logging/Logging.hpp"
 
 #include <limits>
+#include <list>
 #include <memory>
 #include <string>
 #include <utility>
@@ -24,8 +25,7 @@
  */
 #define TRACE_NAME "TRBData" // NOLINT
 
-namespace dunedaq {
-namespace dfmodules {
+namespace dunedaq::dfmodules {
 
 TriggerRecordBuilderData::TriggerRecordBuilderData(std::string connection_name, size_t busy_threshold)
   : m_busy_threshold(busy_threshold)
@@ -222,5 +222,4 @@ TriggerRecordBuilderData::average_latency(std::chrono::steady_clock::time_point 
   return sum / count;
 }
 
-} // namespace dfmodules
-} // namespace dunedaq
+} // namespace dunedaq::dfmodules

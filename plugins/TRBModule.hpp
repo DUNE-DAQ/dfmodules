@@ -6,8 +6,8 @@
  * received with this code.
  */
 
-#ifndef DFMODULES_PLUGINS_TRIGGERRECORDBUILDER_HPP_
-#define DFMODULES_PLUGINS_TRIGGERRECORDBUILDER_HPP_
+#ifndef DFMODULES_PLUGINS_TRBMODULE_HPP_
+#define DFMODULES_PLUGINS_TRBMODULE_HPP_
 
 #include "appmodel/ReadoutApplication.hpp"
 #include "appmodel/SmartDaqApplication.hpp"
@@ -158,8 +158,10 @@ ERS_DECLARE_ISSUE(dfmodules,               ///< Namespace
                   "sending incomplete TriggerRecord downstream "
                     << optional_stop_time_phrase << " (trigger/run_number=" << id << ", " << num_frags_present << " of "
                     << num_components_requested << " fragments included)",
-                  ((std::string)optional_stop_time_phrase)((dfmodules::TriggerId)id)((int)num_frags_present)(
-                    (int)num_components_requested) ///< Message parameters
+                  ((std::string)optional_stop_time_phrase) ///< Message parameters
+                  ((dfmodules::TriggerId)id)               ///< Message parameters
+                  ((int)num_frags_present)                 ///< Message parameters
+                  ((int)num_components_requested)          ///< Message parameters
 )
 
 /**
@@ -310,4 +312,4 @@ private:
 } // namespace dfmodules
 } // namespace dunedaq
 
-#endif // DFMODULES_PLUGINS_TRIGGERRECORDBUILDER_HPP_
+#endif // DFMODULES_PLUGINS_TRBMODULE_HPP_

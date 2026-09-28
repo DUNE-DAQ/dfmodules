@@ -132,7 +132,7 @@ FragmentAggregatorModule::do_start(const CommandData_t& /* args */)
   // the first data-taking run in a DAQ session. Such delays can lead to undesirable
   // system behavior like trigger inhibits.
   auto iom = iomanager::IOManager::get();
-  for (auto trb_conn : m_trb_conn_ids) {
+  for (auto const& trb_conn : m_trb_conn_ids) {
     auto sender = iom->get_sender<std::unique_ptr<daqdataformats::Fragment>>(trb_conn);
     if (sender != nullptr) {
       bool is_ready = sender->is_ready_for_sending(std::chrono::milliseconds(100));

@@ -125,7 +125,7 @@ create_trigger_record(int trig_num, int fragment_size, int element_count)
 
 struct CfgFixture
 {
-  CfgFixture(std::string sessionName)
+  explicit CfgFixture(std::string sessionName)
   {
     TLOG_DEBUG(4) << "Creating CfgFixture";
     setenv("DUNEDAQ_SESSION", sessionName.c_str(), 1);

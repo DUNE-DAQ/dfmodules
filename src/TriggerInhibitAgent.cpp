@@ -25,8 +25,7 @@ enum
   TLVL_WORK_STEPS = 10
 };
 
-namespace dunedaq {
-namespace dfmodules {
+namespace dunedaq::dfmodules {
 
 TriggerInhibitAgent::TriggerInhibitAgent(const std::string& parent_name,
                                          std::shared_ptr<trigdecreceiver_t> our_input,
@@ -174,5 +173,4 @@ TriggerInhibitAgent::do_work(std::atomic<bool>& running_flag)
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_work() method";
 }
 
-} // namespace dfmodules
-} // namespace dunedaq
+} // namespace dunedaq::dfmodules
