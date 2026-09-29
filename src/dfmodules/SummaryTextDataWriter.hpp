@@ -22,8 +22,8 @@
 #include <string>
 
 namespace dunedaq {
-  ERS_DECLARE_ISSUE(dfmodules, CantOpenFile, "Unable to open " << file_name, ((std::string)file_name))
-  ERS_DECLARE_ISSUE(dfmodules, CantWriteToFile, "Unable to write line to " << file_name, ((std::string)file_name))
+ERS_DECLARE_ISSUE(dfmodules, CantOpenFile, "Unable to open " << file_name, ((std::string)file_name))
+ERS_DECLARE_ISSUE(dfmodules, CantWriteToFile, "Unable to write line to " << file_name, ((std::string)file_name))
 } // namespace dunedaq
 
 namespace dunedaq::dfmodules {
@@ -39,9 +39,7 @@ public:
   bool timeslice_already_exists(const daqdataformats::TimeSlice& ts) const;
 
   std::string get_file_name() const;
-  std::string get_file_name_extension() const {
-    return "txt";
-  }
+  std::string get_file_name_extension() const { return "txt"; }
   size_t get_recorded_size() const noexcept;
   size_t get_uncompressed_raw_data_size() const noexcept;
   size_t get_total_file_size() const noexcept;
@@ -52,7 +50,7 @@ public:
   SummaryTextDataWriter& operator=(const SummaryTextDataWriter&) = delete;
   SummaryTextDataWriter(SummaryTextDataWriter&&) = delete;
   SummaryTextDataWriter& operator=(SummaryTextDataWriter&&) = delete;
-  
+
 private:
   void write_line(const std::string& line);
 

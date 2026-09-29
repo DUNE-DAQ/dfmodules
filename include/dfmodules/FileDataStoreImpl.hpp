@@ -68,9 +68,8 @@ ERS_DECLARE_ISSUE_BASE(dfmodules,
                        FileDataStoreImplBadConfiguration,
                        appfwk::GeneralDAQModuleIssue,
                        "Construction of the FileDataStoreImpl base class failed due to faulty configuration",
-                       ((std::string)name),
-		       )
-  
+                       ((std::string)name), )
+
 ERS_DECLARE_ISSUE_BASE(dfmodules,
                        InvalidOperationMode,
                        appfwk::GeneralDAQModuleIssue,
@@ -104,11 +103,11 @@ ERS_DECLARE_ISSUE_BASE(dfmodules,
                        ((std::string)path)((size_t)free_bytes)((size_t)needed_bytes)((std::string)criteria))
 
 ERS_DECLARE_ISSUE_BASE(dfmodules,
-		       TimeSliceAlreadyExists,
-		       appfwk::GeneralDAQModuleIssue,
-		       "The TimeSlice record for timeslice #" << timeslice_number << " already exists.",
-		       ((std::string)name),
-		       ((daqdataformats::timeslice_number_t)timeslice_number))
+                       TimeSliceAlreadyExists,
+                       appfwk::GeneralDAQModuleIssue,
+                       "The TimeSlice record for timeslice #" << timeslice_number << " already exists.",
+                       ((std::string)name),
+                       ((daqdataformats::timeslice_number_t)timeslice_number))
 
 // Re-enable coverage checking LCOV_EXCL_STOP
 namespace dfmodules {
@@ -118,8 +117,7 @@ template<typename T>
 concept FileHandleConcept = requires(T file_handle,
                                      const T const_file_handle,
                                      const daqdataformats::TriggerRecord& tr,
-                                     const daqdataformats::TimeSlice& ts)
-{
+                                     const daqdataformats::TimeSlice& ts) {
   { file_handle.write(tr) } -> std::same_as<void>;
   { file_handle.write(ts) } -> std::same_as<void>;
   { file_handle.timeslice_already_exists(ts) } -> std::convertible_to<bool>;
@@ -135,7 +133,7 @@ concept FileHandleConcept = requires(T file_handle,
  * want in a data store which writes to a file irrespective of file
  * type. See top of this header file for details.
  */
-template <FileHandleConcept FileHandleClass> // E.g., SummaryTextDataWriter
+template<FileHandleConcept FileHandleClass> // E.g., SummaryTextDataWriter
 class FileDataStoreImpl : public DataStore
 {
 
@@ -145,7 +143,7 @@ public:
     TLVL_BASIC = 2
   };
 
-  static constexpr size_t s_unset_record_number { std::numeric_limits<size_t>::max() };
+  static constexpr size_t s_unset_record_number{ std::numeric_limits<size_t>::max() };
 
   /**
    * @brief FileDataStoreImpl Constructor
@@ -153,32 +151,35 @@ public:
    *
    */
   explicit FileDataStoreImpl(std::string const& name,
-                         std::shared_ptr<appfwk::ConfigurationManager> mcfg,
-                         std::string const& writer_name)
+                             std::shared_ptr<appfwk::ConfigurationManager> mcfg,
+                             std::string const& writer_name)
     : DataStore(name)
-    , m_file_handle {nullptr}
-    , m_run_number {0}
-    , m_file_index {0}
-    , m_writer_identifier {writer_name}
-    , m_config_params { mcfg ? mcfg->get_dal<appmodel::DataStoreConf>(name) : nullptr }
-    , m_session { mcfg ? mcfg->get_session() : nullptr }
-    , m_compression_level { m_config_params ? m_config_params->get_compression_level() : static_cast<unsigned>(0) } // NOLINT(build/unsigned)
-    , m_operational_environment { m_session ? m_session->get_detector_configuration()->get_op_env() : "unavailable" }
-    , m_offline_data_stream { m_session ? m_session->get_detector_configuration()->get_offline_data_stream() : "unavailable" }
-    , m_run_is_for_test_purposes { false }
-    , m_basic_name_of_open_file {""}
-    , m_recorded_size {0}
-    , m_uncompressed_raw_data_size {0}
-    , m_previous_file_size {0}
-    , m_total_file_size {0}
-    , m_current_record_number {s_unset_record_number}
-    , m_new_bytes {0}
-    , m_new_objects {0}
-    , m_operation_mode { m_config_params ? m_config_params->get_mode() : "unavailable" }
-    , m_path {m_config_params ?  m_config_params->get_directory_path() : "unavailable" }
-    , m_max_file_size {m_config_params ?  m_config_params->get_max_file_size() : std::numeric_limits<size_t>::max() }
-    , m_disable_unique_suffix { m_config_params ? m_config_params->get_disable_unique_filename_suffix() : false }
-    , m_free_space_safety_factor_for_write {m_config_params ? m_config_params->get_free_space_safety_factor() : std::numeric_limits<float>::max() }
+    , m_file_handle{ nullptr }
+    , m_run_number{ 0 }
+    , m_file_index{ 0 }
+    , m_writer_identifier{ writer_name }
+    , m_config_params{ mcfg ? mcfg->get_dal<appmodel::DataStoreConf>(name) : nullptr }
+    , m_session{ mcfg ? mcfg->get_session() : nullptr }
+    , m_compression_level{ m_config_params ? m_config_params->get_compression_level() : static_cast<unsigned>(0) }
+    // NOLINT(build/unsigned)
+    , m_operational_environment{ m_session ? m_session->get_detector_configuration()->get_op_env() : "unavailable" }
+    , m_offline_data_stream{ m_session ? m_session->get_detector_configuration()->get_offline_data_stream()
+                                       : "unavailable" }
+    , m_run_is_for_test_purposes{ false }
+    , m_basic_name_of_open_file{ "" }
+    , m_recorded_size{ 0 }
+    , m_uncompressed_raw_data_size{ 0 }
+    , m_previous_file_size{ 0 }
+    , m_total_file_size{ 0 }
+    , m_current_record_number{ s_unset_record_number }
+    , m_new_bytes{ 0 }
+    , m_new_objects{ 0 }
+    , m_operation_mode{ m_config_params ? m_config_params->get_mode() : "unavailable" }
+    , m_path{ m_config_params ? m_config_params->get_directory_path() : "unavailable" }
+    , m_max_file_size{ m_config_params ? m_config_params->get_max_file_size() : std::numeric_limits<size_t>::max() }
+    , m_disable_unique_suffix{ m_config_params ? m_config_params->get_disable_unique_filename_suffix() : false }
+    , m_free_space_safety_factor_for_write{ m_config_params ? m_config_params->get_free_space_safety_factor()
+                                                            : std::numeric_limits<float>::max() }
   {
     TLOG_DEBUG(TLVL_BASIC) << get_name();
 
@@ -186,8 +187,7 @@ public:
       throw FileDataStoreImplBadConfiguration(ERS_HERE, get_name());
     }
 
-    if (m_operation_mode != "one-event-per-file"
-        && m_operation_mode != "all-per-file") {
+    if (m_operation_mode != "one-event-per-file" && m_operation_mode != "all-per-file") {
 
       throw InvalidOperationMode(ERS_HERE, get_name(), m_operation_mode);
     }
@@ -205,48 +205,31 @@ public:
 
   // Getter functions which can be used by the implementation of open_new_file
 
-  std::string get_application_name() const noexcept {
-     return m_writer_identifier;
-  }
+  std::string get_application_name() const noexcept { return m_writer_identifier; }
 
-  unsigned get_compression_level() const noexcept { // NOLINT(build/unsigned)
+  unsigned get_compression_level() const noexcept
+  { // NOLINT(build/unsigned)
     return m_compression_level;
   }
 
-  const appmodel::DataStoreConf& get_configuration() const noexcept {
-    return *m_config_params;
-  }
+  const appmodel::DataStoreConf& get_configuration() const noexcept { return *m_config_params; }
 
-  auto& get_file_handle() {
-    return m_file_handle;
-  }
+  auto& get_file_handle() { return m_file_handle; }
 
-  size_t get_file_index() const noexcept {
-    return m_file_index.load();
-  }
+  size_t get_file_index() const noexcept { return m_file_index.load(); }
 
-  const std::string& get_offline_data_stream() const noexcept {
-    return m_offline_data_stream;
-  }
+  const std::string& get_offline_data_stream() const noexcept { return m_offline_data_stream; }
 
-  const std::string& get_operational_environment() const noexcept {
-    return m_operational_environment;
-  }
+  const std::string& get_operational_environment() const noexcept { return m_operational_environment; }
 
-  bool get_run_is_for_test_purposes() const noexcept {
-    return m_run_is_for_test_purposes;
-  }
+  bool get_run_is_for_test_purposes() const noexcept { return m_run_is_for_test_purposes; }
 
-  daqdataformats::run_number_t get_run_number() const noexcept {
-    return m_run_number;
-  }
+  daqdataformats::run_number_t get_run_number() const noexcept { return m_run_number; }
 
-  const confmodel::Session& get_session() const noexcept {
-    return *m_session;
-  }
+  const confmodel::Session& get_session() const noexcept { return *m_session; }
 
   /**
-   * @brief FileDataStoreImpl write() 
+   * @brief FileDataStoreImpl write()
    * Method used to write TriggerRecords into the data
    * file. Operational mode defined in the configuration file.
    *
@@ -314,7 +297,7 @@ public:
     try {
 
       if (m_file_handle->timeslice_already_exists(ts)) {
-	throw TimeSliceAlreadyExists(ERS_HERE, get_name(), ts.get_header().timeslice_number);
+        throw TimeSliceAlreadyExists(ERS_HERE, get_name(), ts.get_header().timeslice_number);
       }
 
       m_file_handle->write(ts);
@@ -341,8 +324,7 @@ public:
    *
    * This method may throw an exception if it finds a problem.
    */
-  void prepare_for_run(daqdataformats::run_number_t run_number,
-                       bool run_is_for_test_purposes) override
+  void prepare_for_run(daqdataformats::run_number_t run_number, bool run_is_for_test_purposes) override
   {
     m_run_number = run_number;
     m_run_is_for_test_purposes = run_is_for_test_purposes;
@@ -400,7 +382,7 @@ public:
   FileDataStoreImpl& operator=(const FileDataStoreImpl&) = delete;
   FileDataStoreImpl(FileDataStoreImpl&&) = delete;
   FileDataStoreImpl& operator=(FileDataStoreImpl&&) = delete;
-  
+
 protected:
   void generate_opmon_data() override
   {
@@ -414,25 +396,28 @@ protected:
   }
 
 private:
-
   // Translates various available parameters (directory path, file extension, etc.) into the appropriate filename.
   std::string get_file_name(daqdataformats::run_number_t run_number) const;
 
-  // Throws a RetryableDataStoreProblem if (size of the object)*(free space safety factor) exceeds available space in m_path
+  // Throws a RetryableDataStoreProblem if (size of the object)*(free space safety factor) exceeds available space in
+  // m_path
   void throw_if_insufficient_space_for_object(size_t obj_size, const std::string& obj_name) const;
 
   // Available space in the path whose name is passed to get_free_space
   size_t get_free_space(const std::string& the_path) const;
-  
+
   // Check if a new file should be opened for the record and increment m_file_index if so
-  void increment_file_index_if_needed(const size_t size_of_object_to_write, const size_t object_record_number, const size_t current_record_number)
+  void increment_file_index_if_needed(const size_t size_of_object_to_write,
+                                      const size_t object_record_number,
+                                      const size_t current_record_number)
   {
-    float compression_factor {1.0};
+    float compression_factor{ 1.0 };
 
     if (m_compression_level != 0 && m_recorded_size != 0) {
       // Without compression, the uncompressed raw data size is approximately the total file size, so it
       // serves as an approximation of what would have been written without compression
-      compression_factor = static_cast<float>(m_file_handle->get_uncompressed_raw_data_size()) / m_file_handle->get_total_file_size();
+      compression_factor =
+        static_cast<float>(m_file_handle->get_uncompressed_raw_data_size()) / m_file_handle->get_total_file_size();
     }
 
     float size_of_next_write = size_of_object_to_write / compression_factor;
@@ -446,9 +431,8 @@ private:
     }
 
     // JCF, 06-27-2026: TODO: probably need to reset m_recorded_size, etc., as is done right above
-    if (m_operation_mode == "one-event-per-file" &&
-	current_record_number != s_unset_record_number &&
-	current_record_number != object_record_number) {
+    if (m_operation_mode == "one-event-per-file" && current_record_number != s_unset_record_number &&
+        current_record_number != object_record_number) {
       ++m_file_index;
       return;
     }
@@ -481,12 +465,14 @@ private:
       // (determined inside the HDF5RawDataFile constructor) could disagree.
       std::string unique_filename = file_name;
       if (!m_disable_unique_suffix) {
-	time_t now { time(nullptr) };
-	std::string file_creation_timestamp = boost::posix_time::to_iso_string(boost::posix_time::from_time_t(now));
+        time_t now{ time(nullptr) };
+        std::string file_creation_timestamp = boost::posix_time::to_iso_string(boost::posix_time::from_time_t(now));
         // timestamp substring
         size_t ufn_len = unique_filename.length();
-	size_t extension_length = m_file_handle->get_file_name_extension().size() + 1; // + 1 for the "." before the extension
-        if (ufn_len > extension_length + 1) { // this gives us some confidence that we have at least one character preceding the extension (e.g., x.hdf5)
+        size_t extension_length =
+          m_file_handle->get_file_name_extension().size() + 1; // + 1 for the "." before the extension
+        if (ufn_len > extension_length + 1) { // this gives us some confidence that we have at least one character
+                                              // preceding the extension (e.g., x.hdf5)
           std::string timestamp_substring = "_" + file_creation_timestamp;
           TLOG_DEBUG(TLVL_BASIC) << get_name() << ": timestamp substring for filename: " << timestamp_substring;
           unique_filename.insert(ufn_len - extension_length, timestamp_substring);
@@ -524,7 +510,7 @@ private:
   bool m_run_is_for_test_purposes;
 
   std::string m_basic_name_of_open_file;
-  
+
   // Size of data being written, excluding metadata
   std::atomic<size_t> m_recorded_size;
 
@@ -551,9 +537,8 @@ private:
   const size_t m_max_file_size;
   const bool m_disable_unique_suffix;
   float m_free_space_safety_factor_for_write;
-
 };
-  
+
 } // namespace dfmodules
 } // namespace dunedaq
 
