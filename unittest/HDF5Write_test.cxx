@@ -109,6 +109,7 @@ create_trigger_record(int trig_num, int fragment_size, int element_count)
     fh.sequence_number = 0;
     fh.fragment_type =
       static_cast<dunedaq::daqdataformats::fragment_type_t>(dunedaq::daqdataformats::FragmentType::kWIB);
+    // NOLINTNEXTLINE(build/unsigned)
     fh.detector_id = static_cast<uint16_t>(dunedaq::detdataformats::DetID::Subdetector::kHD_TPC);
     fh.element_id = dunedaq::daqdataformats::SourceID(stype_to_use, ele_num);
     std::unique_ptr<dunedaq::daqdataformats::Fragment> frag_ptr(

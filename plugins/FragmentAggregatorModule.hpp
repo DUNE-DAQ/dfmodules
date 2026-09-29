@@ -22,9 +22,11 @@
 
 #include <atomic>
 #include <map>
+#include <memory>
 #include <mutex>
 #include <string>
 #include <tuple>
+#include <vector>
 
 namespace dunedaq {
 /**

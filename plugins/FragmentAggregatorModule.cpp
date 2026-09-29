@@ -21,10 +21,13 @@
 #include "iomanager/IOManager.hpp"
 
 #include <iostream>
+#include <limits>
+#include <memory>
 #include <string>
+#include <tuple>
+#include <utility>
 
-namespace dunedaq {
-namespace dfmodules {
+namespace dunedaq::dfmodules {
 
 FragmentAggregatorModule::FragmentAggregatorModule(const std::string& name)
   : DAQModule(name)
@@ -75,6 +78,7 @@ FragmentAggregatorModule::generate_opmon_data()
 {
   if (m_data_requests_processed > 0) {
     opmon::FragmentAggregatorTimeInfo dr_times;
+    // NOLINTNEXTLINE(build/unsigned)
     dr_times.set_min_us(m_data_requests_time_min_us.exchange(std::numeric_limits<uint64_t>::max()));
     dr_times.set_max_us(m_data_requests_time_max_us.exchange(0));
     dr_times.set_average_us(m_data_requests_time_average_us.exchange(0) / m_data_requests_processed);
@@ -83,6 +87,7 @@ FragmentAggregatorModule::generate_opmon_data()
 
   if (m_fragments_processed > 0) {
     opmon::FragmentAggregatorTimeInfo frag_times;
+    // NOLINTNEXTLINE(build/unsigned)
     frag_times.set_min_us(m_fragments_time_min_us.exchange(std::numeric_limits<uint64_t>::max()));
     frag_times.set_max_us(m_fragments_time_max_us.exchange(0));
     frag_times.set_average_us(m_fragments_time_average_us.exchange(0) / m_fragments_processed);
@@ -119,9 +124,11 @@ FragmentAggregatorModule::do_start(const CommandData_t& /* args */)
   m_fragments_incomplete.store(0);
   m_fragments_invalid.store(0);
   m_fragments_time_average_us.store(0);
+  // NOLINTNEXTLINE(build/unsigned)
   m_fragments_time_min_us.store(std::numeric_limits<uint64_t>::max());
   m_fragments_time_max_us.store(0);
   m_data_requests_time_average_us.store(0);
+  // NOLINTNEXTLINE(build/unsigned)
   m_data_requests_time_min_us.store(std::numeric_limits<uint64_t>::max());
   m_data_requests_time_max_us.store(0);
 
@@ -265,14 +272,13 @@ FragmentAggregatorModule::process_fragment(std::unique_ptr<daqdataformats::Fragm
   }
 }
 
-uint64_t
+uint64_t // NOLINT(build/unsigned)
 FragmentAggregatorModule::get_current_time_us()
 {
   return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now().time_since_epoch())
     .count();
 }
 
-} // namespace dfmodules
-} // namespace dunedaq
+} // namespace dunedaq::dfmodules
 
 DEFINE_DUNE_DAQ_MODULE(dunedaq::dfmodules::FragmentAggregatorModule)
