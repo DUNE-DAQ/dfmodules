@@ -8,8 +8,8 @@
  * received with this code.
  */
 
-#ifndef DFMODULES_PLUGINS_TPSTREAMWRITER_HPP_
-#define DFMODULES_PLUGINS_TPSTREAMWRITER_HPP_
+#ifndef DFMODULES_PLUGINS_TPSTREAMWRITERMODULE_HPP_
+#define DFMODULES_PLUGINS_TPSTREAMWRITERMODULE_HPP_
 
 #include "dfmodules/DataStore.hpp"
 
@@ -116,8 +116,8 @@ ERS_DECLARE_ISSUE_BASE(dfmodules,
                        "Tardy TPs from SourceIDs [" << sid_list << "] were discarded from TimeSlice number " << trnum
                                                     << " (~" << sec_too_late << " sec too late)",
                        ((std::string)name),
-                       ((std::string)sid_list)((size_t)trnum)((float)sec_too_late))
+                       ((std::string)sid_list)((size_t)trnum)((float)sec_too_late)) // NOLINT(readability/casting)
 
 } // namespace dunedaq
 
-#endif // DFMODULES_PLUGINS_TPSTREAMWRITER_HPP_
+#endif // DFMODULES_PLUGINS_TPSTREAMWRITERMODULE_HPP_

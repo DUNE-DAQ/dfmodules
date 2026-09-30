@@ -6,8 +6,8 @@
  * received with this code.
  */
 
-#ifndef DFMODULES_PLUGINS_TRIGGERRECORDBUILDER_HPP_
-#define DFMODULES_PLUGINS_TRIGGERRECORDBUILDER_HPP_
+#ifndef DFMODULES_PLUGINS_TRBMODULE_HPP_
+#define DFMODULES_PLUGINS_TRBMODULE_HPP_
 
 #include "appmodel/ReadoutApplication.hpp"
 #include "appmodel/SmartDaqApplication.hpp"
@@ -92,7 +92,8 @@ struct TriggerId
 
   friend std::istream& operator>>(std::istream& in, TriggerId& id)
   {
-    char t1, t2;
+    char t1 = 0;
+    char t2 = 0;
     in >> id.trigger_number >> t1 >> id.sequence_number >> t2 >> id.run_number;
     return in;
   }
@@ -158,8 +159,10 @@ ERS_DECLARE_ISSUE(dfmodules,               ///< Namespace
                   "sending incomplete TriggerRecord downstream "
                     << optional_stop_time_phrase << " (trigger/run_number=" << id << ", " << num_frags_present << " of "
                     << num_components_requested << " fragments included)",
-                  ((std::string)optional_stop_time_phrase)((dfmodules::TriggerId)id)((int)num_frags_present)(
-                    (int)num_components_requested) ///< Message parameters
+                  ((std::string)optional_stop_time_phrase) ///< Message parameters // NOLINT
+                  ((dfmodules::TriggerId)id)               ///< Message parameters // NOLINT
+                  ((int)num_frags_present)                 ///< Message parameters // NOLINT
+                  ((uint64_t)num_components_requested)     ///< Message parameters // NOLINT
 )
 
 /**
@@ -276,6 +279,7 @@ private:
   std::list<dfmessages::TRMonRequest> m_mon_requests;
 
   // book related metrics
+  // NOLINTNEXTLINE(build/unsigned)
   using metric_counter_type = uint64_t; // decltype(triggerrecordbuilderinfo::Info::pending_trigger_decisions);
   mutable std::atomic<metric_counter_type> m_trigger_decisions_counter = { 0 }; // currently
   mutable std::atomic<metric_counter_type> m_fragment_counter = { 0 };          // currently
@@ -310,4 +314,4 @@ private:
 } // namespace dfmodules
 } // namespace dunedaq
 
-#endif // DFMODULES_PLUGINS_TRIGGERRECORDBUILDER_HPP_
+#endif // DFMODULES_PLUGINS_TRBMODULE_HPP_

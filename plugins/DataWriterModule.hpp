@@ -6,8 +6,8 @@
  * received with this code.
  */
 
-#ifndef DFMODULES_PLUGINS_DATAWRITER_HPP_
-#define DFMODULES_PLUGINS_DATAWRITER_HPP_
+#ifndef DFMODULES_PLUGINS_DATAWRITERMODULE_HPP_
+#define DFMODULES_PLUGINS_DATAWRITERMODULE_HPP_
 
 #include "dfmodules/DataStore.hpp"
 
@@ -104,7 +104,7 @@ private:
   inline double elapsed_seconds(std::chrono::steady_clock::time_point then,
                                 std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now()) const
   {
-    return std::chrono::duration_cast<std::chrono::seconds>(now - then).count();
+    return std::chrono::duration_cast<std::chrono::duration<double, std::ratio<1>>>(now - then).count();
   }
 };
 } // namespace dfmodules
@@ -136,4 +136,4 @@ ERS_DECLARE_ISSUE_BASE(dfmodules,
 
 } // namespace dunedaq
 
-#endif // DFMODULES_PLUGINS_DATAWRITER_HPP_
+#endif // DFMODULES_PLUGINS_DATAWRITERMODULE_HPP_

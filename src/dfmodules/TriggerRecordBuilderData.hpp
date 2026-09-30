@@ -121,7 +121,7 @@ private:
   using metric_t = dunedaq::dfmodules::opmon::DFApplicationInfo;
   using const_time_counter_t = std::invoke_result<decltype(&metric_t::min_time_since_assignment), metric_t>::type;
   using time_counter_t = std::remove_const<const_time_counter_t>::type;
-  std::atomic<uint32_t> m_complete_counter{ 0 };
+  std::atomic<uint32_t> m_complete_counter{ 0 }; // NOLINT(build/unsigned)
   std::atomic<time_counter_t> m_min_complete_time{ std::numeric_limits<time_counter_t>::max() },
     m_max_complete_time{ 0 }; // in us
   double m_last_average_time{ 0. };
