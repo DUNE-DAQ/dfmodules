@@ -33,7 +33,8 @@ ERS_DECLARE_ISSUE_BASE(dfmodules,
                        TriggerDecisionIncorrectRun,
                        appfwk::GeneralDAQModuleIssue,
                        "Received TriggerDecision message for trigger number "
-                         << trigger_number << " in run " << run_number << " which is not the current run (" << current_run << ")",
+                         << trigger_number << " in run " << run_number << " which is not the current run ("
+                         << current_run << ")",
                        ((std::string)name),
                        ((uint32_t)trigger_number)((uint32_t)run_number)((uint32_t)current_run)) // NOLINT
 

@@ -11,16 +11,16 @@
 
 #include "trgdataformats/TriggerCandidateData.hpp"
 
-#include <cstdint>
 #include <atomic>
 #include <bitset>
+#include <cstdint>
 #include <set>
 
 namespace dunedaq::dfmodules {
 
 struct DFOTriggerCounter
 {
-  std::atomic<uint64_t> received{ 0 }; // NOLINT
+  std::atomic<uint64_t> received{ 0 };  // NOLINT
   std::atomic<uint64_t> completed{ 0 }; // NOLINT
 
   static std::set<trgdataformats::TriggerCandidateData::Type> unpack_types(

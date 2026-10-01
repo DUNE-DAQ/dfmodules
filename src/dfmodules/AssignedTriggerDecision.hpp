@@ -16,7 +16,7 @@
 
 namespace dunedaq::dfmodules {
 
-    struct AssignedTriggerDecision
+struct AssignedTriggerDecision
 {
   dfmessages::TriggerDecision decision;
   std::chrono::steady_clock::time_point assigned_time;

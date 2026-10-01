@@ -676,7 +676,6 @@ BOOST_AUTO_TEST_CASE(AllDFOsAgreeOnAssignments)
   BOOST_REQUIRE_EQUAL(df2_metrics.duplicate_decisions_received(), df2_triggers.size() * 2);
   BOOST_REQUIRE_EQUAL(df3_metrics.duplicate_decisions_received(), df3_triggers.size() * 2);
 
-
   for (const auto& trig : df1_triggers) {
     send_trb_completion("df1", trig);
     std::this_thread::sleep_for(std::chrono::milliseconds(10));

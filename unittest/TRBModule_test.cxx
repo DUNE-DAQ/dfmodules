@@ -11,10 +11,10 @@
 
 #include "daqdataformats/SourceID.hpp"
 #include "dfmessages/DataRequest.hpp"
-#include "dfmessages/TriggerDecision.hpp"
-#include "dfmessages/TRBCompletion.hpp"
-#include "dfmessages/TriggerRecord_serialization.hpp"
 #include "dfmessages/Fragment_serialization.hpp"
+#include "dfmessages/TRBCompletion.hpp"
+#include "dfmessages/TriggerDecision.hpp"
+#include "dfmessages/TriggerRecord_serialization.hpp"
 #include "dfmodules/CommonIssues.hpp"
 #include "dfmodules/opmon/TRBModule.pb.h"
 #include "iomanager/IOManager.hpp"
@@ -46,22 +46,22 @@ struct CfgFixture
 {
   CfgFixture()
   {
-	std::string oksConfig = "oksconflibs:test/config/triggerrecordbuilder_test.data.xml";
-	std::string appName = "TestApp";
-	std::string sessionName = "partition_name";
-	cfgMgr = std::make_shared<dunedaq::appfwk::ConfigurationManager>(oksConfig, appName, sessionName);
-	get_iomanager()->configure(sessionName, cfgMgr->get_queues(), cfgMgr->get_networkconnections(), nullptr, opmgr);
+    std::string oksConfig = "oksconflibs:test/config/triggerrecordbuilder_test.data.xml";
+    std::string appName = "TestApp";
+    std::string sessionName = "partition_name";
+    cfgMgr = std::make_shared<dunedaq::appfwk::ConfigurationManager>(oksConfig, appName, sessionName);
+    get_iomanager()->configure(sessionName, cfgMgr->get_queues(), cfgMgr->get_networkconnections(), nullptr, opmgr);
   }
   ~CfgFixture() { get_iomanager()->reset(); }
 
   auto get_trb_info()
   {
-	opmgr.collect();
-	auto opmon_facility = opmgr.get_backend_facility();
-	auto list = opmon_facility->get_entries(std::regex(".*TRBInfo"));
-	BOOST_REQUIRE_EQUAL(list.size(), 1);
-	const auto& entry = list.front();
-	return opmonlib::from_entry<dfmodules::opmon::TRBInfo>(entry);
+    opmgr.collect();
+    auto opmon_facility = opmgr.get_backend_facility();
+    auto list = opmon_facility->get_entries(std::regex(".*TRBInfo"));
+    BOOST_REQUIRE_EQUAL(list.size(), 1);
+    const auto& entry = list.front();
+    return opmonlib::from_entry<dfmodules::opmon::TRBInfo>(entry);
   }
   auto get_trb_errors()
   {
@@ -106,7 +106,9 @@ recv_trbcomplete(const dfmessages::TRBCompletion& complete)
 }
 
 void
-send_trigdec(dfmessages::trigger_number_t trigger_number, dfmessages::run_number_t run_number = 1, int window_size = 2000)
+send_trigdec(dfmessages::trigger_number_t trigger_number,
+             dfmessages::run_number_t run_number = 1,
+             int window_size = 2000)
 {
   dunedaq::dfmessages::TriggerDecision td;
   td.trigger_number = trigger_number;
@@ -130,8 +132,8 @@ send_trigdec(dfmessages::trigger_number_t trigger_number, dfmessages::run_number
 
 void
 send_fragment(dfmessages::trigger_number_t trigger_number,
-			  dfmessages::run_number_t run_number = 1,
-			  daqdataformats::sequence_number_t sequence_number = 0)
+              dfmessages::run_number_t run_number = 1,
+              daqdataformats::sequence_number_t sequence_number = 0)
 {
   daqdataformats::FragmentHeader hdr;
   hdr.trigger_number = trigger_number;
@@ -144,11 +146,13 @@ send_fragment(dfmessages::trigger_number_t trigger_number,
   hdr.fragment_type = static_cast<daqdataformats::fragment_type_t>(daqdataformats::FragmentType::kWIBEth);
   hdr.size = sizeof(daqdataformats::FragmentHeader);
 
-  auto frag = std::make_unique<daqdataformats::Fragment>(&hdr, dunedaq::daqdataformats::Fragment::BufferAdoptionMode::kCopyFromBuffer);
+  auto frag = std::make_unique<daqdataformats::Fragment>(
+    &hdr, dunedaq::daqdataformats::Fragment::BufferAdoptionMode::kCopyFromBuffer);
 
   auto iom = iomanager::IOManager::get();
   TLOG() << "Sending Fragment for trigger number " << trigger_number << " to TRB";
-  iom->get_sender<std::unique_ptr<daqdataformats::Fragment>>("fragment")->send(std::move(frag), iomanager::Sender::s_block);
+  iom->get_sender<std::unique_ptr<daqdataformats::Fragment>>("fragment")
+    ->send(std::move(frag), iomanager::Sender::s_block);
 }
 
 BOOST_AUTO_TEST_CASE(CopyAndMoveSemantics)
@@ -379,7 +383,8 @@ BOOST_AUTO_TEST_CASE(FragmentTimeout)
 
   // Wait for timeout (configured to 1000ms)
   std::this_thread::sleep_for(std::chrono::milliseconds(1200));
-  send_fragment(999); // Send fragment for a different trigger number to avoid completing the trigger record, but process for stale
+  send_fragment(
+    999); // Send fragment for a different trigger number to avoid completing the trigger record, but process for stale
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
   // Should have timed out and sent incomplete trigger record
@@ -462,13 +467,11 @@ BOOST_AUTO_TEST_CASE(MultipleTriggers)
   opmgr.register_node("trb", trb);
   trb->init(cfgMgr);
 
-
   appfwk::DAQModule::CommandData_t null_data;
   appfwk::DAQModule::CommandData_t start_data;
   start_data.emplace("run", 1);
 
   trb->execute_command("conf", null_data);
-
 
   received_trb_completes.clear();
   received_trigger_records.clear();
@@ -479,7 +482,7 @@ BOOST_AUTO_TEST_CASE(MultipleTriggers)
 
   // Send multiple trigger decisions
   for (int i = 1; i <= 5; ++i) {
-	send_trigdec(i);
+    send_trigdec(i);
   }
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
@@ -489,7 +492,7 @@ BOOST_AUTO_TEST_CASE(MultipleTriggers)
 
   // Send all fragments
   for (int i = 1; i <= 5; ++i) {
-	send_fragment(i);
+    send_fragment(i);
   }
   std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
@@ -552,10 +555,8 @@ BOOST_AUTO_TEST_CASE(MultipleSequences)
   for (const auto& req : received_data_requests) {
     BOOST_REQUIRE_EQUAL(req.trigger_number, 100);
     request_sequences.insert(req.sequence_number);
-    TLOG() << "DataRequest: trigger=" << req.trigger_number
-           << ", sequence=" << req.sequence_number
-           << ", window=" << req.request_information.window_begin
-           << "-" << req.request_information.window_end;
+    TLOG() << "DataRequest: trigger=" << req.trigger_number << ", sequence=" << req.sequence_number
+           << ", window=" << req.request_information.window_begin << "-" << req.request_information.window_end;
   }
   BOOST_REQUIRE_EQUAL(request_sequences.size(), 3);
   BOOST_REQUIRE(request_sequences.count(0) > 0);
@@ -563,7 +564,7 @@ BOOST_AUTO_TEST_CASE(MultipleSequences)
   BOOST_REQUIRE(request_sequences.count(2) > 0);
 
   auto metric = get_trb_info();
-  BOOST_REQUIRE_EQUAL(metric.pending_trigger_decisions(), 3);  // 3 pending sequences
+  BOOST_REQUIRE_EQUAL(metric.pending_trigger_decisions(), 3); // 3 pending sequences
   BOOST_REQUIRE_EQUAL(metric.pending_fragments(), 3);
 
   // Send fragments for all three sequences
@@ -585,14 +586,12 @@ BOOST_AUTO_TEST_CASE(MultipleSequences)
     auto& hdr = tr->get_header_ref();
     BOOST_REQUIRE_EQUAL(hdr.get_trigger_number(), 100);
     BOOST_REQUIRE_EQUAL(hdr.get_run_number(), 1);
-    BOOST_REQUIRE_EQUAL(hdr.get_max_sequence_number(), 2);  // max sequence is 2 (0, 1, 2)
+    BOOST_REQUIRE_EQUAL(hdr.get_max_sequence_number(), 2); // max sequence is 2 (0, 1, 2)
 
     tr_sequences.insert(hdr.get_sequence_number());
 
-    TLOG() << "TriggerRecord: trigger=" << hdr.get_trigger_number()
-           << ", sequence=" << hdr.get_sequence_number()
-           << ", max_sequence=" << hdr.get_max_sequence_number()
-           << ", fragments=" << tr->get_fragments_ref().size();
+    TLOG() << "TriggerRecord: trigger=" << hdr.get_trigger_number() << ", sequence=" << hdr.get_sequence_number()
+           << ", max_sequence=" << hdr.get_max_sequence_number() << ", fragments=" << tr->get_fragments_ref().size();
 
     // Each sequence should have one fragment
     BOOST_REQUIRE_EQUAL(tr->get_fragments_ref().size(), 1);

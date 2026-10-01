@@ -451,7 +451,8 @@ void
 DFOModule::receive_dataflow_status(const dfmessages::DataflowStatus& status)
 {
   TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << " Received DataflowStatus from " << status.decision_destination
-                              << " for trigger_number " << status.trigger_id.trigger_number << " in run " << status.trigger_id.run_number;
+                              << " for trigger_number " << status.trigger_id.trigger_number << " in run "
+                              << status.trigger_id.run_number;
 
   ++m_received_statuses;
   {
@@ -467,10 +468,9 @@ DFOModule::receive_dataflow_status(const dfmessages::DataflowStatus& status)
 
     if (status.trigger_id.trigger_number != 0) {
       if (m_statuses_for_trigger.count(status.trigger_id) == 0 ||
-          m_statuses_for_trigger[status.trigger_id].count(status.decision_destination) ==
-            0 ||
-          m_statuses_for_trigger[status.trigger_id][status.decision_destination]
-              .iteration_number < status.iteration_number) {
+          m_statuses_for_trigger[status.trigger_id].count(status.decision_destination) == 0 ||
+          m_statuses_for_trigger[status.trigger_id][status.decision_destination].iteration_number <
+            status.iteration_number) {
         m_statuses_for_trigger[status.trigger_id][status.decision_destination] = status;
       }
     }
@@ -479,7 +479,8 @@ DFOModule::receive_dataflow_status(const dfmessages::DataflowStatus& status)
       if (!m_assigned_trigger_decisions.count(trigger)) {
         ers::info(UnexpectedTriggerDecision(ERS_HERE, get_name(), trigger.trigger_number, status.decision_destination));
         m_assigned_trigger_decisions[trigger] = std::make_shared<AssignedTriggerDecision>(
-          dfmessages::TriggerDecision(trigger.trigger_number, status.trigger_id.run_number), status.decision_destination);
+          dfmessages::TriggerDecision(trigger.trigger_number, status.trigger_id.run_number),
+          status.decision_destination);
       }
     }
     for (auto& trigger : status.triggers_writing) {
@@ -487,7 +488,8 @@ DFOModule::receive_dataflow_status(const dfmessages::DataflowStatus& status)
         ers::warning(
           UnexpectedTriggerDecision(ERS_HERE, get_name(), trigger.trigger_number, status.decision_destination));
         m_assigned_trigger_decisions[trigger] = std::make_shared<AssignedTriggerDecision>(
-          dfmessages::TriggerDecision(trigger.trigger_number, status.trigger_id.run_number), status.decision_destination);
+          dfmessages::TriggerDecision(trigger.trigger_number, status.trigger_id.run_number),
+          status.decision_destination);
       }
     }
 
@@ -517,7 +519,8 @@ DFOModule::find_slot(const dfmessages::TriggerDecision& decision)
 
   {
     std::lock_guard<std::mutex> guard(m_status_mutex);
-    for (const auto& [name, received_status] : m_statuses_for_trigger[{decision.run_number, decision.trigger_number}]) {
+    for (const auto& [name, received_status] :
+         m_statuses_for_trigger[{ decision.run_number, decision.trigger_number }]) {
       candidates.emplace_back(received_status);
     }
   }
@@ -599,7 +602,7 @@ DFOModule::assign_trigger_decision(const std::shared_ptr<AssignedTriggerDecision
                               << assignment->connection_name;
 
   std::lock_guard<std::mutex> lk(m_status_mutex);
-  m_assigned_trigger_decisions[{assignment->decision.run_number, assignment->decision.trigger_number}] = assignment;
+  m_assigned_trigger_decisions[{ assignment->decision.run_number, assignment->decision.trigger_number }] = assignment;
 }
 
 void
@@ -689,7 +692,7 @@ DFOModule::send_status_requests(dfmessages::trigger_number_t trigger, size_t ite
          std::chrono::steady_clock::now() - start_time < m_request_reply_wait) {
     std::unique_lock<std::mutex> guard(m_status_mutex);
     m_status_cv.wait_for(guard, m_request_reply_wait);
-    auto it = m_statuses_for_trigger.find({m_run_number, trigger});
+    auto it = m_statuses_for_trigger.find({ m_run_number, trigger });
     if (it != m_statuses_for_trigger.end() && !it->second.empty()) {
       statuses_received = it->second.size();
     }

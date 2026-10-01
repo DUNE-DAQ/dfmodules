@@ -9,9 +9,9 @@
 
 #include "DFOModule.hpp"
 
-#include "dfmessages/TriggerInhibit.hpp"
 #include "dfmessages/DataflowStatus.hpp"
 #include "dfmessages/DataflowStatusRequest.hpp"
+#include "dfmessages/TriggerInhibit.hpp"
 #include "dfmodules/CommonIssues.hpp"
 #include "dfmodules/opmon/DFOModule.pb.h"
 #include "iomanager/IOManager.hpp"
@@ -503,7 +503,7 @@ BOOST_AUTO_TEST_CASE(UnresponsiveDFAppRecovery)
 
   // Now simulate recovery: the DF app becomes responsive again with fresh heartbeat
   status.trigger_id.trigger_number = 0;
-  status.triggers_building.clear(); // Clear the stale state
+  status.triggers_building.clear();           // Clear the stale state
   status.triggers_building.insert({ 1, 30 }); // Still building trigger 30
   status.is_busy = false;
   send_status(status);

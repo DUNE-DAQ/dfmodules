@@ -177,8 +177,7 @@ private:
   std::unordered_map<std::string, std::shared_ptr<ReceivedDataflowStatus>> m_dataflow_statuses;
   std::unordered_map<dfmessages::TriggerId, std::unordered_map<std::string, dfmessages::DataflowStatus>>
     m_statuses_for_trigger;
-  std::unordered_map<dfmessages::TriggerId, std::shared_ptr<AssignedTriggerDecision>>
-    m_assigned_trigger_decisions;
+  std::unordered_map<dfmessages::TriggerId, std::shared_ptr<AssignedTriggerDecision>> m_assigned_trigger_decisions;
 
   std::atomic<bool> m_running_status{ false };
   mutable std::atomic<bool> m_last_notified_busy{ false };

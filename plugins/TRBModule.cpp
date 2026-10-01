@@ -382,8 +382,11 @@ TRBModule::fragments_callback(std::unique_ptr<daqdataformats::Fragment>& temp_fr
       ++m_fragment_counter;
       --m_pending_fragment_counter;
     } else {
-      ers::error(UnexpectedFragment(
-        ERS_HERE, temp_id.trigger_id, temp_id.sequence_number, temp_fragment->get_fragment_type_code(), temp_fragment->get_element_id()));
+      ers::error(UnexpectedFragment(ERS_HERE,
+                                    temp_id.trigger_id,
+                                    temp_id.sequence_number,
+                                    temp_fragment->get_fragment_type_code(),
+                                    temp_fragment->get_element_id()));
       ++m_unexpected_fragments;
     }
 
@@ -491,7 +494,10 @@ TRBModule::extract_trigger_record(const TriggerRecordId& id)
     m_pending_fragment_counter -= missing_fragments;
     temp->get_header_ref().set_status_bit(TriggerRecordStatusBits::kIncomplete, true);
 
-    ers::error(IncompleteTriggerRecord(ERS_HERE, (m_stop_requested.load() ? "at Stop time " : ""), id.trigger_id, id.sequence_number,
+    ers::error(IncompleteTriggerRecord(ERS_HERE,
+                                       (m_stop_requested.load() ? "at Stop time " : ""),
+                                       id.trigger_id,
+                                       id.sequence_number,
                                        temp->get_fragments_ref().size(),
                                        temp->get_header_ref().get_num_requested_components()));
   }
@@ -716,7 +722,8 @@ TRBModule::send_trigger_record(const TriggerRecordId& id)
   } // if m_mon_receiver
 
   bool wasSentSuccessfully = false;
-  auto max_seq_num = static_cast<dfmessages::sequence_number_t>(temp_record->get_header_ref().get_max_sequence_number());
+  auto max_seq_num =
+    static_cast<dfmessages::sequence_number_t>(temp_record->get_header_ref().get_max_sequence_number());
   do {
     try {
       m_trigger_record_output->send(std::move(temp_record), m_tr_queue_timeout);
@@ -751,7 +758,7 @@ TRBModule::check_stale_requests()
 
   if (m_trigger_timeout.count() > 0) {
 
-      TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Checking for stale trigger records";
+    TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Checking for stale trigger records";
     std::vector<TriggerRecordId> stale_triggers;
     {
       std::lock_guard<std::mutex> lk(m_trigger_records_mutex);
@@ -763,7 +770,8 @@ TRBModule::check_stale_requests()
 
         if (tr_time > m_trigger_timeout) {
 
-          ers::error(TimedOutTriggerDecision(ERS_HERE, it->first.trigger_id, tr.get_header_ref().get_trigger_timestamp()));
+          ers::error(
+            TimedOutTriggerDecision(ERS_HERE, it->first.trigger_id, tr.get_header_ref().get_trigger_timestamp()));
 
           // mark trigger record for seding
           stale_triggers.push_back(it->first);

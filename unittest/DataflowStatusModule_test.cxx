@@ -131,7 +131,8 @@ struct ConnectionFixture
   static std::vector<dfmessages::TriggerDecision> s_received_decisions;
   static void receive_trigger_decision(const dfmessages::TriggerDecision& decision)
   {
-    TLOG() << "Received TriggerDecision with trigger number " << decision.trigger_number << " and run number " << decision.run_number;
+    TLOG() << "Received TriggerDecision with trigger number " << decision.trigger_number << " and run number "
+           << decision.run_number;
     s_received_decisions.push_back(decision);
   }
 

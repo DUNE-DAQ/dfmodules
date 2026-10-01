@@ -414,13 +414,11 @@ DataflowStatusModule::receive_trigger_decision_token(const dfmessages::TriggerDe
       if (m_writing_sequences[token.trigger_id].first == m_writing_sequences[token.trigger_id].second + 1) {
         TLOG_DEBUG(TLVL_TRIGCOMPLETE_RECEIVED)
           << get_name() << " Received TriggerDecisionToken for trigger record " << token.trigger_id.trigger_number
-          << "."
-          << token.sequence_number << "/" << token.trigger_id.run_number
-          << ". All sequences have been written.";
+          << "." << token.sequence_number << "/" << token.trigger_id.run_number << ". All sequences have been written.";
       } else {
         TLOG_DEBUG(TLVL_TRIGCOMPLETE_RECEIVED)
-          << get_name() << " Received TriggerDecisionToken for trigger record " << token.trigger_id.trigger_number << "."
-          << token.sequence_number << "/" << token.trigger_id.run_number
+          << get_name() << " Received TriggerDecisionToken for trigger record " << token.trigger_id.trigger_number
+          << "." << token.sequence_number << "/" << token.trigger_id.run_number
           << ". Total completed sequences: " << m_writing_sequences[token.trigger_id].first << " of "
           << m_writing_sequences[token.trigger_id].second + 1;
         return;

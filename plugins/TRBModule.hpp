@@ -83,17 +83,17 @@ ERS_DECLARE_ISSUE(dfmodules,          ///< Namespace
 ERS_DECLARE_ISSUE(dfmodules,                 ///< Namespace
                   DuplicatedTriggerDecision, ///< Issue class name
                   "Duplicated trigger ID " << trigger_id << ", sequence " << sequence_number,
-                  ((dfmessages::TriggerId)trigger_id) ///< Message parameters
+                  ((dfmessages::TriggerId)trigger_id)              ///< Message parameters
                   ((dfmessages::sequence_number_t)sequence_number) ///< Message parameters
 )
 
 /**
  * @brief Abandoned TR
  */
-ERS_DECLARE_ISSUE(dfmodules,                ///< Namespace
+ERS_DECLARE_ISSUE(dfmodules,              ///< Namespace
                   AbandonedTriggerRecord, ///< Issue class name
                   "trigger ID " << trigger_id << " could not be sent to writing and it's lost",
-                  ((dfmessages::TriggerId)trigger_id) ///< Message parameters
+                  ((dfmessages::TriggerId)trigger_id)              ///< Message parameters
                   ((dfmessages::sequence_number_t)sequence_number) ///< Message parameters
 )
 
@@ -149,20 +149,20 @@ public:
   void generate_opmon_data() override;
 
 protected:
-    struct TriggerRecordId
+  struct TriggerRecordId
+  {
+    dfmessages::TriggerId trigger_id;
+    dfmessages::sequence_number_t sequence_number;
+    bool operator<(const TriggerRecordId& other) const
     {
-      dfmessages::TriggerId trigger_id;
-      dfmessages::sequence_number_t sequence_number;
-      bool operator<(const TriggerRecordId& other) const
-      {
-        return std::tie(trigger_id, sequence_number) < std::tie(other.trigger_id, other.sequence_number);
-      }
+      return std::tie(trigger_id, sequence_number) < std::tie(other.trigger_id, other.sequence_number);
+    }
 
-      friend std::ostream& operator<<(std::ostream& out, const TriggerRecordId& id) noexcept
-      {
-        out << id.trigger_id.trigger_number << "." << id.sequence_number << "/" << id.trigger_id.run_number;
-        return out;
-      }
+    friend std::ostream& operator<<(std::ostream& out, const TriggerRecordId& id) noexcept
+    {
+      out << id.trigger_id.trigger_number << "." << id.sequence_number << "/" << id.trigger_id.run_number;
+      return out;
+    }
   };
 
   using trigger_decision_receiver_t = iomanager::ReceiverConcept<dfmessages::TriggerDecision>;
@@ -185,7 +185,7 @@ protected:
 
   bool dispatch_data_requests(dfmessages::DataRequest, const daqdataformats::SourceID&);
 
-  bool send_trigger_record(const TriggerRecordId &);
+  bool send_trigger_record(const TriggerRecordId&);
   // this creates a trigger record and send it
 
   bool check_stale_requests();
@@ -230,8 +230,7 @@ private:
   using clock_type = std::chrono::steady_clock;
   std::mutex m_trigger_records_mutex;
   clock_type::time_point m_last_bookkeeping{};
-  std::map<TriggerRecordId, std::pair<clock_type::time_point, trigger_record_ptr_t>>
-    m_trigger_records;
+  std::map<TriggerRecordId, std::pair<clock_type::time_point, trigger_record_ptr_t>> m_trigger_records;
   std::condition_variable m_open_trigger_record_cv;
 
   // Data request properties
