@@ -456,7 +456,7 @@ TRBModule::trigger_decision_callback(dfmessages::TriggerDecision& td)
   ++m_received_trigger_decisions;
 
   create_trigger_records_and_dispatch(td);
-  //check_stale_requests();
+  // check_stale_requests();
 
   auto end_time = std::chrono::steady_clock::now();
   m_td_processing_us += std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
@@ -681,7 +681,7 @@ TRBModule::send_trigger_record(const TriggerRecordId& id)
     std::set<std::string> sent_destinations;
 
     while (it != m_mon_requests.end()) {
-        // Only sent TR to each monitor once
+      // Only sent TR to each monitor once
       if (sent_destinations.count(it->data_destination)) {
         ++it;
         continue;
@@ -697,7 +697,8 @@ TRBModule::send_trigger_record(const TriggerRecordId& id)
             auto trigger_record_bytes =
               serialization::serialize(temp_record, serialization::SerializationType::kMsgPack);
             trigger_record_ptr_t record_copy = serialization::deserialize<trigger_record_ptr_t>(trigger_record_bytes);
-            iom->get_sender<trigger_record_ptr_t>(it->data_destination)->send(std::move(record_copy), m_tr_queue_timeout);
+            iom->get_sender<trigger_record_ptr_t>(it->data_destination)
+              ->send(std::move(record_copy), m_tr_queue_timeout);
             ++m_trmon_sent_counter;
             wasSentSuccessfully = true;
           } catch (const ers::Issue& excpt) {
