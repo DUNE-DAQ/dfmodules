@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.12)
-project(dfmodules VERSION 6.0.1)
+project(dfmodules VERSION 6.0.2)
 
 find_package(daq-cmake REQUIRED)
 daq_setup_environment()
@@ -13,21 +13,24 @@ find_package(opmonlib REQUIRED)
 find_package(iomanager REQUIRED)
 find_package(detdataformats REQUIRED)
 find_package(trgdataformats REQUIRED)
+find_package(conffwk REQUIRED)
 
 find_package(triggeralgs REQUIRED)
 find_package(trigger REQUIRED)
 find_package(Boost COMPONENTS iostreams unit_test_framework REQUIRED)
 
+daq_add_dal_library(datastore_derived.schema.xml TEST DEP_PKGS appmodel confmodel)
 
 daq_protobuf_codegen( opmon/*.proto )
 
 ##############################################################################
 daq_add_library( 
-    TriggerInhibitAgent.cpp 
-    TriggerRecordBuilderData.cpp 
-    TPBundleHandler.cpp 
     FilterOrchestratorClient.cpp 
     HDF5DataReader.cpp
+    SummaryTextDataWriter.cpp
+    TPBundleHandler.cpp 
+    TriggerInhibitAgent.cpp 
+    TriggerRecordBuilderData.cpp 
                  LINK_LIBRARIES 
                  opmonlib::opmonlib 
                  ers::ers 
@@ -44,7 +47,7 @@ daq_add_library(
                  Boost::iostreams
 )
 
-      
+daq_add_plugin( SummaryTextDataStore     duneDataStore LINK_LIBRARIES dfmodules dfmodules_dal)
 daq_add_plugin( HDF5DataStore     duneDataStore LINK_LIBRARIES dfmodules hdf5libs::hdf5libs stdc++fs)
 
 daq_add_plugin( FragmentAggregatorModule    duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager )
@@ -59,10 +62,12 @@ daq_add_plugin( DispatcherModule duneDAQModule LINK_LIBRARIES dfmodules)
 daq_add_plugin( FilterWriterModule  duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager )
 
 ##############################################################################
-daq_add_unit_test( HDF5FileUtils_test       LINK_LIBRARIES dfmodules )
 
 daq_add_unit_test( HDF5Write_test           LINK_LIBRARIES dfmodules hdf5libs::hdf5libs )
 add_dependencies(  HDF5Write_test dfmodules_HDF5DataStore_duneDataStore )
+
+daq_add_unit_test( SummaryTextWrite_test          LINK_LIBRARIES dfmodules )
+add_dependencies(  SummaryTextWrite_test dfmodules_SummaryTextDataStore_duneDataStore )
 
 daq_add_unit_test( DFOModule_test LINK_LIBRARIES dfmodules )
 add_dependencies( DFOModule_test dfmodules_DFOModule_duneDAQModule)
