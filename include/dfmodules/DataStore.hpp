@@ -1,8 +1,7 @@
 /**
  * @file DataStore.hpp
  *
- * This is the interface for storing and retrieving data from
- * various storage systems.
+ * This is the interface for writing data to various storage systems.
  *
  * This is part of the DUNE DAQ Application Framework, copyright 2020.
  * Licensing/copyright details are in the COPYING file that you should have
@@ -16,13 +15,13 @@
 #define DFMODULES_INCLUDE_DFMODULES_DATASTORE_HPP_
 
 #include "appfwk/ConfigurationManager.hpp"
-#include "opmonlib/MonitorableObject.hpp"
 #include "cetlib/BasicPluginFactory.h"
 #include "cetlib/compiler_macros.h"
 #include "daqdataformats/TimeSlice.hpp"
 #include "daqdataformats/TriggerRecord.hpp"
 #include "daqdataformats/Types.hpp"
 #include "logging/Logging.hpp" // NOTE: if ISSUES ARE DECLARED BEFORE include logging/Logging.hpp, TLOG_DEBUG<<issue wont work.
+#include "opmonlib/MonitorableObject.hpp"
 #include "utilities/NamedObject.hpp"
 
 #include "nlohmann/json.hpp"
@@ -47,8 +46,8 @@
 #define DEFINE_DUNE_DATA_STORE(klass)                                                                                  \
   EXTERN_C_FUNC_DECLARE_START                                                                                          \
   std::shared_ptr<dunedaq::dfmodules::DataStore> make(const std::string& name,                                         \
-                                                      std::shared_ptr<dunedaq::appfwk::ConfigurationManager> mcfg,      \
-		  				      const std::string& writer_name	)                              \
+                                                      std::shared_ptr<dunedaq::appfwk::ConfigurationManager> mcfg,     \
+                                                      const std::string& writer_name)                                  \
   {                                                                                                                    \
     return std::shared_ptr<dunedaq::dfmodules::DataStore>(new klass(name, mcfg, writer_name));                         \
   }                                                                                                                    \
@@ -89,23 +88,14 @@ ERS_DECLARE_ISSUE(dfmodules,
                   ((std::string)mod_name)((std::string)description))
 /// @endcond LCOV_EXCL_STOP
 
-/**
- * @brief An ERS Issue for DataStore problems in which it is
- * not clear whether retrying the operation might succeed or not.
- * @cond Doxygen doesn't like ERS macros LCOV_EXCL_START
- */
-ERS_DECLARE_ISSUE(dfmodules,
-                  GeneralDataStoreProblem,
-                  "Module " << mod_name << ": A problem was encountered when " << description,
-                  ((std::string)mod_name)((std::string)description))
-/// @endcond LCOV_EXCL_STOP
-
 namespace dfmodules {
 
 /**
  * @brief comment
  */
-class DataStore : public utilities::NamedObject, public opmonlib::MonitorableObject
+class DataStore
+  : public utilities::NamedObject
+  , public opmonlib::MonitorableObject
 {
 public:
   /**
@@ -113,19 +103,23 @@ public:
    * @param name Name of the DataStore instance
    */
   explicit DataStore(const std::string& name)
-    : utilities::NamedObject(name), MonitorableObject()
+    : utilities::NamedObject(name)
+    , MonitorableObject()
   {
   }
 
   /**
    * @brief Writes the TriggerRecord into the DataStore.
    * @param tr TriggerRecord to write.
+   * @throws RetryableDataStoreProblem
    */
   virtual void write(const daqdataformats::TriggerRecord& tr) = 0;
 
   /**
    * @brief Writes the TimeSlice into the DataStore.
    * @param ts TimeSlice to write.
+   * @throws RetryableDataStoreProblem
+   * @throws IgnorableDataStoreProblem
    */
   virtual void write(const daqdataformats::TimeSlice& ts) = 0;
 
@@ -135,8 +129,7 @@ public:
    * This allows DataStore instances to make any preparations that will be
    * beneficial in advance of the first data blocks being written or read.
    */
-  virtual void prepare_for_run(daqdataformats::run_number_t run_number,
-                               bool run_is_for_test_purposes) = 0;
+  virtual void prepare_for_run(daqdataformats::run_number_t run_number, bool run_is_for_test_purposes) = 0;
 
   /**
    * @brief Informs the DataStore that writes or reads of data blocks associated
@@ -164,7 +157,7 @@ inline std::shared_ptr<DataStore>
 make_data_store(const std::string& type,
                 const std::string& name,
                 std::shared_ptr<dunedaq::appfwk::ConfigurationManager> mcfg,
-		const std::string& writer_identifier)
+                const std::string& writer_identifier)
 {
   static cet::BasicPluginFactory bpf("duneDataStore", "make"); // NOLINT
 

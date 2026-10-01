@@ -109,7 +109,8 @@ TRBModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcfg)
     throw InvalidQueueFatalError(ERS_HERE, get_name(), "Fragment Input queue");
   }
 
-  m_trigger_record_output = iom->get_sender<std::unique_ptr<daqdataformats::TriggerRecord>>(mdal->get_trigger_record_output()->UID());
+  m_trigger_record_output =
+    iom->get_sender<std::unique_ptr<daqdataformats::TriggerRecord>>(mdal->get_trigger_record_output()->UID());
 
   for (auto con : mdal->get_request_connections()) {
     for (auto source_id : con->get_source_ids()) {
@@ -442,7 +443,7 @@ TRBModule::trigger_decision_callback(dfmessages::TriggerDecision& td)
   ++m_received_trigger_decisions;
 
   create_trigger_records_and_dispatch(td);
-  //check_stale_requests();
+  // check_stale_requests();
 
   auto end_time = std::chrono::steady_clock::now();
   m_td_processing_us += std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
@@ -477,7 +478,9 @@ TRBModule::extract_trigger_record(const TriggerId& id)
     m_pending_fragment_counter -= missing_fragments;
     temp->get_header_ref().set_status_bit(TriggerRecordStatusBits::kIncomplete, true);
 
-    ers::error(IncompleteTriggerRecord(ERS_HERE, (m_stop_requested.load() ? "at Stop time " : ""), id,
+    ers::error(IncompleteTriggerRecord(ERS_HERE,
+                                       (m_stop_requested.load() ? "at Stop time " : ""),
+                                       id,
                                        temp->get_fragments_ref().size(),
                                        temp->get_header_ref().get_num_requested_components()));
   }
@@ -667,7 +670,7 @@ TRBModule::send_trigger_record(const TriggerId& id)
     std::set<std::string> sent_destinations;
 
     while (it != m_mon_requests.end()) {
-        // Only sent TR to each monitor once
+      // Only sent TR to each monitor once
       if (sent_destinations.count(it->data_destination)) {
         ++it;
         continue;
@@ -683,7 +686,8 @@ TRBModule::send_trigger_record(const TriggerId& id)
             auto trigger_record_bytes =
               serialization::serialize(temp_record, serialization::SerializationType::kMsgPack);
             trigger_record_ptr_t record_copy = serialization::deserialize<trigger_record_ptr_t>(trigger_record_bytes);
-            iom->get_sender<trigger_record_ptr_t>(it->data_destination)->send(std::move(record_copy), m_tr_queue_timeout);
+            iom->get_sender<trigger_record_ptr_t>(it->data_destination)
+              ->send(std::move(record_copy), m_tr_queue_timeout);
             ++m_trmon_sent_counter;
             wasSentSuccessfully = true;
           } catch (const ers::Issue& excpt) {
