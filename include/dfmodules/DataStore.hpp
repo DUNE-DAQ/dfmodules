@@ -33,7 +33,7 @@
 #include <vector>
 
 #ifndef EXTERN_C_FUNC_DECLARE_START
-// NOLINTNEXTLINE(build/define_used)
+// NOLINTNEXTLINE
 #define EXTERN_C_FUNC_DECLARE_START                                                                                    \
   extern "C"                                                                                                           \
   {
@@ -42,7 +42,7 @@
  * @brief Declare the function that will be called by the plugin loader
  * @param klass Class to be defined as a DUNE IPM Receiver
  */
-// NOLINTNEXTLINE(build/define_used)
+// NOLINTNEXTLINE
 #define DEFINE_DUNE_DATA_STORE(klass)                                                                                  \
   EXTERN_C_FUNC_DECLARE_START                                                                                          \
   std::shared_ptr<dunedaq::dfmodules::DataStore> make(const std::string& name,                                         \

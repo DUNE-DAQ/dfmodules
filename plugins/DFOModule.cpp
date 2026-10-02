@@ -148,7 +148,7 @@ DFOModule::do_start(const CommandData_t& payload)
     bool is_ready = m_busy_sender->is_ready_for_sending(std::chrono::milliseconds(100));
     TLOG_DEBUG(0) << "The sender for TriggerInhibit messages " << (is_ready ? "is" : "is not") << " ready.";
   }
-  for (auto trb_conn : m_trb_conn_ids) {
+  for (auto const& trb_conn : m_trb_conn_ids) {
     auto sender = iom->get_sender<dfmessages::TriggerDecision>(trb_conn);
     if (sender != nullptr) {
       bool is_ready = sender->is_ready_for_sending(std::chrono::milliseconds(100));
@@ -241,7 +241,7 @@ DFOModule::receive_trigger_decision(const dfmessages::TriggerDecision& decision)
 
   auto trigger_types = DFOTriggerCounter::unpack_types(decision.trigger_type);
   for (const auto t : trigger_types) {
-    ++get_trigger_counter(t).received;
+    ++(get_trigger_counter(t).received);
   }
 
   {
@@ -420,8 +420,9 @@ DFOModule::dispatch(const std::shared_ptr<AssignedTriggerDecision>& assignment)
       wasSentSuccessfully = true;
       ++m_sent_decisions;
       TLOG_DEBUG(TLVL_DISPATCH_TO_TRB) << get_name() << " Sent TriggerDecision for trigger_number "
-                                       << decision_copy.trigger_number << " to TRB at connection "
-                                       << assignment->connection_name << " for run number " << decision_copy.run_number;
+                                       << assignment->decision.trigger_number << " to TRB at connection "
+                                       << assignment->connection_name << " for run number "
+                                       << assignment->decision.run_number;
     } catch (const ers::Issue& excpt) {
       std::ostringstream oss_warn;
       oss_warn << "Send to connection \"" << assignment->connection_name << "\" failed";

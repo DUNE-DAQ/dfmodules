@@ -6,8 +6,8 @@
  * received with this code.
  */
 
-#ifndef DFMODULES_PLUGINS_DATAFLOWORCHESTRATOR_HPP_
-#define DFMODULES_PLUGINS_DATAFLOWORCHESTRATOR_HPP_
+#ifndef DFMODULES_PLUGINS_DFOMODULE_HPP_
+#define DFMODULES_PLUGINS_DFOMODULE_HPP_
 
 #include "dfmodules/AssignedTriggerDecision.hpp"
 #include "dfmodules/DFOTriggerCounter.hpp"
@@ -27,6 +27,7 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#include <set>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -205,4 +206,4 @@ private:
 } // namespace dfmodules
 } // namespace dunedaq
 
-#endif // DFMODULES_PLUGINS_DATAFLOWORCHESTRATOR_HPP_
+#endif // DFMODULES_PLUGINS_DFOMODULE_HPP_

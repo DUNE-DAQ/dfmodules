@@ -44,8 +44,7 @@ enum
   TLVL_FRAGMENT_HEADER_DUMP = 17
 };
 
-namespace dunedaq {
-namespace dfmodules {
+namespace dunedaq::dfmodules {
 
 DataWriterModule::DataWriterModule(const std::string& name)
   : dunedaq::appfwk::DAQModule(name)
@@ -146,7 +145,7 @@ DataWriterModule::do_conf(const CommandData_t&)
   }
 
   // ensure that we have a valid dataWriter instance
-  if (m_data_writer.get() == nullptr) {
+  if (m_data_writer == nullptr) {
     throw InvalidDataWriterModule(ERS_HERE, get_name());
   }
 
@@ -169,7 +168,7 @@ DataWriterModule::do_start(const CommandData_t& payload)
   if (m_data_storage_is_enabled) {
 
     // ensure that we have a valid dataWriter instance
-    if (m_data_writer.get() == nullptr) {
+    if (m_data_writer == nullptr) {
       // this check is done essentially to notify the user
       // in case the "start" has been called before the "conf"
       ers::fatal(InvalidDataWriterModule(ERS_HERE, get_name()));
@@ -319,6 +318,14 @@ DataWriterModule::receive_trigger_record(std::unique_ptr<daqdataformats::Trigger
 
     bool wasSentSuccessfully = false;
     do {
+      TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Pushing the TriggerDecisionToken for trigger number "
+                                  << trigger_record_ptr->get_header_ref().get_trigger_number()
+                                  << " onto the relevant output queue";
+      dfmessages::TriggerDecisionToken token;
+      token.run_number = m_run_number;
+      token.trigger_number = trigger_record_ptr->get_header_ref().get_trigger_number();
+      token.decision_destination = m_trigger_decision_connection;
+
       try {
         m_token_output->send(std::move(token), m_queue_timeout);
         wasSentSuccessfully = true;
@@ -350,7 +357,6 @@ DataWriterModule::do_work(std::atomic<bool>& running_flag)
   }
 }
 
-} // namespace dfmodules
-} // namespace dunedaq
+} // namespace dunedaq::dfmodules
 
 DEFINE_DUNE_DAQ_MODULE(dunedaq::dfmodules::DataWriterModule)

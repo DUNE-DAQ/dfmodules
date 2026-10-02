@@ -23,6 +23,7 @@
 
 #include "boost/date_time/posix_time/posix_time.hpp"
 
+#include <algorithm>
 #include <chrono>
 #include <memory>
 #include <sstream>
@@ -36,8 +37,7 @@ enum
   TLVL_CONFIG = 7,
 };
 
-namespace dunedaq {
-namespace dfmodules {
+namespace dunedaq::dfmodules {
 
 TPStreamWriterModule::TPStreamWriterModule(const std::string& name)
   : dunedaq::appfwk::DAQModule(name)
@@ -96,7 +96,7 @@ TPStreamWriterModule::do_conf(const CommandData_t&)
   m_accumulation_inactivity_time_before_write = std::chrono::milliseconds(
     static_cast<int>(1000 * m_tp_writer_conf->get_tp_accumulation_inactivity_time_before_write_sec()));
   m_warn_user_when_tardy_tps_are_discarded = m_tp_writer_conf->get_warn_user_when_tardy_tps_are_discarded();
-  m_accumulation_interval_seconds = ((double)m_accumulation_interval_ticks) / 62500000.0;
+  m_accumulation_interval_seconds = static_cast<double>(m_accumulation_interval_ticks) / 62500000.0;
 
   // create the DataStore instance here
   try {
@@ -110,7 +110,7 @@ TPStreamWriterModule::do_conf(const CommandData_t&)
   }
 
   // ensure that we have a valid dataWriter instance
-  if (m_data_writer.get() == nullptr) {
+  if (m_data_writer == nullptr) {
     throw InvalidDataWriterModule(ERS_HERE, get_name());
   }
 
@@ -188,6 +188,7 @@ TPStreamWriterModule::do_work(std::atomic<bool>& running_flag)
   auto start_time = steady_clock::now();
   daqdataformats::timestamp_t first_timestamp = 0;
   daqdataformats::timestamp_t last_timestamp = 0;
+  daqdataformats::timestamp_t current_timestamp = 0;
 
   TPBundleHandler tp_bundle_handler(
     m_accumulation_interval_ticks, m_run_number, m_accumulation_inactivity_time_before_write);
@@ -219,6 +220,7 @@ TPStreamWriterModule::do_work(std::atomic<bool>& running_flag)
         continue;
       }
       ++m_tpsets_with_tps;
+      current_timestamp = tpset.start_time;
 
       size_t num_tps_in_tpset = tpset.objects.size();
       tp_bundle_handler.add_tpset(std::move(tpset));
@@ -311,22 +313,22 @@ TPStreamWriterModule::do_work(std::atomic<bool>& running_flag)
     }
 
     if (first_timestamp == 0) {
-      first_timestamp = tpset.start_time;
+      first_timestamp = current_timestamp;
     }
-    last_timestamp = tpset.start_time;
+    last_timestamp = current_timestamp;
   } // while(running)
 
   auto end_time = steady_clock::now();
   auto time_ms = duration_cast<milliseconds>(end_time - start_time).count();
-  float rate_hz = 1e3 * static_cast<float>(n_tpset_received) / time_ms;
-  float inferred_clock_frequency = 1e3 * (last_timestamp - first_timestamp) / time_ms;
+  auto rate_hz = 1e3 * n_tpset_received / static_cast<double>(time_ms);
+  auto inferred_clock_frequency =
+    1e3 * static_cast<double>(last_timestamp - first_timestamp) / static_cast<double>(time_ms);
 
   TLOG() << "Received " << n_tpset_received << " TPSets in " << time_ms << "ms. " << rate_hz
          << " TPSet/s. Inferred clock frequency " << inferred_clock_frequency << "Hz";
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_work() method";
-} // NOLINT Function length
+} // NOLINT(readability/fn_size)
 
-} // namespace dfmodules
-} // namespace dunedaq
+} // namespace dunedaq::dfmodules
 
 DEFINE_DUNE_DAQ_MODULE(dunedaq::dfmodules::TPStreamWriterModule)

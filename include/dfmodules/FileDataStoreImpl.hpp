@@ -1,6 +1,10 @@
 /**
  * @file FileDataStoreImpl.hpp
  *
+ * This is part of the DUNE DAQ Application Framework, copyright 2020.
+ * Licensing/copyright details are in the COPYING file that you should have
+ * received with this code.
+ *
  * The base class for file-output-focused implementations of the
  * DataStore interface
  *
@@ -24,10 +28,6 @@
  * from appmodel::DataStoreConf as a superclass and adds parameters as
  * needed. See DataStoreConfTestDeriv in this package, and how it's
  * used by SummaryTextDataStore
- *
- * This is part of the DUNE DAQ Application Framework, copyright 2020.
- * Licensing/copyright details are in the COPYING file that you should have
- * received with this code.
  */
 
 #ifndef DFMODULES_INCLUDE_DFMODULES_FILEDATASTOREIMPL_HPP_
@@ -126,7 +126,7 @@ concept FileHandleConcept = requires(T file_handle,
   { const_file_handle.get_recorded_size() } -> std::convertible_to<size_t>;
   { const_file_handle.get_uncompressed_raw_data_size() } -> std::convertible_to<size_t>;
   { const_file_handle.get_total_file_size() } -> std::convertible_to<size_t>;
-};
+}; // NOLINT
 
 /**
  * @brief FileDataStoreImpl contains functionality you'd generally

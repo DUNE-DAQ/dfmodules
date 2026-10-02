@@ -37,8 +37,7 @@ enum
   TLVL_TIME_SYNCS = 12
 };
 
-namespace dunedaq {
-namespace dfmodules {
+namespace dunedaq::dfmodules {
 
 FakeDataProdModule::FakeDataProdModule(const std::string& name)
   : dunedaq::appfwk::DAQModule(name)
@@ -155,7 +154,7 @@ FakeDataProdModule::do_timesync(std::atomic<bool>& running_flag)
                                 << " run=" << timesyncmsg.run_number << " seqno=" << timesyncmsg.sequence_number
                                 << " source_id=" << timesyncmsg.source_id;
     try {
-      sender_ptr->send(std::move(timesyncmsg), std::chrono::milliseconds(500));
+      sender_ptr->send(std::move(timesyncmsg), std::chrono::milliseconds(500)); // NOLINT(performance-move-const-arg)
       ++sent_count;
     } catch (ers::Issue& excpt) {
       ers::warning(TimeSyncTransmissionFailed(ERS_HERE, get_name(), m_timesync_id, excpt));
@@ -215,7 +214,6 @@ FakeDataProdModule::process_data_request(dfmessages::DataRequest& data_request)
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": finishing processing request " << data_request.request_number;
 }
 
-} // namespace dfmodules
-} // namespace dunedaq
+} // namespace dunedaq::dfmodules
 
 DEFINE_DUNE_DAQ_MODULE(dunedaq::dfmodules::FakeDataProdModule)

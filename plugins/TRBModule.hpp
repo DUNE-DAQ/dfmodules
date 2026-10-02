@@ -6,8 +6,8 @@
  * received with this code.
  */
 
-#ifndef DFMODULES_PLUGINS_TRIGGERRECORDBUILDER_HPP_
-#define DFMODULES_PLUGINS_TRIGGERRECORDBUILDER_HPP_
+#ifndef DFMODULES_PLUGINS_TRBMODULE_HPP_
+#define DFMODULES_PLUGINS_TRBMODULE_HPP_
 
 #include "appmodel/ReadoutApplication.hpp"
 #include "appmodel/SmartDaqApplication.hpp"
@@ -245,6 +245,7 @@ private:
   std::list<dfmessages::TRMonRequest> m_mon_requests;
 
   // book related metrics
+  // NOLINTNEXTLINE(build/unsigned)
   using metric_counter_type = uint64_t; // decltype(triggerrecordbuilderinfo::Info::pending_trigger_decisions);
   mutable std::atomic<metric_counter_type> m_trigger_decisions_counter = { 0 }; // currently
   mutable std::atomic<metric_counter_type> m_fragment_counter = { 0 };          // currently
@@ -279,4 +280,4 @@ private:
 } // namespace dfmodules
 } // namespace dunedaq
 
-#endif // DFMODULES_PLUGINS_TRIGGERRECORDBUILDER_HPP_
+#endif // DFMODULES_PLUGINS_TRBMODULE_HPP_
