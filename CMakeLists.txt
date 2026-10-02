@@ -24,20 +24,21 @@ daq_add_dal_library(datastore_derived.schema.xml TEST DEP_PKGS appmodel confmode
 daq_protobuf_codegen( opmon/*.proto )
 
 ##############################################################################
-daq_add_library( TriggerInhibitAgent.cpp TriggerRecordBuilderData.cpp TPBundleHandler.cpp SummaryTextDataWriter.cpp
-                 LINK_LIBRARIES 
+daq_add_library( TriggerInhibitAgent.cpp TPBundleHandler.cpp SummaryTextDataWriter.cpp
+                 LINK_LIBRARIES
                  opmonlib::opmonlib ers::ers HighFive appfwk::appfwk logging::logging stdc++fs dfmessages::dfmessages utilities::utilities trigger::trigger detdataformats::detdataformats trgdataformats::trgdataformats)
 
 daq_add_plugin( SummaryTextDataStore     duneDataStore LINK_LIBRARIES dfmodules dfmodules_dal)
 daq_add_plugin( HDF5DataStore     duneDataStore LINK_LIBRARIES dfmodules hdf5libs::hdf5libs stdc++fs)
 
-daq_add_plugin( FragmentAggregatorModule    duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager )
-daq_add_plugin( DataWriterModule            duneDAQModule LINK_LIBRARIES dfmodules hdf5libs::hdf5libs iomanager::iomanager )
-daq_add_plugin( DFOModule  duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager )
-daq_add_plugin( TRBModule  duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager )
-daq_add_plugin( TRMonRequestorModule  duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager )
-daq_add_plugin( FakeDataProdModule          duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager)
-daq_add_plugin( TPStreamWriterModule        duneDAQModule LINK_LIBRARIES dfmodules hdf5libs::hdf5libs trigger::trigger Boost::iostreams )
+daq_add_plugin( FragmentAggregatorModule duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager )
+daq_add_plugin( DataWriterModule         duneDAQModule LINK_LIBRARIES dfmodules hdf5libs::hdf5libs iomanager::iomanager )
+daq_add_plugin( DataflowStatusModule     duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager )
+daq_add_plugin( DFOModule                duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager )
+daq_add_plugin( TRBModule                duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager )
+daq_add_plugin( TRMonRequestorModule     duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager )
+daq_add_plugin( FakeDataProdModule       duneDAQModule LINK_LIBRARIES dfmodules iomanager::iomanager )
+daq_add_plugin( TPStreamWriterModule     duneDAQModule LINK_LIBRARIES dfmodules hdf5libs::hdf5libs trigger::trigger Boost::iostreams )
 
 ##############################################################################
 
@@ -50,8 +51,16 @@ add_dependencies(  SummaryTextWrite_test dfmodules_SummaryTextDataStore_duneData
 daq_add_unit_test( DFOModule_test LINK_LIBRARIES dfmodules )
 add_dependencies( DFOModule_test dfmodules_DFOModule_duneDAQModule)
 
-daq_add_unit_test( TriggerRecordBuilderData_test LINK_LIBRARIES dfmodules)
+daq_add_unit_test( DataflowStatusModule_test LINK_LIBRARIES dfmodules )
+add_dependencies( DataflowStatusModule_test dfmodules_DataflowStatusModule_duneDAQModule)
+
+daq_add_unit_test( DFOProtocol_test LINK_LIBRARIES dfmodules )
+add_dependencies( DFOProtocol_test dfmodules_DFOModule_duneDAQModule dfmodules_DataflowStatusModule_duneDAQModule)
+
 daq_add_unit_test( DataStoreFactory_test    LINK_LIBRARIES dfmodules)
+
+daq_add_unit_test( TRBModule_test LINK_LIBRARIES dfmodules )
+add_dependencies( TRBModule_test dfmodules_TRBModule_duneDAQModule)
 
 ##############################################################################
 
