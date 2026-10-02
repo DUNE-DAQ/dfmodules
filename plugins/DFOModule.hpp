@@ -56,8 +56,9 @@ ERS_DECLARE_ISSUE_BASE(dfmodules,
                          << received_run_number << ") != " << run_number << " from " << src_app
                          << " for trigger_number " << trig_num,
                        ((std::string)name),
-                       ((uint32_t)received_run_number)((uint32_t)run_number)((std::string)src_app)(
-                         (uint32_t)trig_num)) // NOLINT(build/unsigned)
+                       ((uint32_t)received_run_number)             // NOLINT(build/unsigned)
+                       ((uint32_t)run_number)                      // NOLINT(build/unsigned)
+                       ((std::string)src_app)((uint32_t)trig_num)) // NOLINT(build/unsigned)
 
 ERS_DECLARE_ISSUE_BASE(dfmodules,
                        IncompleteTriggerDecision,

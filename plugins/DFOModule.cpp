@@ -266,8 +266,8 @@ DFOModule::receive_trigger_decision(const dfmessages::TriggerDecision& decision)
   std::chrono::steady_clock::time_point decision_assigned;
   size_t iteration = 0;
   do {
-    send_status_requests(decision.trigger_number, iteration++);
-
+    send_status_requests(decision.trigger_number, iteration);
+    ++iteration;
     auto assignment = find_slot(decision);
 
     if (assignment == nullptr) { // this can happen if all application are in error state

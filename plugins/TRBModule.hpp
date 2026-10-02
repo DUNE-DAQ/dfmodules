@@ -108,8 +108,8 @@ ERS_DECLARE_ISSUE(dfmodules,               ///< Namespace
                   ((std::string)optional_stop_time_phrase)         ///< Message parameters
                   ((dfmessages::TriggerId)id)                      ///< Message parameters
                   ((dfmessages::sequence_number_t)sequence_number) ///< Message parameters
-                  ((int)num_frags_present)                         ///< Message parameters
-                  ((int)num_components_requested)                  ///< Message parameters
+                  ((size_t)num_frags_present)                      ///< Message parameters // NOLINT
+                  ((uint64_t)num_components_requested)             ///< Message parameters // NOLINT
 )
 
 /**

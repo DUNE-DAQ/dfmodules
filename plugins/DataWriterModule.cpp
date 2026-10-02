@@ -308,23 +308,16 @@ DataWriterModule::receive_trigger_record(std::unique_ptr<daqdataformats::Trigger
 
   bool send_trigger_complete_message = m_running.load();
   if (send_trigger_complete_message) {
-    TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Pushing the TriggerDecisionToken for trigger number "
-                                << trigger_record_ptr->get_header_ref().get_trigger_number()
-                                << " onto the relevant output queue";
-    dfmessages::TriggerDecisionToken token;
-    token.trigger_id = dfmessages::TriggerId{ m_run_number, trigger_record_ptr->get_header_ref().get_trigger_number() };
-    token.sequence_number = trigger_record_ptr->get_header_ref().get_sequence_number();
-    token.writer_identifier = m_writer_identifier;
-
     bool wasSentSuccessfully = false;
     do {
       TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Pushing the TriggerDecisionToken for trigger number "
                                   << trigger_record_ptr->get_header_ref().get_trigger_number()
                                   << " onto the relevant output queue";
       dfmessages::TriggerDecisionToken token;
-      token.run_number = m_run_number;
-      token.trigger_number = trigger_record_ptr->get_header_ref().get_trigger_number();
-      token.decision_destination = m_trigger_decision_connection;
+      token.trigger_id =
+        dfmessages::TriggerId{ m_run_number, trigger_record_ptr->get_header_ref().get_trigger_number() };
+      token.sequence_number = trigger_record_ptr->get_header_ref().get_sequence_number();
+      token.writer_identifier = m_writer_identifier;
 
       try {
         m_token_output->send(std::move(token), m_queue_timeout);
