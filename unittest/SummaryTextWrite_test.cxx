@@ -20,12 +20,12 @@
 // We need the actual SummaryTextDataStore.hpp plugin header so the unit tests can access its exceptions
 #include "../plugins/SummaryTextDataStore.hpp" // NOLINT(build/include_path)
 
-#include "appmodel/DataWriterModule.hpp"
+#include "appmodel/DataStoreConf.hpp"
 #include "appmodel/DataWriterConf.hpp"
+#include "appmodel/DataWriterModule.hpp"
 #include "appmodel/FilenameParams.hpp"
 #include "confmodel/DetectorConfig.hpp"
 #include "confmodel/Session.hpp"
-#include "appmodel/DataStoreConf.hpp"
 #include "detdataformats/DetID.hpp"
 
 #define BOOST_TEST_MODULE SummaryTextWrite_test // NOLINT
@@ -117,7 +117,8 @@ create_trigger_record(int trig_num, int fragment_size, int element_count)
     fh.sequence_number = 0;
     fh.fragment_type =
       static_cast<dunedaq::daqdataformats::fragment_type_t>(dunedaq::daqdataformats::FragmentType::kWIB);
-    fh.detector_id = static_cast<uint16_t>(dunedaq::detdataformats::DetID::Subdetector::kHD_TPC); // NOLINT(build/unsigned)
+    fh.detector_id =
+      static_cast<uint16_t>(dunedaq::detdataformats::DetID::Subdetector::kHD_TPC); // NOLINT(build/unsigned)
     fh.element_id = dunedaq::daqdataformats::SourceID(stype_to_use, ele_num);
     std::unique_ptr<dunedaq::daqdataformats::Fragment> frag_ptr(
       new dunedaq::daqdataformats::Fragment(dummy_data, fragment_size));
@@ -155,7 +156,8 @@ BOOST_AUTO_TEST_SUITE(SummaryTextWrite_test)
 
 BOOST_AUTO_TEST_CASE(NullConfiguration)
 {
-  BOOST_CHECK_THROW(make_data_store("SummaryTextDataStore", "dummy", nullptr, "dummy"), dunedaq::dfmodules::FileDataStoreImplBadConfiguration);
+  BOOST_CHECK_THROW(make_data_store("SummaryTextDataStore", "dummy", nullptr, "dummy"),
+                    dunedaq::dfmodules::FileDataStoreImplBadConfiguration);
 }
 
 BOOST_AUTO_TEST_CASE(CheckDerivation)
@@ -167,7 +169,8 @@ BOOST_AUTO_TEST_CASE(CheckDerivation)
   auto data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.cfgMgr, "dwm-01");
   BOOST_REQUIRE(data_store_ptr != nullptr);
 
-  const auto stub_data_store_ptr {dynamic_cast<const dunedaq::dfmodules::SummaryTextDataStore*>(data_store_ptr.get())}; // NOLINT(runtime/rtti)
+  const auto stub_data_store_ptr{ dynamic_cast<const dunedaq::dfmodules::SummaryTextDataStore*>(
+    data_store_ptr.get()) }; // NOLINT(runtime/rtti)
   BOOST_REQUIRE(stub_data_store_ptr != nullptr);
 
   BOOST_REQUIRE_EQUAL(stub_data_store_ptr->get_derivval(), 773); // 773 should be the value in the config
@@ -236,7 +239,7 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
   data_store_conf_obj.set_by_val<std::string>("directory_path", file_path);
 
   auto data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.cfgMgr, "dwm-01");
-    
+
   // write several events, each with several fragments
   for (int trigger_number = 1; trigger_number <= trigger_count; ++trigger_number)
     data_store_ptr->write(create_trigger_record(trigger_number, fragment_size, apa_count * link_count));
@@ -271,8 +274,8 @@ BOOST_AUTO_TEST_CASE(NoDuplicateTimeSlices)
 
   auto data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.cfgMgr, "dwm-01");
 
-  dunedaq::daqdataformats::TimeSlice timeslice {999, 999}; // timeslice #, run #
-  dunedaq::daqdataformats::TimeSlice identical_timeslice {999, 999};
+  dunedaq::daqdataformats::TimeSlice timeslice{ 999, 999 }; // timeslice #, run #
+  dunedaq::daqdataformats::TimeSlice identical_timeslice{ 999, 999 };
 
   data_store_ptr->write(timeslice);
 
@@ -312,7 +315,6 @@ BOOST_AUTO_TEST_CASE(EnormousMaxFileSize)
   BOOST_CHECK_THROW(data_store_ptr->prepare_for_run(1, true), dunedaq::dfmodules::InsufficientDiskSpace);
 }
 
-
 BOOST_AUTO_TEST_CASE(FileSizeLimitResultsInMultipleFiles)
 {
   std::string file_path(std::filesystem::temp_directory_path());
@@ -335,10 +337,10 @@ BOOST_AUTO_TEST_CASE(FileSizeLimitResultsInMultipleFiles)
   data_store_conf_obj.set_by_val<std::string>("directory_path", file_path);
 
   // Tiny max file size needed since each trigger record just gets a simple line of text written out
-  data_store_conf_obj.set_by_val<int>("max_file_size", 100); 
+  data_store_conf_obj.set_by_val<int>("max_file_size", 100);
 
   auto data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.cfgMgr, "dwm-01");
-  
+
   // write several events, each with several fragments
   for (int trigger_number = 1; trigger_number <= trigger_count; ++trigger_number)
     data_store_ptr->write(create_trigger_record(trigger_number, fragment_size, apa_count * link_count));
@@ -381,7 +383,7 @@ BOOST_AUTO_TEST_CASE(SmallFileSizeLimitDataBlockListWrite)
   data_store_conf_obj.set_by_val<std::string>("directory_path", file_path);
   data_store_conf_obj.set_by_val<int>("max_file_size", 150000); // ~1.5 Fragment, ~0.3 TR
 
-  auto data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.cfgMgr,"dwm-01");
+  auto data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.cfgMgr, "dwm-01");
 
   // write several events, each with several fragments
   for (int trigger_number = 1; trigger_number <= trigger_count; ++trigger_number)

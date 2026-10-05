@@ -92,4 +92,3 @@ SummaryTextDataWriter::write_line(const std::string& line)
 }
 
 } // namespace dunedaq::dfmodules
-
