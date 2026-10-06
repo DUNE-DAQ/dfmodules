@@ -27,8 +27,7 @@
 #include <string>
 #include <thread>
 
-namespace dunedaq {
-namespace dfmodules {
+namespace dunedaq::dfmodules {
 
 /**
  * @brief
@@ -82,7 +81,6 @@ private:
   std::atomic<daqdataformats::trigger_number_t> m_trigger_number_at_start_of_processing_chain;
   std::atomic<daqdataformats::trigger_number_t> m_trigger_number_at_end_of_processing_chain;
 };
-} // namespace dfmodules
-} // namespace dunedaq
+} // namespace dunedaq::dfmodules
 
 #endif // DFMODULES_SRC_DFMODULES_TRIGGERINHIBITAGENT_HPP_

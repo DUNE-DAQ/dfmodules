@@ -25,8 +25,7 @@ enum
   TLVL_WORK_STEPS = 10
 };
 
-namespace dunedaq {
-namespace dfmodules {
+namespace dunedaq::dfmodules {
 
 TriggerInhibitAgent::TriggerInhibitAgent(const std::string& parent_name,
                                          std::shared_ptr<trigdecreceiver_t> our_input,
@@ -139,7 +138,7 @@ TriggerInhibitAgent::do_work(std::atomic<bool>& running_flag)
         TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Pushing a TriggerInhibit message with busy state set to "
                                     << inhibit_message.busy << " onto the output queue";
         try {
-          m_trigger_inhibit_sender->send(std::move(inhibit_message), m_queue_timeout);
+          m_trigger_inhibit_sender->send(std::move(inhibit_message), m_queue_timeout); // NOLINT
           ++sent_message_count;
 #if 0
           // temporary logging
@@ -174,5 +173,4 @@ TriggerInhibitAgent::do_work(std::atomic<bool>& running_flag)
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_work() method";
 }
 
-} // namespace dfmodules
-} // namespace dunedaq
+} // namespace dunedaq::dfmodules
