@@ -139,10 +139,10 @@ confgen_arguments = {
 # The commands to run in dunerc, as a list
 dunerc_command_list = (
     "boot conf wait 5".split()
-    + "start --run-number 101 wait 10 enable-triggers wait ".split()
+    + "start --run-number 101 wait 10 enable-triggers wait --progress-steps 5 ".split()
     + [str(run_duration)]
     + "disable-triggers wait 2 drain-dataflow wait 2 stop-trigger-sources stop ".split()
-    + "start --run-number 102 wait 10 enable-triggers wait ".split()
+    + "start --run-number 102 wait 10 enable-triggers wait --progress-steps 5 ".split()
     + [str(run_duration)]
     + "disable-triggers wait 2 drain-dataflow wait 2 stop-trigger-sources stop ".split()
     + " scrap terminate".split()
