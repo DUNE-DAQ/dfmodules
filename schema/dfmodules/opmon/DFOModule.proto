@@ -7,9 +7,11 @@ package dunedaq.dfmodules.opmon;
 message DFOInfo {
   // status metrics
   uint64 pending_trigger_decisions = 1; // Present number of TriggerDecisions being worked on by the dataflow
+  uint64 max_pending_trigger_decisions = 2; // Maximum number of TriggerDecisions being worked on during the collection interval
+  uint64 reallocated_trigger_decisions = 3; // Number of TriggerDecisions that have been reallocated to a different Dataflow app
 
   // counters
-  uint64 statuses_received = 20;
+  uint64 statuses_received = 20; // Number of Dataflow apps that reported in this interval
   uint64 decisions_received = 21;
   uint64 decisions_sent = 22;
   uint64 decisions_completed = 23;

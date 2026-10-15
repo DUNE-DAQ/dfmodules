@@ -193,7 +193,9 @@ private:
   bool is_busy() const;
 
   // Statistics
-  std::atomic<uint64_t> m_received_statuses{ 0 };    // NOLINT (build/unsigned)
+  std::atomic<uint64_t> m_max_pending_decisions{ 0 }; // NOLINT (build/unsigned)
+  std::atomic<uint64_t> m_reallocated_decisions{ 0 }; // NOLINT (build/unsigned)
+  std::set<std::string> m_received_statuses;
   std::atomic<uint64_t> m_sent_decisions{ 0 };       // NOLINT (build/unsigned)
   std::atomic<uint64_t> m_received_decisions{ 0 };   // NOLINT (build/unsigned)
   std::atomic<uint64_t> m_completed_decisions{ 0 };  // NOLINT(build/unsigned)

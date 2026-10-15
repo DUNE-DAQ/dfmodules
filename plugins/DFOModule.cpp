@@ -319,8 +319,11 @@ DFOModule::generate_opmon_data()
   {
     std::lock_guard<std::mutex> lk(m_status_mutex);
     info.set_pending_trigger_decisions(m_assigned_trigger_decisions.size());
+    info.set_statuses_received(m_received_statuses.size());
+    m_received_statuses.clear();
   }
-  info.set_statuses_received(m_received_statuses.exchange(0));
+  info.set_max_pending_trigger_decisions(m_max_pending_decisions.exchange(0));
+  info.set_reallocated_trigger_decisions(m_reallocated_decisions.exchange(0));
   info.set_decisions_sent(m_sent_decisions.exchange(0));
   info.set_decisions_received(m_received_decisions.exchange(0));
   info.set_decisions_completed(m_completed_decisions.exchange(0));
@@ -455,9 +458,9 @@ DFOModule::receive_dataflow_status(const dfmessages::DataflowStatus& status)
                               << " for trigger_number " << status.trigger_id.trigger_number << " in run "
                               << status.trigger_id.run_number;
 
-  ++m_received_statuses;
   {
     std::lock_guard<std::mutex> guard(m_status_mutex);
+    m_received_statuses.insert(status.decision_destination);
     // Update or create entry for this dataflow app
     auto it = m_dataflow_statuses.find(status.decision_destination);
     if (it != m_dataflow_statuses.end()) {
@@ -479,6 +482,7 @@ DFOModule::receive_dataflow_status(const dfmessages::DataflowStatus& status)
     for (auto& trigger : status.triggers_building) {
       if (!m_assigned_trigger_decisions.count(trigger)) {
         ers::info(UnexpectedTriggerDecision(ERS_HERE, get_name(), trigger.trigger_number, status.decision_destination));
+        // Creating a placeholder for the assigned trigger decision with an empty TriggerDecision object. This is checked in receive_trigger_decision and updated if necessary.
         m_assigned_trigger_decisions[trigger] = std::make_shared<AssignedTriggerDecision>(
           dfmessages::TriggerDecision(trigger.trigger_number, status.trigger_id.run_number),
           status.decision_destination);
@@ -488,6 +492,7 @@ DFOModule::receive_dataflow_status(const dfmessages::DataflowStatus& status)
       if (!m_assigned_trigger_decisions.count(trigger)) {
         ers::warning(
           UnexpectedTriggerDecision(ERS_HERE, get_name(), trigger.trigger_number, status.decision_destination));
+        // Creating a placeholder for the assigned trigger decision with an empty TriggerDecision object. This is checked in receive_trigger_decision and updated if necessary.
         m_assigned_trigger_decisions[trigger] = std::make_shared<AssignedTriggerDecision>(
           dfmessages::TriggerDecision(trigger.trigger_number, status.trigger_id.run_number),
           status.decision_destination);
@@ -500,6 +505,10 @@ DFOModule::receive_dataflow_status(const dfmessages::DataflowStatus& status)
       }
       m_statuses_for_trigger.erase(trigger);
       m_assigned_trigger_decisions.erase(trigger);
+    }
+
+    if (m_assigned_trigger_decisions.size() > m_max_pending_decisions.load()) {
+      m_max_pending_decisions.store(m_assigned_trigger_decisions.size());
     }
   }
   // Notify will occur at the end of TD processing
@@ -647,6 +656,7 @@ DFOModule::status_watchdog_proc(std::stop_token stoken)
         }
       }
     }
+    m_reallocated_decisions += triggers_to_reallocate.size();
     for (auto& trigger : triggers_to_reallocate) {
       receive_trigger_decision(trigger);
     }
