@@ -44,8 +44,7 @@ enum
   TLVL_FRAGMENT_HEADER_DUMP = 17
 };
 
-namespace dunedaq {
-namespace dfmodules {
+namespace dunedaq::dfmodules {
 
 DataWriterModule::DataWriterModule(const std::string& name)
   : dunedaq::appfwk::DAQModule(name)
@@ -92,32 +91,6 @@ DataWriterModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcfg)
   }
 
   m_trigger_record_connection = inputs[0]->UID();
-
-  auto modules = mcfg->get_modules();
-  std::string trb_uid = "";
-  bool is_trmon = false;
-  for (auto& mod : modules) {
-    if (mod->class_name() == "TRBModule") {
-      trb_uid = mod->UID();
-      break;
-    }
-    if (mod->class_name() == "TRMonRequestorModule") {
-      is_trmon = true;
-      break;
-    }
-  }
-
-  if (!is_trmon) {
-    auto trbdal = mcfg->get_dal<appmodel::TRBModule>(trb_uid);
-    if (!trbdal) {
-      throw appfwk::CommandFailed(ERS_HERE, "init", get_name(), "Unable to retrieve TRB configuration object");
-    }
-    for (auto con : trbdal->get_inputs()) {
-      if (con->get_data_type() == datatype_to_string<dfmessages::TriggerDecision>()) {
-        m_trigger_decision_connection = con->UID();
-      }
-    }
-  }
 
   // try to create the receiver to see test the connection anyway
   m_tr_receiver = iom->get_receiver<std::unique_ptr<daqdataformats::TriggerRecord>>(m_trigger_record_connection);
@@ -172,7 +145,7 @@ DataWriterModule::do_conf(const CommandData_t&)
   }
 
   // ensure that we have a valid dataWriter instance
-  if (m_data_writer.get() == nullptr) {
+  if (m_data_writer == nullptr) {
     throw InvalidDataWriterModule(ERS_HERE, get_name());
   }
 
@@ -188,26 +161,6 @@ DataWriterModule::do_start(const CommandData_t& payload)
   m_data_storage_is_enabled = (!start_params.disable_data_storage);
   m_run_number = start_params.run;
 
-  TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Sending initial TriggerDecisionToken to DFO to announce my presence";
-  dfmessages::TriggerDecisionToken token;
-  token.run_number = 0;
-  token.trigger_number = 0;
-  token.decision_destination = m_trigger_decision_connection;
-
-  int wasSentSuccessfully = 5;
-  do {
-    try {
-      m_token_output->send(std::move(token), m_queue_timeout);
-      wasSentSuccessfully = 0;
-    } catch (const ers::Issue& excpt) {
-      std::ostringstream oss_warn;
-      oss_warn << "Send with sender \"" << m_token_output->get_name() << "\" failed";
-      ers::warning(iomanager::OperationFailed(ERS_HERE, oss_warn.str(), excpt));
-      wasSentSuccessfully--;
-      std::this_thread::sleep_for(std::chrono::microseconds(5000));
-    }
-  } while (wasSentSuccessfully);
-
   // 04-Feb-2021, KAB: added this call to allow DataStore to prepare for the run.
   // I've put this call fairly early in this method because it could throw an
   // exception and abort the run start.  And, it seems sensible to avoid starting
@@ -215,7 +168,7 @@ DataWriterModule::do_start(const CommandData_t& payload)
   if (m_data_storage_is_enabled) {
 
     // ensure that we have a valid dataWriter instance
-    if (m_data_writer.get() == nullptr) {
+    if (m_data_writer == nullptr) {
       // this check is done essentially to notify the user
       // in case the "start" has been called before the "conf"
       ers::fatal(InvalidDataWriterModule(ERS_HERE, get_name()));
@@ -227,8 +180,6 @@ DataWriterModule::do_start(const CommandData_t& payload)
       throw UnableToStart(ERS_HERE, get_name(), m_run_number, excpt);
     }
   }
-
-  m_seqno_counts.clear();
 
   m_records_received = 0;
   m_records_received_tot = 0;
@@ -356,37 +307,18 @@ DataWriterModule::receive_trigger_record(std::unique_ptr<daqdataformats::Trigger
   }
 
   bool send_trigger_complete_message = m_running.load();
-  if (trigger_record_ptr->get_header_ref().get_max_sequence_number() > 0) {
-    daqdataformats::trigger_number_t trigno = trigger_record_ptr->get_header_ref().get_trigger_number();
-    if (m_seqno_counts.count(trigno) > 0) {
-      ++m_seqno_counts[trigno];
-    } else {
-      m_seqno_counts[trigno] = 1;
-    }
-    // in the following comparison GT (>) is used since the counts are one-based and the
-    // max sequence number is zero-based.
-    if (m_seqno_counts[trigno] > trigger_record_ptr->get_header_ref().get_max_sequence_number()) {
-      m_seqno_counts.erase(trigno);
-    } else {
-      // Using const .count and .at to avoid reintroducing element to map
-      TLOG_DEBUG(TLVL_SEQNO_MAP_CONTENTS)
-        << get_name() << ": the sequence number count for trigger number " << trigno << " is "
-        << (m_seqno_counts.count(trigno) ? m_seqno_counts.at(trigno) : 0) << " (number of entries "
-        << "in the seqno map is " << m_seqno_counts.size() << ").";
-      send_trigger_complete_message = false;
-    }
-  }
   if (send_trigger_complete_message) {
-    TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Pushing the TriggerDecisionToken for trigger number "
-                                << trigger_record_ptr->get_header_ref().get_trigger_number()
-                                << " onto the relevant output queue";
-    dfmessages::TriggerDecisionToken token;
-    token.run_number = m_run_number;
-    token.trigger_number = trigger_record_ptr->get_header_ref().get_trigger_number();
-    token.decision_destination = m_trigger_decision_connection;
-
     bool wasSentSuccessfully = false;
     do {
+      TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Pushing the TriggerDecisionToken for trigger number "
+                                  << trigger_record_ptr->get_header_ref().get_trigger_number()
+                                  << " onto the relevant output queue";
+      dfmessages::TriggerDecisionToken token;
+      token.trigger_id =
+        dfmessages::TriggerId{ m_run_number, trigger_record_ptr->get_header_ref().get_trigger_number() };
+      token.sequence_number = trigger_record_ptr->get_header_ref().get_sequence_number();
+      token.writer_identifier = m_writer_identifier;
+
       try {
         m_token_output->send(std::move(token), m_queue_timeout);
         wasSentSuccessfully = true;
@@ -418,7 +350,6 @@ DataWriterModule::do_work(std::atomic<bool>& running_flag)
   }
 }
 
-} // namespace dfmodules
-} // namespace dunedaq
+} // namespace dunedaq::dfmodules
 
 DEFINE_DUNE_DAQ_MODULE(dunedaq::dfmodules::DataWriterModule)
