@@ -6,8 +6,8 @@
  * received with this code.
  */
 
-#ifndef DFMODULES_PLUGINS_DATAFLOWORCHESTRATOR_HPP_
-#define DFMODULES_PLUGINS_DATAFLOWORCHESTRATOR_HPP_
+#ifndef DFMODULES_PLUGINS_DFOMODULE_HPP_
+#define DFMODULES_PLUGINS_DFOMODULE_HPP_
 
 #include "dfmodules/TriggerRecordBuilderData.hpp"
 
@@ -28,6 +28,7 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#include <set>
 #include <string>
 #include <utility>
 #include <vector>
@@ -48,8 +49,9 @@ ERS_DECLARE_ISSUE(dfmodules,
                   "DFOModule encountered run number mismatch: recvd (" << received_run_number << ") != " << run_number
                                                                        << " from " << src_app << " for trigger_number "
                                                                        << trig_num,
-                  ((uint32_t)received_run_number)((uint32_t)run_number)((std::string)src_app)(
-                    (uint32_t)trig_num)) // NOLINT(build/unsigned)
+                  ((uint32_t)received_run_number)             // NOLINT(build/unsigned)
+                  ((uint32_t)run_number)                      // NOLINT(build/unsigned)
+                  ((std::string)src_app)((uint32_t)trig_num)) // NOLINT(build/unsigned)
 ERS_DECLARE_ISSUE(dfmodules,
                   IncompleteTriggerDecision,
                   "TriggerDecision " << trigger_number << " didn't complete within timeout in run " << run_number,
@@ -140,8 +142,8 @@ private:
   // Struct for statistic
   struct TriggerData
   {
-    std::atomic<uint64_t> received{ 0 };
-    std::atomic<uint64_t> completed{ 0 };
+    std::atomic<uint64_t> received{ 0 };  // NOLINT(build/unsigned)
+    std::atomic<uint64_t> completed{ 0 }; // NOLINT(build/unsigned)
   };
   static std::set<trgdataformats::TriggerCandidateData::Type> unpack_types(
     decltype(dfmessages::TriggerDecision::trigger_type) t)
@@ -152,7 +154,7 @@ private:
     const std::bitset<64> bits(t);
     for (size_t i = 0; i < bits.size(); ++i) {
       if (bits[i])
-        results.insert((trgdataformats::TriggerCandidateData::Type)i);
+        results.insert(static_cast<trgdataformats::TriggerCandidateData::Type>(i));
     }
     return results;
   }
@@ -181,4 +183,4 @@ private:
 } // namespace dfmodules
 } // namespace dunedaq
 
-#endif // DFMODULES_PLUGINS_DATAFLOWORCHESTRATOR_HPP_
+#endif // DFMODULES_PLUGINS_DFOMODULE_HPP_

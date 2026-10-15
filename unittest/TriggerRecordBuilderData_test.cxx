@@ -15,6 +15,7 @@
 #include "boost/test/unit_test.hpp"
 
 #include <chrono>
+#include <memory>
 #include <thread>
 #include <utility>
 

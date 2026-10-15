@@ -144,7 +144,7 @@ DFOModule::do_start(const CommandData_t& payload)
     bool is_ready = m_busy_sender->is_ready_for_sending(std::chrono::milliseconds(100));
     TLOG_DEBUG(0) << "The sender for TriggerInhibit messages " << (is_ready ? "is" : "is not") << " ready.";
   }
-  for (auto trb_conn : m_trb_conn_ids) {
+  for (auto const& trb_conn : m_trb_conn_ids) {
     auto sender = iom->get_sender<dfmessages::TriggerDecision>(trb_conn);
     if (sender != nullptr) {
       bool is_ready = sender->is_ready_for_sending(std::chrono::milliseconds(100));
@@ -227,7 +227,7 @@ DFOModule::receive_trigger_decision(const dfmessages::TriggerDecision& decision)
   ++m_received_decisions;
   auto trigger_types = unpack_types(decision.trigger_type);
   for (const auto t : trigger_types) {
-    ++get_trigger_counter(t).received;
+    ++(get_trigger_counter(t).received);
   }
 
   std::chrono::steady_clock::time_point decision_assigned;
@@ -405,7 +405,7 @@ DFOModule::receive_trigger_complete_token(const dfmessages::TriggerDecisionToken
     auto dec_ptr = app_it->second->complete_assignment(token.trigger_number, m_metadata_function);
     auto trigger_types = unpack_types(dec_ptr->decision.trigger_type);
     for (const auto t : trigger_types)
-      ++get_trigger_counter(t).completed;
+      ++(get_trigger_counter(t).completed);
   } catch (AssignedTriggerDecisionNotFound const& err) {
     ers::error(err);
   }
@@ -473,7 +473,7 @@ DFOModule::notify_trigger_if_needed() const
   do {
     try {
       dfmessages::TriggerInhibit message{ busy, m_run_number };
-      m_busy_sender->send(std::move(message), m_queue_timeout);
+      m_busy_sender->send(std::move(message), m_queue_timeout); // NOLINT(performance-move-const-arg)
       wasSentSuccessfully = true;
       TLOG_DEBUG(TLVL_NOTIFY_TRIGGER) << get_name() << " Sent BUSY status " << busy << " to trigger in run "
                                       << m_run_number;
@@ -507,8 +507,9 @@ DFOModule::dispatch(const std::shared_ptr<AssignedTriggerDecision>& assignment)
       wasSentSuccessfully = true;
       ++m_sent_decisions;
       TLOG_DEBUG(TLVL_DISPATCH_TO_TRB) << get_name() << " Sent TriggerDecision for trigger_number "
-                                       << decision_copy.trigger_number << " to TRB at connection "
-                                       << assignment->connection_name << " for run number " << decision_copy.run_number;
+                                       << assignment->decision.trigger_number << " to TRB at connection "
+                                       << assignment->connection_name << " for run number "
+                                       << assignment->decision.run_number;
     } catch (const ers::Issue& excpt) {
       std::ostringstream oss_warn;
       oss_warn << "Send to connection \"" << assignment->connection_name << "\" failed";

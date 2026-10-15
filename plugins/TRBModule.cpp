@@ -34,6 +34,7 @@
 #include <limits>
 #include <memory>
 #include <numeric>
+#include <set>
 #include <string>
 #include <thread>
 #include <utility>
@@ -52,8 +53,7 @@ enum
   TLVL_FRAGMENT_RECEIVE = 22
 };
 
-namespace dunedaq {
-namespace dfmodules {
+namespace dunedaq::dfmodules {
 
 using daqdataformats::TriggerRecordStatusBits;
 
@@ -307,6 +307,7 @@ TRBModule::flush_trigger_records()
   // create all possible trigger record
   std::vector<TriggerId> triggers;
   for (const auto& entry : m_trigger_records) {
+    // NOLINTNEXTLINE(performance-inefficient-vector-operation)
     triggers.push_back(entry.first);
   }
 
@@ -505,7 +506,7 @@ TRBModule::create_trigger_records_and_dispatch(const dfmessages::TriggerDecision
       end = component.window_end;
   }
 
-  daqdataformats::timestamp_diff_t tot_width = end - begin;
+  auto tot_width = static_cast<daqdataformats::timestamp_diff_t>(end - begin);
   daqdataformats::sequence_number_t max_sequence_number =
     (m_max_sequence_length > 0 && tot_width > 0) ? ((tot_width - 1) / m_max_sequence_length) : 0;
 
@@ -643,7 +644,8 @@ TRBModule::dispatch_data_requests(dfmessages::DataRequest dr, const daqdataforma
 
     // send data request into the corresponding connection
     try {
-      sender->send(std::move(dr), m_dreq_queue_timeout);
+      dfmessages::DataRequest dr_copy = dr;
+      sender->send(std::move(dr_copy), m_dreq_queue_timeout);
       wasSentSuccessfully = true;
       ++m_generated_data_requests;
     } catch (const ers::Issue& excpt) {
@@ -661,6 +663,7 @@ TRBModule::send_trigger_record(const TriggerId& id)
 {
 
   trigger_record_ptr_t temp_record(extract_trigger_record(id));
+  size_t record_size = temp_record->get_fragments_ref().size();
 
   // Send to monitoring, if needed
 
@@ -685,7 +688,7 @@ TRBModule::send_trigger_record(const TriggerId& id)
             // HACK to copy the trigger record so we can send it off to monitoring
             auto trigger_record_bytes =
               serialization::serialize(temp_record, serialization::SerializationType::kMsgPack);
-            trigger_record_ptr_t record_copy = serialization::deserialize<trigger_record_ptr_t>(trigger_record_bytes);
+            auto record_copy = serialization::deserialize<trigger_record_ptr_t>(trigger_record_bytes);
             iom->get_sender<trigger_record_ptr_t>(it->data_destination)
               ->send(std::move(record_copy), m_tr_queue_timeout);
             ++m_trmon_sent_counter;
@@ -717,7 +720,7 @@ TRBModule::send_trigger_record(const TriggerId& id)
 
   if (!wasSentSuccessfully) {
     ++m_abandoned_trigger_records;
-    m_lost_fragments += temp_record->get_fragments_ref().size();
+    m_lost_fragments += record_size;
     ers::error(dunedaq::dfmodules::AbandonedTriggerDecision(ERS_HERE, id));
   }
 
@@ -768,7 +771,6 @@ TRBModule::check_stale_requests()
   return book_updates;
 }
 
-} // namespace dfmodules
-} // namespace dunedaq
+} // namespace dunedaq::dfmodules
 
 DEFINE_DUNE_DAQ_MODULE(dunedaq::dfmodules::TRBModule)
