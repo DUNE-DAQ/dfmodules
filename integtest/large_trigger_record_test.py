@@ -95,7 +95,13 @@ utility_functions.set_rtcm_trigger_params(conf_dict, trigger_rate=trigger_rate,
                                           readout_window_backshift_ticks=0,
                                           readout_window_before_ticks=readout_window_time_before,
                                           readout_window_after_ticks=readout_window_time_after)
-conf_dict.trace_debug_levels = {"fast": {"DefaultRequestHandlerModel.hxx": [10,13]}}
+# 20-Oct-2026, KAB: the TRACE messages in the DefaultRequestHandlerModel were used to debug
+# the inappropriate default values for the pop_limit_pct and pop_size_pct in our example config
+# (https://github.com/DUNE-DAQ/daqsystemtest/pull/354).
+# The TRACE messages in the DataWriter and DFO modules were used to investigate occasional
+# DFO stop timeouts caused by long trigger-record write times.
+conf_dict.trace_debug_levels = {"fast": {"DefaultRequestHandlerModel.hxx": [10,13],
+                                         "DataWriterModule": 10, "DFOModule": [21,22,23,24]}}
 
 conf_dict.config_substitutions.append(
     data_classes.attribute_substitution(
