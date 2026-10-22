@@ -482,7 +482,8 @@ DFOModule::receive_dataflow_status(const dfmessages::DataflowStatus& status)
     for (auto& trigger : status.triggers_building) {
       if (!m_assigned_trigger_decisions.count(trigger)) {
         ers::info(UnexpectedTriggerDecision(ERS_HERE, get_name(), trigger.trigger_number, status.decision_destination));
-        // Creating a placeholder for the assigned trigger decision with an empty TriggerDecision object. This is checked in receive_trigger_decision and updated if necessary.
+        // Creating a placeholder for the assigned trigger decision with an empty TriggerDecision object. This is
+        // checked in receive_trigger_decision and updated if necessary.
         m_assigned_trigger_decisions[trigger] = std::make_shared<AssignedTriggerDecision>(
           dfmessages::TriggerDecision(trigger.trigger_number, status.trigger_id.run_number),
           status.decision_destination);
@@ -492,7 +493,8 @@ DFOModule::receive_dataflow_status(const dfmessages::DataflowStatus& status)
       if (!m_assigned_trigger_decisions.count(trigger)) {
         ers::warning(
           UnexpectedTriggerDecision(ERS_HERE, get_name(), trigger.trigger_number, status.decision_destination));
-        // Creating a placeholder for the assigned trigger decision with an empty TriggerDecision object. This is checked in receive_trigger_decision and updated if necessary.
+        // Creating a placeholder for the assigned trigger decision with an empty TriggerDecision object. This is
+        // checked in receive_trigger_decision and updated if necessary.
         m_assigned_trigger_decisions[trigger] = std::make_shared<AssignedTriggerDecision>(
           dfmessages::TriggerDecision(trigger.trigger_number, status.trigger_id.run_number),
           status.decision_destination);
