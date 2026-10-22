@@ -71,7 +71,9 @@ TPStreamWriterModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcfg)
 void
 TPStreamWriterModule::generate_opmon_data()
 {
-  opmon::TPStreamWriterInfo info;
+  // Renamed to V2 because tardy_timeslice_max_seconds changed type from uint64 to double,
+  // which caused incompatibility with the influxdb table schema
+  opmon::TPStreamWriterInfoV2 info;
 
   info.set_heartbeat_tpsets_received(m_heartbeat_tpsets.exchange(0));
   info.set_tpsets_with_tps_received(m_tpsets_with_tps.exchange(0));

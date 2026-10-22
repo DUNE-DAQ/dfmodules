@@ -2,7 +2,9 @@ syntax = "proto3";
 
 package dunedaq.dfmodules.opmon;
 
-message TPStreamWriterInfo {
+// Renamed to V2 because tardy_timeslice_max_seconds changed type from uint64 to double,
+// which caused incompatibility with the influxdb table schema
+message TPStreamWriterInfoV2 {
 
   uint64 heartbeat_tpsets_received = 1; // incremental count of heartbeat TPSets received
   uint64 tpsets_with_tps_received = 2;  // incremental count of TPSets received that contain TPs
