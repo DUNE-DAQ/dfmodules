@@ -173,7 +173,7 @@ TRMonRequestorModule::do_stop(const CommandData_t& /*args*/)
 void
 TRMonRequestorModule::token_callback(const dfmessages::TriggerDecisionToken& token)
 {
-  if (token.run_number == *m_run_number) {
+  if (token.trigger_id.run_number == *m_run_number) {
     m_token_count++;
   }
 }
@@ -208,7 +208,7 @@ TRMonRequestorModule::send_trmon_request()
   }
 
   dfmessages::TRMonRequest req;
-  req.request_number = ++m_current_request_number;
+  req.request_number = ++m_current_request_number; // NOLINT(runtime/increment_decrement)
   req.trigger_type_mask = m_trigger_type_mask;
   req.run_number = *m_run_number;
   req.data_destination = m_reply_connection;

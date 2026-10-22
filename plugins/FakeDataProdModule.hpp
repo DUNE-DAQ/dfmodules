@@ -6,8 +6,8 @@
  * received with this code.
  */
 
-#ifndef DFMODULES_PLUGINS_FAKEDATAPROD_HPP_
-#define DFMODULES_PLUGINS_FAKEDATAPROD_HPP_
+#ifndef DFMODULES_PLUGINS_FAKEDATAPRODMODULE_HPP_
+#define DFMODULES_PLUGINS_FAKEDATAPRODMODULE_HPP_
 
 #include "daqdataformats/Fragment.hpp"
 #include "dfmessages/DataRequest.hpp"
@@ -99,4 +99,4 @@ private:
 } // namespace dfmodules
 } // namespace dunedaq
 
-#endif // DFMODULES_PLUGINS_FAKEDATAPROD_HPP_
+#endif // DFMODULES_PLUGINS_FAKEDATAPRODMODULE_HPP_
