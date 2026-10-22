@@ -87,6 +87,6 @@ private:
   using metric_counter_t = std::remove_const<const_metric_counter_t>::type;
   std::atomic<metric_counter_t> m_trigger_records_requested{ 0 };
 };
-}
+} // namespace dunedaq::dfmodules
 
 #endif // DFMODULES_PLUGINS_TRMONREQUESTORMODULE_HPP_

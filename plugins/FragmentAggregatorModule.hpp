@@ -7,8 +7,8 @@
  * received with this code.
  */
 
-#ifndef DFMODULES_PLUGINS_FRAGMENTAGGREGATOR_HPP_
-#define DFMODULES_PLUGINS_FRAGMENTAGGREGATOR_HPP_
+#ifndef DFMODULES_PLUGINS_FRAGMENTAGGREGATORMODULE_HPP_
+#define DFMODULES_PLUGINS_FRAGMENTAGGREGATORMODULE_HPP_
 
 #include "daqdataformats/Fragment.hpp"
 #include "daqdataformats/SourceID.hpp"
@@ -22,9 +22,11 @@
 
 #include <atomic>
 #include <map>
+#include <memory>
 #include <mutex>
 #include <string>
 #include <tuple>
+#include <vector>
 
 namespace dunedaq {
 /**
@@ -34,9 +36,9 @@ ERS_DECLARE_ISSUE(dfmodules,                  ///< Namespace
                   UnknownFragmentDestination, ///< Issue class name
                   "Could not find a valid destination for sending Fragment with trigger number: "
                     << trg_num << " sequence number: " << seq_num << " from DLH " << src, ///< Message
-                  ((uint64_t)trg_num)                                                     ///< Message parameters
-                  ((uint16_t)seq_num)                                                     ///< Message parameters
-                  ((daqdataformats::SourceID)src)                                         ///< Message parameters
+                  ((uint64_t)trg_num)             ///< Message parameters // NOLINT(build/unsigned)
+                  ((uint16_t)seq_num)             ///< Message parameters // NOLINT(build/unsigned)
+                  ((daqdataformats::SourceID)src) ///< Message parameters
 )
 
 ERS_DECLARE_ISSUE(dfmodules,         ///< Namespace
@@ -72,16 +74,16 @@ private:
   // Input and Output Connection names
   std::string m_data_req_input;
   std::string m_fragment_input;
-  std::map<int, std::string> m_producer_conn_ids;
+  std::map<uint32_t, std::string> m_producer_conn_ids; // NOLINT(build/unsigned)
   std::vector<std::string> m_trb_conn_ids;
 
   std::chrono::milliseconds m_fragment_send_timeout;
 
   // Opmon
-  uint64_t get_current_time_us();
-  uint64_t m_timestamp_before_dr;
-  uint64_t m_timestamp_before_frag;
-  using metric_counter_type = uint64_t;
+  uint64_t get_current_time_us();       // NOLINT(build/unsigned)
+  uint64_t m_timestamp_before_dr;       // NOLINT(build/unsigned)
+  uint64_t m_timestamp_before_frag;     // NOLINT(build/unsigned)
+  using metric_counter_type = uint64_t; // NOLINT(build/unsigned)
   std::atomic<metric_counter_type> m_data_requests_received{ 0 };
   std::atomic<metric_counter_type> m_data_requests_processed{ 0 };
   std::atomic<metric_counter_type> m_data_requests_failed{ 0 };
@@ -107,4 +109,4 @@ private:
 } // namespace dfmodules
 } // namespace dunedaq
 
-#endif // DFMODULES_PLUGINS_FRAGMENTAGGREGATOR_HPP_
+#endif // DFMODULES_PLUGINS_FRAGMENTAGGREGATORMODULE_HPP_
