@@ -55,15 +55,9 @@ inline void
 SummaryTextDataStore::open_new_file(const std::string& unique_filename)
 {
 
+  // any exception is wrapped in a FileOperationProblem by FileDataStoreImpl
   auto& file_handle{ get_file_handle() };
-  try {
-    file_handle.reset(new dfmodules::SummaryTextDataWriter(unique_filename));
-  } catch (std::exception const& excpt) {
-    throw FileOperationProblem(ERS_HERE, get_name(), unique_filename, excpt);
-  } catch (...) { // NOLINT(runtime/exceptions)
-    // NOLINT here because we *ARE* re-throwing the exception!
-    throw FileOperationProblem(ERS_HERE, get_name(), unique_filename);
-  }
+  file_handle.reset(new dfmodules::SummaryTextDataWriter(unique_filename));
 
   TLOG_DEBUG(TLVL_BASIC) << get_name() << "Created stub file (" << unique_filename << ").";
 }
