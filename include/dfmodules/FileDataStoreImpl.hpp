@@ -48,7 +48,9 @@
 #include "boost/date_time/posix_time/posix_time.hpp"
 #include "boost/lexical_cast.hpp"
 
+#include <chrono>
 #include <concepts>
+#include <cstdint>
 #include <cstdlib>
 #include <functional>
 #include <limits>
@@ -207,6 +209,9 @@ public:
   // Getter functions which can be used by the implementation of open_new_file
 
   std::string get_application_name() const noexcept { return m_writer_identifier; }
+
+  // When the file being opened was created, in milliseconds since the epoch; its name has the same time
+  uint64_t get_file_creation_timestamp_ms() const noexcept { return m_file_creation_timestamp_ms; } // NOLINT
 
   unsigned get_compression_level() const noexcept
   { // NOLINT(build/unsigned)
@@ -455,9 +460,14 @@ private:
       // non-trivial amount of time, and then the timestamp in the filename (determined
       // here) and the timestamp in the creation_timestamp HDF5 file Attribute
       // (determined inside the HDF5RawDataFile constructor) could disagree.
+      // The creation time is now taken once, here: the filename uses it (in seconds) and
+      // open_new_file() implementations store it (get_file_creation_timestamp_ms()).
+      m_file_creation_timestamp_ms = static_cast<uint64_t>( // NOLINT(build/unsigned)
+        std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch())
+          .count());
       std::string unique_filename = file_name;
       if (!m_disable_unique_suffix) {
-        time_t now{ time(nullptr) };
+        time_t now{ static_cast<time_t>(m_file_creation_timestamp_ms / 1000) };
         std::string file_creation_timestamp = boost::posix_time::to_iso_string(boost::posix_time::from_time_t(now));
         // timestamp substring
         size_t ufn_len = unique_filename.length();
@@ -491,6 +501,7 @@ private:
   }
 
   std::unique_ptr<FileHandleClass> m_file_handle;
+  uint64_t m_file_creation_timestamp_ms{ 0 }; // NOLINT(build/unsigned)
 
   daqdataformats::run_number_t m_run_number;
 

@@ -13,9 +13,11 @@
 #define DFMODULES_PLUGINS_HDF5DATASTORE_HPP_
 
 #include "dfmodules/FileDataStoreImpl.hpp"
+#include "dfmodules/RawDataFileConfig.hpp"
 
 #include "appmodel/DataStoreConf.hpp"
 #include "hdf5libs/HDF5RawDataFile.hpp"
+#include "rawdatafilelibs/FileMetadata.hpp"
 
 #include <memory>
 #include <string>
@@ -30,7 +32,8 @@ public:
                          std::shared_ptr<appfwk::ConfigurationManager> mcfg,
                          std::string const& writer_name)
     : FileDataStoreImpl(name, mcfg, writer_name)
-    , m_source_id_geo_id_map{ hdf5libs::HDF5SourceIDHandler::make_source_id_geo_id_map(get_session()) }
+    , m_source_id_geo_id_map{ make_source_id_geo_id_map(get_session()) }
+    , m_file_layout_parameters{ make_hdf5_file_layout_parameters(*get_configuration().get_file_layout_params()) }
   {
   }
 
@@ -38,32 +41,30 @@ public:
 
 private:
   // Built once from the configuration, rather than on every file open
-  const hdf5libs::HDF5SourceIDHandler::source_id_geo_id_map_t m_source_id_geo_id_map;
+  const daqdataformats::SourceIDGeoIDMap m_source_id_geo_id_map;
+  const hdf5libs::HDF5FileLayoutParameters m_file_layout_parameters;
 };
 
 inline void
 HDF5DataStore::open_new_file(const std::string& unique_filename)
 {
+  rawdatafilelibs::FileMetadata metadata;
+  metadata.run_number = get_run_number();
+  metadata.file_index = get_file_index();
+  metadata.application_name = get_application_name();
+  metadata.record_type = rawdatafilelibs::string_to_record_type(m_file_layout_parameters.record_name_prefix);
+  metadata.creation_timestamp_ms = get_file_creation_timestamp_ms(); // the same time as in the file name
+  metadata.operational_environment = get_operational_environment();
+  metadata.offline_data_stream = get_offline_data_stream();
+  metadata.run_is_for_test_purposes = get_run_is_for_test_purposes();
+  metadata.compression_level = get_compression_level();
 
-  // any exception is wrapped in a FileOperationProblem by FileDataStoreImpl
+  // the file is always created exclusively; any exception is wrapped in a FileOperationProblem by FileDataStoreImpl
   auto& file_handle{ get_file_handle() };
-  file_handle.reset(new hdf5libs::HDF5RawDataFile(unique_filename,
-                                                  get_run_number(),
-                                                  get_file_index(),
-                                                  get_application_name(),
-                                                  get_configuration().get_file_layout_params(),
-                                                  m_source_id_geo_id_map,
-                                                  get_compression_level(),
-                                                  ".writing",
-                                                  HighFive::File::Excl));
+  file_handle = std::make_unique<hdf5libs::HDF5RawDataFile>(
+    unique_filename, metadata, m_file_layout_parameters, m_source_id_geo_id_map, ".writing");
 
   TLOG_DEBUG(TLVL_BASIC) << get_name() << "Created HDF5 file (" << unique_filename << ").";
-
-  // write attributes that aren't being handled by the HDF5RawDataFile right now
-  file_handle->write_attribute("operational_environment", std::string(get_operational_environment()));
-  file_handle->write_attribute("offline_data_stream", std::string(get_offline_data_stream()));
-  file_handle->write_attribute("run_was_for_test_purposes",
-                               std::string(get_run_is_for_test_purposes() ? "true" : "false"));
 }
 
 } // namespace dunedaq::dfmodules

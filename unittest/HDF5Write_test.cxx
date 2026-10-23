@@ -27,6 +27,7 @@
 
 #include "boost/test/unit_test.hpp"
 
+#include <algorithm>
 #include <cstdint>
 #include <cstdlib>
 #include <filesystem>
@@ -235,6 +236,47 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
   BOOST_REQUIRE_EQUAL(file_list.size(), 1);
 }
 
+// The time in the file name and the creation_timestamp attribute come from the same clock reading
+BOOST_AUTO_TEST_CASE(FileNameMatchesCreationTimestamp)
+{
+  std::string file_path(std::filesystem::temp_directory_path());
+  std::string delete_pattern = "hdf5writetest.*\\.hdf5";
+  delete_files_matching_pattern(file_path, delete_pattern);
+
+  CfgFixture cfg("test-session-3-1");
+  auto data_writer_conf = cfg.cfgMgr->get_dal<dunedaq::appmodel::DataWriterModule>("dwm-01")->get_configuration();
+  auto data_store_conf = data_writer_conf->get_data_store_params();
+  auto data_store_conf_obj = data_store_conf->config_object();
+  data_store_conf_obj.set_by_val<std::string>("directory_path", file_path);
+  data_store_conf_obj.set_by_val<bool>("disable_unique_filename_suffix", false);
+
+  auto data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.cfgMgr, "dwm-01");
+  data_store_ptr->write(create_trigger_record(1, 10 + sizeof(dunedaq::daqdataformats::FragmentHeader), 2));
+  data_store_ptr.reset();
+
+  std::vector<std::string> file_list = get_files_matching_pattern(file_path, delete_pattern);
+  BOOST_REQUIRE_EQUAL(file_list.size(), 1);
+
+  std::smatch match;
+  std::regex timestamp_pattern(".*_([0-9]{8}T[0-9]{6})\\.hdf5$");
+  BOOST_REQUIRE(std::regex_match(file_list[0], match, timestamp_pattern));
+
+  dunedaq::hdf5libs::HDF5RawDataFile file(file_list[0]);
+  auto creation_timestamp_ms = file.get_attribute<size_t>("creation_timestamp");
+  std::string expected =
+    boost::posix_time::to_iso_string(boost::posix_time::from_time_t(static_cast<time_t>(creation_timestamp_ms / 1000)));
+  BOOST_REQUIRE_EQUAL(match[1].str(), expected);
+
+  // the run-context attributes are still written
+  auto names = file.get_attribute_names();
+  for (auto const& name : { "operational_environment", "offline_data_stream", "run_was_for_test_purposes" }) {
+    BOOST_REQUIRE(std::find(names.begin(), names.end(), name) != names.end());
+  }
+  file.close();
+
+  delete_files_matching_pattern(file_path, delete_pattern);
+}
+
 BOOST_AUTO_TEST_CASE(CheckWritingSuffix)
 {
   std::string file_path(std::filesystem::temp_directory_path());
@@ -291,6 +333,12 @@ BOOST_AUTO_TEST_CASE(NoDuplicateTimeSlices)
 
   auto data_store_conf_obj = data_store_conf->config_object();
   data_store_conf_obj.set_by_val<std::string>("directory_path", file_path);
+
+  // TimeSlices need a TimeSlice file layout, as TP-stream writers are configured with
+  auto layout_conf_obj = data_store_conf->get_file_layout_params()->config_object();
+  layout_conf_obj.set_by_val<std::string>("record_name_prefix", "TimeSlice");
+  layout_conf_obj.set_by_val<int32_t>("digits_for_sequence_number", 0);
+  layout_conf_obj.set_by_val<std::string>("record_header_dataset_name", "TimeSliceHeader");
 
   auto data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.cfgMgr, "dwm-01");
 
