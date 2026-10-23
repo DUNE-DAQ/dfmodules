@@ -42,7 +42,6 @@ HDF5DataStore::open_new_file(const std::string& unique_filename)
 
   auto& file_handle{ get_file_handle() };
   try {
-
     file_handle.reset(
       new hdf5libs::HDF5RawDataFile(unique_filename,
                                     get_run_number(),

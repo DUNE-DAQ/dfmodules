@@ -19,8 +19,7 @@
 #include <utility>
 #include <vector>
 
-namespace dunedaq {
-namespace dfmodules {
+namespace dunedaq::dfmodules {
 
 void
 TimeSliceAccumulator::add_tpset(trigger::TPSet&& tpset)
@@ -98,6 +97,7 @@ TimeSliceAccumulator::get_timeslice()
     frag->set_window_begin(m_begin_time);
     frag->set_window_end(m_end_time);
     frag->set_element_id(sourceid);
+    // NOLINTNEXTLINE(build/unsigned)
     frag->set_detector_id(static_cast<uint16_t>(detdataformats::DetID::Subdetector::kDAQ));
     frag->set_type(daqdataformats::FragmentType::kTriggerPrimitive);
 
@@ -140,7 +140,7 @@ TPBundleHandler::add_tpset(trigger::TPSet&& tpset)
     if (!m_one_or_more_time_slices_have_aged_out) {
       TLOG() << "Updating the slice numbers of existing accumulators by " << (1 - diff);
       for (auto& [local_tsidx, local_accum] : m_timeslice_accumulators) {
-        local_accum.update_slice_number(1 - diff);
+        local_accum.update_slice_number(static_cast<int>(1 - diff));
       }
       m_slice_index_offset -= (1 - diff);
     } else {
@@ -208,6 +208,7 @@ TPBundleHandler::get_all_remaining_timeslices()
   std::vector<std::unique_ptr<daqdataformats::TimeSlice>> list_of_timeslices;
 
   for (auto& [tsidx, accum] : m_timeslice_accumulators) {
+    // NOLINTNEXTLINE(performance-inefficient-vector-operation)
     list_of_timeslices.push_back(accum.get_timeslice());
   }
 
@@ -219,5 +220,4 @@ TPBundleHandler::get_all_remaining_timeslices()
   return list_of_timeslices;
 }
 
-} // namespace dfmodules
-} // namespace dunedaq
+} // namespace dunedaq::dfmodules

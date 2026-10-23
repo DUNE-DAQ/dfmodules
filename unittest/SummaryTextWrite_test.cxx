@@ -169,10 +169,11 @@ BOOST_AUTO_TEST_CASE(CheckDerivation)
   auto data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.cfgMgr, "dwm-01");
   BOOST_REQUIRE(data_store_ptr != nullptr);
 
-  const auto stub_data_store_ptr{ dynamic_cast<const dunedaq::dfmodules::SummaryTextDataStore*>(
-    data_store_ptr.get()) }; // NOLINT(runtime/rtti)
+  // NOLINTNEXTLINE(runtime/rtti)
+  const auto stub_data_store_ptr{ dynamic_cast<const dunedaq::dfmodules::SummaryTextDataStore*>(data_store_ptr.get()) };
   BOOST_REQUIRE(stub_data_store_ptr != nullptr);
 
+  // NOLINTNEXTLINE
   BOOST_REQUIRE_EQUAL(stub_data_store_ptr->get_derivval(), 773); // 773 should be the value in the config
 }
 
