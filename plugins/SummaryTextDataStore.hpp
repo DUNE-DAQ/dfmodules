@@ -14,10 +14,10 @@
 #ifndef DFMODULES_PLUGINS_SUMMARYTEXTDATASTORE_HPP_
 #define DFMODULES_PLUGINS_SUMMARYTEXTDATASTORE_HPP_
 
-#include "dfmodules/FileDataStoreImpl.hpp"
+#include "dfmodules/FileDataStore.hpp"
 
 #include "dfmodules/DataStoreConfTestDeriv.hpp"
-#include "dfmodules/SummaryTextDataWriter.hpp"
+#include "dfmodules/SummaryTextWriterBackend.hpp"
 
 #include <limits>
 #include <memory>
@@ -25,20 +25,18 @@
 
 namespace dunedaq::dfmodules {
 
-class SummaryTextDataStore : public FileDataStoreImpl<dfmodules::SummaryTextDataWriter>
+class SummaryTextDataStore : public FileDataStore
 {
 
 public:
   explicit SummaryTextDataStore(std::string const& name,
                                 std::shared_ptr<appfwk::ConfigurationManager> mcfg,
                                 std::string const& writer_name)
-    : FileDataStoreImpl(name, mcfg, writer_name)
+    : FileDataStore(name, mcfg, writer_name)
     , m_sds_config{ mcfg ? mcfg->get_dal<DataStoreConfTestDeriv>(name) : nullptr }
     , m_derivval{ m_sds_config ? m_sds_config->get_derivval() : std::numeric_limits<int>::max() }
   {
   }
-
-  void open_new_file(const std::string& unique_filename) override;
 
   // This getter function and its underlying member serve no purpose
   // other than to demonstrate how you can add parameters specific
@@ -46,21 +44,20 @@ public:
 
   int get_derivval() const { return m_derivval; }
 
+protected:
+  std::string get_file_name_extension() const override { return "txt"; }
+
+  std::unique_ptr<rawdatafilelibs::WriterBackend> make_writer_backend(
+    rawdatafilelibs::RecordType /*record_type*/) override
+  {
+    return std::make_unique<SummaryTextWriterBackend>();
+  }
+
 private:
   const DataStoreConfTestDeriv* m_sds_config;
   const int m_derivval;
 };
 
-inline void
-SummaryTextDataStore::open_new_file(const std::string& unique_filename)
-{
-
-  // any exception is wrapped in a FileOperationProblem by FileDataStoreImpl
-  auto& file_handle{ get_file_handle() };
-  file_handle.reset(new dfmodules::SummaryTextDataWriter(unique_filename));
-
-  TLOG_DEBUG(TLVL_BASIC) << get_name() << "Created stub file (" << unique_filename << ").";
-}
 } // namespace dunedaq::dfmodules
 
 #endif // DFMODULES_PLUGINS_SUMMARYTEXTDATASTORE_HPP_

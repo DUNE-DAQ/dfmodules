@@ -8,6 +8,7 @@
 
 #include "DataWriterModule.hpp"
 #include "dfmodules/CommonIssues.hpp"
+#include "dfmodules/WriteRetry.hpp"
 #include "dfmodules/opmon/DataWriter.pb.h"
 
 #include "appmodel/DataStoreConf.hpp"
@@ -267,38 +268,36 @@ DataWriterModule::receive_trigger_record(std::unique_ptr<daqdataformats::Trigger
 
       std::chrono::steady_clock::time_point start_time = std::chrono::steady_clock::now();
 
-      bool should_retry = true;
-      size_t retry_wait_usec = m_min_write_retry_time_usec;
-      do {
-        should_retry = false;
-        try {
-          m_data_writer->write(*trigger_record_ptr);
+      auto const& header = trigger_record_ptr->get_header_ref();
+      WriteRetryPolicy retry_policy{ std::chrono::microseconds(m_min_write_retry_time_usec),
+                                     std::chrono::microseconds(m_max_write_retry_time_usec),
+                                     static_cast<double>(m_write_retry_time_increase_factor) };
+      try {
+        bool written = write_with_retries([&]() { m_data_writer->write(*trigger_record_ptr); },
+                                          [&](const RetryableDataStoreProblem& excpt) {
+                                            ers::error(DataWritingProblem(ERS_HERE,
+                                                                          get_name(),
+                                                                          header.get_trigger_number(),
+                                                                          header.get_sequence_number(),
+                                                                          header.get_run_number(),
+                                                                          excpt));
+                                          },
+                                          retry_policy,
+                                          m_running);
+        if (written) {
           ++m_records_written;
           ++m_records_written_tot;
           m_bytes_output += trigger_record_ptr->get_total_size_bytes();
           m_bytes_output_tot += trigger_record_ptr->get_total_size_bytes();
-        } catch (const RetryableDataStoreProblem& excpt) {
-          should_retry = true;
-          ers::error(DataWritingProblem(ERS_HERE,
-                                        get_name(),
-                                        trigger_record_ptr->get_header_ref().get_trigger_number(),
-                                        trigger_record_ptr->get_header_ref().get_sequence_number(),
-                                        trigger_record_ptr->get_header_ref().get_run_number(),
-                                        excpt));
-          if (retry_wait_usec > m_max_write_retry_time_usec) {
-            retry_wait_usec = m_max_write_retry_time_usec;
-          }
-          usleep(retry_wait_usec);
-          retry_wait_usec *= m_write_retry_time_increase_factor;
-        } catch (const std::exception& excpt) {
-          ers::error(DataWritingProblem(ERS_HERE,
-                                        get_name(),
-                                        trigger_record_ptr->get_header_ref().get_trigger_number(),
-                                        trigger_record_ptr->get_header_ref().get_sequence_number(),
-                                        trigger_record_ptr->get_header_ref().get_run_number(),
-                                        excpt));
         }
-      } while (should_retry && m_running.load());
+      } catch (const std::exception& excpt) {
+        ers::error(DataWritingProblem(ERS_HERE,
+                                      get_name(),
+                                      header.get_trigger_number(),
+                                      header.get_sequence_number(),
+                                      header.get_run_number(),
+                                      excpt));
+      }
 
       std::chrono::steady_clock::time_point end_time = std::chrono::steady_clock::now();
       auto writing_time = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);

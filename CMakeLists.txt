@@ -8,6 +8,8 @@ find_package(appfwk REQUIRED)
 find_package(logging REQUIRED)
 find_package(ers REQUIRED)
 find_package(hdf5libs REQUIRED)
+find_package(rawdatafilelibs REQUIRED)
+find_package(appmodel REQUIRED)
 find_package(dfmessages REQUIRED)
 find_package(opmonlib REQUIRED)
 find_package(iomanager REQUIRED)
@@ -24,9 +26,9 @@ daq_add_dal_library(datastore_derived.schema.xml TEST DEP_PKGS appmodel confmode
 daq_protobuf_codegen( opmon/*.proto )
 
 ##############################################################################
-daq_add_library( TriggerInhibitAgent.cpp TPBundleHandler.cpp SummaryTextDataWriter.cpp
+daq_add_library( TriggerInhibitAgent.cpp TPBundleHandler.cpp FileDataStore.cpp SummaryTextWriterBackend.cpp
                  LINK_LIBRARIES
-                 opmonlib::opmonlib ers::ers HighFive appfwk::appfwk logging::logging stdc++fs dfmessages::dfmessages utilities::utilities trigger::trigger detdataformats::detdataformats trgdataformats::trgdataformats)
+                 opmonlib::opmonlib ers::ers HighFive appfwk::appfwk appmodel::appmodel rawdatafilelibs::rawdatafilelibs logging::logging stdc++fs dfmessages::dfmessages utilities::utilities trigger::trigger detdataformats::detdataformats trgdataformats::trgdataformats)
 
 daq_add_plugin( SummaryTextDataStore     duneDataStore LINK_LIBRARIES dfmodules dfmodules_dal)
 daq_add_plugin( HDF5DataStore     duneDataStore LINK_LIBRARIES dfmodules hdf5libs::hdf5libs stdc++fs)
@@ -58,6 +60,7 @@ daq_add_unit_test( DFOProtocol_test LINK_LIBRARIES dfmodules )
 add_dependencies( DFOProtocol_test dfmodules_DFOModule_duneDAQModule dfmodules_DataflowStatusModule_duneDAQModule)
 
 daq_add_unit_test( DataStoreFactory_test    LINK_LIBRARIES dfmodules)
+daq_add_unit_test( WriteRetry_test          LINK_LIBRARIES dfmodules )
 
 daq_add_unit_test( TRBModule_test LINK_LIBRARIES dfmodules )
 add_dependencies( TRBModule_test dfmodules_TRBModule_duneDAQModule)

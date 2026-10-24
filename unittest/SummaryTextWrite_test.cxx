@@ -2,7 +2,7 @@
  * @file SummaryTextWrite_test.cxx Application that ostensibly tests and
  * demonstrates the write functionality of the SummaryTextDataStore class,
  * but can be more properly thought of as a test of the base class
- * from which it inherits, FileDataStoreImpl
+ * from which it inherits, FileDataStore
  *
  * This is heavily modeled on the HDF5Write unit tests, with
  * adjustments where necessary (max file size different in the
@@ -156,7 +156,7 @@ BOOST_AUTO_TEST_SUITE(SummaryTextWrite_test)
 BOOST_AUTO_TEST_CASE(NullConfiguration)
 {
   BOOST_CHECK_THROW(make_data_store("SummaryTextDataStore", "dummy", nullptr, "dummy"),
-                    dunedaq::dfmodules::FileDataStoreImplBadConfiguration);
+                    dunedaq::dfmodules::FileDataStoreBadConfiguration);
 }
 
 BOOST_AUTO_TEST_CASE(CheckDerivation)
@@ -186,7 +186,7 @@ BOOST_AUTO_TEST_CASE(WriteEventFiles)
   const int fragment_size = 10 + sizeof(dunedaq::daqdataformats::FragmentHeader);
 
   // delete any pre-existing files so that we start with a clean slate
-  std::string delete_pattern = "stubwritetest.*\\.txt";
+  std::string delete_pattern = "stubwritetest.*\\.txt(\\.writing)?";
   delete_files_matching_pattern(file_path, delete_pattern);
 
   // create the DataStore
@@ -227,7 +227,7 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
   const int fragment_size = 10 + sizeof(dunedaq::daqdataformats::FragmentHeader);
 
   // delete any pre-existing files so that we start with a clean slate
-  std::string delete_pattern = "stubwritetest.*\\.txt";
+  std::string delete_pattern = "stubwritetest.*\\.txt(\\.writing)?";
   delete_files_matching_pattern(file_path, delete_pattern);
 
   // create the DataStore
@@ -262,7 +262,7 @@ BOOST_AUTO_TEST_CASE(NoDuplicateTimeSlices)
   std::string file_path(std::filesystem::temp_directory_path());
 
   // delete any pre-existing files so that we start with a clean slate
-  std::string delete_pattern = "stubwritetest.*\\.txt";
+  std::string delete_pattern = "stubwritetest.*\\.txt(\\.writing)?";
   delete_files_matching_pattern(file_path, delete_pattern);
 
   CfgFixture cfg("test-session-3-1");
@@ -279,7 +279,8 @@ BOOST_AUTO_TEST_CASE(NoDuplicateTimeSlices)
 
   data_store_ptr->write(timeslice);
 
-  std::string search_pattern = "stubwritetest.*\\.txt";
+  // the file is still open, so it has its in-progress name
+  std::string search_pattern = "stubwritetest.*\\.txt\\.writing";
   std::vector<std::string> file_list = get_files_matching_pattern(file_path, search_pattern);
   BOOST_REQUIRE_EQUAL(file_list.size(), 1);
 
@@ -325,7 +326,7 @@ BOOST_AUTO_TEST_CASE(FileSizeLimitResultsInMultipleFiles)
   const int fragment_size = 10000;
 
   // delete any pre-existing files so that we start with a clean slate
-  std::string delete_pattern = "stubwritetest.*\\.txt";
+  std::string delete_pattern = "stubwritetest.*\\.txt(\\.writing)?";
   delete_files_matching_pattern(file_path, delete_pattern);
 
   // create the DataStore
@@ -371,7 +372,7 @@ BOOST_AUTO_TEST_CASE(SmallFileSizeLimitDataBlockListWrite)
   // 5 APAs times 100000 bytes per fragment gives 500,000 bytes per TR
 
   // delete any pre-existing files so that we start with a clean slate
-  std::string delete_pattern = "stubwritetest.*\\.txt";
+  std::string delete_pattern = "stubwritetest.*\\.txt(\\.writing)?";
   delete_files_matching_pattern(file_path, delete_pattern);
 
   // create the DataStore

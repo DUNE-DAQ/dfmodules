@@ -9,6 +9,7 @@
 #include "TPStreamWriterModule.hpp"
 #include "dfmodules/CommonIssues.hpp"
 #include "dfmodules/TPBundleHandler.hpp"
+#include "dfmodules/WriteRetry.hpp"
 #include "dfmodules/opmon/TPStreamWriter.pb.h"
 
 #include "appmodel/DataStoreConf.hpp"
@@ -38,6 +39,11 @@ enum
 };
 
 namespace dunedaq::dfmodules {
+
+namespace {
+// TimeSlice writes are retried after 1 ms, doubling up to 1 s
+const WriteRetryPolicy s_write_retry_policy{ std::chrono::milliseconds(1), std::chrono::seconds(1), 2.0 };
+} // namespace
 
 TPStreamWriterModule::TPStreamWriterModule(const std::string& name)
   : dunedaq::appfwk::DAQModule(name)
@@ -260,57 +266,55 @@ TPStreamWriterModule::do_work(std::atomic<bool>& running_flag)
       if (m_data_storage_is_enabled) {
 
         // write the TSH and the fragments as a set of data blocks
-        bool should_retry = true;
-        size_t retry_wait_usec = 1000;
-        do {
-          should_retry = false;
-          size_t number_of_tps =
-            (timeslice_ptr->get_sum_of_fragment_payload_sizes() / sizeof(trgdataformats::TriggerPrimitive));
-          try {
-            m_data_writer->write(*timeslice_ptr);
+        size_t number_of_tps =
+          (timeslice_ptr->get_sum_of_fragment_payload_sizes() / sizeof(trgdataformats::TriggerPrimitive));
+        try {
+          bool written =
+            write_with_retries([&]() { m_data_writer->write(*timeslice_ptr); },
+                               [&](const RetryableDataStoreProblem& excpt) {
+                                 ers::error(DataWritingProblem(ERS_HERE,
+                                                               get_name(),
+                                                               timeslice_ptr->get_header().timeslice_number,
+                                                               timeslice_ptr->get_header().run_number,
+                                                               excpt));
+                               },
+                               s_write_retry_policy,
+                               running_flag);
+          if (written) {
             ++m_timeslices_written;
             m_bytes_output += timeslice_ptr->get_total_size_bytes();
             m_tps_written += number_of_tps;
             m_total_tps_written += number_of_tps;
-          } catch (const RetryableDataStoreProblem& excpt) {
-            should_retry = true;
-            ers::error(DataWritingProblem(ERS_HERE,
-                                          get_name(),
-                                          timeslice_ptr->get_header().timeslice_number,
-                                          timeslice_ptr->get_header().run_number,
-                                          excpt));
-            usleep(retry_wait_usec);
-            retry_wait_usec = std::min(retry_wait_usec * 2, 1000000UL);
-          } catch (const IgnorableDataStoreProblem& excpt) {
-            int timeslice_number_diff = largest_timeslice_number - timeslice_ptr->get_header().timeslice_number;
-            double seconds_too_late = m_accumulation_interval_seconds * timeslice_number_diff;
-            m_tardy_timeslice_max_seconds = std::max(m_tardy_timeslice_max_seconds.load(), seconds_too_late);
-            m_tps_discarded += number_of_tps;
-            m_total_tps_discarded += number_of_tps;
-            if (m_warn_user_when_tardy_tps_are_discarded) {
-              std::ostringstream sid_list;
-              bool first_frag = true;
-              for (auto const& frag_ptr : timeslice_ptr->get_fragments_ref()) {
-                if (first_frag) {
-                  first_frag = false;
-                } else {
-                  sid_list << ",";
-                }
-                sid_list << frag_ptr->get_element_id().to_string();
-              }
-              ers::warning(TardyTPsDiscarded(
-                ERS_HERE, get_name(), sid_list.str(), timeslice_ptr->get_header().timeslice_number, seconds_too_late));
-            }
-          } catch (const std::exception& excpt) {
-            m_tps_discarded += number_of_tps;
-            m_total_tps_discarded += number_of_tps;
-            ers::error(DataWritingProblem(ERS_HERE,
-                                          get_name(),
-                                          timeslice_ptr->get_header().timeslice_number,
-                                          timeslice_ptr->get_header().run_number,
-                                          excpt));
           }
-        } while (should_retry && running_flag.load());
+        } catch (const IgnorableDataStoreProblem& excpt) {
+          int timeslice_number_diff = largest_timeslice_number - timeslice_ptr->get_header().timeslice_number;
+          double seconds_too_late = m_accumulation_interval_seconds * timeslice_number_diff;
+          m_tardy_timeslice_max_seconds = std::max(m_tardy_timeslice_max_seconds.load(), seconds_too_late);
+          m_tps_discarded += number_of_tps;
+          m_total_tps_discarded += number_of_tps;
+          if (m_warn_user_when_tardy_tps_are_discarded) {
+            std::ostringstream sid_list;
+            bool first_frag = true;
+            for (auto const& frag_ptr : timeslice_ptr->get_fragments_ref()) {
+              if (first_frag) {
+                first_frag = false;
+              } else {
+                sid_list << ",";
+              }
+              sid_list << frag_ptr->get_element_id().to_string();
+            }
+            ers::warning(TardyTPsDiscarded(
+              ERS_HERE, get_name(), sid_list.str(), timeslice_ptr->get_header().timeslice_number, seconds_too_late));
+          }
+        } catch (const std::exception& excpt) {
+          m_tps_discarded += number_of_tps;
+          m_total_tps_discarded += number_of_tps;
+          ers::error(DataWritingProblem(ERS_HERE,
+                                        get_name(),
+                                        timeslice_ptr->get_header().timeslice_number,
+                                        timeslice_ptr->get_header().run_number,
+                                        excpt));
+        }
       } // if (m_data_storage_is_enabled) {
     }
 

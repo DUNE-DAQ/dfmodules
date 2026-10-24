@@ -16,15 +16,19 @@
 #include "appmodel/DataWriterConf.hpp"
 #include "appmodel/DataWriterModule.hpp"
 #include "appmodel/FilenameParams.hpp"
+#include "appmodel/HDF5DataStoreConf.hpp"
 #include "confmodel/DetectorConfig.hpp"
 #include "confmodel/Session.hpp"
 #include "detdataformats/DetID.hpp"
 #include "dfmodules/opmon/DataStore.pb.h"
+#include "hdf5libs/HDF5RawDataFile.hpp"
 #include "opmonlib/TestOpMonManager.hpp"
 #include "opmonlib/Utils.hpp"
+#include "rawdatafilelibs/BackendFactory.hpp"
 
 #define BOOST_TEST_MODULE HDF5Write_test // NOLINT
 
+#include "boost/date_time/posix_time/posix_time.hpp"
 #include "boost/test/unit_test.hpp"
 
 #include <algorithm>
@@ -152,7 +156,7 @@ BOOST_AUTO_TEST_SUITE(HDF5Write_test)
 BOOST_AUTO_TEST_CASE(NullConfiguration)
 {
   BOOST_CHECK_THROW(make_data_store("HDF5DataStore", "dummy", nullptr, "dummy"),
-                    dunedaq::dfmodules::FileDataStoreImplBadConfiguration);
+                    dunedaq::dfmodules::FileDataStoreBadConfiguration);
 }
 
 BOOST_AUTO_TEST_CASE(WriteEventFiles)
@@ -165,7 +169,7 @@ BOOST_AUTO_TEST_CASE(WriteEventFiles)
   const int fragment_size = 10 + sizeof(dunedaq::daqdataformats::FragmentHeader);
 
   // delete any pre-existing files so that we start with a clean slate
-  std::string delete_pattern = "hdf5writetest.*\\.hdf5";
+  std::string delete_pattern = "hdf5writetest.*\\.hdf5(\\.writing)?";
   delete_files_matching_pattern(file_path, delete_pattern);
 
   // create the DataStore
@@ -206,7 +210,7 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
   const int fragment_size = 10 + sizeof(dunedaq::daqdataformats::FragmentHeader);
 
   // delete any pre-existing files so that we start with a clean slate
-  std::string delete_pattern = "hdf5writetest.*\\.hdf5";
+  std::string delete_pattern = "hdf5writetest.*\\.hdf5(\\.writing)?";
   delete_files_matching_pattern(file_path, delete_pattern);
 
   // create the DataStore
@@ -240,7 +244,7 @@ BOOST_AUTO_TEST_CASE(WriteOneFile)
 BOOST_AUTO_TEST_CASE(FileNameMatchesCreationTimestamp)
 {
   std::string file_path(std::filesystem::temp_directory_path());
-  std::string delete_pattern = "hdf5writetest.*\\.hdf5";
+  std::string delete_pattern = "hdf5writetest.*\\.hdf5(\\.writing)?";
   delete_files_matching_pattern(file_path, delete_pattern);
 
   CfgFixture cfg("test-session-3-1");
@@ -277,6 +281,39 @@ BOOST_AUTO_TEST_CASE(FileNameMatchesCreationTimestamp)
   delete_files_matching_pattern(file_path, delete_pattern);
 }
 
+// An HDF5DataStoreConf gives the HDF5 layout through hdf5_file_layout_params (here a TimeSlice layout)
+BOOST_AUTO_TEST_CASE(HDF5DataStoreConfLayout)
+{
+  std::string file_path(std::filesystem::temp_directory_path());
+  std::string delete_pattern = "hdf5writetest.*\\.hdf5(\\.writing)?";
+  delete_files_matching_pattern(file_path, delete_pattern);
+
+  CfgFixture cfg("test-session-3-1");
+  // reached the way DataWriterModule reaches it, through its DataWriterConf; the directory_path change has to come
+  // before anything reads the object's attributes (conffwk DAL objects cache them)
+  auto data_writer_conf = cfg.cfgMgr->get_dal<dunedaq::appmodel::DataWriterModule>("dwm-ts")->get_configuration();
+  auto data_store_conf = data_writer_conf->get_data_store_params();
+  BOOST_REQUIRE(data_store_conf != nullptr);
+  auto data_store_conf_obj = data_store_conf->config_object();
+  data_store_conf_obj.set_by_val<std::string>("directory_path", file_path);
+  BOOST_REQUIRE(data_store_conf->cast<dunedaq::appmodel::HDF5DataStoreConf>() != nullptr);
+
+  auto data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.cfgMgr, "dwm-01");
+  dunedaq::daqdataformats::TimeSlice timeslice{ 77, 999 }; // timeslice #, run #
+  data_store_ptr->write(timeslice);
+  data_store_ptr.reset();
+
+  std::vector<std::string> file_list = get_files_matching_pattern(file_path, "hdf5writetest.*\\.hdf5");
+  BOOST_REQUIRE_EQUAL(file_list.size(), 1);
+  auto reader = dunedaq::rawdatafilelibs::open_raw_data_file(file_list[0]);
+  BOOST_REQUIRE(reader->get_record_type() == dunedaq::rawdatafilelibs::RecordType::kTimeSlice);
+  BOOST_REQUIRE(reader->contains(dunedaq::daqdataformats::RecordID{ 77 }));
+  BOOST_REQUIRE_EQUAL(reader->get_metadata().run_number, 0); // prepare_for_run wasn't called
+  reader->close();
+
+  delete_files_matching_pattern(file_path, delete_pattern);
+}
+
 BOOST_AUTO_TEST_CASE(CheckWritingSuffix)
 {
   std::string file_path(std::filesystem::temp_directory_path());
@@ -287,7 +324,7 @@ BOOST_AUTO_TEST_CASE(CheckWritingSuffix)
   const int fragment_size = 10 + sizeof(dunedaq::daqdataformats::FragmentHeader);
 
   // delete any pre-existing files so that we start with a clean slate
-  std::string delete_pattern = "hdf5writetest.*\\.hdf5";
+  std::string delete_pattern = "hdf5writetest.*\\.hdf5(\\.writing)?";
   delete_files_matching_pattern(file_path, delete_pattern);
 
   // create the DataStore
@@ -396,7 +433,7 @@ BOOST_AUTO_TEST_CASE(FileSizeLimitResultsInMultipleFiles)
   // So, 15 TRs would give 7,500,000 bytes total.
 
   // delete any pre-existing files so that we start with a clean slate
-  std::string delete_pattern = "hdf5writetest.*\\.hdf5";
+  std::string delete_pattern = "hdf5writetest.*\\.hdf5(\\.writing)?";
   delete_files_matching_pattern(file_path, delete_pattern);
 
   // create the DataStore
@@ -440,7 +477,7 @@ BOOST_AUTO_TEST_CASE(SmallFileSizeLimitDataBlockListWrite)
   // 5 APAs times 100000 bytes per fragment gives 500,000 bytes per TR
 
   // delete any pre-existing files so that we start with a clean slate
-  std::string delete_pattern = "hdf5writetest.*\\.hdf5";
+  std::string delete_pattern = "hdf5writetest.*\\.hdf5(\\.writing)?";
   delete_files_matching_pattern(file_path, delete_pattern);
 
   // create the DataStore
@@ -503,9 +540,9 @@ check_opmon_counters_over_runs_and_rollovers(const std::string& mode, size_t max
 
   auto collect = [&]() {
     opmgr.collect();
-    auto entries = opmgr.get_backend_facility()->get_entries(std::regex(".*FileDataStoreImplInfo"));
+    auto entries = opmgr.get_backend_facility()->get_entries(std::regex(".*FileDataStoreInfo"));
     BOOST_REQUIRE_EQUAL(entries.size(), 1);
-    return dunedaq::opmonlib::from_entry<dunedaq::dfmodules::opmon::FileDataStoreImplInfo>(entries.front());
+    return dunedaq::opmonlib::from_entry<dunedaq::dfmodules::opmon::FileDataStoreInfo>(entries.front());
   };
   collect(); // start from zero
 

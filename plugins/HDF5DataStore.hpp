@@ -12,60 +12,69 @@
 #ifndef DFMODULES_PLUGINS_HDF5DATASTORE_HPP_
 #define DFMODULES_PLUGINS_HDF5DATASTORE_HPP_
 
-#include "dfmodules/FileDataStoreImpl.hpp"
-#include "dfmodules/RawDataFileConfig.hpp"
+#include "dfmodules/FileDataStore.hpp"
+#include "dfmodules/HDF5FileConfig.hpp"
 
 #include "appmodel/DataStoreConf.hpp"
-#include "hdf5libs/HDF5RawDataFile.hpp"
+#include "appmodel/HDF5DataStoreConf.hpp"
+#include "hdf5libs/HDF5Backend.hpp"
+#include "rawdatafilelibs/Backend.hpp"
 #include "rawdatafilelibs/FileMetadata.hpp"
 
 #include <memory>
+#include <optional>
 #include <string>
 
 namespace dunedaq::dfmodules {
 
-class HDF5DataStore : public FileDataStoreImpl<hdf5libs::HDF5RawDataFile>
+/**
+ * @brief Writes DUNE DAQ HDF5 files, with hdf5libs' HDF5 backend. Configured with an
+ * appmodel::HDF5DataStoreConf (or, during the transition, a plain DataStoreConf).
+ */
+class HDF5DataStore : public FileDataStore
 {
 
 public:
   explicit HDF5DataStore(std::string const& name,
                          std::shared_ptr<appfwk::ConfigurationManager> mcfg,
                          std::string const& writer_name)
-    : FileDataStoreImpl(name, mcfg, writer_name)
-    , m_source_id_geo_id_map{ make_source_id_geo_id_map(get_session()) }
-    , m_file_layout_parameters{ make_hdf5_file_layout_parameters(*get_configuration().get_file_layout_params()) }
+    : FileDataStore(name, mcfg, writer_name)
+    , m_file_layout_parameters{ find_file_layout_parameters() }
   {
   }
 
-  void open_new_file(const std::string& unique_filename) override;
+protected:
+  std::string get_file_name_extension() const override { return "hdf5"; }
+
+  std::unique_ptr<rawdatafilelibs::WriterBackend> make_writer_backend(
+    rawdatafilelibs::RecordType /*record_type*/) override
+  {
+    hdf5libs::HDF5WriterOptions options;
+    options.file_layout_parameters = m_file_layout_parameters; // unset: the standard layout for the record type
+    return std::make_unique<hdf5libs::HDF5WriterBackend>(options);
+  }
 
 private:
-  // Built once from the configuration, rather than on every file open
-  const daqdataformats::SourceIDGeoIDMap m_source_id_geo_id_map;
-  const hdf5libs::HDF5FileLayoutParameters m_file_layout_parameters;
+  // The HDF5 layout parameters: from HDF5DataStoreConf.hdf5_file_layout_params, else from the deprecated
+  // DataStoreConf.file_layout_params, else none (the standard layout)
+  std::optional<hdf5libs::HDF5FileLayoutParameters> find_file_layout_parameters() const
+  {
+    auto const* hdf5_conf = get_configuration().cast<appmodel::HDF5DataStoreConf>();
+    if (hdf5_conf != nullptr && hdf5_conf->get_hdf5_file_layout_params() != nullptr) {
+      return make_hdf5_file_layout_parameters(*hdf5_conf->get_hdf5_file_layout_params());
+    }
+    if (get_configuration().get_file_layout_params() != nullptr) {
+      ers::warning(DeprecatedDataStoreConfiguration(
+        ERS_HERE,
+        get_name(),
+        "DataStoreConf.file_layout_params is deprecated; use an HDF5DataStoreConf with hdf5_file_layout_params"));
+      return make_hdf5_file_layout_parameters(*get_configuration().get_file_layout_params());
+    }
+    return std::nullopt;
+  }
+
+  const std::optional<hdf5libs::HDF5FileLayoutParameters> m_file_layout_parameters;
 };
-
-inline void
-HDF5DataStore::open_new_file(const std::string& unique_filename)
-{
-  rawdatafilelibs::FileMetadata metadata;
-  metadata.run_number = get_run_number();
-  metadata.file_index = get_file_index();
-  metadata.application_name = get_application_name();
-  metadata.record_type = rawdatafilelibs::string_to_record_type(m_file_layout_parameters.record_name_prefix);
-  metadata.creation_timestamp_ms = get_file_creation_timestamp_ms(); // the same time as in the file name
-  metadata.operational_environment = get_operational_environment();
-  metadata.offline_data_stream = get_offline_data_stream();
-  metadata.run_is_for_test_purposes = get_run_is_for_test_purposes();
-  metadata.compression_level = get_compression_level();
-
-  // the file is always created exclusively; any exception is wrapped in a FileOperationProblem by FileDataStoreImpl
-  auto& file_handle{ get_file_handle() };
-  file_handle = std::make_unique<hdf5libs::HDF5RawDataFile>(
-    unique_filename, metadata, m_file_layout_parameters, m_source_id_geo_id_map, ".writing");
-
-  TLOG_DEBUG(TLVL_BASIC) << get_name() << "Created HDF5 file (" << unique_filename << ").";
-}
 
 } // namespace dunedaq::dfmodules
 

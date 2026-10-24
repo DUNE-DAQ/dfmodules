@@ -63,7 +63,7 @@
 
 <oks-data>
 
-<info name="" type="" num-of-items="62" oks-format="data" oks-version="862f2957270" created-by="gjc" created-on="thinkpad" creation-time="20231116T105446" last-modified-by="eflumerf" last-modified-on="ironvirt9.mshome.net" last-modification-time="20260827T192751"/>
+<info name="" type="" num-of-items="66" oks-format="data" oks-version="862f2957270" created-by="gjc" created-on="thinkpad" creation-time="20231116T105446" last-modified-by="eflumerf" last-modified-on="ironvirt9.mshome.net" last-modification-time="20260827T192751"/>
 
 <include>
  <file path="schema/confmodel/dunedaq.schema.xml"/>
@@ -115,6 +115,18 @@
 
 <obj class="DataWriterModule" id="dwm-01">
  <rel name="configuration" class="DataWriterConf" id="dw-01"/>
+</obj>
+
+<obj class="DataWriterConf" id="dw-ts">
+ <attr name="data_storage_prescale" type="s32" val="1"/>
+ <attr name="min_write_retry_time_ms" type="s32" val="1"/>
+ <attr name="max_write_retry_time_ms" type="s32" val="1000"/>
+ <attr name="write_retry_time_increase_factor" type="s32" val="2"/>
+ <rel name="data_store_params" class="HDF5DataStoreConf" id="hdf5-timeslice-store"/>
+</obj>
+
+<obj class="DataWriterModule" id="dwm-ts">
+ <rel name="configuration" class="DataWriterConf" id="dw-ts"/>
 </obj>
 
 <obj class="DetectorConfig" id="dummy-detector">
@@ -282,6 +294,29 @@
  <attr name="digits_for_run_number" type="s32" val="6"/>
  <attr name="digits_for_file_index" type="s32" val="4"/>
  <attr name="digits_for_trigger_number" type="s32" val="6"/>
+</obj>
+
+<obj class="HDF5DataStoreConf" id="hdf5-timeslice-store">
+ <attr name="type" type="string" val="HDF5DataStore"/>
+ <attr name="directory_path" type="string" val="."/>
+ <attr name="mode" type="enum" val="all-per-file"/>
+ <attr name="max_file_size" type="u64" val="4294967296"/>
+ <attr name="disable_unique_filename_suffix" type="bool" val="0"/>
+ <attr name="free_space_safety_factor" type="s32" val="5"/>
+ <rel name="filename_params" class="FilenameParams" id="default"/>
+ <rel name="hdf5_file_layout_params" class="HDF5FileLayoutParams" id="timeslice"/>
+</obj>
+
+<obj class="HDF5FileLayoutParams" id="timeslice">
+ <attr name="record_name_prefix" type="string" val="TimeSlice"/>
+ <attr name="digits_for_record_number" type="s32" val="6"/>
+ <attr name="digits_for_sequence_number" type="s32" val="0"/>
+ <attr name="record_header_dataset_name" type="string" val="TimeSliceHeader"/>
+ <attr name="raw_data_group_name" type="string" val="RawData"/>
+ <attr name="view_group_name" type="string" val="Views"/>
+ <rel name="path_params_list">
+  <ref class="HDF5PathParams" id="TPC"/>
+ </rel>
 </obj>
 
 <obj class="HDF5FileLayoutParams" id="default">
