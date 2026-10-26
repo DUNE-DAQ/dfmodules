@@ -338,17 +338,17 @@ DataflowStatusModule::receive_trb_completion(const dfmessages::TRBCompletion& co
   {
     std::lock_guard<std::mutex> lock(m_status_mutex);
 
-    ++m_num_trb_completions_received;
-
     if (!m_current_status.triggers_building.count(completion.trigger_id)) {
       // OK to receive a TRBCompletion for a trigger record that has already been completed
       if (!m_current_status.recently_completed_triggers.count(completion.trigger_id)) {
         ers::error(UnexpectedTRBCompletion(
           ERS_HERE, get_name(), completion.trigger_id.trigger_number, m_current_status.trigger_id.run_number));
-        ++m_num_unexpected_trb_completions_received;
       }
+      ++m_num_unexpected_trb_completions_received;
       return;
     }
+
+    ++m_num_trb_completions_received;
 
     if (completion.trigger_record_max_sequence_number > 0) {
       if (m_building_sequences.count(completion.trigger_id) > 0) {
