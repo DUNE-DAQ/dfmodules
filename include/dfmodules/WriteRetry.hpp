@@ -33,7 +33,8 @@ struct WriteRetryPolicy
 /**
  * @brief Calls write() until it succeeds or keep_trying becomes false. Each time write() throws
  * RetryableDataStoreProblem, on_retryable_problem(issue) is called (e.g. to report it), and the
- * next attempt waits as the policy says. Any other exception is passed on to the caller.
+ * next attempt waits as the policy says. keep_trying is checked before and after each wait, so a
+ * stop requested during a wait prevents another attempt. Any other exception is passed on to the caller.
  * @return true if write() succeeded, false if keep_trying became false first
  */
 template<typename WriteFunction, typename ProblemHandler>
@@ -57,6 +58,9 @@ write_with_retries(WriteFunction&& write,
     }
     wait = std::min(wait, policy.max_wait);
     std::this_thread::sleep_for(wait);
+    if (!keep_trying.load()) {
+      return false;
+    }
     wait = std::chrono::microseconds{ static_cast<std::chrono::microseconds::rep>(static_cast<double>(wait.count()) *
                                                                                   factor) };
   }

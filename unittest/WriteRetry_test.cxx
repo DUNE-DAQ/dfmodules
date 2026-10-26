@@ -15,6 +15,7 @@
 #include <atomic>
 #include <chrono>
 #include <stdexcept>
+#include <thread>
 
 using namespace dunedaq::dfmodules;
 
@@ -62,6 +63,32 @@ BOOST_AUTO_TEST_CASE(StopsWhenAskedTo)
   };
   BOOST_REQUIRE(!write_with_retries(write, [](const RetryableDataStoreProblem&) {}, s_fast_policy, keep_trying));
   BOOST_REQUIRE_EQUAL(calls, 1);
+}
+
+// A stop requested while waiting before a retry prevents the retry: write() is not called again
+BOOST_AUTO_TEST_CASE(StopDuringWaitPreventsAnotherAttempt)
+{
+  const WriteRetryPolicy slow_policy{ std::chrono::milliseconds(500), std::chrono::milliseconds(500), 1.0 };
+  std::atomic<bool> keep_trying{ true };
+  std::atomic<int> calls{ 0 };
+  auto write = [&]() {
+    ++calls;
+    throw RetryableDataStoreProblem(ERS_HERE, "test", "a test write");
+  };
+
+  // stops the retries while write_with_retries is in its 500 ms wait after the first attempt
+  std::thread stopper([&]() {
+    while (calls.load() == 0) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    keep_trying = false;
+  });
+  bool written = write_with_retries(write, [](const RetryableDataStoreProblem&) {}, slow_policy, keep_trying);
+  stopper.join();
+
+  BOOST_REQUIRE(!written);
+  BOOST_REQUIRE_EQUAL(calls.load(), 1);
 }
 
 BOOST_AUTO_TEST_CASE(OtherExceptionsArePassedOn)

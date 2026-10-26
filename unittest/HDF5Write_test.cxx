@@ -282,6 +282,41 @@ BOOST_AUTO_TEST_CASE(FileNameMatchesCreationTimestamp)
 }
 
 // An HDF5DataStoreConf gives the HDF5 layout through hdf5_file_layout_params (here a TimeSlice layout)
+// An HDF5DataStoreConf without hdf5_file_layout_params (and no deprecated DataStoreConf layout) uses
+// the standard layout for the record type
+BOOST_AUTO_TEST_CASE(HDF5DataStoreDefaultLayout)
+{
+  std::string file_path(std::filesystem::temp_directory_path());
+  std::string delete_pattern = "hdf5writetest.*\\.hdf5(\\.writing)?";
+  delete_files_matching_pattern(file_path, delete_pattern);
+
+  CfgFixture cfg("test-session-3-1");
+  // reached the way DataWriterModule reaches it (see HDF5DataStoreConfLayout)
+  auto data_writer_conf =
+    cfg.cfgMgr->get_dal<dunedaq::appmodel::DataWriterModule>("dwm-default-layout")->get_configuration();
+  auto data_store_conf = data_writer_conf->get_data_store_params();
+  BOOST_REQUIRE(data_store_conf != nullptr);
+  auto data_store_conf_obj = data_store_conf->config_object();
+  data_store_conf_obj.set_by_val<std::string>("directory_path", file_path);
+  auto hdf5_conf = data_store_conf->cast<dunedaq::appmodel::HDF5DataStoreConf>();
+  BOOST_REQUIRE(hdf5_conf != nullptr);
+  BOOST_REQUIRE(hdf5_conf->get_hdf5_file_layout_params() == nullptr);
+  BOOST_REQUIRE(data_store_conf->get_file_layout_params() == nullptr);
+
+  auto data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.cfgMgr, "dwm-01");
+  data_store_ptr->write(create_trigger_record(1, 10 + sizeof(dunedaq::daqdataformats::FragmentHeader), 2));
+  data_store_ptr.reset();
+
+  std::vector<std::string> file_list = get_files_matching_pattern(file_path, "hdf5writetest.*\\.hdf5");
+  BOOST_REQUIRE_EQUAL(file_list.size(), 1);
+  auto reader = dunedaq::rawdatafilelibs::open_raw_data_file(file_list[0]);
+  BOOST_REQUIRE(reader->get_record_type() == dunedaq::rawdatafilelibs::RecordType::kTriggerRecord);
+  BOOST_REQUIRE_EQUAL(reader->get_trigger_record(dunedaq::daqdataformats::RecordID{ 1 }).get_fragments_ref().size(), 2);
+  reader->close();
+
+  delete_files_matching_pattern(file_path, delete_pattern);
+}
+
 BOOST_AUTO_TEST_CASE(HDF5DataStoreConfLayout)
 {
   std::string file_path(std::filesystem::temp_directory_path());
