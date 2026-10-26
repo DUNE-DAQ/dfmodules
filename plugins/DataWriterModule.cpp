@@ -257,6 +257,8 @@ DataWriterModule::receive_trigger_record(std::unique_ptr<daqdataformats::Trigger
     return;
   }
 
+  std::chrono::steady_clock::time_point start_time = std::chrono::steady_clock::now();
+
   // 03-Feb-2021, KAB: adding support for a data-storage prescale.
   // In this "if" statement, I deliberately compare the result of (N mod prescale) to 1
   // instead of zero, since I think that it would be nice to always get the first event
@@ -264,8 +266,6 @@ DataWriterModule::receive_trigger_record(std::unique_ptr<daqdataformats::Trigger
   if (m_data_storage_prescale <= 1 || ((m_records_received_tot.load() % m_data_storage_prescale) == 1)) {
 
     if (m_data_storage_is_enabled) {
-
-      std::chrono::steady_clock::time_point start_time = std::chrono::steady_clock::now();
 
       bool should_retry = true;
       size_t retry_wait_usec = m_min_write_retry_time_usec;
@@ -308,6 +308,11 @@ DataWriterModule::receive_trigger_record(std::unique_ptr<daqdataformats::Trigger
 
   bool send_trigger_complete_message = m_running.load();
   if (send_trigger_complete_message) {
+    auto writing_time =
+      std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start_time);
+    if (writing_time < m_token_delay_usec) {
+      std::this_thread::sleep_for(std::chrono::microseconds(m_token_delay_usec - writing_time));
+    }
     bool wasSentSuccessfully = false;
     do {
       TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << ": Pushing the TriggerDecisionToken for trigger number "

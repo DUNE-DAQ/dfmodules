@@ -64,6 +64,7 @@ private:
   std::shared_ptr<appfwk::ConfigurationManager> m_module_configuration;
   const appmodel::DataWriterConf* m_data_writer_conf;
   std::string m_writer_identifier;
+  std::chrono::microseconds m_token_delay_usec{ 1000 };
 
   // size_t m_sleep_msec_while_running;
   std::chrono::milliseconds m_queue_timeout;
