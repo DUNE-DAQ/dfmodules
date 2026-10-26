@@ -12,6 +12,7 @@
 // We need the actual HDF5DataStore.hpp plugin header so the unit tests can access its exceptions
 #include "../plugins/HDF5DataStore.hpp" // NOLINT(build/include_path)
 
+#include "appmodel/ConfigurationHelper.hpp"
 #include "appmodel/DataStoreConf.hpp"
 #include "appmodel/DataWriterConf.hpp"
 #include "appmodel/DataWriterModule.hpp"
@@ -22,6 +23,7 @@
 #include "detdataformats/DetID.hpp"
 #include "dfmodules/opmon/DataStore.pb.h"
 #include "hdf5libs/HDF5RawDataFile.hpp"
+#include "hdf5libs/HDF5SourceIDHandler.hpp"
 #include "opmonlib/TestOpMonManager.hpp"
 #include "opmonlib/Utils.hpp"
 #include "rawdatafilelibs/BackendFactory.hpp"
@@ -277,6 +279,42 @@ BOOST_AUTO_TEST_CASE(FileNameMatchesCreationTimestamp)
     BOOST_REQUIRE(std::find(names.begin(), names.end(), name) != names.end());
   }
   file.close();
+
+  delete_files_matching_pattern(file_path, delete_pattern);
+}
+
+// The file stores the session's SourceID->GeoID map, built by appmodel's ConfigurationHelper. That
+// gives the same map as the deprecated hdf5libs function it replaces.
+BOOST_AUTO_TEST_CASE(GeoIDMapStoredInFile)
+{
+  for (auto const& session_name : { "test-session-3-1", "test-session-5-1", "test-session-5-10" }) {
+    CfgFixture cfg(session_name);
+    auto geo_id_map = dunedaq::appmodel::ConfigurationHelper(cfg.cfgMgr->get_session()).get_source_id_geo_id_map();
+    BOOST_REQUIRE(!geo_id_map.empty());
+    BOOST_REQUIRE(geo_id_map.to_encoded() ==
+                  dunedaq::hdf5libs::HDF5SourceIDHandler::make_source_id_geo_id_map(*cfg.cfgMgr->get_session()));
+  }
+
+  std::string file_path(std::filesystem::temp_directory_path());
+  std::string delete_pattern = "hdf5writetest.*\\.hdf5(\\.writing)?";
+  delete_files_matching_pattern(file_path, delete_pattern);
+
+  CfgFixture cfg("test-session-3-1");
+  auto data_writer_conf = cfg.cfgMgr->get_dal<dunedaq::appmodel::DataWriterModule>("dwm-01")->get_configuration();
+  auto data_store_conf = data_writer_conf->get_data_store_params();
+  auto data_store_conf_obj = data_store_conf->config_object();
+  data_store_conf_obj.set_by_val<std::string>("directory_path", file_path);
+
+  auto data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.cfgMgr, "dwm-01");
+  data_store_ptr->write(create_trigger_record(1, 10 + sizeof(dunedaq::daqdataformats::FragmentHeader), 2));
+  data_store_ptr.reset();
+
+  std::vector<std::string> file_list = get_files_matching_pattern(file_path, delete_pattern);
+  BOOST_REQUIRE_EQUAL(file_list.size(), 1);
+  auto reader = dunedaq::rawdatafilelibs::open_raw_data_file(file_list[0]);
+  BOOST_REQUIRE(reader->get_geo_id_map() ==
+                dunedaq::appmodel::ConfigurationHelper(cfg.cfgMgr->get_session()).get_source_id_geo_id_map());
+  reader->close();
 
   delete_files_matching_pattern(file_path, delete_pattern);
 }

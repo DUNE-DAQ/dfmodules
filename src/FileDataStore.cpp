@@ -7,11 +7,11 @@
  */
 
 #include "dfmodules/FileDataStore.hpp"
-#include "dfmodules/RawDataFileConfig.hpp"
 #include "dfmodules/opmon/DataStore.pb.h"
 
 #include "rawdatafilelibs/FileUtils.hpp"
 
+#include "appmodel/ConfigurationHelper.hpp"
 #include "appmodel/FilenameParams.hpp"
 #include "confmodel/DetectorConfig.hpp"
 #include "daqdataformats/RecordID.hpp"
@@ -43,7 +43,8 @@ FileDataStore::FileDataStore(std::string const& name,
   , m_writer_identifier{ writer_name }
   , m_config_params{ mcfg ? mcfg->get_dal<appmodel::DataStoreConf>(name) : nullptr }
   , m_session{ mcfg ? mcfg->get_session() : nullptr }
-  , m_source_id_geo_id_map{ m_session ? make_source_id_geo_id_map(*m_session) : daqdataformats::SourceIDGeoIDMap{} }
+  , m_source_id_geo_id_map{ m_session ? appmodel::ConfigurationHelper(m_session).get_source_id_geo_id_map()
+                                      : daqdataformats::SourceIDGeoIDMap{} }
   , m_compression_level{ m_config_params ? m_config_params->get_compression_level() : 0U }
   , m_operational_environment{ m_session ? m_session->get_detector_configuration()->get_op_env() : "unavailable" }
   , m_offline_data_stream{ m_session ? m_session->get_detector_configuration()->get_offline_data_stream()
