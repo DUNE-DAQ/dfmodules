@@ -292,8 +292,26 @@ DataflowStatusModule::receive_status_request(const dfmessages::DataflowStatusReq
   send_dataflow_status_update(request.reply_destination, request.trigger_id.trigger_number);
 }
 
+void DataflowStatusModujle::receive_trigger_decision(const dfmessages::TriggerDecision& decision)
+{
+  std::lock_guard<std::mutex> lock(m_pending_trigger_decision_mutex);
+  m_pending_trigger_decisions.emplace_back(decision, std::chrono::steady_clock::now());
+}
+
+void DataflowStatusModule::receive_trb_completion(const dfmessages::TRBCompletion& completion)
+{
+  std::lock_guard<std::mutex> lock(m_pending_trb_completion_mutex);
+  m_pending_trb_completions.emplace_back(completion, std::chrono::steady_clock::now());
+}
+
+void DataflowStatusModule::receive_trigger_decision_token(const dfmessages::TriggerDecisionToken& token)
+{
+  std::lock_guard<std::mutex> lock(m_pending_trigger_decision_token_mutex);
+  m_pending_trigger_decision_tokens.emplace_back(token, std::chrono::steady_clock::now());
+}
+
 void
-DataflowStatusModule::receive_trigger_decision(dfmessages::TriggerDecision& decision)
+DataflowStatusModule::process_trigger_decision(dfmessages::TriggerDecision& decision)
 {
   TLOG_DEBUG(TLVL_TRIGDEC_RECEIVED) << get_name() << " Received TriggerDecision for trigger_number "
                                     << decision.trigger_number << " and run " << decision.run_number
@@ -328,7 +346,7 @@ DataflowStatusModule::receive_trigger_decision(dfmessages::TriggerDecision& deci
 }
 
 void
-DataflowStatusModule::receive_trb_completion(const dfmessages::TRBCompletion& completion)
+DataflowStatusModule::process_trb_completion(const dfmessages::TRBCompletion& completion)
 {
   TLOG_DEBUG(TLVL_TRIGCOMPLETE_RECEIVED) << get_name() << " Received TRBCompletion for trigger record "
                                          << completion.trigger_id.trigger_number << "." << completion.sequence_number
@@ -339,11 +357,8 @@ DataflowStatusModule::receive_trb_completion(const dfmessages::TRBCompletion& co
     std::lock_guard<std::mutex> lock(m_status_mutex);
 
     if (!m_current_status.triggers_building.count(completion.trigger_id)) {
-      // OK to receive a TRBCompletion for a trigger record that has already been completed
-      if (!m_current_status.recently_completed_triggers.count(completion.trigger_id)) {
         ers::error(UnexpectedTRBCompletion(
           ERS_HERE, get_name(), completion.trigger_id.trigger_number, m_current_status.trigger_id.run_number));
-      }
       ++m_num_unexpected_trb_completions_received;
       return;
     }
@@ -382,7 +397,7 @@ DataflowStatusModule::receive_trb_completion(const dfmessages::TRBCompletion& co
 }
 
 void
-DataflowStatusModule::receive_trigger_decision_token(const dfmessages::TriggerDecisionToken& token)
+DataflowStatusModule::process_trigger_decision_token(const dfmessages::TriggerDecisionToken& token)
 {
   TLOG_DEBUG(TLVL_TRIGDEC_RECEIVED) << get_name() << " Received TriggerDecisionToken for trigger record "
                                     << token.trigger_id.trigger_number << "." << token.sequence_number << "/"
@@ -486,6 +501,50 @@ DataflowStatusModule::send_dataflow_status_update(std::string const& destination
     TLOG() << get_name() << ": No sender found for destination " << destination
            << ". Unable to send DataflowStatus update.";
   }
+}
+
+void DataflowStatusModule::status_update_thread(std::atomic<bool>& running_flag)
+{
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering status_update_thread() method";
+  while (running_flag.load()) {
+    bool did_work = false;
+    std::vector<std::pair<dfmessages::TriggerDecision, std::chrono::steady_clock::time_point>> local_trigger_decisions;
+    std::vector<std::pair<dfmessages::TRBCompletion, std::chrono::steady_clock::time_point>> local_trb_completions;
+    std::vector<std::pair<dfmessages::TriggerDecisionToken, std::chrono::steady_clock::time_point>> local_trigger_decision_tokens;
+
+    {
+      std::lock_guard<std::mutex> lock(m_pending_trigger_decision_mutex);
+      local_trigger_decisions.swap(m_pending_trigger_decisions);
+    }
+    for (auto& decision_pair : local_trigger_decisions) {
+      did_work = true;
+      process_trigger_decision(decision_pair.first);
+    }
+
+    {
+      std::lock_guard<std::mutex> lock(m_pending_trb_completion_mutex);
+      local_trb_completions.swap(m_pending_trb_completions);
+    }
+    for (auto& completion_pair : local_trb_completions) {
+      did_work = true;
+      process_trb_completion(completion_pair.first);
+    }
+
+    {
+      std::lock_guard<std::mutex> lock(m_pending_trigger_decision_token_mutex);
+      local_trigger_decision_tokens.swap(m_pending_trigger_decision_tokens);
+    }
+    for (auto& token_pair : local_trigger_decision_tokens) {
+      did_work = true;
+      process_trigger_decision_token(token_pair.first);
+    }
+
+    if(!did_work) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+    std::this_thread::yield();
+  }
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting status_update_thread() method";
 }
 
 void

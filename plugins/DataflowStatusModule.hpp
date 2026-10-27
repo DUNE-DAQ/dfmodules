@@ -87,15 +87,23 @@ private:
 
   // Callback
   void receive_status_request(const dfmessages::DataflowStatusRequest&);
-  void receive_trigger_decision(dfmessages::TriggerDecision&);
+  void receive_trigger_decision(const dfmessages::TriggerDecision&);
   void receive_trb_completion(const dfmessages::TRBCompletion&);
   void receive_trigger_decision_token(const dfmessages::TriggerDecisionToken&);
+
+  std::mutex m_pending_trigger_decision_mutex;
+  std::vector<std::pair<dfmessages::TriggerDecision, std::chrono::steady_clock::time_point>> m_pending_trigger_decisions;
+  std::mutex m_pending_trb_completion_mutex;
+  std::vector<std::pair<dfmessages::TRBCompletion, std::chrono::steady_clock::time_point>> m_pending_trb_completions;
+  std::mutex m_pending_trigger_decision_token_mutex;
+  std::vector<std::pair<dfmessages::TriggerDecisionToken, std::chrono::steady_clock::time_point>> m_pending_trigger_decision_tokens;
 
   // Configuration
   const appmodel::DataflowStatusModuleConf* m_conf;
   std::chrono::milliseconds m_heartbeat_interval{ 100 };
   std::chrono::milliseconds m_stop_timeout{ 1000 };
   std::chrono::milliseconds m_td_queue_timeout{ 1000 };
+  std::chrono::milliseconds m_max_token_wait_time{ 1000 };
   size_t m_snapshot_history_size{ 100 };
   size_t m_completed_trigger_history_size{ 100 };
 
@@ -117,9 +125,16 @@ private:
   std::mutex m_status_mutex;
   std::atomic<bool> m_status_updated;
   std::condition_variable m_status_update_cv;
+  dunedaq::utilities::WorkerThread m_status_update_thread;
   dunedaq::utilities::WorkerThread m_heartbeat_thread;
   void send_dataflow_status_update(std::string const& destination, dfmessages::trigger_number_t trigger_number = 0);
   void status_heartbeat_thread(std::atomic<bool>& running_flag);
+  void status_update_thread(std::atomic<bool>& running_flag);
+
+  void process_trigger_decision(dfmessages::TriggerDecision&);
+  void process_trb_completion(const dfmessages::TRBCompletion&);
+  void process_trigger_decision_token(const dfmessages::TriggerDecisionToken&);
+
   void update_busy_status(std::unique_lock<std::mutex>& lk);
 
   // Counters
@@ -134,6 +149,11 @@ private:
   std::atomic<size_t> m_num_unexpected_trb_completions_received;
   std::atomic<size_t> m_num_unexpected_trigger_decision_tokens_received;
   std::atomic<size_t> m_num_early_trigger_decision_tokens_received;
+
+  std::atomic<uint64_t> m_pending_trigger_decision_time_us;
+  std::atomic<uint64_t> m_pending_trb_completion_time_us;
+  std::atomic<uint64_t> m_pending_trigger_decision_token_time_us;
+
 };
 
 } // namespace dfmodules
