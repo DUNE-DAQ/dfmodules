@@ -485,7 +485,8 @@ DFOModule::receive_dataflow_status(const dfmessages::DataflowStatus& status)
     for (auto& trigger : status.triggers_building) {
       if (!m_assigned_trigger_decisions.count(trigger)) {
         ers::info(UnexpectedTriggerDecision(ERS_HERE, get_name(), trigger.trigger_number, status.decision_destination));
-        // Creating a placeholder for the assigned trigger decision with an empty TriggerDecision object. This is checked in receive_trigger_decision and updated if necessary.
+        // Creating a placeholder for the assigned trigger decision with an empty TriggerDecision object. This is
+        // checked in receive_trigger_decision and updated if necessary.
         m_assigned_trigger_decisions[trigger] = std::make_shared<AssignedTriggerDecision>(
           dfmessages::TriggerDecision(trigger.trigger_number, status.trigger_id.run_number),
           status.decision_destination);
@@ -495,7 +496,8 @@ DFOModule::receive_dataflow_status(const dfmessages::DataflowStatus& status)
       if (!m_assigned_trigger_decisions.count(trigger)) {
         ers::warning(
           UnexpectedTriggerDecision(ERS_HERE, get_name(), trigger.trigger_number, status.decision_destination));
-        // Creating a placeholder for the assigned trigger decision with an empty TriggerDecision object. This is checked in receive_trigger_decision and updated if necessary.
+        // Creating a placeholder for the assigned trigger decision with an empty TriggerDecision object. This is
+        // checked in receive_trigger_decision and updated if necessary.
         m_assigned_trigger_decisions[trigger] = std::make_shared<AssignedTriggerDecision>(
           dfmessages::TriggerDecision(trigger.trigger_number, status.trigger_id.run_number),
           status.decision_destination);
@@ -505,10 +507,9 @@ DFOModule::receive_dataflow_status(const dfmessages::DataflowStatus& status)
     for (auto& trigger : status.recently_completed_triggers) {
       if (m_assigned_trigger_decisions.count(trigger)) {
         ++m_completed_decisions;
-        auto td_duration =
-          std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() -
-                                                            m_assigned_trigger_decisions[trigger]->assigned_time);
-                                                            m_total_td_time += td_duration.count();
+        auto td_duration = std::chrono::duration_cast<std::chrono::microseconds>(
+          std::chrono::steady_clock::now() - m_assigned_trigger_decisions[trigger]->assigned_time);
+        m_total_td_time += td_duration.count();
       }
       m_statuses_for_trigger.erase(trigger);
       m_assigned_trigger_decisions.erase(trigger);
@@ -643,9 +644,10 @@ DFOModule::status_watchdog_proc(std::stop_token stoken)
               }
               ers::error(ReallocatingTrigger(ERS_HERE, get_name(), trigger.trigger_number, name));
               triggers_to_reallocate.push_back(m_assigned_trigger_decisions[trigger]->decision);
-              m_total_td_time += std::chrono::duration_cast<std::chrono::microseconds>(
-                std::chrono::steady_clock::now() - m_assigned_trigger_decisions[trigger]->assigned_time)
-                .count();
+              m_total_td_time +=
+                std::chrono::duration_cast<std::chrono::microseconds>(
+                  std::chrono::steady_clock::now() - m_assigned_trigger_decisions[trigger]->assigned_time)
+                  .count();
               m_statuses_for_trigger.erase(trigger);
               m_assigned_trigger_decisions.erase(trigger);
             }
@@ -659,9 +661,10 @@ DFOModule::status_watchdog_proc(std::stop_token stoken)
               }
               ers::error(ReallocatingTrigger(ERS_HERE, get_name(), trigger.trigger_number, name));
               triggers_to_reallocate.push_back(m_assigned_trigger_decisions[trigger]->decision);
-              m_total_td_time += std::chrono::duration_cast<std::chrono::microseconds>(
-                std::chrono::steady_clock::now() - m_assigned_trigger_decisions[trigger]->assigned_time)
-                .count();
+              m_total_td_time +=
+                std::chrono::duration_cast<std::chrono::microseconds>(
+                  std::chrono::steady_clock::now() - m_assigned_trigger_decisions[trigger]->assigned_time)
+                  .count();
               m_statuses_for_trigger.erase(trigger);
               m_assigned_trigger_decisions.erase(trigger);
             }
@@ -725,7 +728,7 @@ DFOModule::send_status_requests(dfmessages::trigger_number_t trigger, size_t ite
 
   auto end_time = std::chrono::steady_clock::now();
   auto sending_requests = std::chrono::duration_cast<std::chrono::microseconds>(wait_start - start_time).count();
-  auto waiting_for_requests = std::chrono::duration_cast<std::chrono::microseconds>(end_time- wait_start).count();
+  auto waiting_for_requests = std::chrono::duration_cast<std::chrono::microseconds>(end_time - wait_start).count();
   m_request_send_time += sending_requests;
   m_request_response_wait += waiting_for_requests;
 
