@@ -14,10 +14,16 @@ message DataflowStatusInfo {
   uint64 status_messages_sent = 5;
   uint64 decisions_sent = 6;
 
+  // guages
+  bool   is_busy = 10;
+  uint64 slots_building = 11;
+  uint64 slots_writing = 12;
+  uint64 slots_free = 13;
+
   // errors
-  uint64 duplicate_decisions_received = 7;
-  uint64 unexpected_trb_completions_received = 8;
-  uint64 unexpected_tokens_received = 9;
-  uint64 early_tokens_received = 10;
+  uint64 duplicate_decisions_received = 20;
+  uint64 unexpected_trb_completions_received = 21;
+  uint64 unexpected_tokens_received = 22;
+  uint64 early_tokens_received = 23;
 
 }

@@ -330,6 +330,9 @@ DFOModule::generate_opmon_data()
   info.set_waiting_for_decision(m_waiting_for_decision.exchange(0));
   info.set_deciding_destination(m_deciding_destination.exchange(0));
   info.set_forwarding_decision(m_forwarding_decision.exchange(0));
+  info.set_request_send_time(m_request_send_time.exchange(0));
+  info.set_request_response_wait(m_request_response_wait.exchange(0));
+  info.set_total_td_time(m_total_td_time.exchange(0));
   publish(std::move(info));
 
   std::lock_guard<std::mutex> guard(m_trigger_counters_mutex);
@@ -504,6 +507,9 @@ DFOModule::receive_dataflow_status(const dfmessages::DataflowStatus& status)
     for (auto& trigger : status.recently_completed_triggers) {
       if (m_assigned_trigger_decisions.count(trigger)) {
         ++m_completed_decisions;
+        auto td_duration = std::chrono::duration_cast<std::chrono::microseconds>(
+          std::chrono::steady_clock::now() - m_assigned_trigger_decisions[trigger]->assigned_time);
+        m_total_td_time += td_duration.count();
       }
       m_statuses_for_trigger.erase(trigger);
       m_assigned_trigger_decisions.erase(trigger);
@@ -638,6 +644,10 @@ DFOModule::status_watchdog_proc(std::stop_token stoken)
               }
               ers::error(ReallocatingTrigger(ERS_HERE, get_name(), trigger.trigger_number, name));
               triggers_to_reallocate.push_back(m_assigned_trigger_decisions[trigger]->decision);
+              m_total_td_time +=
+                std::chrono::duration_cast<std::chrono::microseconds>(
+                  std::chrono::steady_clock::now() - m_assigned_trigger_decisions[trigger]->assigned_time)
+                  .count();
               m_statuses_for_trigger.erase(trigger);
               m_assigned_trigger_decisions.erase(trigger);
             }
@@ -651,6 +661,10 @@ DFOModule::status_watchdog_proc(std::stop_token stoken)
               }
               ers::error(ReallocatingTrigger(ERS_HERE, get_name(), trigger.trigger_number, name));
               triggers_to_reallocate.push_back(m_assigned_trigger_decisions[trigger]->decision);
+              m_total_td_time +=
+                std::chrono::duration_cast<std::chrono::microseconds>(
+                  std::chrono::steady_clock::now() - m_assigned_trigger_decisions[trigger]->assigned_time)
+                  .count();
               m_statuses_for_trigger.erase(trigger);
               m_assigned_trigger_decisions.erase(trigger);
             }
@@ -669,6 +683,7 @@ DFOModule::status_watchdog_proc(std::stop_token stoken)
 bool
 DFOModule::send_status_requests(dfmessages::trigger_number_t trigger, size_t iteration)
 {
+  std::chrono::steady_clock::time_point start_time = std::chrono::steady_clock::now();
   std::set<std::string> destinations_to_request;
   {
     std::lock_guard<std::mutex> guard(m_status_mutex);
@@ -699,10 +714,10 @@ DFOModule::send_status_requests(dfmessages::trigger_number_t trigger, size_t ite
     }
   }
 
-  std::chrono::steady_clock::time_point start_time = std::chrono::steady_clock::now();
+  std::chrono::steady_clock::time_point wait_start = std::chrono::steady_clock::now();
   size_t statuses_received = 0;
   while (statuses_received < destinations_to_request.size() &&
-         std::chrono::steady_clock::now() - start_time < m_request_reply_wait) {
+         std::chrono::steady_clock::now() - wait_start < m_request_reply_wait) {
     std::unique_lock<std::mutex> guard(m_status_mutex);
     m_status_cv.wait_for(guard, m_request_reply_wait);
     auto it = m_statuses_for_trigger.find({ m_run_number, trigger });
@@ -710,6 +725,12 @@ DFOModule::send_status_requests(dfmessages::trigger_number_t trigger, size_t ite
       statuses_received = it->second.size();
     }
   }
+
+  auto end_time = std::chrono::steady_clock::now();
+  auto sending_requests = std::chrono::duration_cast<std::chrono::microseconds>(wait_start - start_time).count();
+  auto waiting_for_requests = std::chrono::duration_cast<std::chrono::microseconds>(end_time - wait_start).count();
+  m_request_send_time += sending_requests;
+  m_request_response_wait += waiting_for_requests;
 
   return statuses_received == destinations_to_request.size();
 }
