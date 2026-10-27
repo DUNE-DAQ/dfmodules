@@ -150,7 +150,7 @@ conf_dict.config_substitutions.append(
 
 conf_dict.config_substitutions.append(
     data_classes.attribute_substitution(
-        obj_class="DFOConf", updates={"busy_threshold": 10, "free_threshold": 7}
+        obj_class="DataflowStatusModuleConf", updates={"busy_threshold": 10, "free_threshold": 7}
     )
 )
 
