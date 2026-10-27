@@ -202,6 +202,9 @@ private:
   std::atomic<uint64_t> m_waiting_for_decision{ 0 }; // NOLINT (build/unsigned)
   std::atomic<uint64_t> m_deciding_destination{ 0 }; // NOLINT (build/unsigned)
   std::atomic<uint64_t> m_forwarding_decision{ 0 };  // NOLINT (build/unsigned)
+  std::atomic<uint64_t> m_request_send_time{ 0 }; // NOLINT (build/unsigned)
+  std::atomic<uint64_t> m_request_response_wait{ 0 }; // NOLINT (build/unsigned)
+  std::atomic<uint64_t> m_total_td_time{ 0 }; // NOLINT (build/unsigned)
   std::map<dunedaq::trgdataformats::TriggerCandidateData::Type, DFOTriggerCounter> m_trigger_counters;
   std::mutex m_trigger_counters_mutex; // used to safely handle the map above
   DFOTriggerCounter& get_trigger_counter(trgdataformats::TriggerCandidateData::Type type);

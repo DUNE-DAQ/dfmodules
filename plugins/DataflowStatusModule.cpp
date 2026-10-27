@@ -131,6 +131,14 @@ DataflowStatusModule::generate_opmon_data()
   info.set_unexpected_tokens_received(m_num_unexpected_trigger_decision_tokens_received.exchange(0));
   info.set_early_tokens_received(m_num_early_trigger_decision_tokens_received.exchange(0));
 
+{
+      std::unique_lock<std::mutex> lk(m_status_mutex);
+      info.set_is_busy(m_current_status.is_busy);
+      info.set_slots_building( m_current_status.triggers_building.size());
+      info.set_slots_writing( m_current_status.triggers_writing.size());
+      info.set_slots_free(m_current_status.is_busy ? 0 : m_current_status.busy_threshold - m_current_status.triggers_building.size() - m_current_status.triggers_writing.size());
+}
+
   publish(std::move(info));
 }
 
