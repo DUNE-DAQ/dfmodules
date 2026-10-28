@@ -45,7 +45,7 @@ DataflowStatusModule::DataflowStatusModule(const std::string& name)
 
 DataflowStatusModule::~DataflowStatusModule()
 {
-  if(m_status_update_thread.thread_running()) {
+  if (m_status_update_thread.thread_running()) {
     m_status_update_thread.stop_working_thread();
   }
   if (m_heartbeat_thread.thread_running()) {
@@ -135,10 +135,10 @@ DataflowStatusModule::generate_opmon_data()
   {
     std::unique_lock<std::mutex> lk(m_status_mutex);
 
-    uint64_t time = 0;
+    uint64_t time = 0; // NOLINT(build/unsigned)
     bool first = true;
-        info.set_min_time_since_assignment(0);
-        info.set_max_time_since_assignment(0);
+    info.set_min_time_since_assignment(0);
+    info.set_max_time_since_assignment(0);
 
     auto current_time = std::chrono::steady_clock::now();
     for (const auto& [trigger_id, trigger_status] : m_trigger_statuses) {
@@ -156,9 +156,10 @@ DataflowStatusModule::generate_opmon_data()
     info.set_is_busy(m_current_status.is_busy);
     info.set_slots_building(m_current_status.triggers_building.size());
     info.set_slots_writing(m_current_status.triggers_writing.size());
-    free = m_current_status.is_busy ? 0
-                                    : m_current_status.busy_threshold - m_current_status.triggers_building.size() -
-                                        m_current_status.triggers_writing.size();
+    free = m_current_status.is_busy
+             ? 0
+             : m_current_status.busy_threshold - static_cast<int>(m_current_status.triggers_building.size()) -
+                 static_cast<int>(m_current_status.triggers_writing.size());
     info.set_slots_free(free);
   }
 
@@ -295,7 +296,7 @@ DataflowStatusModule::do_scrap(const CommandData_t& /*args*/)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_scrap() method";
 
-  if(m_status_update_thread.thread_running()) {
+  if (m_status_update_thread.thread_running()) {
     m_status_update_thread.stop_working_thread();
   }
   if (m_heartbeat_thread.thread_running()) {
@@ -478,16 +479,16 @@ DataflowStatusModule::process_trigger_decision_token(const dfmessages::TriggerDe
     if (m_current_status.triggers_writing.count(token.trigger_id) == 0) {
       if (now - received > m_pending_message_timeout) {
         ++m_num_pending_trigger_decision_token_timeouts;
-        if(m_trigger_statuses.count(token.trigger_id) == 0) {
-        ers::error(UnexpectedTriggerDecisionToken(
-          ERS_HERE, get_name(), token.trigger_id.trigger_number, m_current_status.trigger_id.run_number));
-        return true; // Remove from list
+        if (m_trigger_statuses.count(token.trigger_id) == 0) {
+          ers::error(UnexpectedTriggerDecisionToken(
+            ERS_HERE, get_name(), token.trigger_id.trigger_number, m_current_status.trigger_id.run_number));
+          return true; // Remove from list
         } else {
           ers::warning(UnexpectedTriggerDecisionToken(
             ERS_HERE, get_name(), token.trigger_id.trigger_number, m_current_status.trigger_id.run_number));
         }
       } else {
-      return false;
+        return false;
       }
     }
 
@@ -515,6 +516,7 @@ DataflowStatusModule::process_trigger_decision_token(const dfmessages::TriggerDe
       std::chrono::duration_cast<std::chrono::microseconds>(now - received).count();
 
     m_complete_counter++;
+    // NOLINTNEXTLINE(build/unsigned)
     uint64_t completion_time_us = std::chrono::duration_cast<std::chrono::microseconds>(
                                     now - m_trigger_statuses[token.trigger_id].decision_received)
                                     .count();

@@ -19,6 +19,7 @@
 #include "utilities/WorkerThread.hpp"
 
 #include <atomic>
+#include <list>
 #include <map>
 #include <memory>
 #include <set>
@@ -152,15 +153,15 @@ private:
   std::atomic<size_t> m_num_status_messages_sent;
   std::atomic<size_t> m_num_trigger_decisions_sent;
 
-  std::atomic<uint64_t> m_pending_trigger_decision_time_us;
-  std::atomic<uint64_t> m_pending_trb_completion_time_us;
-  std::atomic<uint64_t> m_pending_trigger_decision_token_time_us;
+  std::atomic<uint64_t> m_pending_trigger_decision_time_us;       // NOLINT(build/unsigned)
+  std::atomic<uint64_t> m_pending_trb_completion_time_us;         // NOLINT(build/unsigned)
+  std::atomic<uint64_t> m_pending_trigger_decision_token_time_us; // NOLINT(build/unsigned)
 
   // Rate calculation
-  std::atomic<uint64_t> m_complete_counter{ 0 };
-  std::atomic<uint64_t> m_completion_time_us{ 0 };
-  std::atomic<uint64_t> m_min_completion_time_us{ 0 };
-  std::atomic<uint64_t> m_max_completion_time_us{ 0 };
+  std::atomic<uint64_t> m_complete_counter{ 0 };       // NOLINT(build/unsigned)
+  std::atomic<uint64_t> m_completion_time_us{ 0 };     // NOLINT(build/unsigned)
+  std::atomic<uint64_t> m_min_completion_time_us{ 0 }; // NOLINT(build/unsigned)
+  std::atomic<uint64_t> m_max_completion_time_us{ 0 }; // NOLINT(build/unsigned)
 
   // Errors
   std::atomic<size_t> m_num_duplicate_decisions_received;
