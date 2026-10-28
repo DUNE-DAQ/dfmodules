@@ -14,16 +14,30 @@ message DataflowStatusInfo {
   uint64 status_messages_sent = 5;
   uint64 decisions_sent = 6;
 
+  uint64 trigger_decisions_completed = 7;
+
+  // Time counters
+  uint64 total_time_since_assignment = 10;
+  int64 min_time_since_assignment = 11;
+  int64 max_time_since_assignment = 12;
+
+  uint64 pending_trigger_decision_time = 13; // Time in microseconds between receiving TDs and processing them
+  uint64 pending_trb_completion_time = 14; // Time in microseconds between receiving TRBCs and processing them
+  uint64 pending_token_time = 15; // Time in microseconds between receiving TDTs and processing them
+
+  uint64 total_completion_time = 16;
+  uint64 min_completion_time = 17;
+  uint64 max_completion_time = 18;
+
   // guages
-  bool   is_busy = 10;
-  uint64 slots_building = 11;
-  uint64 slots_writing = 12;
-  uint64 slots_free = 13;
+  bool   is_busy = 20;
+  uint64 slots_building = 21;
+  uint64 slots_writing = 22;
+  uint64 slots_free = 23;
 
   // errors
-  uint64 duplicate_decisions_received = 20;
-  uint64 unexpected_trb_completions_received = 21;
-  uint64 unexpected_tokens_received = 22;
-  uint64 early_tokens_received = 23;
+  uint64 duplicate_decisions_received = 30;
+  uint64 pending_trb_completion_timeouts = 31;
+  uint64 pending_trigger_decision_token_timeouts = 32;
 
 }

@@ -22,7 +22,6 @@ message DFOInfo {
   uint64 forwarding_decision = 32  ; // Time spent sending the Trigger Decision to TRBs, in microseconds
   uint64 request_send_time = 33; // Time spent sending DataflowStatusRequests, in microseconds
   uint64 request_response_wait = 34; // Time spent waiting on DataflowStatusModules to reply with requested status, in microseconds
-  uint64 total_td_time = 35; // Total time spent building TDs (sum over all TDs), in microseconds
 }
 
 
@@ -31,4 +30,13 @@ message TriggerInfo {
 
   uint64 received = 1;
   uint64 completed = 2;
+}
+
+// An info of these type is generated every time a TR is completed
+message TRCompleteInfo {
+
+  uint64 completion_time = 1;  // in microseconds
+  uint64 tr_number = 5;
+  uint64 run_number = 6;
+  uint64 trigger_type = 7;
 }
