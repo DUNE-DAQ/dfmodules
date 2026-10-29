@@ -89,8 +89,7 @@ create_trigger_record(int trig_num, int fragment_size, int element_count)
                   system_clock::now().time_since_epoch())
                   .count();
 
-  // create TriggerRecordHeader, with its element_count component requests (a lone
-  // TriggerRecordHeaderData claiming them would make the header read past it)
+  // The header must carry one component request per element, to match num_requested_components.
   std::vector<dunedaq::daqdataformats::ComponentRequest> component_requests(element_count);
   dunedaq::daqdataformats::TriggerRecordHeader trh(component_requests);
   trh.set_trigger_number(trig_num);
