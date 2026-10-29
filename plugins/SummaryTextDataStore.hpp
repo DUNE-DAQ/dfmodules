@@ -55,7 +55,7 @@ inline void
 SummaryTextDataStore::open_new_file(const std::string& unique_filename)
 {
 
-  // any exception is wrapped in a FileOperationProblem by FileDataStoreImpl
+  // Any exception is wrapped in a FileOperationProblem by FileDataStoreImpl.
   auto& file_handle{ get_file_handle() };
   file_handle.reset(new dfmodules::SummaryTextDataWriter(unique_filename));
 

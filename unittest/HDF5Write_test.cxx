@@ -85,8 +85,7 @@ create_trigger_record(int trig_num, int fragment_size, int element_count, int ru
                   system_clock::now().time_since_epoch())
                   .count();
 
-  // create TriggerRecordHeader, with its element_count component requests (a lone
-  // TriggerRecordHeaderData claiming them would make the header read past it)
+  // The header must carry one component request per element, to match num_requested_components.
   std::vector<dunedaq::daqdataformats::ComponentRequest> component_requests(element_count);
   dunedaq::daqdataformats::TriggerRecordHeader trh(component_requests);
   trh.set_trigger_number(trig_num);
@@ -473,25 +472,47 @@ BOOST_AUTO_TEST_CASE(SmallFileSizeLimitDataBlockListWrite)
 }
 
 namespace {
+// All of a run's bytes, and only those, were counted: at least min_expected_bytes, and no more than
+// the run's files hold on disk, allowing a little per file because HDF5 may release unused space when
+// a file is closed.
+void
+check_run_bytes_against_disk(const std::string& file_path,
+                             const std::string& mode,
+                             int run_number,
+                             uint64_t run_new_bytes, // NOLINT(build/unsigned)
+                             size_t min_expected_bytes)
+{
+  uint64_t bytes_on_disk = 0; // NOLINT(build/unsigned)
+  const std::string run_pattern = "hdf5writetest_raw_run0000" + std::to_string(run_number) + "_.*\\.hdf5";
+  auto run_files = get_files_matching_pattern(file_path, run_pattern);
+  BOOST_REQUIRE(!run_files.empty());
+  for (auto const& file : run_files) {
+    bytes_on_disk += std::filesystem::file_size(file);
+  }
+  BOOST_TEST_INFO("mode " << mode << ", run " << run_number);
+  BOOST_REQUIRE(run_new_bytes >= min_expected_bytes);
+  BOOST_REQUIRE(run_new_bytes <= bytes_on_disk + 65536 * run_files.size());
+}
+
 // Writes two runs of records through a DataStore, collecting its opmon counters after every write,
-// and checks that they never underflow or carry over between runs or files (B2, B3). Exact equality
-// with the size on disk isn't expected: closing a file adds attributes after the last size reading.
+// and checks that they never underflow or carry over between runs or files. Exact equality with
+// the size on disk isn't expected: closing a file adds attributes after the last size reading.
 void
 check_opmon_counters_over_runs_and_rollovers(const std::string& mode, size_t max_file_size, int records_per_run)
 {
-  std::string file_path(std::filesystem::temp_directory_path());
-  std::string delete_pattern = "hdf5writetest.*\\.hdf5(\\.writing)?";
+  const std::string file_path(std::filesystem::temp_directory_path());
+  const std::string delete_pattern = "hdf5writetest.*\\.hdf5(\\.writing)?";
   delete_files_matching_pattern(file_path, delete_pattern);
 
   const int element_count = 3;
   const int fragment_size = 100000;
   const size_t record_bytes = element_count * (fragment_size + sizeof(dunedaq::daqdataformats::FragmentHeader));
-  // much larger than any honest per-interval or per-file count, much smaller than a wrapped uint64
+  // Much larger than any honest per-interval or per-file count, much smaller than a wrapped uint64.
   const uint64_t sane_bound = 100 * (max_file_size + record_bytes); // NOLINT(build/unsigned)
 
   CfgFixture cfg("test-session-3-1");
-  auto data_writer_conf = cfg.cfgMgr->get_dal<dunedaq::appmodel::DataWriterModule>("dwm-01")->get_configuration();
-  auto data_store_conf = data_writer_conf->get_data_store_params();
+  const auto data_writer_conf = cfg.cfgMgr->get_dal<dunedaq::appmodel::DataWriterModule>("dwm-01")->get_configuration();
+  const auto data_store_conf = data_writer_conf->get_data_store_params();
   auto data_store_conf_obj = data_store_conf->config_object();
   data_store_conf_obj.set_by_val<std::string>("directory_path", file_path);
   data_store_conf_obj.set_by_val<std::string>("mode", mode);
@@ -507,7 +528,7 @@ check_opmon_counters_over_runs_and_rollovers(const std::string& mode, size_t max
     BOOST_REQUIRE_EQUAL(entries.size(), 1);
     return dunedaq::opmonlib::from_entry<dunedaq::dfmodules::opmon::FileDataStoreImplInfo>(entries.front());
   };
-  collect(); // start from zero
+  collect(); // Start from zero.
 
   for (int run_number : { 53, 54 }) {
     data_store_ptr->prepare_for_run(run_number, true);
@@ -518,7 +539,7 @@ check_opmon_counters_over_runs_and_rollovers(const std::string& mode, size_t max
       BOOST_TEST_INFO("mode " << mode << ", run " << run_number << ", record " << trigger_number);
       BOOST_REQUIRE(info.new_bytes_output() > 0);
       BOOST_REQUIRE(info.new_bytes_output() < sane_bound);
-      // the current file never holds more than one record beyond the size limit, so nothing carried over
+      // The current file never holds more than one record beyond the size limit, so nothing carried over.
       BOOST_REQUIRE(info.bytes_in_file() > 0);
       BOOST_REQUIRE(info.bytes_in_file() < max_file_size + 2 * record_bytes + 1000000);
       if (mode == "one-event-per-file") {
@@ -527,34 +548,23 @@ check_opmon_counters_over_runs_and_rollovers(const std::string& mode, size_t max
       run_new_bytes += info.new_bytes_output();
     }
     data_store_ptr->finish_with_run(run_number);
-
-    // all of this run's bytes, and only those, were counted: no more than its files hold on disk,
-    // allowing a little per file because HDF5 may release unused space when a file is closed
-    uint64_t bytes_on_disk = 0; // NOLINT(build/unsigned)
-    std::string run_pattern = "hdf5writetest_raw_run0000" + std::to_string(run_number) + "_.*\\.hdf5";
-    auto run_files = get_files_matching_pattern(file_path, run_pattern);
-    BOOST_REQUIRE(!run_files.empty());
-    for (auto const& file : run_files) {
-      bytes_on_disk += std::filesystem::file_size(file);
-    }
-    BOOST_TEST_INFO("mode " << mode << ", run " << run_number);
-    BOOST_REQUIRE(run_new_bytes >= records_per_run * record_bytes);
-    BOOST_REQUIRE(run_new_bytes <= bytes_on_disk + 65536 * run_files.size());
+    check_run_bytes_against_disk(file_path, mode, run_number, run_new_bytes, records_per_run * record_bytes);
   }
 
   data_store_ptr.reset();
   delete_files_matching_pattern(file_path, delete_pattern);
 }
-} // namespace
+} // namespace ""
 
 BOOST_AUTO_TEST_CASE(OpMonCountersOneEventPerFile)
 {
-  check_opmon_counters_over_runs_and_rollovers("one-event-per-file", 4294967296, 3);
+  const size_t effectively_unlimited_file_size = 4294967296;
+  check_opmon_counters_over_runs_and_rollovers("one-event-per-file", effectively_unlimited_file_size, 3);
 }
 
 BOOST_AUTO_TEST_CASE(OpMonCountersFileSizeLimit)
 {
-  // about two records per file
+  // About two records per file.
   check_opmon_counters_over_runs_and_rollovers("all-per-file", 700000, 6);
 }
 

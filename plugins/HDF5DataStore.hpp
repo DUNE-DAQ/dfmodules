@@ -40,7 +40,7 @@ public:
   void open_new_file(const std::string& unique_filename) override;
 
 private:
-  // Built once from the configuration, rather than on every file open
+  // Built once from the configuration.
   const daqdataformats::SourceIDGeoIDMap m_source_id_geo_id_map;
   const hdf5libs::HDF5FileLayoutParameters m_file_layout_parameters;
 };
@@ -59,7 +59,8 @@ HDF5DataStore::open_new_file(const std::string& unique_filename)
   metadata.run_is_for_test_purposes = get_run_is_for_test_purposes();
   metadata.compression_level = get_compression_level();
 
-  // the file is always created exclusively; any exception is wrapped in a FileOperationProblem by FileDataStoreImpl
+  // The file is always created exclusively; any exception is wrapped in a FileOperationProblem by
+  // FileDataStoreImpl.
   auto& file_handle{ get_file_handle() };
   file_handle = std::make_unique<hdf5libs::HDF5RawDataFile>(
     unique_filename, metadata, m_file_layout_parameters, m_source_id_geo_id_map, ".writing");

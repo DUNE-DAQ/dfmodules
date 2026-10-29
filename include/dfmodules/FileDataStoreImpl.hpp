@@ -123,9 +123,9 @@ concept FileHandleConcept = requires(T file_handle,
   { file_handle.write(tr) } -> std::same_as<void>;
   { file_handle.write(ts) } -> std::same_as<void>;
   { file_handle.timeslice_already_exists(ts) } -> std::convertible_to<bool>;
-  { file_handle.close() } -> std::same_as<void>; // May throw; must release the file even when it does
+  { file_handle.close() } -> std::same_as<void>; // May throw; must release the file even when it does.
   { const_file_handle.get_file_name() } -> std::convertible_to<std::string>;
-  { T::get_file_name_extension() } -> std::convertible_to<std::string>; // Static; don't include the "."
+  { T::get_file_name_extension() } -> std::convertible_to<std::string>; // Don't include the ".".
   { const_file_handle.get_recorded_size() } -> std::convertible_to<size_t>;
   { const_file_handle.get_uncompressed_raw_data_size() } -> std::convertible_to<size_t>;
   { const_file_handle.get_total_file_size() } -> std::convertible_to<size_t>;
@@ -415,7 +415,6 @@ private:
     }
   }
 
-  // Zeroes the size bookkeeping that describes the currently-open file
   void reset_per_file_counters()
   {
     m_recorded_size = 0;
@@ -431,7 +430,7 @@ private:
     if (!m_file_handle) {
       return;
     }
-    std::string open_filename = m_file_handle->get_file_name();
+    const std::string open_filename = m_file_handle->get_file_name();
     try {
       m_file_handle->close();
     } catch (std::exception const& excpt) {
