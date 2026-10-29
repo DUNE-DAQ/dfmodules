@@ -486,6 +486,10 @@ DFOModule::receive_dataflow_status(const dfmessages::DataflowStatus& status)
 
     for (auto& trigger : status.triggers_building) {
       if (!m_assigned_trigger_decisions.count(trigger)) {
+        if(trigger.run_number != m_run_number) {
+          ers::error(DFOModuleRunNumberMismatch(ERS_HERE, get_name(), trigger.run_number, m_run_number, status.decision_destination, trigger.trigger_number));
+          continue;
+        }
         ers::info(UnexpectedTriggerDecision(ERS_HERE, get_name(), trigger.trigger_number, status.decision_destination));
         // Creating a placeholder for the assigned trigger decision with an empty TriggerDecision object. This is
         // checked in receive_trigger_decision and updated if necessary.
@@ -496,6 +500,10 @@ DFOModule::receive_dataflow_status(const dfmessages::DataflowStatus& status)
     }
     for (auto& trigger : status.triggers_writing) {
       if (!m_assigned_trigger_decisions.count(trigger)) {
+        if(trigger.run_number != m_run_number) {
+          ers::error(DFOModuleRunNumberMismatch(ERS_HERE, get_name(), trigger.run_number, m_run_number, status.decision_destination, trigger.trigger_number));
+          continue;
+        }
         ers::warning(
           UnexpectedTriggerDecision(ERS_HERE, get_name(), trigger.trigger_number, status.decision_destination));
         // Creating a placeholder for the assigned trigger decision with an empty TriggerDecision object. This is
