@@ -37,7 +37,7 @@ public:
   void open_new_file(const std::string& unique_filename) override;
 
 private:
-  // Built once from the configuration, rather than on every file open
+  // Built once from the configuration.
   const hdf5libs::HDF5SourceIDHandler::source_id_geo_id_map_t m_source_id_geo_id_map;
 };
 
@@ -45,7 +45,7 @@ inline void
 HDF5DataStore::open_new_file(const std::string& unique_filename)
 {
 
-  // any exception is wrapped in a FileOperationProblem by FileDataStoreImpl
+  // Any exception is wrapped in a FileOperationProblem by FileDataStoreImpl.
   auto& file_handle{ get_file_handle() };
   file_handle.reset(new hdf5libs::HDF5RawDataFile(unique_filename,
                                                   get_run_number(),
