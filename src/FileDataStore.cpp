@@ -124,7 +124,7 @@ FileDataStore::write_record(const RecordType& record,
   open_file_if_needed(get_file_name(run_number), record_type);
 
   if constexpr (std::is_same_v<RecordType, daqdataformats::TimeSlice>) {
-    if (m_writer->record_exists(daqdataformats::RecordID{ record.get_header().timeslice_number })) {
+    if (m_writer->contains(daqdataformats::RecordID{ record.get_header().timeslice_number })) {
       TimeSliceAlreadyExists excpt(ERS_HERE, get_name(), record.get_header().timeslice_number);
       throw IgnorableDataStoreProblem(
         ERS_HERE, get_name(), "writing a time slice to file " + m_writer->get_current_file_name(), excpt);
@@ -191,7 +191,7 @@ std::string
 FileDataStore::get_file_name(daqdataformats::run_number_t run_number) const
 {
   auto const* filename_conf = m_config_params->get_filename_params();
-  rawdatafilelibs::FileNameParams params;
+  rawdatafilelibs::FilenameParams params;
   params.directory_path = m_path;
   params.operational_environment = m_operational_environment;
   params.file_type_prefix = filename_conf->get_file_type_prefix();
