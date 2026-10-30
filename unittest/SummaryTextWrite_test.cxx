@@ -89,17 +89,15 @@ create_trigger_record(int trig_num, int fragment_size, int element_count)
                   system_clock::now().time_since_epoch())
                   .count();
 
-  // create TriggerRecordHeader
-  dunedaq::daqdataformats::TriggerRecordHeaderData trh_data;
-  trh_data.trigger_number = trig_num;
-  trh_data.trigger_timestamp = ts;
-  trh_data.num_requested_components = element_count;
-  trh_data.run_number = run_number;
-  trh_data.sequence_number = 0;
-  trh_data.max_sequence_number = 1;
-  trh_data.element_id = dunedaq::daqdataformats::SourceID(dunedaq::daqdataformats::SourceID::Subsystem::kTRBuilder, 0);
-
-  dunedaq::daqdataformats::TriggerRecordHeader trh(&trh_data);
+  // The header must carry one component request per element, to match num_requested_components.
+  std::vector<dunedaq::daqdataformats::ComponentRequest> component_requests(element_count);
+  dunedaq::daqdataformats::TriggerRecordHeader trh(component_requests);
+  trh.set_trigger_number(trig_num);
+  trh.set_trigger_timestamp(ts);
+  trh.set_run_number(run_number);
+  trh.set_sequence_number(0);
+  trh.set_max_sequence_number(1);
+  trh.set_element_id(dunedaq::daqdataformats::SourceID(dunedaq::daqdataformats::SourceID::Subsystem::kTRBuilder, 0));
 
   // create out TriggerRecord
   dunedaq::daqdataformats::TriggerRecord tr(trh);
