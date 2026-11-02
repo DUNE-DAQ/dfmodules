@@ -24,7 +24,6 @@
 #include "daqdataformats/SourceIDGeoIDMap.hpp"
 #include "detdataformats/DetID.hpp"
 #include "detdataformats/GeoID.hpp"
-#include "logging/Logging.hpp"
 
 #include <cstdint>
 
@@ -35,45 +34,10 @@ namespace dunedaq::dfmodules {
  * by the SourceID that each stream's data is sent with.
  */
 inline daqdataformats::SourceIDGeoIDMap
-make_source_id_geo_id_map(const confmodel::Session& session)
-{
-  daqdataformats::SourceIDGeoIDMap geo_id_map;
-
-  for (auto const& app : session.all_applications()) {
-    auto ro_app = app->cast<appmodel::ReadoutApplication>();
-    if (!ro_app) {
-      continue;
-    }
-
-    for (auto d2d_conn : ro_app->get_detector_connections()) {
-      if (d2d_conn->is_excluded(session)) {
-        TLOG_DEBUG(7) << "Ignoring excluded DetectorToDaqConnection " << d2d_conn->UID();
-        continue;
-      }
-      TLOG_DEBUG(7) << "Processing DetectorToDaqConnection " << d2d_conn->UID();
-
-      for (auto resource : d2d_conn->streams()) {
-        if (resource->is_excluded(session)) {
-          TLOG_DEBUG(7) << "Ignoring excluded DetectorStream " << resource->UID();
-          continue;
-        }
-        auto stream = resource->cast<confmodel::DetectorStream>();
-        if (!stream) {
-          continue;
-        }
-        auto geo_id = stream->get_geo_id();
-        geo_id_map.add(
-          daqdataformats::SourceID(daqdataformats::SourceID::Subsystem::kDetectorReadout, stream->get_source_id()),
-          detdataformats::GeoID(static_cast<detdataformats::DetID::Subdetector>(geo_id->get_detector_id()),
-                                static_cast<uint16_t>(geo_id->get_crate_id()),    // NOLINT(build/unsigned)
-                                static_cast<uint16_t>(geo_id->get_slot_id()),     // NOLINT(build/unsigned)
-                                static_cast<uint16_t>(geo_id->get_stream_id()))); // NOLINT(build/unsigned)
-      }
-    }
-  }
-  return geo_id_map;
-}
+make_source_id_geo_id_map(const confmodel::Session& session);
 
 } // namespace dunedaq::dfmodules
+
+#include "detail/RawDataFileConfig.hxx"
 
 #endif // DFMODULES_INCLUDE_DFMODULES_RAWDATAFILECONFIG_HPP_
