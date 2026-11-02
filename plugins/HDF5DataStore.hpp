@@ -53,7 +53,7 @@ HDF5DataStore::open_new_file(const std::string& unique_filename)
   metadata.file_index = get_file_index();
   metadata.application_name = get_application_name();
   metadata.record_type = rawdatafilelibs::string_to_record_type(m_file_layout_parameters.record_name_prefix);
-  metadata.creation_timestamp_ms = get_file_creation_timestamp_ms(); // the same time as in the file name
+  metadata.creation_timestamp_ms = get_file_creation_timestamp_ms();
   metadata.operational_environment = get_operational_environment();
   metadata.offline_data_stream = get_offline_data_stream();
   metadata.run_is_for_test_purposes = get_run_is_for_test_purposes();
