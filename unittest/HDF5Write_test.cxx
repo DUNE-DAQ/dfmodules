@@ -267,12 +267,12 @@ BOOST_AUTO_TEST_CASE(FileNameMatchesCreationTimestamp)
   BOOST_REQUIRE(std::regex_match(file_list[0], match, timestamp_pattern));
 
   dunedaq::hdf5libs::HDF5RawDataFile file(file_list[0]);
-  auto creation_timestamp_ms = file.get_attribute<size_t>("creation_timestamp");
+  auto creation_timestamp_ms = file.get_attribute<uint64_t>("creation_timestamp"); // NOLINT(build/unsigned)
   std::string expected =
     boost::posix_time::to_iso_string(boost::posix_time::from_time_t(static_cast<time_t>(creation_timestamp_ms / 1000)));
   BOOST_REQUIRE_EQUAL(match[1].str(), expected);
 
-  // the run-context attributes are still written
+  // the run-context attributes come from the metadata
   auto names = file.get_attribute_names();
   for (auto const& name : { "operational_environment", "offline_data_stream", "run_was_for_test_purposes" }) {
     BOOST_REQUIRE(std::find(names.begin(), names.end(), name) != names.end());
@@ -443,7 +443,7 @@ BOOST_AUTO_TEST_CASE(NoDuplicateTimeSlices)
   auto data_store_conf_obj = data_store_conf->config_object();
   data_store_conf_obj.set_by_val<std::string>("directory_path", file_path);
 
-  // TimeSlices need a TimeSlice file layout, as TP-stream writers are configured with
+  // TimeSlices need the TimeSlice file layout that TP-stream writers are configured with
   auto layout_conf_obj = data_store_conf->get_file_layout_params()->config_object();
   layout_conf_obj.set_by_val<std::string>("record_name_prefix", "TimeSlice");
   layout_conf_obj.set_by_val<int32_t>("digits_for_sequence_number", 0);
