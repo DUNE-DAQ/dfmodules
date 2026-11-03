@@ -552,7 +552,7 @@ DFOModule::receive_dataflow_status(const dfmessages::DataflowStatus& status)
     notify_trigger_if_needed();
   }
   m_status_cv.notify_all();
-}
+} // NOLINT(readability/fn_size)
 
 std::shared_ptr<AssignedTriggerDecision>
 DFOModule::find_slot(const dfmessages::TriggerDecision& decision)
