@@ -102,10 +102,10 @@ TRBModule::init(std::shared_ptr<appfwk::ConfigurationManager> mcfg)
     }
   }
 
+  auto trigger_record_output = mdal->get_trigger_record_output();
+  m_trigger_record_output = iom->get_sender<std::unique_ptr<daqdataformats::TriggerRecord>>(trigger_record_output);
+
   for (auto con : mdal->get_outputs()) {
-    if (con->get_data_type() == datatype_to_string<std::unique_ptr<daqdataformats::TriggerRecord>>()) {
-      m_trigger_record_output = iom->get_sender<std::unique_ptr<daqdataformats::TriggerRecord>>(con->UID());
-    }
     if (con->get_data_type() == datatype_to_string<dfmessages::TRBCompletion>()) {
       m_trb_complete_output = iom->get_sender<dfmessages::TRBCompletion>(con->UID());
     }

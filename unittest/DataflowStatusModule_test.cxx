@@ -202,9 +202,9 @@ BOOST_AUTO_TEST_CASE(Commands)
 
   TLOG() << "Retrieving metrics from opmon";
   auto metric = get_opmon_info();
-  BOOST_REQUIRE_EQUAL(metric.tokens_received(), 0);
-  BOOST_REQUIRE_EQUAL(metric.trb_completions_received(), 0);
   BOOST_REQUIRE_EQUAL(metric.decisions_received(), 0);
+  BOOST_REQUIRE_EQUAL(metric.trb_completions_received(), 0);
+  BOOST_REQUIRE_EQUAL(metric.tokens_received(), 0);
   BOOST_REQUIRE_EQUAL(metric.requests_received(), 0);
   BOOST_REQUIRE(metric.status_messages_sent() >= 1);
   BOOST_REQUIRE_EQUAL(metric.decisions_sent(), 0);
@@ -479,7 +479,7 @@ BOOST_AUTO_TEST_CASE(OutOfOrder)
 
   metric = get_opmon_info();
   BOOST_REQUIRE_EQUAL(metric.trb_completions_received(), 0);
-  BOOST_REQUIRE_EQUAL(metric.unexpected_trb_completions_received(), 1);
+  BOOST_REQUIRE_EQUAL(metric.pending_trb_completion_timeouts(), 1);
 
   ConnectionFixture::send_token(1);
   std::this_thread::sleep_for(std::chrono::milliseconds(150));
@@ -488,8 +488,8 @@ BOOST_AUTO_TEST_CASE(OutOfOrder)
   BOOST_REQUIRE_EQUAL(metric.trb_completions_received(), 0);
   BOOST_REQUIRE_EQUAL(metric.tokens_received(), 0);
 
-  BOOST_REQUIRE_EQUAL(metric.unexpected_trb_completions_received(), 0);
-  BOOST_REQUIRE_EQUAL(metric.unexpected_tokens_received(), 1);
+  BOOST_REQUIRE_EQUAL(metric.pending_trb_completion_timeouts(), 0);
+  BOOST_REQUIRE_EQUAL(metric.pending_trigger_decision_token_timeouts(), 1);
 
   ConnectionFixture::send_trigdec(1);
   std::this_thread::sleep_for(std::chrono::milliseconds(150));
@@ -507,8 +507,8 @@ BOOST_AUTO_TEST_CASE(OutOfOrder)
   BOOST_REQUIRE_EQUAL(metric.decisions_sent(), 1);
   BOOST_REQUIRE_EQUAL(metric.trb_completions_received(), 0);
   BOOST_REQUIRE_EQUAL(metric.tokens_received(), 0);
-  BOOST_REQUIRE_EQUAL(metric.unexpected_trb_completions_received(), 0);
-  BOOST_REQUIRE_EQUAL(metric.unexpected_tokens_received(), 0);
+  BOOST_REQUIRE_EQUAL(metric.pending_trb_completion_timeouts(), 0);
+  BOOST_REQUIRE_EQUAL(metric.pending_trigger_decision_token_timeouts(), 0);
 
   ConnectionFixture::send_trigdec(1);
   std::this_thread::sleep_for(std::chrono::milliseconds(150));
@@ -528,8 +528,8 @@ BOOST_AUTO_TEST_CASE(OutOfOrder)
   BOOST_REQUIRE_EQUAL(metric.tokens_received(), 0);
 
   BOOST_REQUIRE_EQUAL(metric.duplicate_decisions_received(), 1);
-  BOOST_REQUIRE_EQUAL(metric.unexpected_trb_completions_received(), 0);
-  BOOST_REQUIRE_EQUAL(metric.unexpected_tokens_received(), 0);
+  BOOST_REQUIRE_EQUAL(metric.pending_trb_completion_timeouts(), 0);
+  BOOST_REQUIRE_EQUAL(metric.pending_trigger_decision_token_timeouts(), 0);
 
   ConnectionFixture::send_token(1);
   std::this_thread::sleep_for(std::chrono::milliseconds(150));
@@ -549,9 +549,8 @@ BOOST_AUTO_TEST_CASE(OutOfOrder)
   BOOST_REQUIRE_EQUAL(metric.tokens_received(), 1);
 
   BOOST_REQUIRE_EQUAL(metric.duplicate_decisions_received(), 0);
-  BOOST_REQUIRE_EQUAL(metric.unexpected_trb_completions_received(), 0);
-  BOOST_REQUIRE_EQUAL(metric.unexpected_tokens_received(), 0);
-  BOOST_REQUIRE_EQUAL(metric.early_tokens_received(), 1);
+  BOOST_REQUIRE_EQUAL(metric.pending_trb_completion_timeouts(), 0);
+  BOOST_REQUIRE_EQUAL(metric.pending_trigger_decision_token_timeouts(), 1);
 
   ConnectionFixture::send_trb_completion(1);
   std::this_thread::sleep_for(std::chrono::milliseconds(150));
@@ -571,9 +570,8 @@ BOOST_AUTO_TEST_CASE(OutOfOrder)
   BOOST_REQUIRE_EQUAL(metric.tokens_received(), 0);
 
   BOOST_REQUIRE_EQUAL(metric.duplicate_decisions_received(), 0);
-  BOOST_REQUIRE_EQUAL(metric.unexpected_trb_completions_received(), 1);
-  BOOST_REQUIRE_EQUAL(metric.unexpected_tokens_received(), 0);
-  BOOST_REQUIRE_EQUAL(metric.early_tokens_received(), 0);
+  BOOST_REQUIRE_EQUAL(metric.pending_trb_completion_timeouts(), 1);
+  BOOST_REQUIRE_EQUAL(metric.pending_trigger_decision_token_timeouts(), 0);
 
   dfs->execute_command("stop", null_data);
   dfs->execute_command("scrap", null_data);

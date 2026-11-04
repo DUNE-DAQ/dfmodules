@@ -19,6 +19,7 @@
 #include "utilities/WorkerThread.hpp"
 
 #include <atomic>
+#include <list>
 #include <map>
 #include <memory>
 #include <set>
@@ -87,15 +88,24 @@ private:
 
   // Callback
   void receive_status_request(const dfmessages::DataflowStatusRequest&);
-  void receive_trigger_decision(dfmessages::TriggerDecision&);
+  void receive_trigger_decision(const dfmessages::TriggerDecision&);
   void receive_trb_completion(const dfmessages::TRBCompletion&);
   void receive_trigger_decision_token(const dfmessages::TriggerDecisionToken&);
+
+  std::mutex m_pending_trigger_decision_mutex;
+  std::list<std::pair<dfmessages::TriggerDecision, std::chrono::steady_clock::time_point>> m_pending_trigger_decisions;
+  std::mutex m_pending_trb_completion_mutex;
+  std::list<std::pair<dfmessages::TRBCompletion, std::chrono::steady_clock::time_point>> m_pending_trb_completions;
+  std::mutex m_pending_trigger_decision_token_mutex;
+  std::list<std::pair<dfmessages::TriggerDecisionToken, std::chrono::steady_clock::time_point>>
+    m_pending_trigger_decision_tokens;
 
   // Configuration
   const appmodel::DataflowStatusModuleConf* m_conf;
   std::chrono::milliseconds m_heartbeat_interval{ 100 };
   std::chrono::milliseconds m_stop_timeout{ 1000 };
   std::chrono::milliseconds m_td_queue_timeout{ 1000 };
+  std::chrono::milliseconds m_pending_message_timeout{ 1000 };
   size_t m_snapshot_history_size{ 100 };
   size_t m_completed_trigger_history_size{ 100 };
 
@@ -110,16 +120,29 @@ private:
   // Status
   dfmessages::DataflowStatus m_current_status;
   std::map<dfmessages::TriggerId, dfmessages::DataflowStatus> m_status_snapshots;
-  std::map<dfmessages::TriggerId, std::pair<dfmessages::sequence_number_t, dfmessages::sequence_number_t>>
-    m_building_sequences;
-  std::map<dfmessages::TriggerId, std::pair<dfmessages::sequence_number_t, dfmessages::sequence_number_t>>
-    m_writing_sequences;
+
+  struct TriggerStatus
+  {
+    std::chrono::steady_clock::time_point decision_received;
+    dfmessages::sequence_number_t max_sequence_number{ 0 };
+    dfmessages::sequence_number_t sequences_built{ 0 };
+    dfmessages::sequence_number_t sequences_written{ 0 };
+  };
+  std::map<dfmessages::TriggerId, TriggerStatus> m_trigger_statuses;
   std::mutex m_status_mutex;
   std::atomic<bool> m_status_updated;
   std::condition_variable m_status_update_cv;
+  dunedaq::utilities::WorkerThread m_status_update_thread;
   dunedaq::utilities::WorkerThread m_heartbeat_thread;
   void send_dataflow_status_update(std::string const& destination, dfmessages::trigger_number_t trigger_number = 0);
   void status_heartbeat_thread(std::atomic<bool>& running_flag);
+  void status_update_thread(std::atomic<bool>& running_flag);
+
+  void process_trigger_decision(dfmessages::TriggerDecision&, std::chrono::steady_clock::time_point received);
+  bool process_trb_completion(const dfmessages::TRBCompletion&, std::chrono::steady_clock::time_point received);
+  bool process_trigger_decision_token(const dfmessages::TriggerDecisionToken&,
+                                      std::chrono::steady_clock::time_point received);
+
   void update_busy_status(std::unique_lock<std::mutex>& lk);
 
   // Counters
@@ -130,10 +153,20 @@ private:
   std::atomic<size_t> m_num_status_messages_sent;
   std::atomic<size_t> m_num_trigger_decisions_sent;
 
+  std::atomic<uint64_t> m_pending_trigger_decision_time_us;       // NOLINT(build/unsigned)
+  std::atomic<uint64_t> m_pending_trb_completion_time_us;         // NOLINT(build/unsigned)
+  std::atomic<uint64_t> m_pending_trigger_decision_token_time_us; // NOLINT(build/unsigned)
+
+  // Rate calculation
+  std::atomic<uint64_t> m_complete_counter{ 0 };       // NOLINT(build/unsigned)
+  std::atomic<uint64_t> m_completion_time_us{ 0 };     // NOLINT(build/unsigned)
+  std::atomic<uint64_t> m_min_completion_time_us{ 0 }; // NOLINT(build/unsigned)
+  std::atomic<uint64_t> m_max_completion_time_us{ 0 }; // NOLINT(build/unsigned)
+
+  // Errors
   std::atomic<size_t> m_num_duplicate_decisions_received;
-  std::atomic<size_t> m_num_unexpected_trb_completions_received;
-  std::atomic<size_t> m_num_unexpected_trigger_decision_tokens_received;
-  std::atomic<size_t> m_num_early_trigger_decision_tokens_received;
+  std::atomic<size_t> m_num_pending_trb_completion_timeouts;
+  std::atomic<size_t> m_num_pending_trigger_decision_token_timeouts;
 };
 
 } // namespace dfmodules
