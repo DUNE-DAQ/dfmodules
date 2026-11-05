@@ -496,7 +496,7 @@ private:
   daqdataformats::run_number_t m_run_number;
 
   // Total number of generated files
-  std::atomic<size_t> m_file_index{0};
+  std::atomic<size_t> m_file_index{ 0 };
   const std::string m_writer_identifier;
 
   const appmodel::DataStoreConf* m_config_params;
@@ -512,31 +512,31 @@ private:
   std::string m_basic_name_of_open_file;
 
   // Size of data being written, excluding metadata
-  std::atomic<size_t> m_recorded_size{0};
+  std::atomic<size_t> m_recorded_size{ 0 };
 
   // Theoretical, "uncompressed" size of data being written, excluding metadata
-  std::atomic<size_t> m_uncompressed_raw_data_size{0};
+  std::atomic<size_t> m_uncompressed_raw_data_size{ 0 };
 
   // Used for tracking the "delta" of the current write
-  std::atomic<size_t> m_previous_file_size{0};
+  std::atomic<size_t> m_previous_file_size{ 0 };
 
   // Total size of the file, including raw data, metadata, and free space
-  std::atomic<size_t> m_total_file_size{0};
+  std::atomic<size_t> m_total_file_size{ 0 };
 
   // Record number for the record that is currently being written out
   // This is only useful for long-readout windows, in which there may
   // be multiple calls to write()
-  size_t m_current_record_number{0};
+  size_t m_current_record_number{ 0 };
 
   // incremental written data
-  std::atomic<uint64_t> m_new_bytes{0};   // NOLINT(build/unsigned)
-  std::atomic<uint64_t> m_new_objects{0}; // NOLINT(build/unsigned)
+  std::atomic<uint64_t> m_new_bytes{ 0 };   // NOLINT(build/unsigned)
+  std::atomic<uint64_t> m_new_objects{ 0 }; // NOLINT(build/unsigned)
 
   const std::string m_operation_mode;
   const std::string m_path;
   const size_t m_max_file_size;
   const bool m_disable_unique_suffix;
-  float m_free_space_safety_factor_for_write{0.0f};
+  float m_free_space_safety_factor_for_write{ 0.0f };
 };
 
 } // namespace dfmodules

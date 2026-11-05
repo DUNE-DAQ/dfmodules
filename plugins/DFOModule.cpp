@@ -363,9 +363,9 @@ DFOModule::is_busy() const
     // Check if this DF app is not busy (has available slots)
     size_t occupied = dfapp.second->status.triggers_building.size() + dfapp.second->status.triggers_writing.size();
     if (!dfapp.second->status.is_busy && occupied < dfapp.second->status.busy_threshold) {
-      TLOG_DEBUG(TLVL_NOTIFY_TRIGGER_VERBOSE) << get_name() << " is not busy: DF app " << dfapp.first
-                                << " has available slots (occupied: " << occupied
-                                << ", busy_threshold: " << dfapp.second->status.busy_threshold << ")";
+      TLOG_DEBUG(TLVL_NOTIFY_TRIGGER_VERBOSE)
+        << get_name() << " is not busy: DF app " << dfapp.first << " has available slots (occupied: " << occupied
+        << ", busy_threshold: " << dfapp.second->status.busy_threshold << ")";
       return false; // At least one DF app is available
     }
   }
@@ -464,13 +464,13 @@ DFOModule::receive_dataflow_status(const dfmessages::DataflowStatus& status)
                               << " for trigger_number " << status.trigger_id.trigger_number << " in run "
                               << status.trigger_id.run_number;
 
-  if(status.trigger_id.run_number != m_run_number) {
+  if (status.trigger_id.run_number != m_run_number) {
     ers::warning(DFOModuleRunNumberMismatch(ERS_HERE,
-                                          get_name(),
-                                          status.trigger_id.run_number,
-                                          m_run_number,
-                                          status.decision_destination,
-                                          status.trigger_id.trigger_number));
+                                            get_name(),
+                                            status.trigger_id.run_number,
+                                            m_run_number,
+                                            status.decision_destination,
+                                            status.trigger_id.trigger_number));
     return;
   }
 

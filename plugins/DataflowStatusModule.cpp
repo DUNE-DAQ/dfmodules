@@ -424,8 +424,12 @@ DataflowStatusModule::process_trb_completion(const dfmessages::TRBCompletion& co
     auto now = std::chrono::steady_clock::now();
     if (!m_current_status.triggers_building.count(completion.trigger_id)) {
       if (now - received > m_pending_message_timeout) {
-        ers::error(UnexpectedTRBCompletion(
-          ERS_HERE, get_name(), completion.trigger_id.trigger_number, completion.sequence_number, completion.trigger_id.run_number, m_current_status.trigger_id.run_number));
+        ers::error(UnexpectedTRBCompletion(ERS_HERE,
+                                           get_name(),
+                                           completion.trigger_id.trigger_number,
+                                           completion.sequence_number,
+                                           completion.trigger_id.run_number,
+                                           m_current_status.trigger_id.run_number));
         m_num_pending_trb_completion_timeouts++;
         return true; // Remove from list
       }
@@ -457,7 +461,7 @@ DataflowStatusModule::process_trb_completion(const dfmessages::TRBCompletion& co
     }
 
     m_pending_trb_completion_time_us += std::chrono::duration_cast<std::chrono::microseconds>(now - received).count();
-    if(remove_from_building_list) {
+    if (remove_from_building_list) {
       m_current_status.triggers_building.erase(completion.trigger_id);
     }
     m_current_status.triggers_writing.insert(completion.trigger_id);
@@ -483,12 +487,20 @@ DataflowStatusModule::process_trigger_decision_token(const dfmessages::TriggerDe
       if (now - received > m_pending_message_timeout) {
         ++m_num_pending_trigger_decision_token_timeouts;
         if (m_trigger_statuses.count(token.trigger_id) == 0) {
-          ers::error(UnexpectedTriggerDecisionToken(
-            ERS_HERE, get_name(), token.trigger_id.trigger_number , token.sequence_number, token.trigger_id.run_number, m_current_status.trigger_id.run_number));
+          ers::error(UnexpectedTriggerDecisionToken(ERS_HERE,
+                                                    get_name(),
+                                                    token.trigger_id.trigger_number,
+                                                    token.sequence_number,
+                                                    token.trigger_id.run_number,
+                                                    m_current_status.trigger_id.run_number));
           return true; // Remove from list
         } else {
-          ers::warning(UnexpectedTriggerDecisionToken(
-            ERS_HERE, get_name(), token.trigger_id.trigger_number, token.sequence_number, token.trigger_id.run_number, m_current_status.trigger_id.run_number));
+          ers::warning(UnexpectedTriggerDecisionToken(ERS_HERE,
+                                                      get_name(),
+                                                      token.trigger_id.trigger_number,
+                                                      token.sequence_number,
+                                                      token.trigger_id.run_number,
+                                                      m_current_status.trigger_id.run_number));
         }
       } else {
         return false;
