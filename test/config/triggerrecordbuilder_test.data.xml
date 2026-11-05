@@ -384,6 +384,7 @@
   <ref class="NetworkConnection" id="datareq_ru0"/>
  </rel>
  <rel name="configuration" class="TRBConf" id="test"/>
+ <attr name="trigger_record_output" type="string" val="trigrecord"/>
  <rel name="request_connections">
   <ref class="SourceIDToNetworkConnection" id="datareq_ru0"/>
  </rel>

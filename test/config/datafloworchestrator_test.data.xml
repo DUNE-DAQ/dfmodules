@@ -544,6 +544,7 @@
  <rel name="inputs">
   <ref class="NetworkConnection" id="trigdec_0"/>
  </rel>
+ <attr name="trigger_record_output" type="string" val="trigrec"/>
  <rel name="configuration" class="TRBConf" id="trb-01"/>
 </obj>
 
