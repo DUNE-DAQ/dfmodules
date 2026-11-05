@@ -100,9 +100,10 @@ utility_functions.set_rtcm_trigger_params(conf_dict, trigger_rate=trigger_rate,
 # (https://github.com/DUNE-DAQ/daqsystemtest/pull/354).
 # The TRACE messages in the DataWriter and DFO modules were used to investigate occasional
 # DFO stop timeouts caused by long trigger-record write times.
-# (tshow | tdelta -ct 1 | egrep 'PAUSE|RESUME|TriggerDecision|DFOModule' | head -22)
+# (tshow | tdelta -ct 1 | egrep 'PAUSE|RESUME|TriggerDecision|DFOModule|DataflowStatusModule' | more)
 conf_dict.trace_debug_levels = {"fast": {"DefaultRequestHandlerModel.hxx": [10,13],
-                                         "DataWriterModule": 10, "DFOModule": [21,22,23,24]}}
+                                         "DataWriterModule": 10, "DFOModule": [21,22,23,24],
+                                         "DataflowStatusModule": [21,22,23]}}
 
 conf_dict.config_substitutions.append(
     data_classes.attribute_substitution(
