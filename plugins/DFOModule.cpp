@@ -464,16 +464,6 @@ DFOModule::receive_dataflow_status(const dfmessages::DataflowStatus& status)
                               << " for trigger_number " << status.trigger_id.trigger_number << " in run "
                               << status.trigger_id.run_number;
 
-  if (status.trigger_id.run_number != m_run_number) {
-    ers::warning(DFOModuleRunNumberMismatch(ERS_HERE,
-                                            get_name(),
-                                            status.trigger_id.run_number,
-                                            m_run_number,
-                                            status.decision_destination,
-                                            status.trigger_id.trigger_number));
-    return;
-  }
-
   {
     std::lock_guard<std::mutex> guard(m_status_mutex);
     m_received_statuses.insert(status.decision_destination);
@@ -498,7 +488,7 @@ DFOModule::receive_dataflow_status(const dfmessages::DataflowStatus& status)
     for (auto& trigger : status.triggers_building) {
       if (!m_assigned_trigger_decisions.count(trigger)) {
         if (trigger.run_number != m_run_number) {
-          ers::error(DFOModuleRunNumberMismatch(ERS_HERE,
+          ers::info(DFOModuleRunNumberMismatch(ERS_HERE,
                                                 get_name(),
                                                 trigger.run_number,
                                                 m_run_number,
@@ -517,7 +507,7 @@ DFOModule::receive_dataflow_status(const dfmessages::DataflowStatus& status)
     for (auto& trigger : status.triggers_writing) {
       if (!m_assigned_trigger_decisions.count(trigger)) {
         if (trigger.run_number != m_run_number) {
-          ers::error(DFOModuleRunNumberMismatch(ERS_HERE,
+          ers::info(DFOModuleRunNumberMismatch(ERS_HERE,
                                                 get_name(),
                                                 trigger.run_number,
                                                 m_run_number,
