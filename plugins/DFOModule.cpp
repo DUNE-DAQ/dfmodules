@@ -460,10 +460,6 @@ DFOModule::get_trigger_counter(trgdataformats::TriggerCandidateData::Type type)
 void
 DFOModule::receive_dataflow_status(const dfmessages::DataflowStatus& status)
 {
-  // DataflowStatusModule sends messages from conf through scrap. The run number in the message is only updated at run
-  // start, so when this callback starts, there may be queued messages with either uninitalized run number or the
-  // previous run number. DFOModule is only interested in status updates for triggers in the current run, so it can just
-  // log and ignore others.
   TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << " Received DataflowStatus from " << status.decision_destination
                               << " for trigger_number " << status.trigger_id.trigger_number << " in run "
                               << status.trigger_id.run_number;
@@ -492,7 +488,7 @@ DFOModule::receive_dataflow_status(const dfmessages::DataflowStatus& status)
     for (auto& trigger : status.triggers_building) {
       if (!m_assigned_trigger_decisions.count(trigger)) {
         if (trigger.run_number != m_run_number) {
-          ers::info(DFOModuleRunNumberMismatch(ERS_HERE,
+          ers::error(DFOModuleRunNumberMismatch(ERS_HERE,
                                                get_name(),
                                                trigger.run_number,
                                                m_run_number,
@@ -511,7 +507,7 @@ DFOModule::receive_dataflow_status(const dfmessages::DataflowStatus& status)
     for (auto& trigger : status.triggers_writing) {
       if (!m_assigned_trigger_decisions.count(trigger)) {
         if (trigger.run_number != m_run_number) {
-          ers::info(DFOModuleRunNumberMismatch(ERS_HERE,
+          ers::error(DFOModuleRunNumberMismatch(ERS_HERE,
                                                get_name(),
                                                trigger.run_number,
                                                m_run_number,

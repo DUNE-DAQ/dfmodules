@@ -198,7 +198,6 @@ DataflowStatusModule::do_conf(const CommandData_t&)
   iom->add_callback<dfmessages::DataflowStatusRequest>(
     m_status_request_connection, std::bind(&DataflowStatusModule::receive_status_request, this, std::placeholders::_1));
 
-  m_heartbeat_thread.start_working_thread();
   m_status_update_thread.start_working_thread();
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_conf() method";
 }
@@ -252,6 +251,7 @@ DataflowStatusModule::do_start(const CommandData_t& payload)
   iom->add_callback<dfmessages::TRBCompletion>(
     m_trb_completion_connection, std::bind(&DataflowStatusModule::receive_trb_completion, this, std::placeholders::_1));
 
+  m_heartbeat_thread.start_working_thread();
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
 }
 
@@ -285,6 +285,9 @@ DataflowStatusModule::do_stop(const CommandData_t& /*args*/)
   }
   iom->remove_callback<dfmessages::TriggerDecisionToken>(m_token_connection);
 
+  if (m_heartbeat_thread.thread_running()) {
+    m_heartbeat_thread.stop_working_thread();
+  }
   m_current_status.trigger_id.run_number = 0;
 
   TLOG() << get_name() << " successfully stopped";
