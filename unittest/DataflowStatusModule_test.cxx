@@ -840,10 +840,10 @@ BOOST_AUTO_TEST_CASE(MultipleSequences)
   ConnectionFixture::send_trb_completion(100, 0, 2);
   std::this_thread::sleep_for(std::chrono::milliseconds(150));
 
-  // Should still be building, waiting for all sequences to complete
+  // Should now be both building and writing, since at least one sequence has been completed
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.size() == 1);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.count({ 1, 100 }) == 1);
-  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_writing.size() == 0);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_writing.size() == 1);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().recently_completed_triggers.size() == 0);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().trigger_records_processed == 0);
 
@@ -858,7 +858,7 @@ BOOST_AUTO_TEST_CASE(MultipleSequences)
   // Still building, waiting for sequence 2
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.size() == 1);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_building.count({ 1, 100 }) == 1);
-  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_writing.size() == 0);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().triggers_writing.size() == 1);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().recently_completed_triggers.size() == 0);
   BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().trigger_records_processed == 0);
 

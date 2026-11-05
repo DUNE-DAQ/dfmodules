@@ -42,8 +42,9 @@ enum
   TLVL_WORK_STEPS = 10,
   TLVL_TRIGDEC_RECEIVED = 21,
   TLVL_NOTIFY_TRIGGER = 22,
-  TLVL_DISPATCH_TO_TRB = 23,
-  TLVL_TDTOKEN_RECEIVED = 24
+  TLVL_NOTIFY_TRIGGER_VERBOSE = 23,
+  TLVL_DISPATCH_TO_TRB = 24,
+  TLVL_TDTOKEN_RECEIVED = 25
 };
 
 namespace dunedaq::dfmodules {
@@ -362,7 +363,7 @@ DFOModule::is_busy() const
     // Check if this DF app is not busy (has available slots)
     size_t occupied = dfapp.second->status.triggers_building.size() + dfapp.second->status.triggers_writing.size();
     if (!dfapp.second->status.is_busy && occupied < dfapp.second->status.busy_threshold) {
-      TLOG(TLVL_NOTIFY_TRIGGER) << get_name() << " is not busy: DF app " << dfapp.first
+      TLOG(TLVL_NOTIFY_TRIGGER_VERBOSE) << get_name() << " is not busy: DF app " << dfapp.first
                                 << " has available slots (occupied: " << occupied
                                 << ", busy_threshold: " << dfapp.second->status.busy_threshold << ")";
       return false; // At least one DF app is available

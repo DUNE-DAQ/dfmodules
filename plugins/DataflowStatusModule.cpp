@@ -425,7 +425,7 @@ DataflowStatusModule::process_trb_completion(const dfmessages::TRBCompletion& co
     if (!m_current_status.triggers_building.count(completion.trigger_id)) {
       if (now - received > m_pending_message_timeout) {
         ers::error(UnexpectedTRBCompletion(
-          ERS_HERE, get_name(), completion.trigger_id.trigger_number, completion.trigger_id.run_number));
+          ERS_HERE, get_name(), completion.trigger_id.trigger_number, completion.sequence_number, completion.trigger_id.run_number, m_current_status.trigger_id.run_number));
         m_num_pending_trb_completion_timeouts++;
         return true; // Remove from list
       }
@@ -434,6 +434,7 @@ DataflowStatusModule::process_trb_completion(const dfmessages::TRBCompletion& co
 
     ++m_num_trb_completions_received;
 
+    auto remove_from_building_list = true;
     if (completion.trigger_record_max_sequence_number > 0) {
       if (m_trigger_statuses[completion.trigger_id].max_sequence_number == 0) {
         m_trigger_statuses[completion.trigger_id].max_sequence_number = completion.trigger_record_max_sequence_number;
@@ -451,12 +452,14 @@ DataflowStatusModule::process_trb_completion(const dfmessages::TRBCompletion& co
                                     << completion.trigger_id.run_number << ". Total completed sequences: "
                                     << m_trigger_statuses[completion.trigger_id].sequences_built << " of "
                                     << m_trigger_statuses[completion.trigger_id].max_sequence_number + 1;
-        return true;
+        remove_from_building_list = false;
       }
     }
 
     m_pending_trb_completion_time_us += std::chrono::duration_cast<std::chrono::microseconds>(now - received).count();
-    m_current_status.triggers_building.erase(completion.trigger_id);
+    if(remove_from_building_list) {
+      m_current_status.triggers_building.erase(completion.trigger_id);
+    }
     m_current_status.triggers_writing.insert(completion.trigger_id);
     m_status_updated.store(true);
     m_status_update_cv.notify_all();
@@ -481,11 +484,11 @@ DataflowStatusModule::process_trigger_decision_token(const dfmessages::TriggerDe
         ++m_num_pending_trigger_decision_token_timeouts;
         if (m_trigger_statuses.count(token.trigger_id) == 0) {
           ers::error(UnexpectedTriggerDecisionToken(
-            ERS_HERE, get_name(), token.trigger_id.trigger_number, m_current_status.trigger_id.run_number));
+            ERS_HERE, get_name(), token.trigger_id.trigger_number , token.sequence_number, token.trigger_id.run_number, m_current_status.trigger_id.run_number));
           return true; // Remove from list
         } else {
           ers::warning(UnexpectedTriggerDecisionToken(
-            ERS_HERE, get_name(), token.trigger_id.trigger_number, m_current_status.trigger_id.run_number));
+            ERS_HERE, get_name(), token.trigger_id.trigger_number, token.sequence_number, token.trigger_id.run_number, m_current_status.trigger_id.run_number));
         }
       } else {
         return false;
@@ -564,7 +567,7 @@ DataflowStatusModule::send_dataflow_status_update(std::string const& destination
       if (it != m_status_snapshots.end()) {
         status_to_send = it->second;
       } else {
-        ers::warning(SnapshotNotFound(ERS_HERE, get_name(), trigger_number));
+        ers::warning(SnapshotNotFound(ERS_HERE, get_name(), trigger_number, m_current_status.trigger_id.run_number));
         status_to_send = m_current_status;
       }
     }
