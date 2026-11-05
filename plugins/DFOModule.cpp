@@ -462,7 +462,7 @@ DFOModule::receive_dataflow_status(const dfmessages::DataflowStatus& status)
 {
   TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << " Received DataflowStatus from " << status.decision_destination
                               << " for trigger_number " << status.trigger_id.trigger_number << " in run "
-                              << status.trigger_id.run_number;
+                              << status.trigger_id.run_number << " (current run is " << m_run_number << ")";
 
   {
     std::lock_guard<std::mutex> guard(m_status_mutex);
@@ -470,8 +470,33 @@ DFOModule::receive_dataflow_status(const dfmessages::DataflowStatus& status)
     // Update or create entry for this dataflow app
     auto it = m_dataflow_statuses.find(status.decision_destination);
     if (it != m_dataflow_statuses.end()) {
+      if (status.trigger_id.run_number != m_run_number) {
+        if (status.trigger_id.run_number !=
+            m_dataflow_statuses[status.decision_destination]->status.trigger_id.run_number) {
+          ers::error(DFOModuleRunNumberMismatch(ERS_HERE,
+                                                get_name(),
+                                                status.trigger_id.run_number,
+                                                m_run_number,
+                                                status.decision_destination,
+                                                status.trigger_id.trigger_number));
+        } else {
+          if (status.triggers_building.size() == 0 && status.triggers_writing.size() == 0) {
+            // Empty DataflowStatus message from previous run, safe to ignore
+            return;
+          }
+        }
+      }
+
       it->second->update(status);
     } else {
+      if (status.trigger_id.run_number != m_run_number) {
+        ers::error(DFOModuleRunNumberMismatch(ERS_HERE,
+                                              get_name(),
+                                              status.trigger_id.run_number,
+                                              m_run_number,
+                                              status.decision_destination,
+                                              status.trigger_id.trigger_number));
+      }
       m_dataflow_statuses[status.decision_destination] =
         std::make_shared<ReceivedDataflowStatus>(status, m_dataflow_status_timeout);
     }
@@ -489,11 +514,11 @@ DFOModule::receive_dataflow_status(const dfmessages::DataflowStatus& status)
       if (!m_assigned_trigger_decisions.count(trigger)) {
         if (trigger.run_number != m_run_number) {
           ers::error(DFOModuleRunNumberMismatch(ERS_HERE,
-                                               get_name(),
-                                               trigger.run_number,
-                                               m_run_number,
-                                               status.decision_destination,
-                                               trigger.trigger_number));
+                                                get_name(),
+                                                trigger.run_number,
+                                                m_run_number,
+                                                status.decision_destination,
+                                                trigger.trigger_number));
           continue;
         }
         ers::info(UnexpectedTriggerDecision(ERS_HERE, get_name(), trigger.trigger_number, status.decision_destination));
@@ -508,11 +533,11 @@ DFOModule::receive_dataflow_status(const dfmessages::DataflowStatus& status)
       if (!m_assigned_trigger_decisions.count(trigger)) {
         if (trigger.run_number != m_run_number) {
           ers::error(DFOModuleRunNumberMismatch(ERS_HERE,
-                                               get_name(),
-                                               trigger.run_number,
-                                               m_run_number,
-                                               status.decision_destination,
-                                               trigger.trigger_number));
+                                                get_name(),
+                                                trigger.run_number,
+                                                m_run_number,
+                                                status.decision_destination,
+                                                trigger.trigger_number));
           continue;
         }
         ers::warning(
