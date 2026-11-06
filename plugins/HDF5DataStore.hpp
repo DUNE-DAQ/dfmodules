@@ -15,11 +15,9 @@
 #include "dfmodules/FileDataStore.hpp"
 #include "dfmodules/HDF5FileConfig.hpp"
 
-#include "appmodel/DataStoreConf.hpp"
 #include "appmodel/HDF5DataStoreConf.hpp"
 #include "hdf5libs/HDF5Backend.hpp"
 #include "rawdatafilelibs/Backend.hpp"
-#include "rawdatafilelibs/FileMetadata.hpp"
 
 #include <memory>
 #include <optional>
@@ -29,7 +27,7 @@ namespace dunedaq::dfmodules {
 
 /**
  * @brief Writes DUNE DAQ HDF5 files, with hdf5libs' HDF5 backend. Configured with an
- * appmodel::HDF5DataStoreConf (or, during the transition, a plain DataStoreConf).
+ * appmodel::HDF5DataStoreConf (or a plain DataStoreConf, deprecated).
  */
 class HDF5DataStore : public FileDataStore
 {

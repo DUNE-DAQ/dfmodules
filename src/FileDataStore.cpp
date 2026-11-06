@@ -17,8 +17,11 @@
 #include "daqdataformats/RecordID.hpp"
 
 #include <chrono>
+#include <cstddef>
+#include <cstdint>
 #include <ctime>
 #include <exception>
+#include <limits>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -34,7 +37,7 @@ now_ms()
   return static_cast<uint64_t>( // NOLINT(build/unsigned)
     std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
 }
-} // namespace
+} // namespace ""
 
 FileDataStore::FileDataStore(std::string const& name,
                              std::shared_ptr<appfwk::ConfigurationManager> mcfg,
@@ -67,8 +70,7 @@ FileDataStore::FileDataStore(std::string const& name,
     throw InvalidOperationMode(ERS_HERE, get_name(), m_operation_mode);
   }
 
-  // 05-Apr-2022, KAB: added warning message when the output destination
-  // is not a valid directory.
+  // Only a warning here: prepare_for_run() throws if the path is still invalid.
   if (!rawdatafilelibs::get_free_space(m_path).has_value()) {
     ers::warning(InvalidOutputPath(ERS_HERE, get_name(), m_path));
   }
@@ -266,6 +268,8 @@ FileDataStore::close_file_if_open()
     writer->close();
   } catch (std::exception const& excpt) {
     throw FileOperationProblem(ERS_HERE, get_name(), writer->get_current_file_name(), excpt);
+  } catch (...) { // NOLINT(runtime/exceptions)
+    throw FileOperationProblem(ERS_HERE, get_name(), writer->get_current_file_name());
   }
 }
 
@@ -302,7 +306,6 @@ FileDataStore::open_file_if_needed(const std::string& file_name, rawdatafilelibs
   m_basic_name_of_open_file = file_name;
 
   try {
-    // the writer creates the file under its in-progress name, and never reuses an existing file
     m_writer = std::make_unique<rawdatafilelibs::RawDataFileWriter>(
       make_writer_backend(record_type), unique_filename, metadata, m_source_id_geo_id_map);
   } catch (std::exception const& excpt) {

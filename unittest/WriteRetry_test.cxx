@@ -20,8 +20,8 @@
 using namespace dunedaq::dfmodules;
 
 namespace {
-const WriteRetryPolicy s_fast_policy{ std::chrono::microseconds(1), std::chrono::microseconds(10), 2.0 };
-}
+constexpr WriteRetryPolicy fast_policy{ std::chrono::microseconds(1), std::chrono::microseconds(10), 2.0 };
+} // namespace ""
 
 BOOST_AUTO_TEST_SUITE(WriteRetry_test)
 
@@ -31,7 +31,7 @@ BOOST_AUTO_TEST_CASE(SucceedsFirstTime)
   int calls = 0;
   int problems = 0;
   BOOST_REQUIRE(write_with_retries(
-    [&]() { ++calls; }, [&](const RetryableDataStoreProblem&) { ++problems; }, s_fast_policy, keep_trying));
+    [&]() { calls += 1; }, [&](const RetryableDataStoreProblem&) { problems += 1; }, fast_policy, keep_trying));
   BOOST_REQUIRE_EQUAL(calls, 1);
   BOOST_REQUIRE_EQUAL(problems, 0);
 }
@@ -42,12 +42,13 @@ BOOST_AUTO_TEST_CASE(RetriesRetryableProblems)
   int calls = 0;
   int problems = 0;
   auto write = [&]() {
-    if (++calls < 4) {
+    ++calls;
+    if (calls < 4) {
       throw RetryableDataStoreProblem(ERS_HERE, "test", "a test write");
     }
   };
   BOOST_REQUIRE(
-    write_with_retries(write, [&](const RetryableDataStoreProblem&) { ++problems; }, s_fast_policy, keep_trying));
+    write_with_retries(write, [&](const RetryableDataStoreProblem&) { problems += 1; }, fast_policy, keep_trying));
   BOOST_REQUIRE_EQUAL(calls, 4);
   BOOST_REQUIRE_EQUAL(problems, 3);
 }
@@ -61,7 +62,7 @@ BOOST_AUTO_TEST_CASE(StopsWhenAskedTo)
     keep_trying = false; // e.g. the run is stopped while retrying
     throw RetryableDataStoreProblem(ERS_HERE, "test", "a test write");
   };
-  BOOST_REQUIRE(!write_with_retries(write, [](const RetryableDataStoreProblem&) {}, s_fast_policy, keep_trying));
+  BOOST_REQUIRE(!write_with_retries(write, [](const RetryableDataStoreProblem&) {}, fast_policy, keep_trying));
   BOOST_REQUIRE_EQUAL(calls, 1);
 }
 
@@ -100,18 +101,19 @@ BOOST_AUTO_TEST_CASE(OtherExceptionsArePassedOn)
     throw std::runtime_error("not retryable");
   };
   BOOST_REQUIRE_THROW(
-    write_with_retries(write, [](const RetryableDataStoreProblem&) {}, s_fast_policy, keep_trying), std::runtime_error);
+    write_with_retries(write, [](const RetryableDataStoreProblem&) {}, fast_policy, keep_trying), std::runtime_error);
   BOOST_REQUIRE_EQUAL(calls, 1);
 }
 
 BOOST_AUTO_TEST_CASE(ZeroIncreaseFactorStillWaits)
 {
-  // a factor of 0 (the schema default) used to make every wait after the first 0 microseconds
+  // a factor of 0 (the schema default) must not make the waits 0
   const WriteRetryPolicy policy{ std::chrono::microseconds(50), std::chrono::microseconds(1000), 0.0 };
   std::atomic<bool> keep_trying{ true };
   int calls = 0;
   auto write = [&]() {
-    if (++calls < 5) {
+    ++calls;
+    if (calls < 5) {
       throw RetryableDataStoreProblem(ERS_HERE, "test", "a test write");
     }
   };

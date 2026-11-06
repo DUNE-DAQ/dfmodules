@@ -28,7 +28,7 @@ daq_protobuf_codegen( opmon/*.proto )
 ##############################################################################
 daq_add_library( TriggerInhibitAgent.cpp TPBundleHandler.cpp FileDataStore.cpp SummaryTextWriterBackend.cpp
                  LINK_LIBRARIES
-                 opmonlib::opmonlib ers::ers HighFive appfwk::appfwk appmodel::appmodel rawdatafilelibs::rawdatafilelibs logging::logging stdc++fs dfmessages::dfmessages utilities::utilities trigger::trigger detdataformats::detdataformats trgdataformats::trgdataformats)
+                 opmonlib::opmonlib ers::ers appfwk::appfwk appmodel::appmodel rawdatafilelibs::rawdatafilelibs logging::logging stdc++fs dfmessages::dfmessages utilities::utilities trigger::trigger detdataformats::detdataformats trgdataformats::trgdataformats)
 
 daq_add_plugin( SummaryTextDataStore     duneDataStore LINK_LIBRARIES dfmodules dfmodules_dal)
 daq_add_plugin( HDF5DataStore     duneDataStore LINK_LIBRARIES dfmodules hdf5libs::hdf5libs stdc++fs)
