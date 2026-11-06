@@ -138,6 +138,7 @@ private:
   // Commands
   void do_conf(const CommandData_t&);
   void do_start(const CommandData_t&);
+  void do_drain(const CommandData_t&);
   void do_stop(const CommandData_t&);
   void do_scrap(const CommandData_t&);
 

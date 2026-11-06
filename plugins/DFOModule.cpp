@@ -42,8 +42,9 @@ enum
   TLVL_WORK_STEPS = 10,
   TLVL_TRIGDEC_RECEIVED = 21,
   TLVL_NOTIFY_TRIGGER = 22,
-  TLVL_DISPATCH_TO_TRB = 23,
-  TLVL_TDTOKEN_RECEIVED = 24
+  TLVL_NOTIFY_TRIGGER_VERBOSE = 23,
+  TLVL_DISPATCH_TO_TRB = 24,
+  TLVL_TDTOKEN_RECEIVED = 25
 };
 
 namespace dunedaq::dfmodules {
@@ -55,7 +56,8 @@ DFOModule::DFOModule(const std::string& name)
 {
   register_command("conf", &DFOModule::do_conf);
   register_command("start", &DFOModule::do_start);
-  register_command("drain_dataflow", &DFOModule::do_stop);
+  register_command("drain_dataflow", &DFOModule::do_drain);
+  register_command("stop", &DFOModule::do_stop);
   register_command("scrap", &DFOModule::do_scrap);
 }
 
@@ -170,14 +172,23 @@ DFOModule::do_start(const CommandData_t& payload)
 }
 
 void
-DFOModule::do_stop(const CommandData_t& /*args*/)
+DFOModule::do_drain(const CommandData_t& /*args*/)
 {
-  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_stop() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_drain() method";
 
   m_running_status.store(false);
 
   auto iom = iomanager::IOManager::get();
   iom->remove_callback<dfmessages::TriggerDecision>(m_td_connection);
+
+  TLOG() << get_name() << " successfully signaled drain";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_drain() method";
+}
+
+void
+DFOModule::do_stop(const CommandData_t& /*args*/)
+{
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_stop() method";
 
   const int wait_steps = 20;
   auto step_timeout = m_stop_timeout / wait_steps;
@@ -191,6 +202,7 @@ DFOModule::do_stop(const CommandData_t& /*args*/)
 
   m_status_watchdog_thread->request_stop();
   m_status_watchdog_thread->join();
+  auto iom = iomanager::IOManager::get();
   iom->remove_callback<dfmessages::DataflowStatus>(m_status_connection);
 
   {
@@ -351,7 +363,7 @@ bool
 DFOModule::is_busy() const
 {
   if (m_processing_td.load()) {
-    TLOG(TLVL_NOTIFY_TRIGGER) << get_name() << " is busy processing a TriggerDecision";
+    TLOG_DEBUG(TLVL_NOTIFY_TRIGGER) << get_name() << " is busy processing a TriggerDecision";
     return true; // DFO is busy processing a TriggerDecision
   }
 
@@ -362,14 +374,14 @@ DFOModule::is_busy() const
     // Check if this DF app is not busy (has available slots)
     size_t occupied = dfapp.second->status.triggers_building.size() + dfapp.second->status.triggers_writing.size();
     if (!dfapp.second->status.is_busy && occupied < dfapp.second->status.busy_threshold) {
-      TLOG(TLVL_NOTIFY_TRIGGER) << get_name() << " is not busy: DF app " << dfapp.first
-                                << " has available slots (occupied: " << occupied
-                                << ", busy_threshold: " << dfapp.second->status.busy_threshold << ")";
+      TLOG_DEBUG(TLVL_NOTIFY_TRIGGER_VERBOSE)
+        << get_name() << " is not busy: DF app " << dfapp.first << " has available slots (occupied: " << occupied
+        << ", busy_threshold: " << dfapp.second->status.busy_threshold << ")";
       return false; // At least one DF app is available
     }
   }
 
-  TLOG(TLVL_NOTIFY_TRIGGER) << get_name() << " is busy: all DF apps are either busy or have stale statuses";
+  TLOG_DEBUG(TLVL_NOTIFY_TRIGGER) << get_name() << " is busy: all DF apps are either busy or have stale statuses";
   return true; // All DF apps are busy
 }
 
@@ -461,7 +473,7 @@ DFOModule::receive_dataflow_status(const dfmessages::DataflowStatus& status)
 {
   TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << " Received DataflowStatus from " << status.decision_destination
                               << " for trigger_number " << status.trigger_id.trigger_number << " in run "
-                              << status.trigger_id.run_number;
+                              << status.trigger_id.run_number << " (current run is " << m_run_number << ")";
 
   {
     std::lock_guard<std::mutex> guard(m_status_mutex);
@@ -469,8 +481,33 @@ DFOModule::receive_dataflow_status(const dfmessages::DataflowStatus& status)
     // Update or create entry for this dataflow app
     auto it = m_dataflow_statuses.find(status.decision_destination);
     if (it != m_dataflow_statuses.end()) {
+      if (status.trigger_id.run_number != m_run_number) {
+        if (status.trigger_id.run_number !=
+            m_dataflow_statuses[status.decision_destination]->status.trigger_id.run_number) {
+          ers::error(DFOModuleRunNumberMismatch(ERS_HERE,
+                                                get_name(),
+                                                status.trigger_id.run_number,
+                                                m_run_number,
+                                                status.decision_destination,
+                                                status.trigger_id.trigger_number));
+        } else {
+          if (status.triggers_building.size() == 0 && status.triggers_writing.size() == 0) {
+            // Empty DataflowStatus message from previous run, safe to ignore
+            return;
+          }
+        }
+      }
+
       it->second->update(status);
     } else {
+      if (status.trigger_id.run_number != m_run_number) {
+        ers::error(DFOModuleRunNumberMismatch(ERS_HERE,
+                                              get_name(),
+                                              status.trigger_id.run_number,
+                                              m_run_number,
+                                              status.decision_destination,
+                                              status.trigger_id.trigger_number));
+      }
       m_dataflow_statuses[status.decision_destination] =
         std::make_shared<ReceivedDataflowStatus>(status, m_dataflow_status_timeout);
     }

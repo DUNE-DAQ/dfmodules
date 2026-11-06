@@ -39,28 +39,33 @@ ERS_DECLARE_ISSUE_BASE(dfmodules,
                        ((std::string)name),
                        ((uint32_t)trigger_number)((uint32_t)run_number)((uint32_t)current_run)) // NOLINT
 
-ERS_DECLARE_ISSUE_BASE(dfmodules,
-                       UnexpectedTRBCompletion,
-                       appfwk::GeneralDAQModuleIssue,
-                       "Received TRBCompletion message for trigger number "
-                         << trigger_number << " in run " << run_number << " which is not in the building list",
-                       ((std::string)name),
-                       ((uint32_t)trigger_number)((uint32_t)run_number)) // NOLINT
+ERS_DECLARE_ISSUE_BASE(
+  dfmodules,
+  UnexpectedTRBCompletion,
+  appfwk::GeneralDAQModuleIssue,
+  "Received TRBCompletion message for trigger number " << trigger_number << "." << sequence_number << "/" << run_number
+                                                       << " which is not in the building list (current run is "
+                                                       << current_run << ")",
+  ((std::string)name),
+  ((uint32_t)trigger_number)((uint32_t)sequence_number)((uint32_t)run_number)((uint32_t)current_run)) // NOLINT
 
-ERS_DECLARE_ISSUE_BASE(dfmodules,
-                       UnexpectedTriggerDecisionToken,
-                       appfwk::GeneralDAQModuleIssue,
-                       "Received TriggerDecisionToken message for trigger number "
-                         << trigger_number << " in run " << run_number << " which is not in the writing list",
-                       ((std::string)name),
-                       ((uint32_t)trigger_number)((uint32_t)run_number)) // NOLINT
+ERS_DECLARE_ISSUE_BASE(
+  dfmodules,
+  UnexpectedTriggerDecisionToken,
+  appfwk::GeneralDAQModuleIssue,
+  "Received TriggerDecisionToken message for trigger number "
+    << trigger_number << "." << sequence_number << "/" << run_number
+    << " which is not in the writing list (current run is " << current_run << ")",
+  ((std::string)name),
+  ((uint32_t)trigger_number)((uint32_t)sequence_number)((uint32_t)run_number)((uint32_t)current_run)) // NOLINT
 
 ERS_DECLARE_ISSUE_BASE(dfmodules,
                        SnapshotNotFound,
                        appfwk::GeneralDAQModuleIssue,
-                       "No snapshot found for trigger number " << trigger_number << ". Sending current status instead.",
+                       "No snapshot found for trigger number " << trigger_number << " in run " << current_run
+                                                               << ". Sending current status instead.",
                        ((std::string)name),
-                       ((uint32_t)trigger_number)) // NOLINT
+                       ((uint32_t)trigger_number)((uint32_t)current_run)) // NOLINT
 // Re-enable coverage checking LCOV_EXCL_STOP
 namespace dfmodules {
 
