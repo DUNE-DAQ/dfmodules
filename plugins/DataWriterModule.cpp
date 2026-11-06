@@ -273,22 +273,25 @@ DataWriterModule::receive_trigger_record(std::unique_ptr<daqdataformats::Trigger
                                      std::chrono::microseconds(m_max_write_retry_time_usec),
                                      static_cast<double>(m_write_retry_time_increase_factor) };
       try {
-        bool written = write_with_retries([&]() { m_data_writer->write(*trigger_record_ptr); },
-                                          [&](const RetryableDataStoreProblem& excpt) {
-                                            ers::error(DataWritingProblem(ERS_HERE,
-                                                                          get_name(),
-                                                                          header.get_trigger_number(),
-                                                                          header.get_sequence_number(),
-                                                                          header.get_run_number(),
-                                                                          excpt));
-                                          },
-                                          retry_policy,
-                                          m_running);
+        const bool written = write_with_retries([&]() { m_data_writer->write(*trigger_record_ptr); },
+                                                [&](const RetryableDataStoreProblem& excpt) {
+                                                  ers::error(DataWritingProblem(ERS_HERE,
+                                                                                get_name(),
+                                                                                header.get_trigger_number(),
+                                                                                header.get_sequence_number(),
+                                                                                header.get_run_number(),
+                                                                                excpt));
+                                                },
+                                                retry_policy,
+                                                m_running);
         if (written) {
           ++m_records_written;
           ++m_records_written_tot;
           m_bytes_output += trigger_record_ptr->get_total_size_bytes();
           m_bytes_output_tot += trigger_record_ptr->get_total_size_bytes();
+        } else {
+          TLOG() << get_name() << ": stopped before trigger record " << header.get_trigger_number() << "."
+                 << header.get_sequence_number() << " could be written";
         }
       } catch (const std::exception& excpt) {
         ers::error(DataWritingProblem(ERS_HERE,

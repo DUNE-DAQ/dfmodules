@@ -41,9 +41,8 @@ enum
 namespace dunedaq::dfmodules {
 
 namespace {
-// TimeSlice writes are retried after 1 ms, doubling up to 1 s
-const WriteRetryPolicy s_write_retry_policy{ std::chrono::milliseconds(1), std::chrono::seconds(1), 2.0 };
-} // namespace
+constexpr WriteRetryPolicy write_retry_policy{ std::chrono::milliseconds(1), std::chrono::seconds(1), 2.0 };
+} // namespace ""
 
 TPStreamWriterModule::TPStreamWriterModule(const std::string& name)
   : dunedaq::appfwk::DAQModule(name)
@@ -278,13 +277,16 @@ TPStreamWriterModule::do_work(std::atomic<bool>& running_flag)
                                                                timeslice_ptr->get_header().run_number,
                                                                excpt));
                                },
-                               s_write_retry_policy,
+                               write_retry_policy,
                                running_flag);
           if (written) {
             ++m_timeslices_written;
             m_bytes_output += timeslice_ptr->get_total_size_bytes();
             m_tps_written += number_of_tps;
             m_total_tps_written += number_of_tps;
+          } else {
+            TLOG() << get_name() << ": stopped before timeslice " << timeslice_ptr->get_header().timeslice_number
+                   << " could be written";
           }
         } catch (const IgnorableDataStoreProblem& excpt) {
           int timeslice_number_diff = largest_timeslice_number - timeslice_ptr->get_header().timeslice_number;

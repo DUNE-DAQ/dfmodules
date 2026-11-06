@@ -14,8 +14,8 @@
 #include <algorithm>
 #include <atomic>
 #include <chrono>
+#include <concepts>
 #include <thread>
-#include <utility>
 
 namespace dunedaq::dfmodules {
 
@@ -37,7 +37,7 @@ struct WriteRetryPolicy
  * stop requested during a wait prevents another attempt. Any other exception is passed on to the caller.
  * @return true if write() succeeded, false if keep_trying became false first
  */
-template<typename WriteFunction, typename ProblemHandler>
+template<std::invocable WriteFunction, std::invocable<const RetryableDataStoreProblem&> ProblemHandler>
 bool
 write_with_retries(WriteFunction&& write,
                    ProblemHandler&& on_retryable_problem,
@@ -61,8 +61,8 @@ write_with_retries(WriteFunction&& write,
     if (!keep_trying.load()) {
       return false;
     }
-    wait = std::chrono::microseconds{ static_cast<std::chrono::microseconds::rep>(static_cast<double>(wait.count()) *
-                                                                                  factor) };
+    const double next_wait_usec = static_cast<double>(wait.count()) * factor;
+    wait = std::chrono::microseconds{ static_cast<std::chrono::microseconds::rep>(next_wait_usec) };
   }
 }
 

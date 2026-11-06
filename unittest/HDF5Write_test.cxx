@@ -280,7 +280,6 @@ BOOST_AUTO_TEST_CASE(FileNameMatchesCreationTimestamp)
   delete_files_matching_pattern(file_path, delete_pattern);
 }
 
-// An HDF5DataStoreConf gives the HDF5 layout through hdf5_file_layout_params (here a TimeSlice layout)
 // An HDF5DataStoreConf without hdf5_file_layout_params (and no deprecated DataStoreConf layout) uses
 // the standard layout for the record type
 BOOST_AUTO_TEST_CASE(HDF5DataStoreDefaultLayout)
@@ -316,6 +315,7 @@ BOOST_AUTO_TEST_CASE(HDF5DataStoreDefaultLayout)
   delete_files_matching_pattern(file_path, delete_pattern);
 }
 
+// An HDF5DataStoreConf gives the HDF5 layout through hdf5_file_layout_params (here a TimeSlice layout)
 BOOST_AUTO_TEST_CASE(HDF5DataStoreConfLayout)
 {
   std::string file_path(std::filesystem::temp_directory_path());

@@ -5,7 +5,7 @@
  * trigger record to a text file. Used by SummaryTextDataStore, for testing the generic
  * FileDataStore code without HDF5.
  *
- * This is part of the DUNE DAQ Software Suite, copyright 2020.
+ * This is part of the DUNE DAQ Application Framework, copyright 2020.
  * Licensing/copyright details are in the COPYING file that you should have
  * received with this code.
  */
@@ -37,6 +37,12 @@ namespace dunedaq::dfmodules {
 class SummaryTextWriterBackend : public rawdatafilelibs::WriterBackend
 {
 public:
+  SummaryTextWriterBackend() = default;
+  SummaryTextWriterBackend(const SummaryTextWriterBackend&) = delete;
+  SummaryTextWriterBackend& operator=(const SummaryTextWriterBackend&) = delete;
+  SummaryTextWriterBackend(SummaryTextWriterBackend&&) = delete;
+  SummaryTextWriterBackend& operator=(SummaryTextWriterBackend&&) = delete;
+
   // Throws CantOpenFile, also if the file already exists
   void open(const std::string& path,
             const rawdatafilelibs::FileMetadata& metadata,

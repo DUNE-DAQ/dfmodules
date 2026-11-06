@@ -14,9 +14,8 @@
 #ifndef DFMODULES_PLUGINS_SUMMARYTEXTDATASTORE_HPP_
 #define DFMODULES_PLUGINS_SUMMARYTEXTDATASTORE_HPP_
 
-#include "dfmodules/FileDataStore.hpp"
-
 #include "dfmodules/DataStoreConfTestDeriv.hpp"
+#include "dfmodules/FileDataStore.hpp"
 #include "dfmodules/SummaryTextWriterBackend.hpp"
 
 #include <limits>

@@ -1,13 +1,8 @@
 /**
  * @file FileDataStore.hpp
  *
- * The base class of DataStores that write raw data files, whatever their format.
- *
- * FileDataStore does everything that doesn't depend on the file format: choosing file names,
- * starting new files (size limit, one-event-per-file mode), checking free disk space, the file
- * metadata, duplicate-TimeSlice checks, error reporting and operational monitoring. Files are
- * written with rawdatafilelibs::RawDataFileWriter, which also handles the in-progress
- * (".writing") name and never reuses or overwrites an existing file.
+ * The base class of DataStores that write raw data files, whatever their format: everything that
+ * doesn't depend on the format, with the files written by rawdatafilelibs::RawDataFileWriter.
  *
  * A DataStore for a format derives from FileDataStore and provides the file name extension and
  * a rawdatafilelibs::WriterBackend for each new file (see HDF5DataStore). Format-specific
@@ -47,9 +42,6 @@
 namespace dunedaq {
 
 // Disable coverage checking LCOV_EXCL_START
-/**
- * @brief Various ERS Issues for exceptional data store situations
- */
 ERS_DECLARE_ISSUE_BASE(dfmodules,
                        FileDataStoreBadConfiguration,
                        appfwk::GeneralDAQModuleIssue,
@@ -120,7 +112,6 @@ public:
                 std::shared_ptr<appfwk::ConfigurationManager> mcfg,
                 std::string const& writer_name);
 
-  // Closes any open file; failures are reported with ers::error
   ~FileDataStore() override;
 
   FileDataStore(const FileDataStore&) = delete;
@@ -140,8 +131,6 @@ public:
   void finish_with_run(daqdataformats::run_number_t run_number) override;
 
 protected:
-  // ---- what a format's DataStore provides ----
-
   // The file name extension, without the "."
   virtual std::string get_file_name_extension() const = 0;
 
@@ -149,11 +138,8 @@ protected:
   virtual std::unique_ptr<rawdatafilelibs::WriterBackend> make_writer_backend(
     rawdatafilelibs::RecordType record_type) = 0;
 
-  // ---- for derived classes ----
-
   const appmodel::DataStoreConf& get_configuration() const noexcept { return *m_config_params; }
   const confmodel::Session& get_session() const noexcept { return *m_session; }
-  const daqdataformats::SourceIDGeoIDMap& get_source_id_geo_id_map() const noexcept { return m_source_id_geo_id_map; }
 
   void generate_opmon_data() override;
 
