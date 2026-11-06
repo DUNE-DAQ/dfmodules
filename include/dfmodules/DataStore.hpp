@@ -53,6 +53,8 @@
   }                                                                                                                    \
   }
 
+  using namespace std;
+
 namespace dunedaq {
 
 /**
