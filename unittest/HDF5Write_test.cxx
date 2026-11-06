@@ -282,8 +282,8 @@ BOOST_AUTO_TEST_CASE(FileNameMatchesCreationTimestamp)
   delete_files_matching_pattern(file_path, delete_pattern);
 }
 
-// The file stores the session's SourceID->GeoID map, built by appmodel's ConfigurationHelper. That
-// gives the same map as the deprecated hdf5libs function it replaces.
+// The session's SourceID->GeoID map, from appmodel's ConfigurationHelper, is written into the file
+// (and equals the map the deprecated hdf5libs function gives for the same session)
 BOOST_AUTO_TEST_CASE(GeoIDMapStoredInFile)
 {
   for (auto const& session_name : { "test-session-3-1", "test-session-5-1", "test-session-5-10" }) {
@@ -304,6 +304,7 @@ BOOST_AUTO_TEST_CASE(GeoIDMapStoredInFile)
   auto data_store_conf_obj = data_store_conf->config_object();
   data_store_conf_obj.set_by_val<std::string>("directory_path", file_path);
 
+  auto session_map = dunedaq::appmodel::ConfigurationHelper(cfg.cfgMgr->get_session()).get_source_id_geo_id_map();
   auto data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.cfgMgr, "dwm-01");
   data_store_ptr->write(create_trigger_record(1, 10 + sizeof(dunedaq::daqdataformats::FragmentHeader), 2));
   data_store_ptr.reset();
@@ -311,8 +312,7 @@ BOOST_AUTO_TEST_CASE(GeoIDMapStoredInFile)
   std::vector<std::string> file_list = get_files_matching_pattern(file_path, delete_pattern);
   BOOST_REQUIRE_EQUAL(file_list.size(), 1);
   auto reader = dunedaq::rawdatafilelibs::open_raw_data_file(file_list[0]);
-  BOOST_REQUIRE(reader->get_geo_id_map() ==
-                dunedaq::appmodel::ConfigurationHelper(cfg.cfgMgr->get_session()).get_source_id_geo_id_map());
+  BOOST_REQUIRE(reader->get_geo_id_map() == session_map);
   reader->close();
 
   delete_files_matching_pattern(file_path, delete_pattern);

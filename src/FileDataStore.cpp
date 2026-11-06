@@ -24,6 +24,7 @@
 #include <limits>
 #include <memory>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <type_traits>
 #include <utility>
@@ -37,6 +38,20 @@ now_ms()
   return static_cast<uint64_t>( // NOLINT(build/unsigned)
     std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
 }
+
+// The GeoID map from the configuration; a GeoID configured for two SourceIDs is a configuration error
+daqdataformats::SourceIDGeoIDMap
+make_geo_id_map(const confmodel::Session* session, const std::string& name)
+{
+  if (session == nullptr) {
+    return {};
+  }
+  try {
+    return appmodel::ConfigurationHelper(session).get_source_id_geo_id_map();
+  } catch (std::invalid_argument const& excpt) {
+    throw FileDataStoreBadConfiguration(ERS_HERE, name, excpt.what());
+  }
+}
 } // namespace ""
 
 FileDataStore::FileDataStore(std::string const& name,
@@ -46,8 +61,7 @@ FileDataStore::FileDataStore(std::string const& name,
   , m_writer_identifier{ writer_name }
   , m_config_params{ mcfg ? mcfg->get_dal<appmodel::DataStoreConf>(name) : nullptr }
   , m_session{ mcfg ? mcfg->get_session() : nullptr }
-  , m_source_id_geo_id_map{ m_session ? appmodel::ConfigurationHelper(m_session).get_source_id_geo_id_map()
-                                      : daqdataformats::SourceIDGeoIDMap{} }
+  , m_source_id_geo_id_map{ make_geo_id_map(m_session, name) }
   , m_compression_level{ m_config_params ? m_config_params->get_compression_level() : 0U }
   , m_operational_environment{ m_session ? m_session->get_detector_configuration()->get_op_env() : "unavailable" }
   , m_offline_data_stream{ m_session ? m_session->get_detector_configuration()->get_offline_data_stream()
@@ -63,7 +77,7 @@ FileDataStore::FileDataStore(std::string const& name,
   TLOG_DEBUG(TLVL_BASIC) << get_name();
 
   if (!m_config_params || !m_session) {
-    throw FileDataStoreBadConfiguration(ERS_HERE, get_name());
+    throw FileDataStoreBadConfiguration(ERS_HERE, get_name(), "no configuration or no session");
   }
 
   if (m_operation_mode != "one-event-per-file" && m_operation_mode != "all-per-file") {

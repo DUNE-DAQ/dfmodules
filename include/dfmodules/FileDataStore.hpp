@@ -45,8 +45,9 @@ namespace dunedaq {
 ERS_DECLARE_ISSUE_BASE(dfmodules,
                        FileDataStoreBadConfiguration,
                        appfwk::GeneralDAQModuleIssue,
-                       "Construction of the FileDataStore base class failed due to faulty configuration",
-                       ((std::string)name), )
+                       "Construction of the FileDataStore base class failed due to faulty configuration: " << reason,
+                       ((std::string)name),
+                       ((std::string)reason))
 
 ERS_DECLARE_ISSUE_BASE(dfmodules,
                        InvalidOperationMode,
