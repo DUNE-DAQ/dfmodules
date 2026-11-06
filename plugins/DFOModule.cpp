@@ -56,7 +56,8 @@ DFOModule::DFOModule(const std::string& name)
 {
   register_command("conf", &DFOModule::do_conf);
   register_command("start", &DFOModule::do_start);
-  register_command("drain_dataflow", &DFOModule::do_stop);
+  register_command("drain_dataflow", &DFOModule::do_drain);
+  register_command("stop", &DFOModule::do_stop);
   register_command("scrap", &DFOModule::do_scrap);
 }
 
@@ -171,14 +172,23 @@ DFOModule::do_start(const CommandData_t& payload)
 }
 
 void
-DFOModule::do_stop(const CommandData_t& /*args*/)
+DFOModule::do_drain(const CommandData_t& /*args*/)
 {
-  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_stop() method";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_drain() method";
 
   m_running_status.store(false);
 
   auto iom = iomanager::IOManager::get();
   iom->remove_callback<dfmessages::TriggerDecision>(m_td_connection);
+
+  TLOG() << get_name() << " successfully signaled drain";
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_drain() method";
+}
+
+void
+DFOModule::do_stop(const CommandData_t& /*args*/)
+{
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_stop() method";
 
   const int wait_steps = 20;
   auto step_timeout = m_stop_timeout / wait_steps;
@@ -192,6 +202,7 @@ DFOModule::do_stop(const CommandData_t& /*args*/)
 
   m_status_watchdog_thread->request_stop();
   m_status_watchdog_thread->join();
+  auto iom = iomanager::IOManager::get();
   iom->remove_callback<dfmessages::DataflowStatus>(m_status_connection);
 
   {

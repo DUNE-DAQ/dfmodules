@@ -39,7 +39,7 @@ DataflowStatusModule::DataflowStatusModule(const std::string& name)
 {
   register_command("conf", &DataflowStatusModule::do_conf);
   register_command("start", &DataflowStatusModule::do_start);
-  register_command("drain_dataflow", &DataflowStatusModule::do_stop);
+  register_command("stop", &DataflowStatusModule::do_stop);
   register_command("scrap", &DataflowStatusModule::do_scrap);
 }
 
