@@ -359,6 +359,62 @@ BOOST_AUTO_TEST_CASE(DataFlow)
   TLOG() << "Test case DataFlow END";
 }
 
+BOOST_AUTO_TEST_CASE(LateDuplicateDecision)
+{
+  // A slower DFO's TriggerDecision can arrive after the record was written; it must not be built again
+  TLOG() << "Test case LateDuplicateDecision BEGIN";
+  auto dfs = appfwk::make_module("DataflowStatusModule", "test");
+  opmgr.register_node("dfs", dfs);
+  dfs->init(cfgMgr);
+
+  appfwk::DAQModule::CommandData_t null_data;
+  appfwk::DAQModule::CommandData_t start_data;
+  start_data.emplace("run", 1);
+
+  auto iom = iomanager::IOManager::get();
+  ConnectionFixture::reset();
+  auto dfs_recv = iom->get_receiver<dfmessages::DataflowStatus>("df_status");
+  dfs_recv->add_callback(ConnectionFixture::receive_dataflow_status);
+  auto dec_recv = iom->get_receiver<dfmessages::TriggerDecision>("trigdec_trb");
+  dec_recv->add_callback(ConnectionFixture::receive_trigger_decision);
+
+  dfs->execute_command("conf", null_data);
+  dfs->execute_command("start", start_data);
+  std::this_thread::sleep_for(std::chrono::milliseconds(150));
+
+  ConnectionFixture::send_trigdec(5);
+  std::this_thread::sleep_for(std::chrono::milliseconds(150));
+  ConnectionFixture::send_trb_completion(5);
+  std::this_thread::sleep_for(std::chrono::milliseconds(150));
+  ConnectionFixture::send_token(5);
+  std::this_thread::sleep_for(std::chrono::milliseconds(150));
+
+  BOOST_REQUIRE_EQUAL(ConnectionFixture::s_received_decisions.size(), 1);
+  BOOST_REQUIRE(ConnectionFixture::s_received_statuses.back().recently_completed_triggers.count({ 1, 5 }) == 1);
+
+  // Note: Counters are reset by calling get_opmon_info!
+  auto metric = get_opmon_info();
+  BOOST_REQUIRE_EQUAL(metric.decisions_sent(), 1);
+  BOOST_REQUIRE_EQUAL(metric.tokens_received(), 1);
+
+  // The TriggerDecision for trigger 5 from a slower DFO
+  ConnectionFixture::send_trigdec(5);
+  std::this_thread::sleep_for(std::chrono::milliseconds(150));
+
+  metric = get_opmon_info();
+  BOOST_CHECK_EQUAL(metric.duplicate_decisions_received(), 1);
+  BOOST_CHECK_EQUAL(metric.decisions_sent(), 0);
+  BOOST_CHECK_EQUAL(ConnectionFixture::s_received_decisions.size(), 1);
+  BOOST_CHECK(ConnectionFixture::s_received_statuses.back().triggers_building.count({ 1, 5 }) == 0);
+
+  dfs->execute_command("stop", null_data);
+  dfs->execute_command("scrap", null_data);
+
+  dec_recv->remove_callback();
+  dfs_recv->remove_callback();
+  TLOG() << "Test case LateDuplicateDecision END";
+}
+
 BOOST_AUTO_TEST_CASE(Requests)
 {
   TLOG() << "Test case Requests BEGIN";
