@@ -304,7 +304,8 @@ DataWriterModule::receive_trigger_record(std::unique_ptr<daqdataformats::Trigger
       std::chrono::steady_clock::time_point end_time = std::chrono::steady_clock::now();
       auto writing_time = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
       m_writing_us += writing_time.count();
-      m_max_writing_us = std::max(m_max_writing_us.load(), static_cast<uint64_t>(writing_time.count()));
+      m_max_writing_us =
+        std::max(m_max_writing_us.load(), static_cast<uint64_t>(writing_time.count())); // NOLINT(build/unsigned)
     } //  if m_data_storage_is_enabled
   }
 
