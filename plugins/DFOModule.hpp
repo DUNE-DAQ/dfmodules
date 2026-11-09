@@ -182,6 +182,9 @@ private:
     m_statuses_for_trigger;
   std::unordered_map<dfmessages::TriggerId, std::shared_ptr<AssignedTriggerDecision>> m_assigned_trigger_decisions;
   std::unordered_map<dfmessages::TriggerId, std::chrono::steady_clock::time_point> m_decision_received_times;
+  // Completed triggers (bounded history), so a late TriggerDecision for one is not dispatched again
+  std::set<dfmessages::TriggerId> m_completed_triggers;
+  static constexpr size_t s_completed_trigger_history_size = 1000;
 
   std::atomic<bool> m_running_status{ false };
   mutable std::atomic<bool> m_last_notified_busy{ false };

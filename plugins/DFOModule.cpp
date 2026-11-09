@@ -212,6 +212,7 @@ DFOModule::do_stop(const CommandData_t& /*args*/)
       remnants.push_back(td.second);
     }
     m_assigned_trigger_decisions.clear();
+    m_completed_triggers.clear();
 
     for (auto& r : remnants) {
       ers::error(IncompleteTriggerDecision(ERS_HERE, get_name(), r->decision.trigger_number, m_run_number));
@@ -259,6 +260,12 @@ DFOModule::receive_trigger_decision(const dfmessages::TriggerDecision& decision)
 
   {
     std::lock_guard<std::mutex> lk(m_status_mutex);
+    // Each DFO sends its own TriggerDecision for every trigger, so one can arrive after a DF app completed it
+    if (m_completed_triggers.count(trigger_id)) {
+      TLOG_DEBUG(TLVL_TRIGDEC_RECEIVED) << get_name() << " Ignoring TriggerDecision for trigger_number "
+                                        << decision.trigger_number << ", which has already been completed";
+      return;
+    }
     // Don't update, in case this is a re-issued TD
     if (!m_decision_received_times.count(trigger_id)) {
       m_decision_received_times[trigger_id] = decision_received;
@@ -295,16 +302,19 @@ DFOModule::receive_trigger_decision(const dfmessages::TriggerDecision& decision)
     TLOG_DEBUG(TLVL_TRIGDEC_RECEIVED) << get_name() << " Slot found for trigger_number " << decision.trigger_number
                                       << " on connection " << assignment->connection_name;
     decision_assigned = std::chrono::steady_clock::now();
+    // Record before sending: a DataflowStatus listing this trigger must not look unexpected
+    assign_trigger_decision(assignment);
     auto dispatch_successful = dispatch(assignment);
 
     if (dispatch_successful) {
-      assign_trigger_decision(assignment);
       TLOG_DEBUG(TLVL_TRIGDEC_RECEIVED) << get_name() << " Assigned trigger_number " << decision.trigger_number
                                         << " to connection " << assignment->connection_name;
       break;
     } else {
       ers::error(
         TRBModuleAppUpdate(ERS_HERE, get_name(), assignment->connection_name, "Could not send Trigger Decision"));
+      std::lock_guard<std::mutex> lk(m_status_mutex);
+      m_assigned_trigger_decisions.erase(trigger_id);
       // Mark this DF app status as stale so it won't be selected again
       auto it = m_dataflow_statuses.find(assignment->connection_name);
       if (it != m_dataflow_statuses.end()) {
@@ -578,6 +588,10 @@ DFOModule::receive_dataflow_status(const dfmessages::DataflowStatus& status)
       m_statuses_for_trigger.erase(trigger);
       m_decision_received_times.erase(trigger);
       m_assigned_trigger_decisions.erase(trigger);
+      m_completed_triggers.insert(trigger);
+    }
+    while (m_completed_triggers.size() > s_completed_trigger_history_size) {
+      m_completed_triggers.erase(m_completed_triggers.begin());
     }
 
     if (m_assigned_trigger_decisions.size() > m_max_pending_decisions.load()) {
