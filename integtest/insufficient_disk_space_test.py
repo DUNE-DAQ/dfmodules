@@ -60,7 +60,8 @@ required_logfile_problems = {
         r"There are \d+ bytes free, and the required minimum is \d+ bytes based on a safety factor of \d+ times the trigger record size",
     ],
     "mlt": [r"Trigger is inhibited in run \d+"],
-    "dfo": [r"TriggerDecision \d+ didn't complete within timeout in run \d+"],
+    # TODO: Eric Flumerfelt <eflumerf@github.com>, Nov-06-2026: Removing this message, see Issue https://github.com/DUNE-DAQ/dfmodules/issues/525
+    #"dfo": [r"TriggerDecision \d+ didn't complete within timeout in run \d+"],
 }
 ignored_logfile_problems = {
     "connectivity-service": [
