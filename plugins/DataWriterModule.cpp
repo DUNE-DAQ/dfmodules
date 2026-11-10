@@ -54,6 +54,7 @@ DataWriterModule::DataWriterModule(const std::string& name)
 {
   register_command("conf", &DataWriterModule::do_conf);
   register_command("start", &DataWriterModule::do_start);
+  register_command("drain_dataflow", &DataWriterModule::do_drain);
   register_command("stop", &DataWriterModule::do_stop);
   register_command("scrap", &DataWriterModule::do_scrap);
 }
@@ -189,6 +190,7 @@ DataWriterModule::do_start(const CommandData_t& payload)
   m_bytes_output = 0;
   m_bytes_output_tot = 0;
 
+  m_draining.store(false);
   m_running.store(true);
 
   m_thread.start_working_thread(get_name());
@@ -197,6 +199,15 @@ DataWriterModule::do_start(const CommandData_t& payload)
 
   TLOG() << get_name() << " successfully started for run number " << m_run_number;
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_start() method";
+}
+
+void
+DataWriterModule::do_drain(const CommandData_t& /*args*/)
+{
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_drain() method";
+  m_draining.store(true);
+  TLOG() << get_name() << " successfully set drain flag for run number " << m_run_number;
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_drain() method";
 }
 
 void
@@ -279,7 +290,7 @@ DataWriterModule::receive_trigger_record(std::unique_ptr<daqdataformats::Trigger
           m_bytes_output += trigger_record_ptr->get_total_size_bytes();
           m_bytes_output_tot += trigger_record_ptr->get_total_size_bytes();
         } catch (const RetryableDataStoreProblem& excpt) {
-          should_retry = true;
+          should_retry = !m_draining.load();
           ers::error(DataWritingProblem(ERS_HERE,
                                         get_name(),
                                         trigger_record_ptr->get_header_ref().get_trigger_number(),

@@ -53,12 +53,14 @@ private:
   // Commands
   void do_conf(const CommandData_t&);
   void do_start(const CommandData_t&);
+  void do_drain(const CommandData_t&);
   void do_stop(const CommandData_t&);
   void do_scrap(const CommandData_t&);
 
   // Callback
   void receive_trigger_record(std::unique_ptr<daqdataformats::TriggerRecord>&);
   std::atomic<bool> m_running = false;
+  std::atomic<bool> m_draining = false;
 
   // Configuration
   std::shared_ptr<appfwk::ConfigurationManager> m_module_configuration;
