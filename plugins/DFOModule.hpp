@@ -169,9 +169,11 @@ private:
   bool send_status_requests(dfmessages::trigger_number_t trigger, size_t iteration);
   bool dispatch(const std::shared_ptr<AssignedTriggerDecision>& assignment);
 
-  // Dataflow application selection algorithm
+  // Returns false if a DF app already has the trigger; otherwise records the assignment (nullptr if no slot)
+  bool select_destination(const dfmessages::TriggerDecision& decision,
+                          std::shared_ptr<AssignedTriggerDecision>& assignment);
+  // Dataflow application selection algorithm. The caller must hold m_status_mutex
   std::shared_ptr<AssignedTriggerDecision> find_slot(const dfmessages::TriggerDecision& decision);
-  void assign_trigger_decision(const std::shared_ptr<AssignedTriggerDecision>& assignment);
 
   // Coordination
 

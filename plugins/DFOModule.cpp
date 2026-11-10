@@ -286,11 +286,16 @@ DFOModule::receive_trigger_decision(const dfmessages::TriggerDecision& decision)
   m_processing_td.store(true);
 
   std::chrono::steady_clock::time_point decision_assigned;
+  bool dispatched = false;
   size_t iteration = 0;
   do {
     send_status_requests(decision.trigger_number, iteration);
     ++iteration;
-    auto assignment = find_slot(decision);
+
+    std::shared_ptr<AssignedTriggerDecision> assignment;
+    if (!select_destination(decision, assignment)) {
+      break;
+    }
 
     if (assignment == nullptr) { // this can happen if all application are in error state
       ers::error(UnableToAssign(ERS_HERE, get_name(), decision.trigger_number));
@@ -302,11 +307,10 @@ DFOModule::receive_trigger_decision(const dfmessages::TriggerDecision& decision)
     TLOG_DEBUG(TLVL_TRIGDEC_RECEIVED) << get_name() << " Slot found for trigger_number " << decision.trigger_number
                                       << " on connection " << assignment->connection_name;
     decision_assigned = std::chrono::steady_clock::now();
-    // Record before sending: a DataflowStatus listing this trigger must not look unexpected
-    assign_trigger_decision(assignment);
     auto dispatch_successful = dispatch(assignment);
 
     if (dispatch_successful) {
+      dispatched = true;
       TLOG_DEBUG(TLVL_TRIGDEC_RECEIVED) << get_name() << " Assigned trigger_number " << decision.trigger_number
                                         << " to connection " << assignment->connection_name;
       break;
@@ -330,10 +334,13 @@ DFOModule::receive_trigger_decision(const dfmessages::TriggerDecision& decision)
   m_waiting_for_decision +=
     std::chrono::duration_cast<std::chrono::microseconds>(decision_received - m_last_td_received).count();
   m_last_td_received = std::chrono::steady_clock::now();
-  m_deciding_destination +=
-    std::chrono::duration_cast<std::chrono::microseconds>(decision_assigned - decision_received).count();
-  m_forwarding_decision +=
-    std::chrono::duration_cast<std::chrono::microseconds>(m_last_td_received - decision_assigned).count();
+  // decision_assigned is only set when a destination was chosen
+  if (dispatched) {
+    m_deciding_destination +=
+      std::chrono::duration_cast<std::chrono::microseconds>(decision_assigned - decision_received).count();
+    m_forwarding_decision +=
+      std::chrono::duration_cast<std::chrono::microseconds>(m_last_td_received - decision_assigned).count();
+  }
 }
 
 void
@@ -605,6 +612,34 @@ DFOModule::receive_dataflow_status(const dfmessages::DataflowStatus& status)
   m_status_cv.notify_all();
 } // NOLINT(readability/fn_size)
 
+bool
+DFOModule::select_destination(const dfmessages::TriggerDecision& decision,
+                              std::shared_ptr<AssignedTriggerDecision>& assignment)
+{
+  dfmessages::TriggerId trigger_id{ decision.run_number, decision.trigger_number };
+  std::lock_guard<std::mutex> lk(m_status_mutex);
+
+  // Checked under the same lock as the slot search, so that no status for this trigger slips in between
+  auto assigned_it = m_assigned_trigger_decisions.find(trigger_id);
+  if (m_completed_triggers.count(trigger_id) || assigned_it != m_assigned_trigger_decisions.end()) {
+    if (assigned_it != m_assigned_trigger_decisions.end() &&
+        assigned_it->second->decision.trigger_timestamp == dfmessages::TypeDefaults::s_invalid_timestamp) {
+      assigned_it->second->decision = decision;
+    }
+    m_statuses_for_trigger.erase(trigger_id);
+    TLOG_DEBUG(TLVL_TRIGDEC_RECEIVED) << get_name() << " Not assigning trigger_number " << decision.trigger_number
+                                      << ", which a DF app has reported while it was waiting for a slot";
+    return false;
+  }
+
+  assignment = find_slot(decision);
+  if (assignment != nullptr) {
+    // Record before sending: a DataflowStatus listing this trigger must not look unexpected
+    m_assigned_trigger_decisions[trigger_id] = assignment;
+  }
+  return true;
+}
+
 std::shared_ptr<AssignedTriggerDecision>
 DFOModule::find_slot(const dfmessages::TriggerDecision& decision)
 {
@@ -614,10 +649,9 @@ DFOModule::find_slot(const dfmessages::TriggerDecision& decision)
   // Collect all candidates from known dataflow apps
   std::vector<dfmessages::DataflowStatus> candidates;
 
-  {
-    std::lock_guard<std::mutex> guard(m_status_mutex);
-    for (const auto& [name, received_status] :
-         m_statuses_for_trigger[{ decision.run_number, decision.trigger_number }]) {
+  auto statuses_it = m_statuses_for_trigger.find({ decision.run_number, decision.trigger_number });
+  if (statuses_it != m_statuses_for_trigger.end()) {
+    for (const auto& [name, received_status] : statuses_it->second) {
       candidates.emplace_back(received_status);
     }
   }
@@ -690,16 +724,6 @@ DFOModule::find_slot(const dfmessages::TriggerDecision& decision)
                               << decision.trigger_number;
 
   return assignment;
-}
-
-void
-DFOModule::assign_trigger_decision(const std::shared_ptr<AssignedTriggerDecision>& assignment)
-{
-  TLOG_DEBUG(TLVL_WORK_STEPS) << "Assigning trigger_number " << assignment->decision.trigger_number << " to "
-                              << assignment->connection_name;
-
-  std::lock_guard<std::mutex> lk(m_status_mutex);
-  m_assigned_trigger_decisions[{ assignment->decision.run_number, assignment->decision.trigger_number }] = assignment;
 }
 
 void
@@ -791,7 +815,11 @@ DFOModule::send_status_requests(dfmessages::trigger_number_t trigger, size_t ite
          std::chrono::steady_clock::now() - wait_start < m_request_reply_wait) {
     std::unique_lock<std::mutex> guard(m_status_mutex);
     m_status_cv.wait_for(guard, m_request_reply_wait);
-    auto it = m_statuses_for_trigger.find({ m_run_number, trigger });
+    dfmessages::TriggerId trigger_id{ m_run_number, trigger };
+    if (m_completed_triggers.count(trigger_id) || m_assigned_trigger_decisions.count(trigger_id)) {
+      break; // A DF app already has this trigger, so there is no slot to wait for
+    }
+    auto it = m_statuses_for_trigger.find(trigger_id);
     if (it != m_statuses_for_trigger.end() && !it->second.empty()) {
       statuses_received = it->second.size();
     }
