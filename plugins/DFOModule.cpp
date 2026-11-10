@@ -289,8 +289,11 @@ DFOModule::receive_trigger_decision(const dfmessages::TriggerDecision& decision)
   bool dispatched = false;
   size_t iteration = 0;
   do {
-    send_status_requests(decision.trigger_number, iteration);
+    const bool replies_usable = send_status_requests(decision.trigger_number, iteration);
     ++iteration;
+    if (!replies_usable) {
+      continue;
+    }
 
     std::shared_ptr<AssignedTriggerDecision> assignment;
     if (!select_destination(decision, assignment)) {
@@ -620,16 +623,18 @@ DFOModule::select_destination(const dfmessages::TriggerDecision& decision,
   std::lock_guard<std::mutex> lk(m_status_mutex);
 
   // Checked under the same lock as the slot search, so that no status for this trigger slips in between
-  auto assigned_it = m_assigned_trigger_decisions.find(trigger_id);
-  if (m_completed_triggers.count(trigger_id) || assigned_it != m_assigned_trigger_decisions.end()) {
-    if (assigned_it != m_assigned_trigger_decisions.end() &&
-        assigned_it->second->decision.trigger_timestamp == dfmessages::TypeDefaults::s_invalid_timestamp) {
-      assigned_it->second->decision = decision;
-    }
+  if (m_completed_triggers.count(trigger_id)) {
     m_statuses_for_trigger.erase(trigger_id);
     TLOG_DEBUG(TLVL_TRIGDEC_RECEIVED) << get_name() << " Not assigning trigger_number " << decision.trigger_number
-                                      << ", which a DF app has reported while it was waiting for a slot";
+                                      << ", which was completed while it was waiting for a slot";
     return false;
+  }
+  auto assigned_it = m_assigned_trigger_decisions.find(trigger_id);
+  if (assigned_it != m_assigned_trigger_decisions.end()) {
+    // A DF app is already building this trigger: send this DFO's TriggerDecision there, not to a newly chosen one
+    assigned_it->second->decision = decision;
+    assignment = assigned_it->second;
+    return true;
   }
 
   assignment = find_slot(decision);
@@ -831,7 +836,14 @@ DFOModule::send_status_requests(dfmessages::trigger_number_t trigger, size_t ite
   m_request_send_time += sending_requests;
   m_request_response_wait += waiting_for_requests;
 
-  return statuses_received == destinations_to_request.size();
+  // After a long delay, e.g. a suspended process, the replies may predate another DFO's assignment of this trigger
+  if (end_time - wait_start > s_stale_reply_factor * m_request_reply_wait) {
+    std::lock_guard<std::mutex> guard(m_status_mutex);
+    m_statuses_for_trigger.erase({ m_run_number, trigger });
+    TLOG() << get_name() << " Status replies for trigger_number " << trigger << " are too old to use, asking again";
+    return false;
+  }
+  return true;
 }
 
 } // namespace dunedaq::dfmodules

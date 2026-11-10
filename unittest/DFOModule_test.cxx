@@ -645,6 +645,78 @@ BOOST_AUTO_TEST_CASE(CompletionReportedByAnotherDFApp)
   TLOG() << "Test case CompletionReportedByAnotherDFApp END";
 }
 
+BOOST_AUTO_TEST_CASE(BuildingReportedDuringAssignment)
+{
+  // A trigger that a DF app reports as building goes to that DF app, without a slot being chosen for it
+  TLOG() << "Test case BuildingReportedDuringAssignment BEGIN";
+  auto dfo = appfwk::make_module("DFOModule", "test");
+  opmgr.register_node("dfo", dfo);
+  dfo->init(cfgMgr);
+
+  appfwk::DAQModule::CommandData_t null_data;
+  appfwk::DAQModule::CommandData_t start_data;
+  start_data.emplace("run", 1);
+
+  dfo->execute_command("conf", null_data);
+
+  auto iom = iomanager::IOManager::get();
+  received_decisions.clear();
+  received_status_requests.clear();
+  busy_signal_recvd.store(false);
+
+  auto dec_recv = iom->get_receiver<dfmessages::TriggerDecision>("trigdec_0");
+  dec_recv->add_callback(recv_trigdec);
+  auto inh_recv = iom->get_receiver<dfmessages::TriggerInhibit>("triginh");
+  inh_recv->add_callback(recv_triginh);
+  auto req_recv = iom->get_receiver<dfmessages::DataflowStatusRequest>("df_status_request");
+  req_recv->add_callback(recv_status_request);
+
+  dfo->execute_command("start", start_data);
+  std::this_thread::sleep_for(std::chrono::milliseconds(150));
+
+  dfmessages::DataflowStatus status;
+  status.decision_destination = "trigdec_0";
+  status.request_destination = "df_status_request";
+  status.trigger_id.trigger_number = 0;
+  status.trigger_id.run_number = 1;
+  status.trigger_type_mask = 0xFFFFFFFF;
+  status.is_busy = false;
+  status.busy_threshold = 2;
+  status.free_threshold = 1;
+  send_status(status);
+  std::this_thread::sleep_for(std::chrono::milliseconds(50));
+
+  // The DF app never replies to the request for trigger 7, so no slot can be chosen from replies
+  send_trigdec(7);
+  std::this_thread::sleep_for(std::chrono::milliseconds(50));
+  BOOST_CHECK_EQUAL(received_status_requests.count(7), 1);
+  status.triggers_building.insert({ 1, 7 });
+  send_status(status);
+  std::this_thread::sleep_for(std::chrono::milliseconds(300));
+
+  // Note: Counters are reset by calling get_dfo_info!
+  auto metric = get_dfo_info();
+  BOOST_CHECK_EQUAL(metric.decisions_sent(), 1);
+  BOOST_CHECK_EQUAL(received_decisions.size(), 1);
+  if (!received_decisions.empty()) {
+    BOOST_CHECK_EQUAL(received_decisions[0].trigger_number, 7);
+  }
+  BOOST_CHECK_EQUAL(metric.pending_trigger_decisions(), 1);
+
+  status.triggers_building.clear();
+  status.recently_completed_triggers.insert({ 1, 7 });
+  send_status(status);
+  std::this_thread::sleep_for(std::chrono::milliseconds(50));
+
+  dfo->execute_command("drain_dataflow", null_data);
+  dfo->execute_command("scrap", null_data);
+
+  dec_recv->remove_callback();
+  inh_recv->remove_callback();
+  req_recv->remove_callback();
+  TLOG() << "Test case BuildingReportedDuringAssignment END";
+}
+
 BOOST_AUTO_TEST_CASE(UnresponsiveDFAppRecovery)
 {
   TLOG() << "Test case UnresponsiveDFAppRecovery BEGIN";

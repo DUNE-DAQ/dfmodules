@@ -166,10 +166,11 @@ private:
   void receive_trigger_decision(const dfmessages::TriggerDecision&);
   void notify_trigger_if_needed() const;
 
+  // Returns false if the replies are too old to choose a DF app from
   bool send_status_requests(dfmessages::trigger_number_t trigger, size_t iteration);
   bool dispatch(const std::shared_ptr<AssignedTriggerDecision>& assignment);
 
-  // Returns false if a DF app already has the trigger; otherwise records the assignment (nullptr if no slot)
+  // Returns false if the trigger has been completed; otherwise records the assignment (nullptr if no slot)
   bool select_destination(const dfmessages::TriggerDecision& decision,
                           std::shared_ptr<AssignedTriggerDecision>& assignment);
   // Dataflow application selection algorithm. The caller must hold m_status_mutex
@@ -184,9 +185,11 @@ private:
     m_statuses_for_trigger;
   std::unordered_map<dfmessages::TriggerId, std::shared_ptr<AssignedTriggerDecision>> m_assigned_trigger_decisions;
   std::unordered_map<dfmessages::TriggerId, std::chrono::steady_clock::time_point> m_decision_received_times;
-  // Completed triggers (bounded history), so a late TriggerDecision for one is not dispatched again
+  // Ordered, so that the oldest triggers are dropped first
   std::set<dfmessages::TriggerId> m_completed_triggers;
   static constexpr size_t s_completed_trigger_history_size = 1000;
+  // Replies older than this many reply waits are discarded; a normal wait ends within two
+  static constexpr int s_stale_reply_factor = 3;
 
   std::atomic<bool> m_running_status{ false };
   mutable std::atomic<bool> m_last_notified_busy{ false };
