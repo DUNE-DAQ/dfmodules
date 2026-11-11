@@ -552,7 +552,9 @@ DFOModule::receive_dataflow_status(const dfmessages::DataflowStatus& status)
                                                 trigger.trigger_number));
           continue;
         }
-        ers::info(UnexpectedTriggerDecision(ERS_HERE, get_name(), trigger.trigger_number, status.decision_destination));
+        TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << " TriggerDecision " << trigger.trigger_number
+                                    << " was reported as building by " << status.decision_destination
+                                    << " before this DFO assigned it";
         // Creating a placeholder for the assigned trigger decision with an empty TriggerDecision object. This is
         // checked in receive_trigger_decision and updated if necessary.
         m_assigned_trigger_decisions[trigger] = std::make_shared<AssignedTriggerDecision>(
@@ -571,8 +573,9 @@ DFOModule::receive_dataflow_status(const dfmessages::DataflowStatus& status)
                                                 trigger.trigger_number));
           continue;
         }
-        ers::warning(
-          UnexpectedTriggerDecision(ERS_HERE, get_name(), trigger.trigger_number, status.decision_destination));
+        TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << " TriggerDecision " << trigger.trigger_number
+                                    << " was reported as writing by " << status.decision_destination
+                                    << " before this DFO assigned it";
         // Creating a placeholder for the assigned trigger decision with an empty TriggerDecision object. This is
         // checked in receive_trigger_decision and updated if necessary.
         m_assigned_trigger_decisions[trigger] = std::make_shared<AssignedTriggerDecision>(

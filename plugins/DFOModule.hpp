@@ -68,14 +68,6 @@ ERS_DECLARE_ISSUE_BASE(dfmodules,
                        ((uint32_t)trigger_number)((uint32_t)run_number)) // NOLINT(build/unsigned)
 
 ERS_DECLARE_ISSUE_BASE(dfmodules,
-                       UnexpectedTriggerDecision,
-                       appfwk::GeneralDAQModuleIssue,
-                       "TriggerDecision " << trigger_number << " has been reported by " << app
-                                          << " with no TriggerDecision message received",
-                       ((std::string)name),
-                       ((uint32_t)trigger_number)((std::string)app)) // NOLINT(build/unsigned)
-
-ERS_DECLARE_ISSUE_BASE(dfmodules,
                        LostTriggerDecision,
                        appfwk::GeneralDAQModuleIssue,
                        "TriggerDecision " << trigger_number << " was lost while being processed by " << app,
