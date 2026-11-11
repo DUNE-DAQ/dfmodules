@@ -144,34 +144,39 @@ killed_dfo_conf = copy.deepcopy(multidfo_local_conf)
 stopped_df_conf = copy.deepcopy(multidfo_local_conf)
 killed_df_conf = copy.deepcopy(multidfo_local_conf)
 
+# The delay of a signal is counted from the launch of the run control session, before boot. Boot, conf and
+# start take about 25 s, so this puts the signal about halfway through the time with triggers enabled.
+signal_delay = 40  # seconds
+stop_duration = 5  # seconds
+
 stopped_dfo_conf.system_signal_configs = [
     data_classes.system_signal_config(
-        application_label="dfo-02", signal=data_classes.PosixSignal.SIGSTOP, delay_s=25
+        application_label="dfo-02", signal=data_classes.PosixSignal.SIGSTOP, delay_s=signal_delay
     ),
     data_classes.system_signal_config(
-        application_label="dfo-02", signal=data_classes.PosixSignal.SIGCONT, delay_s=30
+        application_label="dfo-02", signal=data_classes.PosixSignal.SIGCONT, delay_s=signal_delay + stop_duration
     ),
 ]
 
 
 killed_dfo_conf.system_signal_configs = [
     data_classes.system_signal_config(
-        application_label="dfo-02", signal=data_classes.PosixSignal.SIGKILL, delay_s=25
+        application_label="dfo-02", signal=data_classes.PosixSignal.SIGKILL, delay_s=signal_delay
     ),
 ]
 
 stopped_df_conf.system_signal_configs = [
     data_classes.system_signal_config(
-        application_label="df-02", signal=data_classes.PosixSignal.SIGSTOP, delay_s=25
+        application_label="df-02", signal=data_classes.PosixSignal.SIGSTOP, delay_s=signal_delay
     ),
     data_classes.system_signal_config(
-        application_label="df-02", signal=data_classes.PosixSignal.SIGCONT, delay_s=30
+        application_label="df-02", signal=data_classes.PosixSignal.SIGCONT, delay_s=signal_delay + stop_duration
     ),
 ]
 
 killed_df_conf.system_signal_configs = [
     data_classes.system_signal_config(
-        application_label="df-02", signal=data_classes.PosixSignal.SIGKILL, delay_s=25
+        application_label="df-02", signal=data_classes.PosixSignal.SIGKILL, delay_s=signal_delay
     ),
 ]
 
