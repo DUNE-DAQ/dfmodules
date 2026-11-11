@@ -81,7 +81,12 @@ hsi_frag_params = {
     "min_size_bytes": 72,
     "max_size_bytes": 100,
     "frag_sizes_by_TC_type": {"kTiming": {"min_size_bytes": 100, "max_size_bytes": 100},
-                              "default": {"min_size_bytes":  72, "max_size_bytes": 100} }
+                              "default": {"min_size_bytes":  72, "max_size_bytes": 100} },
+    # The fake HSI data is sparse, so the readout window always extends past the newest HSI data.
+    # A kTiming trigger gets the one HSI frame that caused it (kIncomplete, kRequestWindowAfterBuffer);
+    # other triggers get an empty fragment (kRequestWindowAfterBuffer, kEmptyFragment).
+    "frag_bitmasks_by_TC_type": {"kTiming": {"status_bitmask": 0xFFFFFFDD},
+                                 "default": {"status_bitmask": 0xFFFFFF9F} }
 }
 ignored_logfile_problems = {
     "-controller": [
