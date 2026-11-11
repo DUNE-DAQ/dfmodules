@@ -100,6 +100,12 @@ ignored_logfile_problems = {
         r"WARNING: All log messages before absl::InitializeLog\(\) is called are written to STDERR"
     ]
 }
+# A DFO that was stopped for as long as the DataflowStatus timeout finds the status of every DF app
+# stale when it resumes, and for one pass has no DF app to assign a trigger to.
+stopped_dfo_logfile_problems = [
+    r"No DataflowStatus received from \S+ for \d+ ms",
+    r"TriggerDecision \d+ could not be assigned",
+]
 
 # Determine if this computer has enough resources for these tests
 resource_validator = resource_validation.ResourceValidator()
@@ -195,9 +201,15 @@ def test_dunerc_success(run_dunerc, caplog):
 
 def test_log_files(run_dunerc):
     if check_for_logfile_errors:
+        local_ignored_problems = copy.deepcopy(ignored_logfile_problems)
+        for signal_config in run_dunerc.confgen_config.system_signal_configs:
+            if (signal_config.signal == data_classes.PosixSignal.SIGSTOP
+                    and signal_config.application_label.startswith("dfo-")):
+                local_ignored_problems[signal_config.application_label] = stopped_dfo_logfile_problems
+
         # Check that there are no warnings or errors in the log files
         assert log_file_checks.logs_are_error_free(
-            run_dunerc.log_files, True, True, ignored_logfile_problems,
+            run_dunerc.log_files, True, True, local_ignored_problems,
             verbosity_helper=run_dunerc.verbosity_helper
         )
 
