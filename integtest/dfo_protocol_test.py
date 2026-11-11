@@ -28,7 +28,7 @@ print = functools.partial(print, flush=True)  # always flush print() output
 pytest_plugins = "integrationtest.integrationtest_drunc"
 
 # Run setup
-run_duration = 30  # seconds
+run_duration = 60  # seconds
 check_for_logfile_errors = True
 
 # Default values for validation parameters
@@ -145,8 +145,9 @@ stopped_df_conf = copy.deepcopy(multidfo_local_conf)
 killed_df_conf = copy.deepcopy(multidfo_local_conf)
 
 # The delay of a signal is counted from the launch of the run control session, before boot. Boot, conf and
-# start take about 25 s, so this puts the signal about halfway through the time with triggers enabled.
-signal_delay = 40  # seconds
+# start have taken between 25 s and 45 s, depending on the load of the host, so a signal at 60 s lands
+# 15 s to 35 s after triggers are enabled, with 25 s to 45 s of run_duration still to go.
+signal_delay = 60  # seconds
 stop_duration = 5  # seconds
 
 stopped_dfo_conf.system_signal_configs = [
