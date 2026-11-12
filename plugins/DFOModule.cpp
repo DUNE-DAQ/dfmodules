@@ -620,7 +620,10 @@ DFOModule::find_slot(const dfmessages::TriggerDecision& decision)
     std::lock_guard<std::mutex> guard(m_status_mutex);
     for (const auto& [name, received_status] :
          m_statuses_for_trigger[{ decision.run_number, decision.trigger_number }]) {
-      candidates.emplace_back(received_status);
+      // Do not consider DF apps that are in error state for this trigger
+      if (!received_status.in_error) {
+        candidates.emplace_back(received_status);
+      }
     }
   }
 

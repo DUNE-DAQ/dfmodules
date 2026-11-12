@@ -90,6 +90,7 @@ private:
   void do_start(const CommandData_t&);
   void do_stop(const CommandData_t&);
   void do_scrap(const CommandData_t&);
+  void do_clear_df_errors(const CommandData_t&);
 
   // Callback
   void receive_status_request(const dfmessages::DataflowStatusRequest&);

@@ -41,6 +41,7 @@ DataflowStatusModule::DataflowStatusModule(const std::string& name)
   register_command("start", &DataflowStatusModule::do_start);
   register_command("stop", &DataflowStatusModule::do_stop);
   register_command("scrap", &DataflowStatusModule::do_scrap);
+  register_command("clear_df_errors", &DataflowStatusModule::do_clear_df_errors);
 }
 
 DataflowStatusModule::~DataflowStatusModule()
@@ -213,6 +214,8 @@ DataflowStatusModule::do_start(const CommandData_t& payload)
     std::lock_guard<std::mutex> lock(m_status_mutex);
     m_status_snapshots.clear();
     m_trigger_statuses.clear();
+    m_current_status.is_busy = false;
+    m_current_status.in_error = false;
     m_current_status.triggers_building.clear();
     m_current_status.triggers_writing.clear();
     m_current_status.recently_completed_triggers.clear();
@@ -312,6 +315,17 @@ DataflowStatusModule::do_scrap(const CommandData_t& /*args*/)
 
   TLOG() << get_name() << " successfully scrapped";
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_scrap() method";
+}
+
+void
+DataflowStatusModule::do_clear_df_errors(const CommandData_t& /*args*/)
+{
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_clear_df_errors() method";
+  {
+    std::lock_guard<std::mutex> lock(m_status_mutex);
+    m_current_status.in_error = false;
+  }
+  TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_clear_df_errors() method";
 }
 
 void
@@ -514,6 +528,10 @@ DataflowStatusModule::process_trigger_decision_token(const dfmessages::TriggerDe
     ++m_num_trigger_decision_tokens_received;
 
     m_trigger_statuses[token.trigger_id].error_flags |= token.error_flags;
+    m_current_status.in_error =
+      (token.error_flags & static_cast<uint16_t>(dfmessages::TriggerRecordErrorFlags::kDataWriterFailedToWrite)) !=
+      0; // Currently only failed writes should stop TriggerDecisions from being sent
+
     if (m_trigger_statuses[token.trigger_id].max_sequence_number > 0) {
       m_trigger_statuses[token.trigger_id].sequences_written++;
 
