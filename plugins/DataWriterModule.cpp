@@ -114,6 +114,7 @@ DataWriterModule::generate_opmon_data()
   //   dwi.bytes_output = m_bytes_output_tot.load();  MR: byte writing to be delegated to DataStorage
   //   dwi.new_bytes_output = m_bytes_output.exchange(0);
   dwi.set_writing_time_us(m_writing_us.exchange(0));
+  dwi.set_max_writing_time_us(m_max_writing_us.exchange(0));
 
   publish(std::move(dwi));
 }
@@ -321,6 +322,8 @@ DataWriterModule::receive_trigger_record(std::unique_ptr<daqdataformats::Trigger
       std::chrono::steady_clock::time_point end_time = std::chrono::steady_clock::now();
       auto writing_time = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
       m_writing_us += writing_time.count();
+      m_max_writing_us =
+        std::max(m_max_writing_us.load(), static_cast<uint64_t>(writing_time.count())); // NOLINT(build/unsigned)
     } //  if m_data_storage_is_enabled
     else {
       error_flags |= static_cast<uint16_t>(dfmessages::TriggerRecordErrorFlags::kDataWriterDisabled);
