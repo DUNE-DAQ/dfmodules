@@ -275,7 +275,7 @@ BOOST_AUTO_TEST_CASE(DataFlow)
   BOOST_REQUIRE_EQUAL(metric.pending_trigger_decisions(), 1);
 
   status.triggers_building.clear();
-  status.recently_completed_triggers.insert({ 1, 1 });
+  status.recently_completed_triggers.insert({{ 1, 1 }, 0});
   status.is_busy = false;
   send_status(status);
   std::this_thread::sleep_for(std::chrono::milliseconds(50));
@@ -391,7 +391,7 @@ BOOST_AUTO_TEST_CASE(DelayedStatusResponse)
   std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
   status.triggers_building.clear();
-  status.recently_completed_triggers.insert({ 1, 10 });
+  status.recently_completed_triggers.insert({{ 1, 10 }, 0});
   status.is_busy = false;
   send_status(status);
   std::this_thread::sleep_for(std::chrono::milliseconds(50));
@@ -541,8 +541,8 @@ BOOST_AUTO_TEST_CASE(UnresponsiveDFAppRecovery)
   std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
   status.triggers_building.clear();
-  status.recently_completed_triggers.insert({ 1, 30 });
-  status.recently_completed_triggers.insert({ 1, 31 });
+  status.recently_completed_triggers.insert({{ 1, 30 }, 0});
+  status.recently_completed_triggers.insert({{ 1, 31 }, 0});
   send_status(status);
   std::this_thread::sleep_for(std::chrono::milliseconds(50));
 

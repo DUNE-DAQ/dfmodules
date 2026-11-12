@@ -561,7 +561,7 @@ DFOModule::receive_dataflow_status(const dfmessages::DataflowStatus& status)
       }
     }
 
-    for (auto& trigger : status.recently_completed_triggers) {
+    for (auto& [trigger,error_flags] : status.recently_completed_triggers) {
       if (m_assigned_trigger_decisions.count(trigger)) {
         ++m_completed_decisions;
         auto td_duration = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() -

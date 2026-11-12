@@ -164,6 +164,7 @@ protected:
       return out;
     }
   };
+  using clock_type = std::chrono::steady_clock;
 
   using trigger_decision_receiver_t = iomanager::ReceiverConcept<dfmessages::TriggerDecision>;
   using data_req_sender_t = iomanager::SenderConcept<dfmessages::DataRequest>;
@@ -173,10 +174,18 @@ protected:
   using trigger_record_sender_t = iomanager::SenderConcept<trigger_record_ptr_t>;
   using trb_complete_sender_t = iomanager::SenderConcept<dfmessages::TRBCompletion>;
 
+  struct TriggerRecordBookkeeping
+  {
+    TriggerRecordBookkeeping() {}
+    clock_type::time_point created{ clock_type::now() };
+    trigger_record_ptr_t record{nullptr};
+    uint16_t error_flags{0};
+  };
+
   void trigger_decision_callback(dfmessages::TriggerDecision& td);
   void fragments_callback(std::unique_ptr<daqdataformats::Fragment>& frag);
 
-  trigger_record_ptr_t extract_trigger_record(const TriggerRecordId&);
+  std::shared_ptr<TriggerRecordBookkeeping> extract_trigger_record(const TriggerRecordId&);
   // build_trigger_record will allocate memory and then orphan it to the caller
   // via the returned pointer Plese note that the method will destroy the memory
   // saved in the bookkeeping map
@@ -227,10 +236,9 @@ private:
     m_map_sourceid_connections; ///< Mappinng between SourceID and connections
 
   // bookeeping
-  using clock_type = std::chrono::steady_clock;
   std::mutex m_trigger_records_mutex;
   clock_type::time_point m_last_bookkeeping{};
-  std::map<TriggerRecordId, std::pair<clock_type::time_point, trigger_record_ptr_t>> m_trigger_records;
+  std::map<TriggerRecordId, std::shared_ptr<TriggerRecordBookkeeping>> m_trigger_records;
   std::condition_variable m_open_trigger_record_cv;
 
   // Data request properties

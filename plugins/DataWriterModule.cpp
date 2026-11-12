@@ -268,6 +268,8 @@ DataWriterModule::receive_trigger_record(std::unique_ptr<daqdataformats::Trigger
     return;
   }
 
+  uint16_t error_flags = 0;
+
   // 03-Feb-2021, KAB: adding support for a data-storage prescale.
   // In this "if" statement, I deliberately compare the result of (N mod prescale) to 1
   // instead of zero, since I think that it would be nice to always get the first event
@@ -279,6 +281,7 @@ DataWriterModule::receive_trigger_record(std::unique_ptr<daqdataformats::Trigger
       std::chrono::steady_clock::time_point start_time = std::chrono::steady_clock::now();
 
       bool should_retry = true;
+      bool successfully_written = false;
       size_t retry_wait_usec = m_min_write_retry_time_usec;
       do {
         should_retry = false;
@@ -288,6 +291,7 @@ DataWriterModule::receive_trigger_record(std::unique_ptr<daqdataformats::Trigger
           ++m_records_written_tot;
           m_bytes_output += trigger_record_ptr->get_total_size_bytes();
           m_bytes_output_tot += trigger_record_ptr->get_total_size_bytes();
+          successfully_written = true;
         } catch (const RetryableDataStoreProblem& excpt) {
           should_retry = !m_draining.load();
           ers::error(DataWritingProblem(ERS_HERE,
@@ -311,10 +315,18 @@ DataWriterModule::receive_trigger_record(std::unique_ptr<daqdataformats::Trigger
         }
       } while (should_retry && m_running.load());
 
+      if(!successfully_written) {
+        error_flags |= static_cast<uint16_t>(dfmessages::TriggerRecordErrorFlags::kDataWriterFailedToWrite);
+      }
       std::chrono::steady_clock::time_point end_time = std::chrono::steady_clock::now();
       auto writing_time = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
       m_writing_us += writing_time.count();
     } //  if m_data_storage_is_enabled
+    else {
+      error_flags |= static_cast<uint16_t>(dfmessages::TriggerRecordErrorFlags::kDataWriterDisabled);
+    }
+  } else {
+    error_flags |= static_cast<uint16_t>(dfmessages::TriggerRecordErrorFlags::kDataWriterPrescaled);
   }
 
   bool send_trigger_complete_message = m_running.load();
@@ -329,6 +341,7 @@ DataWriterModule::receive_trigger_record(std::unique_ptr<daqdataformats::Trigger
         dfmessages::TriggerId{ m_run_number, trigger_record_ptr->get_header_ref().get_trigger_number() };
       token.sequence_number = trigger_record_ptr->get_header_ref().get_sequence_number();
       token.writer_identifier = m_writer_identifier;
+      token.error_flags = error_flags;
 
       try {
         m_token_output->send(std::move(token), m_queue_timeout);

@@ -129,6 +129,7 @@ private:
   struct TriggerStatus
   {
     std::chrono::steady_clock::time_point decision_received;
+    uint16_t error_flags{ 0 };
     dfmessages::sequence_number_t max_sequence_number{ 0 };
     dfmessages::sequence_number_t sequences_built{ 0 };
     dfmessages::sequence_number_t sequences_written{ 0 };

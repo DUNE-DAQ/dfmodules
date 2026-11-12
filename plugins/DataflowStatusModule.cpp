@@ -442,6 +442,7 @@ DataflowStatusModule::process_trb_completion(const dfmessages::TRBCompletion& co
     ++m_num_trb_completions_received;
 
     auto remove_from_building_list = true;
+    m_trigger_statuses[completion.trigger_id].error_flags |= completion.error_flags;
     if (completion.trigger_record_max_sequence_number > 0) {
       if (m_trigger_statuses[completion.trigger_id].max_sequence_number == 0) {
         m_trigger_statuses[completion.trigger_id].max_sequence_number = completion.trigger_record_max_sequence_number;
@@ -512,6 +513,7 @@ DataflowStatusModule::process_trigger_decision_token(const dfmessages::TriggerDe
 
     ++m_num_trigger_decision_tokens_received;
 
+    m_trigger_statuses[token.trigger_id].error_flags |= token.error_flags;
     if (m_trigger_statuses[token.trigger_id].max_sequence_number > 0) {
       m_trigger_statuses[token.trigger_id].sequences_written++;
 
@@ -546,10 +548,11 @@ DataflowStatusModule::process_trigger_decision_token(const dfmessages::TriggerDe
       m_max_completion_time_us.store(completion_time_us);
     }
 
+    auto error_flags = m_trigger_statuses[token.trigger_id].error_flags;
     m_trigger_statuses.erase(token.trigger_id);
     m_current_status.triggers_building.erase(token.trigger_id);
     m_current_status.triggers_writing.erase(token.trigger_id);
-    m_current_status.recently_completed_triggers.insert(token.trigger_id);
+    m_current_status.recently_completed_triggers[token.trigger_id] = error_flags;
 
     while (m_current_status.recently_completed_triggers.size() > m_completed_trigger_history_size) {
       m_current_status.recently_completed_triggers.erase(m_current_status.recently_completed_triggers.begin());
