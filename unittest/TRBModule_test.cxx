@@ -398,8 +398,9 @@ BOOST_AUTO_TEST_CASE(FragmentTimeout)
   // Should have recieved a TRBCompletion message
   BOOST_REQUIRE_EQUAL(received_trb_completes.size(), 2);
   BOOST_REQUIRE_EQUAL(received_trb_completes[1].trigger_id.trigger_number, 2);
-  BOOST_REQUIRE_EQUAL(received_trb_completes[1].error_flags,
-                      static_cast<uint16_t>(dfmessages::TriggerRecordErrorFlags::kTRBTimeout));
+  BOOST_REQUIRE_EQUAL(
+    received_trb_completes[1].error_flags,
+    static_cast<uint16_t>(dfmessages::TriggerRecordErrorFlags::kTRBTimeout)); // NOLINT(build/unsigned)
 
   trb->execute_command("stop", null_data);
   trb->execute_command("scrap", null_data);

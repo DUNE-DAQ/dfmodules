@@ -269,7 +269,7 @@ DataWriterModule::receive_trigger_record(std::unique_ptr<daqdataformats::Trigger
     return;
   }
 
-  uint16_t error_flags = 0;
+  uint16_t error_flags = 0; // NOLINT(build/unsigned)
 
   // 03-Feb-2021, KAB: adding support for a data-storage prescale.
   // In this "if" statement, I deliberately compare the result of (N mod prescale) to 1
@@ -317,19 +317,21 @@ DataWriterModule::receive_trigger_record(std::unique_ptr<daqdataformats::Trigger
       } while (should_retry && m_running.load());
 
       if (!successfully_written) {
-        error_flags |= static_cast<uint16_t>(dfmessages::TriggerRecordErrorFlags::kDataWriterFailedToWrite);
+        error_flags |= static_cast<uint16_t>( // NOLINT(build/unsigned)
+          dfmessages::TriggerRecordErrorFlags::kDataWriterFailedToWrite);
       }
       std::chrono::steady_clock::time_point end_time = std::chrono::steady_clock::now();
       auto writing_time = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
       m_writing_us += writing_time.count();
       m_max_writing_us =
         std::max(m_max_writing_us.load(), static_cast<uint64_t>(writing_time.count())); // NOLINT(build/unsigned)
-    } //  if m_data_storage_is_enabled
-    else {
-      error_flags |= static_cast<uint16_t>(dfmessages::TriggerRecordErrorFlags::kDataWriterDisabled);
+    } else {
+      error_flags |=
+        static_cast<uint16_t>(dfmessages::TriggerRecordErrorFlags::kDataWriterDisabled); // NOLINT(build/unsigned)
     }
   } else {
-    error_flags |= static_cast<uint16_t>(dfmessages::TriggerRecordErrorFlags::kDataWriterPrescaled);
+    error_flags |=
+      static_cast<uint16_t>(dfmessages::TriggerRecordErrorFlags::kDataWriterPrescaled); // NOLINT(build/unsigned)
   }
 
   bool send_trigger_complete_message = m_running.load();

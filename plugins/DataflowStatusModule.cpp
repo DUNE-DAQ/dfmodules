@@ -528,9 +528,10 @@ DataflowStatusModule::process_trigger_decision_token(const dfmessages::TriggerDe
     ++m_num_trigger_decision_tokens_received;
 
     m_trigger_statuses[token.trigger_id].error_flags |= token.error_flags;
+    // Currently only failed writes should stop TriggerDecisions from being sent
     m_current_status.in_error =
-      (token.error_flags & static_cast<uint16_t>(dfmessages::TriggerRecordErrorFlags::kDataWriterFailedToWrite)) !=
-      0; // Currently only failed writes should stop TriggerDecisions from being sent
+      (token.error_flags & static_cast<uint16_t>( // NOLINT(build/unsigned)
+                             dfmessages::TriggerRecordErrorFlags::kDataWriterFailedToWrite)) != 0;
 
     if (m_trigger_statuses[token.trigger_id].max_sequence_number > 0) {
       m_trigger_statuses[token.trigger_id].sequences_written++;

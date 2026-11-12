@@ -98,6 +98,13 @@ ERS_DECLARE_ISSUE_BASE(dfmodules,
                        ((uint32_t)trigger_number)((std::string)app)((size_t)used_slots)) // NOLINT(build/unsigned)
 
 ERS_DECLARE_ISSUE_BASE(dfmodules,
+                       DataflowStatusInError,
+                       appfwk::GeneralDAQModuleIssue,
+                       "DataflowStatus for " << app << " is in error",
+                       ((std::string)name),
+                       ((std::string)app))
+
+ERS_DECLARE_ISSUE_BASE(dfmodules,
                        StaleDataflowStatus,
                        appfwk::GeneralDAQModuleIssue,
                        "No DataflowStatus received from " << app << " for " << timeout << " ms",

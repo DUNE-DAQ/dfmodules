@@ -513,6 +513,10 @@ DFOModule::receive_dataflow_status(const dfmessages::DataflowStatus& status)
         std::make_shared<ReceivedDataflowStatus>(status, m_dataflow_status_timeout);
     }
 
+    if (status.in_error) {
+      ers::error(DataflowStatusInError(ERS_HERE, get_name(), status.decision_destination));
+    }
+
     if (status.trigger_id.trigger_number != 0) {
       if (m_statuses_for_trigger.count(status.trigger_id) == 0 ||
           m_statuses_for_trigger[status.trigger_id].count(status.decision_destination) == 0 ||
@@ -566,7 +570,8 @@ DFOModule::receive_dataflow_status(const dfmessages::DataflowStatus& status)
       if (m_assigned_trigger_decisions.count(trigger)) {
         if (error_flags != 0) {
           // Potential error handling
-          if (error_flags & static_cast<uint16_t>(dfmessages::TriggerRecordErrorFlags::kDataWriterFailedToWrite)) {
+          if (error_flags & static_cast<uint16_t>( // NOLINT(build/unsigned)
+                              dfmessages::TriggerRecordErrorFlags::kDataWriterFailedToWrite)) {
             auto decision = reallocate_trigger_decision(trigger, m_assigned_trigger_decisions[trigger], guard);
             if (decision) {
               triggers_to_reallocate.push_back(*decision);

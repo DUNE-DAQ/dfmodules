@@ -621,14 +621,14 @@ TRBModule::create_trigger_records_and_dispatch(const dfmessages::TriggerDecision
 
     if (!all_sent_successfully) {
       std::unique_lock<std::mutex> lk(m_trigger_records_mutex);
-      m_trigger_records[slice_id]->error_flags |=
-        static_cast<uint16_t>(dunedaq::dfmessages::TriggerRecordErrorFlags::kTRBDataRequestFailure);
+      m_trigger_records[slice_id]->error_flags |= static_cast<uint16_t>( // NOLINT(build/unsigned)
+        dunedaq::dfmessages::TriggerRecordErrorFlags::kTRBDataRequestFailure);
     }
 
   } // sequence loop
 
   return new_tr_counter;
-}
+} // NOLINT(readability/fn_size)
 
 bool
 TRBModule::dispatch_data_requests(dfmessages::DataRequest dr, const daqdataformats::SourceID& sid)
@@ -748,7 +748,8 @@ TRBModule::send_trigger_record(const TriggerRecordId& id)
     ++m_abandoned_trigger_records;
     m_lost_fragments += record_size;
     ers::error(dunedaq::dfmodules::AbandonedTriggerRecord(ERS_HERE, id.trigger_id, id.sequence_number));
-    temp_record->error_flags |= static_cast<uint16_t>(dunedaq::dfmessages::TriggerRecordErrorFlags::kTRBFailedToSend);
+    temp_record->error_flags |=
+      static_cast<uint16_t>(dunedaq::dfmessages::TriggerRecordErrorFlags::kTRBFailedToSend); // NOLINT(build/unsigned)
   }
 
   dfmessages::TRBCompletion completion_msg{
@@ -786,7 +787,8 @@ TRBModule::check_stale_requests()
           ers::error(
             TimedOutTriggerDecision(ERS_HERE, it->first.trigger_id, tr.get_header_ref().get_trigger_timestamp()));
 
-          it->second->error_flags |= static_cast<uint16_t>(dunedaq::dfmessages::TriggerRecordErrorFlags::kTRBTimeout);
+          it->second->error_flags |=
+            static_cast<uint16_t>(dunedaq::dfmessages::TriggerRecordErrorFlags::kTRBTimeout); // NOLINT(build/unsigned)
           // mark trigger record for seding
           stale_triggers.push_back(it->first);
           ++m_timed_out_trigger_records;
