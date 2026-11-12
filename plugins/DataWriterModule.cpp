@@ -316,7 +316,7 @@ DataWriterModule::receive_trigger_record(std::unique_ptr<daqdataformats::Trigger
         }
       } while (should_retry && m_running.load());
 
-      if(!successfully_written) {
+      if (!successfully_written) {
         error_flags |= static_cast<uint16_t>(dfmessages::TriggerRecordErrorFlags::kDataWriterFailedToWrite);
       }
       std::chrono::steady_clock::time_point end_time = std::chrono::steady_clock::now();

@@ -256,6 +256,7 @@ BOOST_AUTO_TEST_CASE(DataFlow)
   // Should have recieved a TRBCompletion message
   BOOST_REQUIRE_EQUAL(received_trb_completes.size(), 1);
   BOOST_REQUIRE_EQUAL(received_trb_completes[0].trigger_id.trigger_number, 1);
+  BOOST_REQUIRE_EQUAL(received_trb_completes[0].error_flags, 0);
 
   metric = get_trb_info();
   BOOST_REQUIRE_EQUAL(metric.pending_trigger_decisions(), 0);
@@ -369,6 +370,7 @@ BOOST_AUTO_TEST_CASE(FragmentTimeout)
   // Should have recieved a TRBCompletion message
   BOOST_REQUIRE_EQUAL(received_trb_completes.size(), 1);
   BOOST_REQUIRE_EQUAL(received_trb_completes[0].trigger_id.trigger_number, 1);
+  BOOST_REQUIRE_EQUAL(received_trb_completes[0].error_flags, 0);
 
   metric = get_trb_info();
   BOOST_REQUIRE_EQUAL(metric.pending_trigger_decisions(), 0);
@@ -396,6 +398,8 @@ BOOST_AUTO_TEST_CASE(FragmentTimeout)
   // Should have recieved a TRBCompletion message
   BOOST_REQUIRE_EQUAL(received_trb_completes.size(), 2);
   BOOST_REQUIRE_EQUAL(received_trb_completes[1].trigger_id.trigger_number, 2);
+  BOOST_REQUIRE_EQUAL(received_trb_completes[1].error_flags,
+                      static_cast<uint16_t>(dfmessages::TriggerRecordErrorFlags::kTRBTimeout));
 
   trb->execute_command("stop", null_data);
   trb->execute_command("scrap", null_data);
@@ -607,6 +611,7 @@ BOOST_AUTO_TEST_CASE(MultipleSequences)
   BOOST_REQUIRE_EQUAL(received_trb_completes.size(), 3);
   BOOST_REQUIRE_EQUAL(received_trb_completes[0].trigger_id.trigger_number, 100);
   BOOST_REQUIRE_EQUAL(received_trb_completes[0].trigger_record_max_sequence_number, 2);
+  BOOST_REQUIRE_EQUAL(received_trb_completes[0].error_flags, 0);
   TLOG() << "Received TRBCompletion with max_sequence_number="
          << received_trb_completes[0].trigger_record_max_sequence_number;
 

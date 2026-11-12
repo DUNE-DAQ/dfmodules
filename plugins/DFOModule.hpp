@@ -172,6 +172,10 @@ private:
   // Dataflow application selection algorithm
   std::shared_ptr<AssignedTriggerDecision> find_slot(const dfmessages::TriggerDecision& decision);
   void assign_trigger_decision(const std::shared_ptr<AssignedTriggerDecision>& assignment);
+  std::optional<dfmessages::TriggerDecision> reallocate_trigger_decision(
+    const dfmessages::TriggerId& trigger,
+    const std::shared_ptr<AssignedTriggerDecision>& assignment,
+    std::unique_lock<std::mutex>& lock);
 
   // Coordination
 

@@ -178,8 +178,8 @@ protected:
   {
     TriggerRecordBookkeeping() {}
     clock_type::time_point created{ clock_type::now() };
-    trigger_record_ptr_t record{nullptr};
-    uint16_t error_flags{0};
+    trigger_record_ptr_t record{ nullptr };
+    uint16_t error_flags{ 0 };
   };
 
   void trigger_decision_callback(dfmessages::TriggerDecision& td);
