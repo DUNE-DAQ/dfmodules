@@ -85,8 +85,31 @@ hsi_frag_params = {
     "frag_bitmasks_by_TC_type": {"kTiming": {"status_bitmask": 0xFFFFFFDD},
                                  "default": {"status_bitmask": 0xFFFFFF9F} }
 }
+# The application to kill, and where it is in the run control tree
+killed_application = "dfo-02"
+killed_application_path = "root-controller/df-controller/" + killed_application
+
 ignored_logfile_problems = {
+    # run control reports the killed application until it is excluded, and when it is excluded
     "-controller": [
+        rf"'{killed_application}' does not ping",
+        rf"Could not resolve REST URI for '{killed_application}'",
+        rf"Disconnected child node\(s\) while handling '\w+': {killed_application}",
+    ],
+    "drunc-unified-shell|process_manager": [
+        rf"Process '{killed_application}' .* was terminated unexpectedly",
+        rf"Process {killed_application} of with UUID \S+ has died",
+    ],
+    # the MLT keeps a connection to every DFO and reports each TriggerDecision it cannot send to the killed one
+    "_mlt": [
+        r"NetworkSenderModel<Datatype>::send\(.*Datatype = dunedaq::dfmessages::TriggerDecision",
+        r"NetworkSenderModel<Datatype>::write_network",
+        rf"td_mlt_dfo{killed_application}: Unable to send within timeout period",
+        rf"td_mlt_dfo{killed_application} already present in the node list",
+    ],
+    # the DF apps look up the connection to the killed DFO again for their status messages
+    "_df-0": [
+        rf"dataflow_status_{killed_application} already present in the node list",
     ],
     "local-connection-server": [
         "errorlog: -",
@@ -127,10 +150,6 @@ common_config_obj.config_substitutions.append(
 # Get default config
 multidfo_local_conf = copy.deepcopy(common_config_obj)
 multidfo_local_conf.config_session_name = "local-multidfo-config"
-
-# The application to kill, and where it is in the run control tree
-killed_application = "dfo-02"
-killed_application_path = "root-controller/df-controller/" + killed_application
 
 # The delay of a signal is counted from the launch of the run control session, before boot. Boot, conf and
 # start have taken between 25 s and 45 s, depending on the load of the host, so a signal at 60 s lands
