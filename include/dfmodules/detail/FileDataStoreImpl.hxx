@@ -26,7 +26,7 @@ FileDataStoreImpl<FileHandleClass>::get_file_name(const daqdataformats::run_numb
            << m_file_index;
 
   work_oss << "_" << m_writer_identifier;
-  work_oss << "." << m_file_handle->get_file_name_extension();
+  work_oss << "." << FileHandleClass::get_file_name_extension();
   return work_oss.str();
 }
 

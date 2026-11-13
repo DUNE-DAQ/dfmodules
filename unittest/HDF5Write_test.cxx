@@ -19,11 +19,15 @@
 #include "confmodel/DetectorConfig.hpp"
 #include "confmodel/Session.hpp"
 #include "detdataformats/DetID.hpp"
+#include "dfmodules/opmon/DataStore.pb.h"
+#include "opmonlib/TestOpMonManager.hpp"
+#include "opmonlib/Utils.hpp"
 
 #define BOOST_TEST_MODULE HDF5Write_test // NOLINT
 
 #include "boost/test/unit_test.hpp"
 
+#include <cstdint>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -66,9 +70,8 @@ delete_files_matching_pattern(const std::string& path, const std::string& patter
 }
 
 dunedaq::daqdataformats::TriggerRecord
-create_trigger_record(int trig_num, int fragment_size, int element_count)
+create_trigger_record(int trig_num, int fragment_size, int element_count, int run_number = 53)
 {
-  const int run_number = 53;
   const dunedaq::daqdataformats::SourceID::Subsystem stype_to_use =
     dunedaq::daqdataformats::SourceID::Subsystem::kDetectorReadout;
 
@@ -81,17 +84,15 @@ create_trigger_record(int trig_num, int fragment_size, int element_count)
                   system_clock::now().time_since_epoch())
                   .count();
 
-  // create TriggerRecordHeader
-  dunedaq::daqdataformats::TriggerRecordHeaderData trh_data;
-  trh_data.trigger_number = trig_num;
-  trh_data.trigger_timestamp = ts;
-  trh_data.num_requested_components = element_count;
-  trh_data.run_number = run_number;
-  trh_data.sequence_number = 0;
-  trh_data.max_sequence_number = 1;
-  trh_data.element_id = dunedaq::daqdataformats::SourceID(dunedaq::daqdataformats::SourceID::Subsystem::kTRBuilder, 0);
-
-  dunedaq::daqdataformats::TriggerRecordHeader trh(&trh_data);
+  // The header must carry one component request per element, to match num_requested_components.
+  std::vector<dunedaq::daqdataformats::ComponentRequest> component_requests(element_count);
+  dunedaq::daqdataformats::TriggerRecordHeader trh(component_requests);
+  trh.set_trigger_number(trig_num);
+  trh.set_trigger_timestamp(ts);
+  trh.set_run_number(run_number);
+  trh.set_sequence_number(0);
+  trh.set_max_sequence_number(1);
+  trh.set_element_id(dunedaq::daqdataformats::SourceID(dunedaq::daqdataformats::SourceID::Subsystem::kTRBuilder, 0));
 
   // create out TriggerRecord
   dunedaq::daqdataformats::TriggerRecord tr(trh);
@@ -420,6 +421,103 @@ BOOST_AUTO_TEST_CASE(SmallFileSizeLimitDataBlockListWrite)
   file_list = delete_files_matching_pattern(file_path, delete_pattern);
   delete_files_matching_pattern(file_path, "HardwareMap.*\\.txt");
   BOOST_REQUIRE_EQUAL(file_list.size(), 5);
+}
+
+namespace {
+// All of a run's bytes, and only those, were counted: at least min_expected_bytes, and no more than
+// the run's files hold on disk, allowing a little per file because HDF5 may release unused space when
+// a file is closed.
+void
+check_run_bytes_against_disk(const std::string& file_path,
+                             const std::string& mode,
+                             int run_number,
+                             uint64_t run_new_bytes, // NOLINT(build/unsigned)
+                             size_t min_expected_bytes)
+{
+  uint64_t bytes_on_disk = 0; // NOLINT(build/unsigned)
+  const std::string run_pattern = "hdf5writetest_raw_run0000" + std::to_string(run_number) + "_.*\\.hdf5";
+  auto run_files = get_files_matching_pattern(file_path, run_pattern);
+  BOOST_REQUIRE(!run_files.empty());
+  for (auto const& file : run_files) {
+    bytes_on_disk += std::filesystem::file_size(file);
+  }
+  BOOST_TEST_INFO("mode " << mode << ", run " << run_number);
+  BOOST_REQUIRE(run_new_bytes >= min_expected_bytes);
+  BOOST_REQUIRE(run_new_bytes <= bytes_on_disk + 65536 * run_files.size());
+}
+
+// Writes two runs of records through a DataStore, collecting its opmon counters after every write,
+// and checks that they never underflow or carry over between runs or files. Exact equality with
+// the size on disk isn't expected: closing a file adds attributes after the last size reading.
+void
+check_opmon_counters_over_runs_and_rollovers(const std::string& mode, size_t max_file_size, int records_per_run)
+{
+  const std::string file_path(std::filesystem::temp_directory_path());
+  const std::string delete_pattern = "hdf5writetest.*\\.hdf5(\\.writing)?";
+  delete_files_matching_pattern(file_path, delete_pattern);
+
+  const int element_count = 3;
+  const int fragment_size = 100000;
+  const size_t record_bytes = element_count * (fragment_size + sizeof(dunedaq::daqdataformats::FragmentHeader));
+  // Much larger than any honest per-interval or per-file count, much smaller than a wrapped uint64.
+  const uint64_t sane_bound = 100 * (max_file_size + record_bytes); // NOLINT(build/unsigned)
+
+  CfgFixture cfg("test-session-3-1");
+  const auto data_writer_conf = cfg.cfgMgr->get_dal<dunedaq::appmodel::DataWriterModule>("dwm-01")->get_configuration();
+  const auto data_store_conf = data_writer_conf->get_data_store_params();
+  auto data_store_conf_obj = data_store_conf->config_object();
+  data_store_conf_obj.set_by_val<std::string>("directory_path", file_path);
+  data_store_conf_obj.set_by_val<std::string>("mode", mode);
+  data_store_conf_obj.set_by_val<uint64_t>("max_file_size", max_file_size); // NOLINT(build/unsigned)
+
+  dunedaq::opmonlib::TestOpMonManager opmgr;
+  auto data_store_ptr = make_data_store(data_store_conf->get_type(), data_store_conf->UID(), cfg.cfgMgr, "dwm-01");
+  opmgr.register_node("data_store", data_store_ptr);
+
+  auto collect = [&]() {
+    opmgr.collect();
+    auto entries = opmgr.get_backend_facility()->get_entries(std::regex(".*FileDataStoreImplInfo"));
+    BOOST_REQUIRE_EQUAL(entries.size(), 1);
+    return dunedaq::opmonlib::from_entry<dunedaq::dfmodules::opmon::FileDataStoreImplInfo>(entries.front());
+  };
+  collect(); // Start from zero.
+
+  for (int run_number : { 53, 54 }) {
+    data_store_ptr->prepare_for_run(run_number, true);
+    uint64_t run_new_bytes = 0; // NOLINT(build/unsigned)
+    for (int trigger_number = 1; trigger_number <= records_per_run; ++trigger_number) {
+      data_store_ptr->write(create_trigger_record(trigger_number, fragment_size, element_count, run_number));
+      auto info = collect();
+      BOOST_TEST_INFO("mode " << mode << ", run " << run_number << ", record " << trigger_number);
+      BOOST_REQUIRE(info.new_bytes_output() > 0);
+      BOOST_REQUIRE(info.new_bytes_output() < sane_bound);
+      // The current file never holds more than one record beyond the size limit, so nothing carried over.
+      BOOST_REQUIRE(info.bytes_in_file() > 0);
+      BOOST_REQUIRE(info.bytes_in_file() < max_file_size + 2 * record_bytes + 1000000);
+      if (mode == "one-event-per-file") {
+        BOOST_REQUIRE(info.bytes_in_file() < 2 * record_bytes + 1000000);
+      }
+      run_new_bytes += info.new_bytes_output();
+    }
+    data_store_ptr->finish_with_run(run_number);
+    check_run_bytes_against_disk(file_path, mode, run_number, run_new_bytes, records_per_run * record_bytes);
+  }
+
+  data_store_ptr.reset();
+  delete_files_matching_pattern(file_path, delete_pattern);
+}
+} // namespace ""
+
+BOOST_AUTO_TEST_CASE(OpMonCountersOneEventPerFile)
+{
+  const size_t effectively_unlimited_file_size = 4294967296;
+  check_opmon_counters_over_runs_and_rollovers("one-event-per-file", effectively_unlimited_file_size, 3);
+}
+
+BOOST_AUTO_TEST_CASE(OpMonCountersFileSizeLimit)
+{
+  // About two records per file.
+  check_opmon_counters_over_runs_and_rollovers("all-per-file", 700000, 6);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
