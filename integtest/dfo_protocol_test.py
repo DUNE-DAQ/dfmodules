@@ -251,8 +251,12 @@ def test_data_files(run_dunerc):
     )
 
     all_ok = True
+    files_by_record = {}
     for idx in range(len(run_dunerc.data_files)):
         data_file = data_file_checks.DataFile(run_dunerc.data_files[idx], run_dunerc.verbosity_helper)
+        # the record names hold the trigger number and the sequence number, e.g. TriggerRecord00012.0000
+        for record_name in data_file.events:
+            files_by_record.setdefault(record_name, []).append(os.path.basename(data_file.name))
         all_ok &= data_file_checks.sanity_check(data_file)
         all_ok &= data_file_checks.check_file_attributes(data_file)
         all_ok &= data_file_checks.check_event_count(
@@ -267,4 +271,10 @@ def test_data_files(run_dunerc):
             )
         for kdx in range(len(nontrig_fragment_check_list)):
             all_ok &= data_file_checks.check_fragment_error_flags( data_file, nontrig_fragment_check_list[kdx])
+
+    # Each DFO sends its own TriggerDecision for a trigger, but only one DF app may build and write it
+    for record_name, file_names in sorted(files_by_record.items()):
+        if len(file_names) > 1:
+            print(f"\N{POLICE CARS REVOLVING LIGHT} {record_name} is in more than one file: {file_names} \N{POLICE CARS REVOLVING LIGHT}")
+            all_ok = False
     assert all_ok
