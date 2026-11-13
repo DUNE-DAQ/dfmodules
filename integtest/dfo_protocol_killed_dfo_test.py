@@ -88,6 +88,10 @@ hsi_frag_params = {
 # The application to kill, and where it is in the run control tree
 killed_application = "dfo-02"
 killed_application_path = "root-controller/df-controller/" + killed_application
+# An exclude sent through a controller also stops the commands to that controller (drunc marks the
+# controller itself as excluded). Including an application that is still alive in the same segment
+# brings the controller back without bringing back the killed application.
+surviving_application_path = "root-controller/df-controller/dfo-01"
 
 ignored_logfile_problems = {
     # run control reports the killed application until it is excluded, and when it is excluded
@@ -172,6 +176,7 @@ dunerc_command_list = (
     "boot wait 2 conf start --run-number 101 wait 1 enable-triggers wait ".split()
     + [str(run_duration)]
     + ["exclude", "--target", killed_application_path]
+    + ["include", "--target", surviving_application_path]
     + "disable-triggers wait 2 drain-dataflow wait 2 stop-trigger-sources stop scrap terminate".split()
 )
 
