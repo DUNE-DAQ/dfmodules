@@ -111,7 +111,7 @@ ignored_logfile_problems = {
     # the DFOs report the killed DF app as silent, and fail to send it status requests until then
     "_dfo-0": [
         rf"No DataflowStatus received from trigger_decision_{killed_application} for \d+ ms",
-        rf"Send of DataflowStatusRequest to connection \"dataflow_status_request_{killed_application}\" failed",
+        r"DFOModule::send_status_requests\(.*DFO-dfo-\d+$",
         r"NetworkSenderModel<Datatype>::send\(.*Datatype = dunedaq::dfmessages::DataflowStatusRequest",
         rf"dataflow_status_request_{killed_application}: Unable to send within timeout period",
         rf"dataflow_status_request_{killed_application} already present in the node list",
