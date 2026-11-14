@@ -803,6 +803,7 @@ DFOModule::send_status_requests(dfmessages::trigger_number_t trigger, size_t ite
   request.iteration_number = iteration;
   request.reply_destination = m_status_connection;
 
+  size_t requests_sent = 0;
   for (auto& dest : destinations_to_request) {
 
     try {
@@ -810,17 +811,24 @@ DFOModule::send_status_requests(dfmessages::trigger_number_t trigger, size_t ite
       dfmessages::DataflowStatusRequest request_copy = request;
       iom->get_sender<dfmessages::DataflowStatusRequest>(dest)->send(std::move(request_copy), m_queue_timeout);
       TLOG_DEBUG(TLVL_WORK_STEPS) << "Sent DataflowStatusRequest for trigger_number " << trigger << " to " << dest;
+      ++requests_sent;
     } catch (const ers::Issue& excpt) {
       std::ostringstream oss_warn;
       oss_warn << "Send of DataflowStatusRequest to connection \"" << dest << "\" failed";
       ers::warning(iomanager::OperationFailed(ERS_HERE, get_name(), oss_warn.str(), excpt));
+      // Mark this DF app status as stale so it is not asked again until a status arrives from it
+      std::lock_guard<std::mutex> guard(m_status_mutex);
+      for (auto& [name, rstatus] : m_dataflow_statuses) {
+        if (rstatus->status.request_destination == dest) {
+          rstatus->status_updated.store(false);
+        }
+      }
     }
   }
 
   std::chrono::steady_clock::time_point wait_start = std::chrono::steady_clock::now();
   size_t statuses_received = 0;
-  while (statuses_received < destinations_to_request.size() &&
-         std::chrono::steady_clock::now() - wait_start < m_request_reply_wait) {
+  while (statuses_received < requests_sent && std::chrono::steady_clock::now() - wait_start < m_request_reply_wait) {
     std::unique_lock<std::mutex> guard(m_status_mutex);
     m_status_cv.wait_for(guard, m_request_reply_wait);
     dfmessages::TriggerId trigger_id{ m_run_number, trigger };
