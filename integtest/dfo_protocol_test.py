@@ -2,7 +2,8 @@
 Integration Test for DFO Protocol
 
 This test module validates DAQ system behavior while using multiple DFO applications.
-It also verifies that the protocol correctly handles DFO and DF application crashes.
+It also verifies that the protocol correctly handles DFO and DF applications that are stopped
+for a time, and a DF application crash. A DFO crash is tested in dfo_protocol_killed_dfo_test.py.
 """
 
 import copy
@@ -140,7 +141,6 @@ multidfo_local_conf.config_session_name = "local-multidfo-config"
 
 # Prep configs
 stopped_dfo_conf = copy.deepcopy(multidfo_local_conf)
-killed_dfo_conf = copy.deepcopy(multidfo_local_conf)
 stopped_df_conf = copy.deepcopy(multidfo_local_conf)
 killed_df_conf = copy.deepcopy(multidfo_local_conf)
 
@@ -159,12 +159,6 @@ stopped_dfo_conf.system_signal_configs = [
     ),
 ]
 
-
-killed_dfo_conf.system_signal_configs = [
-    data_classes.system_signal_config(
-        application_label="dfo-02", signal=data_classes.PosixSignal.SIGKILL, delay_s=signal_delay
-    ),
-]
 
 stopped_df_conf.system_signal_configs = [
     data_classes.system_signal_config(
@@ -185,7 +179,6 @@ killed_df_conf.system_signal_configs = [
 confgen_arguments = {
     "default": multidfo_local_conf,
     "stopped-dfo": stopped_dfo_conf,
-    "killed-dfo": killed_dfo_conf,
     "stopped-df": stopped_df_conf,
     "killed-df": killed_df_conf,
 }
