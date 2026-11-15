@@ -103,13 +103,6 @@ ignored_logfile_problems = {
         r"WARNING: All log messages before absl::InitializeLog\(\) is called are written to STDERR"
     ]
 }
-# A DFO that was stopped for as long as the DataflowStatus timeout finds the status of every DF app
-# stale when it resumes, and for one pass has no DF app to assign a trigger to.
-stopped_dfo_logfile_problems = [
-    r"No DataflowStatus received from \S+ for \d+ ms",
-    r"TriggerDecision \d+ could not be assigned",
-]
-
 # Determine if this computer has enough resources for these tests
 resource_validator = resource_validation.ResourceValidator()
 resource_validator.cpu_count_needs(
@@ -149,7 +142,8 @@ stopped_df_conf = copy.deepcopy(multidfo_local_conf)
 # start have taken between 25 s and 45 s, depending on the load of the host, so a signal at 60 s lands
 # 15 s to 35 s after triggers are enabled, with 25 s to 45 s of run_duration still to go.
 signal_delay = 60  # seconds
-stop_duration = 5  # seconds
+# Shorter than the DataflowStatus timeout (5 s), so that no application is reported as silent
+stop_duration = 3  # seconds
 
 stopped_dfo_conf.system_signal_configs = [
     data_classes.system_signal_config(
@@ -194,21 +188,9 @@ def test_dunerc_success(run_dunerc, caplog):
 
 def test_log_files(run_dunerc):
     if check_for_logfile_errors:
-        local_ignored_problems = copy.deepcopy(ignored_logfile_problems)
-        for signal_config in run_dunerc.confgen_config.system_signal_configs:
-            if (signal_config.signal == data_classes.PosixSignal.SIGSTOP
-                    and signal_config.application_label.startswith("dfo-")):
-                local_ignored_problems[signal_config.application_label] = stopped_dfo_logfile_problems
-            elif (signal_config.signal == data_classes.PosixSignal.SIGSTOP
-                    and signal_config.application_label.startswith("df-")):
-                # The stop lasts as long as the status timeout, so a DFO may report the stopped DF app as silent
-                local_ignored_problems["_dfo-"] = [
-                    rf"No DataflowStatus received from trigger_decision_{signal_config.application_label} for \d+ ms"
-                ]
-
         # Check that there are no warnings or errors in the log files
         assert log_file_checks.logs_are_error_free(
-            run_dunerc.log_files, True, True, local_ignored_problems,
+            run_dunerc.log_files, True, True, ignored_logfile_problems,
             verbosity_helper=run_dunerc.verbosity_helper
         )
 
