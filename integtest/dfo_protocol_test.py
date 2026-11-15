@@ -86,9 +86,10 @@ hsi_frag_params = {
                               "default": {"min_size_bytes":  72, "max_size_bytes": 100} },
     # The fake HSI data is sparse, so the readout window always extends past the newest HSI data.
     # A kTiming trigger gets the one HSI frame that caused it (kIncomplete, kRequestWindowAfterBuffer);
-    # other triggers get an empty fragment (kRequestWindowAfterBuffer, kEmptyFragment).
+    # other triggers get an empty fragment (kRequestWindowAfterBuffer, kEmptyFragment), or that same
+    # frame (kIncomplete) when they come within a readout window of a kTiming trigger.
     "frag_bitmasks_by_TC_type": {"kTiming": {"status_bitmask": 0xFFFFFFDD},
-                                 "default": {"status_bitmask": 0xFFFFFF9F} }
+                                 "default": {"status_bitmask": 0xFFFFFF9D} }
 }
 ignored_logfile_problems = {
     "-controller": [
@@ -198,6 +199,12 @@ def test_log_files(run_dunerc):
             if (signal_config.signal == data_classes.PosixSignal.SIGSTOP
                     and signal_config.application_label.startswith("dfo-")):
                 local_ignored_problems[signal_config.application_label] = stopped_dfo_logfile_problems
+            elif (signal_config.signal == data_classes.PosixSignal.SIGSTOP
+                    and signal_config.application_label.startswith("df-")):
+                # The stop lasts as long as the status timeout, so a DFO may report the stopped DF app as silent
+                local_ignored_problems["_dfo-"] = [
+                    rf"No DataflowStatus received from trigger_decision_{signal_config.application_label} for \d+ ms"
+                ]
 
         # Check that there are no warnings or errors in the log files
         assert log_file_checks.logs_are_error_free(

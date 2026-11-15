@@ -85,9 +85,10 @@ hsi_frag_params = {
                               "default": {"min_size_bytes":  72, "max_size_bytes": 100} },
     # The fake HSI data is sparse, so the readout window always extends past the newest HSI data.
     # A kTiming trigger gets the one HSI frame that caused it (kIncomplete, kRequestWindowAfterBuffer);
-    # other triggers get an empty fragment (kRequestWindowAfterBuffer, kEmptyFragment).
+    # other triggers get an empty fragment (kRequestWindowAfterBuffer, kEmptyFragment), or that same
+    # frame (kIncomplete) when they come within a readout window of a kTiming trigger.
     "frag_bitmasks_by_TC_type": {"kTiming": {"status_bitmask": 0xFFFFFFDD},
-                                 "default": {"status_bitmask": 0xFFFFFF9F} }
+                                 "default": {"status_bitmask": 0xFFFFFF9D} }
 }
 # The application to kill, and where it is in the run control tree
 killed_application = "df-02"
