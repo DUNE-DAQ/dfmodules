@@ -68,14 +68,6 @@ ERS_DECLARE_ISSUE_BASE(dfmodules,
                        ((uint32_t)trigger_number)((uint32_t)run_number)) // NOLINT(build/unsigned)
 
 ERS_DECLARE_ISSUE_BASE(dfmodules,
-                       UnexpectedTriggerDecision,
-                       appfwk::GeneralDAQModuleIssue,
-                       "TriggerDecision " << trigger_number << " has been reported by " << app
-                                          << " with no TriggerDecision message received",
-                       ((std::string)name),
-                       ((uint32_t)trigger_number)((std::string)app)) // NOLINT(build/unsigned)
-
-ERS_DECLARE_ISSUE_BASE(dfmodules,
                        LostTriggerDecision,
                        appfwk::GeneralDAQModuleIssue,
                        "TriggerDecision " << trigger_number << " was lost while being processed by " << app,
@@ -166,12 +158,15 @@ private:
   void receive_trigger_decision(const dfmessages::TriggerDecision&);
   void notify_trigger_if_needed() const;
 
+  // Returns false if the replies are too old to choose a DF app from
   bool send_status_requests(dfmessages::trigger_number_t trigger, size_t iteration);
   bool dispatch(const std::shared_ptr<AssignedTriggerDecision>& assignment);
 
-  // Dataflow application selection algorithm
+  // Returns false if the trigger has been completed; otherwise records the assignment (nullptr if no slot)
+  bool select_destination(const dfmessages::TriggerDecision& decision,
+                          std::shared_ptr<AssignedTriggerDecision>& assignment);
+  // Dataflow application selection algorithm. The caller must hold m_status_mutex
   std::shared_ptr<AssignedTriggerDecision> find_slot(const dfmessages::TriggerDecision& decision);
-  void assign_trigger_decision(const std::shared_ptr<AssignedTriggerDecision>& assignment);
 
   // Coordination
 
@@ -182,6 +177,11 @@ private:
     m_statuses_for_trigger;
   std::unordered_map<dfmessages::TriggerId, std::shared_ptr<AssignedTriggerDecision>> m_assigned_trigger_decisions;
   std::unordered_map<dfmessages::TriggerId, std::chrono::steady_clock::time_point> m_decision_received_times;
+  // Ordered, so that the oldest triggers are dropped first
+  std::set<dfmessages::TriggerId> m_completed_triggers;
+  static constexpr size_t s_completed_trigger_history_size = 1000;
+  // Replies older than this many reply waits are discarded; a normal wait ends within two
+  static constexpr int s_stale_reply_factor = 3;
 
   std::atomic<bool> m_running_status{ false };
   mutable std::atomic<bool> m_last_notified_busy{ false };

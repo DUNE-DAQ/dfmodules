@@ -212,6 +212,7 @@ DFOModule::do_stop(const CommandData_t& /*args*/)
       remnants.push_back(td.second);
     }
     m_assigned_trigger_decisions.clear();
+    m_completed_triggers.clear();
 
     for (auto& r : remnants) {
       ers::error(IncompleteTriggerDecision(ERS_HERE, get_name(), r->decision.trigger_number, m_run_number));
@@ -259,6 +260,12 @@ DFOModule::receive_trigger_decision(const dfmessages::TriggerDecision& decision)
 
   {
     std::lock_guard<std::mutex> lk(m_status_mutex);
+    // Each DFO sends its own TriggerDecision for every trigger, so one can arrive after a DF app completed it
+    if (m_completed_triggers.count(trigger_id)) {
+      TLOG_DEBUG(TLVL_TRIGDEC_RECEIVED) << get_name() << " Ignoring TriggerDecision for trigger_number "
+                                        << decision.trigger_number << ", which has already been completed";
+      return;
+    }
     // Don't update, in case this is a re-issued TD
     if (!m_decision_received_times.count(trigger_id)) {
       m_decision_received_times[trigger_id] = decision_received;
@@ -279,11 +286,19 @@ DFOModule::receive_trigger_decision(const dfmessages::TriggerDecision& decision)
   m_processing_td.store(true);
 
   std::chrono::steady_clock::time_point decision_assigned;
+  bool dispatched = false;
   size_t iteration = 0;
   do {
-    send_status_requests(decision.trigger_number, iteration);
+    const bool replies_usable = send_status_requests(decision.trigger_number, iteration);
     ++iteration;
-    auto assignment = find_slot(decision);
+    if (!replies_usable) {
+      continue;
+    }
+
+    std::shared_ptr<AssignedTriggerDecision> assignment;
+    if (!select_destination(decision, assignment)) {
+      break;
+    }
 
     if (assignment == nullptr) { // this can happen if all application are in error state
       ers::error(UnableToAssign(ERS_HERE, get_name(), decision.trigger_number));
@@ -298,13 +313,15 @@ DFOModule::receive_trigger_decision(const dfmessages::TriggerDecision& decision)
     auto dispatch_successful = dispatch(assignment);
 
     if (dispatch_successful) {
-      assign_trigger_decision(assignment);
+      dispatched = true;
       TLOG_DEBUG(TLVL_TRIGDEC_RECEIVED) << get_name() << " Assigned trigger_number " << decision.trigger_number
                                         << " to connection " << assignment->connection_name;
       break;
     } else {
       ers::error(
         TRBModuleAppUpdate(ERS_HERE, get_name(), assignment->connection_name, "Could not send Trigger Decision"));
+      std::lock_guard<std::mutex> lk(m_status_mutex);
+      m_assigned_trigger_decisions.erase(trigger_id);
       // Mark this DF app status as stale so it won't be selected again
       auto it = m_dataflow_statuses.find(assignment->connection_name);
       if (it != m_dataflow_statuses.end()) {
@@ -320,11 +337,14 @@ DFOModule::receive_trigger_decision(const dfmessages::TriggerDecision& decision)
   m_waiting_for_decision +=
     std::chrono::duration_cast<std::chrono::microseconds>(decision_received - m_last_td_received).count();
   m_last_td_received = std::chrono::steady_clock::now();
-  m_deciding_destination +=
-    std::chrono::duration_cast<std::chrono::microseconds>(decision_assigned - decision_received).count();
-  m_forwarding_decision +=
-    std::chrono::duration_cast<std::chrono::microseconds>(m_last_td_received - decision_assigned).count();
-}
+  // decision_assigned is only set when a destination was chosen
+  if (dispatched) {
+    m_deciding_destination +=
+      std::chrono::duration_cast<std::chrono::microseconds>(decision_assigned - decision_received).count();
+    m_forwarding_decision +=
+      std::chrono::duration_cast<std::chrono::microseconds>(m_last_td_received - decision_assigned).count();
+  }
+} // NOLINT(readability/fn_size)
 
 void
 DFOModule::generate_opmon_data()
@@ -532,7 +552,9 @@ DFOModule::receive_dataflow_status(const dfmessages::DataflowStatus& status)
                                                 trigger.trigger_number));
           continue;
         }
-        ers::info(UnexpectedTriggerDecision(ERS_HERE, get_name(), trigger.trigger_number, status.decision_destination));
+        TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << " TriggerDecision " << trigger.trigger_number
+                                    << " was reported as building by " << status.decision_destination
+                                    << " before this DFO assigned it";
         // Creating a placeholder for the assigned trigger decision with an empty TriggerDecision object. This is
         // checked in receive_trigger_decision and updated if necessary.
         m_assigned_trigger_decisions[trigger] = std::make_shared<AssignedTriggerDecision>(
@@ -551,8 +573,9 @@ DFOModule::receive_dataflow_status(const dfmessages::DataflowStatus& status)
                                                 trigger.trigger_number));
           continue;
         }
-        ers::warning(
-          UnexpectedTriggerDecision(ERS_HERE, get_name(), trigger.trigger_number, status.decision_destination));
+        TLOG_DEBUG(TLVL_WORK_STEPS) << get_name() << " TriggerDecision " << trigger.trigger_number
+                                    << " was reported as writing by " << status.decision_destination
+                                    << " before this DFO assigned it";
         // Creating a placeholder for the assigned trigger decision with an empty TriggerDecision object. This is
         // checked in receive_trigger_decision and updated if necessary.
         m_assigned_trigger_decisions[trigger] = std::make_shared<AssignedTriggerDecision>(
@@ -578,6 +601,10 @@ DFOModule::receive_dataflow_status(const dfmessages::DataflowStatus& status)
       m_statuses_for_trigger.erase(trigger);
       m_decision_received_times.erase(trigger);
       m_assigned_trigger_decisions.erase(trigger);
+      m_completed_triggers.insert(trigger);
+    }
+    while (m_completed_triggers.size() > s_completed_trigger_history_size) {
+      m_completed_triggers.erase(m_completed_triggers.begin());
     }
 
     if (m_assigned_trigger_decisions.size() > m_max_pending_decisions.load()) {
@@ -591,6 +618,36 @@ DFOModule::receive_dataflow_status(const dfmessages::DataflowStatus& status)
   m_status_cv.notify_all();
 } // NOLINT(readability/fn_size)
 
+bool
+DFOModule::select_destination(const dfmessages::TriggerDecision& decision,
+                              std::shared_ptr<AssignedTriggerDecision>& assignment)
+{
+  dfmessages::TriggerId trigger_id{ decision.run_number, decision.trigger_number };
+  std::lock_guard<std::mutex> lk(m_status_mutex);
+
+  // Checked under the same lock as the slot search, so that no status for this trigger slips in between
+  if (m_completed_triggers.count(trigger_id)) {
+    m_statuses_for_trigger.erase(trigger_id);
+    TLOG_DEBUG(TLVL_TRIGDEC_RECEIVED) << get_name() << " Not assigning trigger_number " << decision.trigger_number
+                                      << ", which was completed while it was waiting for a slot";
+    return false;
+  }
+  auto assigned_it = m_assigned_trigger_decisions.find(trigger_id);
+  if (assigned_it != m_assigned_trigger_decisions.end()) {
+    // A DF app is already building this trigger: send this DFO's TriggerDecision there, not to a newly chosen one
+    assigned_it->second->decision = decision;
+    assignment = assigned_it->second;
+    return true;
+  }
+
+  assignment = find_slot(decision);
+  if (assignment != nullptr) {
+    // Record before sending: a DataflowStatus listing this trigger must not look unexpected
+    m_assigned_trigger_decisions[trigger_id] = assignment;
+  }
+  return true;
+}
+
 std::shared_ptr<AssignedTriggerDecision>
 DFOModule::find_slot(const dfmessages::TriggerDecision& decision)
 {
@@ -600,10 +657,9 @@ DFOModule::find_slot(const dfmessages::TriggerDecision& decision)
   // Collect all candidates from known dataflow apps
   std::vector<dfmessages::DataflowStatus> candidates;
 
-  {
-    std::lock_guard<std::mutex> guard(m_status_mutex);
-    for (const auto& [name, received_status] :
-         m_statuses_for_trigger[{ decision.run_number, decision.trigger_number }]) {
+  auto statuses_it = m_statuses_for_trigger.find({ decision.run_number, decision.trigger_number });
+  if (statuses_it != m_statuses_for_trigger.end()) {
+    for (const auto& [name, received_status] : statuses_it->second) {
       candidates.emplace_back(received_status);
     }
   }
@@ -679,16 +735,6 @@ DFOModule::find_slot(const dfmessages::TriggerDecision& decision)
 }
 
 void
-DFOModule::assign_trigger_decision(const std::shared_ptr<AssignedTriggerDecision>& assignment)
-{
-  TLOG_DEBUG(TLVL_WORK_STEPS) << "Assigning trigger_number " << assignment->decision.trigger_number << " to "
-                              << assignment->connection_name;
-
-  std::lock_guard<std::mutex> lk(m_status_mutex);
-  m_assigned_trigger_decisions[{ assignment->decision.run_number, assignment->decision.trigger_number }] = assignment;
-}
-
-void
 DFOModule::status_watchdog_proc(std::stop_token stoken)
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering status_watchdog_proc() method";
@@ -757,6 +803,7 @@ DFOModule::send_status_requests(dfmessages::trigger_number_t trigger, size_t ite
   request.iteration_number = iteration;
   request.reply_destination = m_status_connection;
 
+  size_t requests_sent = 0;
   for (auto& dest : destinations_to_request) {
 
     try {
@@ -764,20 +811,31 @@ DFOModule::send_status_requests(dfmessages::trigger_number_t trigger, size_t ite
       dfmessages::DataflowStatusRequest request_copy = request;
       iom->get_sender<dfmessages::DataflowStatusRequest>(dest)->send(std::move(request_copy), m_queue_timeout);
       TLOG_DEBUG(TLVL_WORK_STEPS) << "Sent DataflowStatusRequest for trigger_number " << trigger << " to " << dest;
+      ++requests_sent;
     } catch (const ers::Issue& excpt) {
       std::ostringstream oss_warn;
       oss_warn << "Send of DataflowStatusRequest to connection \"" << dest << "\" failed";
       ers::warning(iomanager::OperationFailed(ERS_HERE, get_name(), oss_warn.str(), excpt));
+      // Mark this DF app status as stale so it is not asked again until a status arrives from it
+      std::lock_guard<std::mutex> guard(m_status_mutex);
+      for (auto& [name, rstatus] : m_dataflow_statuses) {
+        if (rstatus->status.request_destination == dest) {
+          rstatus->status_updated.store(false);
+        }
+      }
     }
   }
 
   std::chrono::steady_clock::time_point wait_start = std::chrono::steady_clock::now();
   size_t statuses_received = 0;
-  while (statuses_received < destinations_to_request.size() &&
-         std::chrono::steady_clock::now() - wait_start < m_request_reply_wait) {
+  while (statuses_received < requests_sent && std::chrono::steady_clock::now() - wait_start < m_request_reply_wait) {
     std::unique_lock<std::mutex> guard(m_status_mutex);
     m_status_cv.wait_for(guard, m_request_reply_wait);
-    auto it = m_statuses_for_trigger.find({ m_run_number, trigger });
+    dfmessages::TriggerId trigger_id{ m_run_number, trigger };
+    if (m_completed_triggers.count(trigger_id) || m_assigned_trigger_decisions.count(trigger_id)) {
+      break; // A DF app already has this trigger, so there is no slot to wait for
+    }
+    auto it = m_statuses_for_trigger.find(trigger_id);
     if (it != m_statuses_for_trigger.end() && !it->second.empty()) {
       statuses_received = it->second.size();
     }
@@ -789,7 +847,14 @@ DFOModule::send_status_requests(dfmessages::trigger_number_t trigger, size_t ite
   m_request_send_time += sending_requests;
   m_request_response_wait += waiting_for_requests;
 
-  return statuses_received == destinations_to_request.size();
+  // After a long delay, e.g. a suspended process, the replies may predate another DFO's assignment of this trigger
+  if (end_time - wait_start > s_stale_reply_factor * m_request_reply_wait) {
+    std::lock_guard<std::mutex> guard(m_status_mutex);
+    m_statuses_for_trigger.erase({ m_run_number, trigger });
+    TLOG() << get_name() << " Status replies for trigger_number " << trigger << " are too old to use, asking again";
+    return false;
+  }
+  return true;
 }
 
 } // namespace dunedaq::dfmodules

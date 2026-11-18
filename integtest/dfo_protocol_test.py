@@ -2,7 +2,9 @@
 Integration Test for DFO Protocol
 
 This test module validates DAQ system behavior while using multiple DFO applications.
-It also verifies that the protocol correctly handles DFO and DF application crashes.
+It also verifies that the protocol correctly handles DFO and DF applications that are stopped
+for a time. Application crashes are tested in dfo_protocol_killed_dfo_test.py and
+dfo_protocol_killed_df_test.py.
 """
 
 import copy
@@ -28,7 +30,7 @@ print = functools.partial(print, flush=True)  # always flush print() output
 pytest_plugins = "integrationtest.integrationtest_drunc"
 
 # Run setup
-run_duration = 30  # seconds
+run_duration = 60  # seconds
 check_for_logfile_errors = True
 
 # Default values for validation parameters
@@ -81,7 +83,13 @@ hsi_frag_params = {
     "min_size_bytes": 72,
     "max_size_bytes": 100,
     "frag_sizes_by_TC_type": {"kTiming": {"min_size_bytes": 100, "max_size_bytes": 100},
-                              "default": {"min_size_bytes":  72, "max_size_bytes": 100} }
+                              "default": {"min_size_bytes":  72, "max_size_bytes": 100} },
+    # The fake HSI data is sparse, so the readout window always extends past the newest HSI data.
+    # A kTiming trigger gets the one HSI frame that caused it (kIncomplete, kRequestWindowAfterBuffer);
+    # other triggers get an empty fragment (kRequestWindowAfterBuffer, kEmptyFragment), or that same
+    # frame (kIncomplete) when they come within a readout window of a kTiming trigger.
+    "frag_bitmasks_by_TC_type": {"kTiming": {"status_bitmask": 0xFFFFFFDD},
+                                 "default": {"status_bitmask": 0xFFFFFF9D} }
 }
 ignored_logfile_problems = {
     "-controller": [
@@ -95,6 +103,12 @@ ignored_logfile_problems = {
         r"WARNING: All log messages before absl::InitializeLog\(\) is called are written to STDERR"
     ]
 }
+# A DFO that was stopped for as long as the DataflowStatus timeout finds the status of every DF app
+# stale when it resumes, and for one pass has no DF app to assign a trigger to.
+stopped_dfo_logfile_problems = [
+    r"No DataflowStatus received from \S+ for \d+ ms",
+    r"TriggerDecision \d+ could not be assigned",
+]
 
 # Determine if this computer has enough resources for these tests
 resource_validator = resource_validation.ResourceValidator()
@@ -129,38 +143,30 @@ multidfo_local_conf.config_session_name = "local-multidfo-config"
 
 # Prep configs
 stopped_dfo_conf = copy.deepcopy(multidfo_local_conf)
-killed_dfo_conf = copy.deepcopy(multidfo_local_conf)
 stopped_df_conf = copy.deepcopy(multidfo_local_conf)
-killed_df_conf = copy.deepcopy(multidfo_local_conf)
+
+# The delay of a signal is counted from the launch of the run control session, before boot. Boot, conf and
+# start have taken between 25 s and 45 s, depending on the load of the host, so a signal at 60 s lands
+# 15 s to 35 s after triggers are enabled, with 25 s to 45 s of run_duration still to go.
+signal_delay = 60  # seconds
+stop_duration = 5  # seconds
 
 stopped_dfo_conf.system_signal_configs = [
     data_classes.system_signal_config(
-        application_label="dfo-02", signal=data_classes.PosixSignal.SIGSTOP, delay_s=25
+        application_label="dfo-02", signal=data_classes.PosixSignal.SIGSTOP, delay_s=signal_delay
     ),
     data_classes.system_signal_config(
-        application_label="dfo-02", signal=data_classes.PosixSignal.SIGCONT, delay_s=30
+        application_label="dfo-02", signal=data_classes.PosixSignal.SIGCONT, delay_s=signal_delay + stop_duration
     ),
 ]
 
-
-killed_dfo_conf.system_signal_configs = [
-    data_classes.system_signal_config(
-        application_label="dfo-02", signal=data_classes.PosixSignal.SIGKILL, delay_s=25
-    ),
-]
 
 stopped_df_conf.system_signal_configs = [
     data_classes.system_signal_config(
-        application_label="df-02", signal=data_classes.PosixSignal.SIGSTOP, delay_s=25
+        application_label="df-02", signal=data_classes.PosixSignal.SIGSTOP, delay_s=signal_delay
     ),
     data_classes.system_signal_config(
-        application_label="df-02", signal=data_classes.PosixSignal.SIGCONT, delay_s=30
-    ),
-]
-
-killed_df_conf.system_signal_configs = [
-    data_classes.system_signal_config(
-        application_label="df-02", signal=data_classes.PosixSignal.SIGKILL, delay_s=25
+        application_label="df-02", signal=data_classes.PosixSignal.SIGCONT, delay_s=signal_delay + stop_duration
     ),
 ]
 
@@ -168,9 +174,7 @@ killed_df_conf.system_signal_configs = [
 confgen_arguments = {
     "default": multidfo_local_conf,
     "stopped-dfo": stopped_dfo_conf,
-    "killed-dfo": killed_dfo_conf,
     "stopped-df": stopped_df_conf,
-    "killed-df": killed_df_conf,
 }
 
 # The commands to run in dunerc, as a list
@@ -190,9 +194,21 @@ def test_dunerc_success(run_dunerc, caplog):
 
 def test_log_files(run_dunerc):
     if check_for_logfile_errors:
+        local_ignored_problems = copy.deepcopy(ignored_logfile_problems)
+        for signal_config in run_dunerc.confgen_config.system_signal_configs:
+            if (signal_config.signal == data_classes.PosixSignal.SIGSTOP
+                    and signal_config.application_label.startswith("dfo-")):
+                local_ignored_problems[signal_config.application_label] = stopped_dfo_logfile_problems
+            elif (signal_config.signal == data_classes.PosixSignal.SIGSTOP
+                    and signal_config.application_label.startswith("df-")):
+                # The stop lasts as long as the status timeout, so a DFO may report the stopped DF app as silent
+                local_ignored_problems["_dfo-"] = [
+                    rf"No DataflowStatus received from trigger_decision_{signal_config.application_label} for \d+ ms"
+                ]
+
         # Check that there are no warnings or errors in the log files
         assert log_file_checks.logs_are_error_free(
-            run_dunerc.log_files, True, True, ignored_logfile_problems,
+            run_dunerc.log_files, True, True, local_ignored_problems,
             verbosity_helper=run_dunerc.verbosity_helper
         )
 
@@ -228,8 +244,12 @@ def test_data_files(run_dunerc):
     )
 
     all_ok = True
+    files_by_record = {}
     for idx in range(len(run_dunerc.data_files)):
         data_file = data_file_checks.DataFile(run_dunerc.data_files[idx], run_dunerc.verbosity_helper)
+        # the record names hold the trigger number and the sequence number, e.g. TriggerRecord00012.0000
+        for record_name in data_file.events:
+            files_by_record.setdefault(record_name, []).append(os.path.basename(data_file.name))
         all_ok &= data_file_checks.sanity_check(data_file)
         all_ok &= data_file_checks.check_file_attributes(data_file)
         all_ok &= data_file_checks.check_event_count(
@@ -244,4 +264,10 @@ def test_data_files(run_dunerc):
             )
         for kdx in range(len(nontrig_fragment_check_list)):
             all_ok &= data_file_checks.check_fragment_error_flags( data_file, nontrig_fragment_check_list[kdx])
+
+    # Each DFO sends its own TriggerDecision for a trigger, but only one DF app may build and write it
+    for record_name, file_names in sorted(files_by_record.items()):
+        if len(file_names) > 1:
+            print(f"\N{POLICE CARS REVOLVING LIGHT} {record_name} is in more than one file: {file_names} \N{POLICE CARS REVOLVING LIGHT}")
+            all_ok = False
     assert all_ok

@@ -392,7 +392,9 @@ DataflowStatusModule::process_trigger_decision(dfmessages::TriggerDecision& deci
 
     dfmessages::TriggerId trigger_id{ decision.run_number, decision.trigger_number };
 
-    if (m_trigger_statuses.count(trigger_id) > 0) {
+    // Another DFO's TriggerDecision for this trigger can arrive after the record has been written
+    if (m_trigger_statuses.count(trigger_id) > 0 ||
+        m_current_status.recently_completed_triggers.count(trigger_id) > 0) {
       TLOG() << DuplicateTriggerDecision(ERS_HERE, get_name(), decision.trigger_number, decision.run_number);
       ++m_num_duplicate_decisions_received;
       return;
