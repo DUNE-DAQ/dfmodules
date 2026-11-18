@@ -344,7 +344,7 @@ DFOModule::receive_trigger_decision(const dfmessages::TriggerDecision& decision)
     m_forwarding_decision +=
       std::chrono::duration_cast<std::chrono::microseconds>(m_last_td_received - decision_assigned).count();
   }
-}
+} // NOLINT(readability/fn_size)
 
 void
 DFOModule::generate_opmon_data()
