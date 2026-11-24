@@ -47,6 +47,18 @@ SummaryTextDataWriter::write(const daqdataformats::TimeSlice& ts)
   write_line("TimeSlice #" + std::to_string(timeslice_number));
 }
 
+void
+SummaryTextDataWriter::close()
+{
+  if (!m_output_file.is_open()) {
+    return;
+  }
+  m_output_file.close();
+  if (m_output_file.fail()) {
+    throw CantWriteToFile(ERS_HERE, m_file_name);
+  }
+}
+
 bool
 SummaryTextDataWriter::timeslice_already_exists(const daqdataformats::TimeSlice& ts) const
 {

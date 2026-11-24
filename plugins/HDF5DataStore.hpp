@@ -30,34 +30,32 @@ public:
                          std::shared_ptr<appfwk::ConfigurationManager> mcfg,
                          std::string const& writer_name)
     : FileDataStoreImpl(name, mcfg, writer_name)
+    , m_source_id_geo_id_map{ hdf5libs::HDF5SourceIDHandler::make_source_id_geo_id_map(get_session()) }
   {
   }
 
   void open_new_file(const std::string& unique_filename) override;
+
+private:
+  // Built once from the configuration.
+  const hdf5libs::HDF5SourceIDHandler::source_id_geo_id_map_t m_source_id_geo_id_map;
 };
 
 inline void
 HDF5DataStore::open_new_file(const std::string& unique_filename)
 {
 
+  // Any exception is wrapped in a FileOperationProblem by FileDataStoreImpl.
   auto& file_handle{ get_file_handle() };
-  try {
-    file_handle.reset(
-      new hdf5libs::HDF5RawDataFile(unique_filename,
-                                    get_run_number(),
-                                    get_file_index(),
-                                    get_application_name(),
-                                    get_configuration().get_file_layout_params(),
-                                    hdf5libs::HDF5SourceIDHandler::make_source_id_geo_id_map(get_session()),
-                                    get_compression_level(),
-                                    ".writing",
-                                    HighFive::File::OpenOrCreate));
-  } catch (std::exception const& excpt) {
-    throw FileOperationProblem(ERS_HERE, get_name(), unique_filename, excpt);
-  } catch (...) { // NOLINT(runtime/exceptions)
-    // NOLINT here because we *ARE* re-throwing the exception!
-    throw FileOperationProblem(ERS_HERE, get_name(), unique_filename);
-  }
+  file_handle.reset(new hdf5libs::HDF5RawDataFile(unique_filename,
+                                                  get_run_number(),
+                                                  get_file_index(),
+                                                  get_application_name(),
+                                                  get_configuration().get_file_layout_params(),
+                                                  m_source_id_geo_id_map,
+                                                  get_compression_level(),
+                                                  ".writing",
+                                                  HighFive::File::Excl));
 
   TLOG_DEBUG(TLVL_BASIC) << get_name() << "Created HDF5 file (" << unique_filename << ").";
 

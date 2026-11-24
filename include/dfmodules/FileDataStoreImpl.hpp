@@ -121,8 +121,9 @@ concept FileHandleConcept = requires(T file_handle,
   { file_handle.write(tr) } -> std::same_as<void>;
   { file_handle.write(ts) } -> std::same_as<void>;
   { file_handle.timeslice_already_exists(ts) } -> std::convertible_to<bool>;
+  { file_handle.close() } -> std::same_as<void>; // May throw; must release the file even when it does.
   { const_file_handle.get_file_name() } -> std::convertible_to<std::string>;
-  { const_file_handle.get_file_name_extension() } -> std::convertible_to<std::string>; // Don't include the "."
+  { T::get_file_name_extension() } -> std::convertible_to<std::string>; // Don't include the ".".
   { const_file_handle.get_recorded_size() } -> std::convertible_to<size_t>;
   { const_file_handle.get_uncompressed_raw_data_size() } -> std::convertible_to<size_t>;
   { const_file_handle.get_total_file_size() } -> std::convertible_to<size_t>;
@@ -246,14 +247,7 @@ public:
 
     std::string full_filename = get_file_name(tr.get_header_ref().get_run_number());
 
-    try {
-      open_file_if_needed(full_filename);
-    } catch (std::exception const& excpt) {
-      throw FileOperationProblem(ERS_HERE, get_name(), full_filename, excpt);
-    } catch (...) { // NOLINT(runtime/exceptions)
-      // NOLINT here because we *ARE* re-throwing the exception!
-      throw FileOperationProblem(ERS_HERE, get_name(), full_filename);
-    }
+    open_file_if_needed(full_filename);
 
     // write the record
     m_file_handle->write(tr);
@@ -284,14 +278,7 @@ public:
 
     std::string full_filename = get_file_name(ts.get_header().run_number);
 
-    try {
-      open_file_if_needed(full_filename);
-    } catch (std::exception const& excpt) {
-      throw FileOperationProblem(ERS_HERE, get_name(), full_filename, excpt);
-    } catch (...) { // NOLINT(runtime/exceptions)
-      // NOLINT here because we *ARE* re-throwing the exception!
-      throw FileOperationProblem(ERS_HERE, get_name(), full_filename);
-    }
+    open_file_if_needed(full_filename);
 
     // write the record
     try {
@@ -348,8 +335,7 @@ public:
     }
 
     m_file_index = 0;
-    m_recorded_size = 0;
-    m_uncompressed_raw_data_size = 0;
+    reset_per_file_counters();
     m_current_record_number = s_unset_record_number;
   }
 
@@ -362,20 +348,8 @@ public:
    */
   void finish_with_run(daqdataformats::run_number_t /*run_number*/) override
   {
-    if (m_file_handle) {
-      std::string open_filename = m_file_handle->get_file_name();
-      try {
-        m_file_handle.reset();
-        m_run_number = 0;
-      } catch (std::exception const& excpt) {
-        m_run_number = 0;
-        throw FileOperationProblem(ERS_HERE, get_name(), open_filename, excpt);
-      } catch (...) { // NOLINT(runtime/exceptions)
-        m_run_number = 0;
-        // NOLINT here because we *ARE* re-throwing the exception!
-        throw FileOperationProblem(ERS_HERE, get_name(), open_filename);
-      }
-    }
+    m_run_number = 0;
+    close_file_if_open();
   }
 
   FileDataStoreImpl(const FileDataStoreImpl&) = delete;
@@ -424,18 +398,45 @@ private:
 
     if ((m_total_file_size + size_of_next_write) > m_max_file_size && m_recorded_size > 0) {
       ++m_file_index;
-      m_recorded_size = 0;
-      m_uncompressed_raw_data_size = 0;
-      m_previous_file_size.store(0);
+      reset_per_file_counters();
       return;
     }
 
-    // JCF, 06-27-2026: TODO: probably need to reset m_recorded_size, etc., as is done right above
     if (m_operation_mode == "one-event-per-file" && current_record_number != s_unset_record_number &&
         current_record_number != object_record_number) {
       ++m_file_index;
+      reset_per_file_counters();
       return;
     }
+  }
+
+  void reset_per_file_counters()
+  {
+    m_recorded_size = 0;
+    m_uncompressed_raw_data_size = 0;
+    m_previous_file_size = 0;
+    m_total_file_size = 0;
+  }
+
+  // Closes the open file, if any. The handle is released even when closing fails, so that the
+  // failure is reported once (as a FileOperationProblem) and not again from the handle's destructor.
+  void close_file_if_open()
+  {
+    if (!m_file_handle) {
+      return;
+    }
+    const std::string open_filename = m_file_handle->get_file_name();
+    try {
+      m_file_handle->close();
+    } catch (std::exception const& excpt) {
+      m_file_handle.reset();
+      throw FileOperationProblem(ERS_HERE, get_name(), open_filename, excpt);
+    } catch (...) { // NOLINT(runtime/exceptions)
+      m_file_handle.reset();
+      // NOLINT here because we *ARE* re-throwing the exception!
+      throw FileOperationProblem(ERS_HERE, get_name(), open_filename);
+    }
+    m_file_handle.reset();
   }
 
   void open_file_if_needed(const std::string& file_name)
@@ -444,17 +445,7 @@ private:
     if (!m_file_handle || m_basic_name_of_open_file.compare(file_name)) {
 
       // close an existing open file
-      if (m_file_handle) {
-        std::string open_filename = m_file_handle->get_file_name();
-        try {
-          m_file_handle.reset();
-        } catch (std::exception const& excpt) {
-          throw FileOperationProblem(ERS_HERE, get_name(), open_filename, excpt);
-        } catch (...) { // NOLINT(runtime/exceptions)
-          // NOLINT here because we *ARE* re-throwing the exception!
-          throw FileOperationProblem(ERS_HERE, get_name(), open_filename);
-        }
-      }
+      close_file_if_open();
 
       // 04-Feb-2021, KAB: adding unique substrings to the filename
       // 05-Feb-2026, KAB: moved this block of code *after* the block that closes an
@@ -470,7 +461,7 @@ private:
         // timestamp substring
         size_t ufn_len = unique_filename.length();
         size_t extension_length =
-          m_file_handle->get_file_name_extension().size() + 1; // + 1 for the "." before the extension
+          FileHandleClass::get_file_name_extension().size() + 1; // + 1 for the "." before the extension
         if (ufn_len > extension_length + 1) { // this gives us some confidence that we have at least one character
                                               // preceding the extension (e.g., x.hdf5)
           std::string timestamp_substring = "_" + file_creation_timestamp;
@@ -483,7 +474,14 @@ private:
       TLOG_DEBUG(TLVL_BASIC) << get_name() << ": going to open file " << unique_filename;
       m_basic_name_of_open_file = file_name;
 
-      open_new_file(unique_filename);
+      try {
+        open_new_file(unique_filename);
+      } catch (std::exception const& excpt) {
+        throw FileOperationProblem(ERS_HERE, get_name(), unique_filename, excpt);
+      } catch (...) { // NOLINT(runtime/exceptions)
+        // NOLINT here because we *ARE* re-throwing the exception!
+        throw FileOperationProblem(ERS_HERE, get_name(), unique_filename);
+      }
 
     } else {
       TLOG_DEBUG(TLVL_BASIC) << get_name() << ": Pointer file to  " << m_basic_name_of_open_file
