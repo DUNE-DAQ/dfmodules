@@ -63,7 +63,7 @@
 
 <oks-data>
 
-<info name="" type="" num-of-items="98" oks-format="data" oks-version="862f2957270" created-by="copilot" created-on="test" creation-time="20260101T000000" last-modified-by="eflumerf" last-modified-on="ironvirt9.mshome.net" last-modification-time="20260910T142759"/>
+<info name="" type="" num-of-items="90" oks-format="data" oks-version="862f2957270" created-by="copilot" created-on="test" creation-time="20260101T000000" last-modified-by="mroda" last-modified-on="mroda-xpsp" last-modification-time="20261127T131942"/>
 
 <include>
  <file path="schema/confmodel/dunedaq.schema.xml"/>
@@ -202,6 +202,7 @@
  <attr name="heartbeat_interval_ms" type="u32" val="100"/>
  <attr name="stop_timeout_ms" type="u32" val="1000"/>
  <attr name="td_queue_timeout_ms" type="u32" val="1000"/>
+ <attr name="pending_message_timeout_ms" type="u32" val="1000"/>
  <attr name="snapshot_history_size" type="u32" val="100"/>
  <attr name="completed_trigger_history_size" type="u32" val="100"/>
 </obj>
@@ -213,44 +214,13 @@
  <attr name="offline_data_stream" type="string" val="cosmics"/>
 </obj>
 
-<obj class="FSMCommand" id="conf">
- <attr name="cmd" type="string" val="conf"/>
- <attr name="optional" type="bool" val="1"/>
-</obj>
-
-<obj class="FSMCommand" id="disable_triggers">
- <attr name="cmd" type="string" val="disable_triggers"/>
- <attr name="optional" type="bool" val="1"/>
-</obj>
-
-<obj class="FSMCommand" id="drain_dataflow">
- <attr name="cmd" type="string" val="drain_dataflow"/>
- <attr name="optional" type="bool" val="0"/>
-</obj>
-
-<obj class="FSMCommand" id="enable_triggers">
- <attr name="cmd" type="string" val="enable_triggers"/>
- <attr name="optional" type="bool" val="0"/>
-</obj>
-
-<obj class="FSMCommand" id="scrap">
- <attr name="cmd" type="string" val="scrap"/>
- <attr name="optional" type="bool" val="1"/>
-</obj>
-
-<obj class="FSMCommand" id="start">
- <attr name="cmd" type="string" val="start"/>
- <attr name="optional" type="bool" val="0"/>
-</obj>
-
-<obj class="FSMCommand" id="stop">
- <attr name="cmd" type="string" val="stop"/>
- <attr name="optional" type="bool" val="0"/>
-</obj>
-
-<obj class="FSMCommand" id="stop_trigger_sources">
- <attr name="cmd" type="string" val="stop_trigger_sources"/>
- <attr name="optional" type="bool" val="0"/>
+<obj class="FSMPreTransition" id="start">
+ <attr name="mandatory" type="string">
+  <data val="user-provided-run-number"/>
+ </attr>
+ <rel name="actions">
+  <ref class="FSMaction" id="dummy-if"/>
+ </rel>
 </obj>
 
 <obj class="FSMaction" id="dummy-if">
@@ -284,85 +254,91 @@
   <ref class="FSMsequence" id="start_run"/>
   <ref class="FSMsequence" id="stop_run"/>
  </rel>
- <rel name="pre_transitions">
-  <ref class="FSMxTransition" id="start"/>
- </rel>
 </obj>
 
 <obj class="FSMsequence" id="shutdown">
+ <attr name="name" type="string" val="shutdown"/>
+ <attr name="add_initial_boot" type="bool" val="0"/>
+ <attr name="add_final_terminate" type="bool" val="1"/>
  <rel name="sequence">
-  <ref class="FSMCommand" id="disable_triggers"/>
-  <ref class="FSMCommand" id="drain_dataflow"/>
-  <ref class="FSMCommand" id="stop_trigger_sources"/>
-  <ref class="FSMCommand" id="stop"/>
-  <ref class="FSMCommand" id="scrap"/>
+  <ref class="FSMtransition" id="disable_triggers"/>
+  <ref class="FSMtransition" id="drain_dataflow"/>
+  <ref class="FSMtransition" id="stop_trigger_sources"/>
+  <ref class="FSMtransition" id="stop"/>
+  <ref class="FSMtransition" id="scrap"/>
  </rel>
 </obj>
 
 <obj class="FSMsequence" id="start_run">
+ <attr name="name" type="string" val="start_run"/>
+ <attr name="add_initial_boot" type="bool" val="1"/>
+ <attr name="add_final_terminate" type="bool" val="0"/>
  <rel name="sequence">
-  <ref class="FSMCommand" id="conf"/>
-  <ref class="FSMCommand" id="start"/>
-  <ref class="FSMCommand" id="enable_triggers"/>
+  <ref class="FSMtransition" id="conf"/>
+  <ref class="FSMtransition" id="start"/>
+  <ref class="FSMtransition" id="enable_triggers"/>
  </rel>
 </obj>
 
 <obj class="FSMsequence" id="stop_run">
+ <attr name="name" type="string" val="stop_run"/>
+ <attr name="add_initial_boot" type="bool" val="0"/>
+ <attr name="add_final_terminate" type="bool" val="0"/>
  <rel name="sequence">
-  <ref class="FSMCommand" id="disable_triggers"/>
-  <ref class="FSMCommand" id="drain_dataflow"/>
-  <ref class="FSMCommand" id="stop_trigger_sources"/>
-  <ref class="FSMCommand" id="stop"/>
+  <ref class="FSMtransition" id="disable_triggers"/>
+  <ref class="FSMtransition" id="drain_dataflow"/>
+  <ref class="FSMtransition" id="stop_trigger_sources"/>
+  <ref class="FSMtransition" id="stop"/>
  </rel>
 </obj>
 
 <obj class="FSMtransition" id="conf">
  <attr name="source" type="string" val="initial"/>
  <attr name="dest" type="string" val="configured"/>
+ <attr name="cmd" type="string" val="conf"/>
 </obj>
 
 <obj class="FSMtransition" id="disable_triggers">
  <attr name="source" type="string" val="running"/>
  <attr name="dest" type="string" val="ready"/>
+ <attr name="cmd" type="string" val="disable_triggers"/>
 </obj>
 
 <obj class="FSMtransition" id="drain_dataflow">
  <attr name="source" type="string" val="ready"/>
  <attr name="dest" type="string" val="dataflow_drained"/>
+ <attr name="cmd" type="string" val="drain_dataflow"/>
 </obj>
 
 <obj class="FSMtransition" id="enable_triggers">
  <attr name="source" type="string" val="ready"/>
  <attr name="dest" type="string" val="running"/>
+ <attr name="cmd" type="string" val="enable_triggers"/>
 </obj>
 
 <obj class="FSMtransition" id="scrap">
  <attr name="source" type="string" val="configured"/>
  <attr name="dest" type="string" val="initial"/>
+ <attr name="cmd" type="string" val="scrap"/>
 </obj>
 
 <obj class="FSMtransition" id="start">
  <attr name="source" type="string" val="configured"/>
  <attr name="dest" type="string" val="ready"/>
+ <attr name="cmd" type="string" val="start"/>
+ <rel name="pre_transition" class="FSMPreTransition" id="start"/>
 </obj>
 
 <obj class="FSMtransition" id="stop">
  <attr name="source" type="string" val="trigger_sources_stopped"/>
  <attr name="dest" type="string" val="configured"/>
+ <attr name="cmd" type="string" val="stop"/>
 </obj>
 
 <obj class="FSMtransition" id="stop_trigger_sources">
  <attr name="source" type="string" val="dataflow_drained"/>
  <attr name="dest" type="string" val="trigger_sources_stopped"/>
-</obj>
-
-<obj class="FSMxTransition" id="start">
- <attr name="order" type="string">
-  <data val="user-provided-run-number"/>
- </attr>
- <attr name="mandatory" type="string">
-  <data val="user-provided-run-number"/>
- </attr>
+ <attr name="cmd" type="string" val="stop_trigger_sources"/>
 </obj>
 
 <obj class="HostCores" id="cpus">
