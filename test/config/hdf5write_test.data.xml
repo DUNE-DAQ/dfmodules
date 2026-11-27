@@ -63,7 +63,7 @@
 
 <oks-data>
 
-<info name="" type="" num-of-items="54" oks-format="data" oks-version="862f2957270" created-by="gjc" created-on="thinkpad" creation-time="20231116T105446" last-modified-by="mroda" last-modified-on="mroda-xpsp" last-modification-time="20261127T124431"/>
+<info name="" type="" num-of-items="54" oks-format="data" oks-version="862f2957270" created-by="gjc" created-on="thinkpad" creation-time="20231116T105446" last-modified-by="mroda" last-modified-on="mroda-xpsp" last-modification-time="20261127T130040"/>
 
 <include>
  <file path="schema/confmodel/dunedaq.schema.xml"/>
@@ -236,6 +236,7 @@
  <attr name="source" type="string" val="configured"/>
  <attr name="dest" type="string" val="ready"/>
  <attr name="cmd" type="string" val="start"/>
+ <rel name="pre_transition" class="FSMPreTransition" id="start"/>
 </obj>
 
 <obj class="FSMtransition" id="stop">
